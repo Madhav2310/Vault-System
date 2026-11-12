@@ -70,3 +70,10 @@ eval-fetch:
 eval-build:
 	$(EVAL_PY) ../eval/build/build_external.py
 	$(EVAL_PY) ../eval/build/build_authored.py
+
+# --- OpenTelemetry collector (S0.15 / S0.22) ---
+CONFIG ?= ops/otel/collector.yaml
+otel-validate:
+	docker run --rm --entrypoint /otel-lgtm/otelcol-contrib/otelcol-contrib \
+	  -v "$(abspath $(CONFIG))":/cfg/config.yaml:ro grafana/otel-lgtm:0.38.1 \
+	  validate --feature-gates service.profilesSupport --config=file:/cfg/config.yaml

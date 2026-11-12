@@ -123,3 +123,34 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Status: AC1, AC2 VERIFIED · AC3 UNVERIFIED (open; spike texts are too short to be representative; decision moved to S2.20, see followups F-006)
 - Plan edits: AC commands now use the compose wrapper script (no host `psql` connection needed); AC2 counts *distinct* partitions (the original line count also matched the lexical plan); AC3 now requires the scan to be on the tsv_en GIN, not just any bitmap scan, so it can't pass on the PK.
 - [T] changes approved: none
+
+### S0.18 — Eval corpus wiring, test fixtures, provider limits
+- Date: 2026-11-12 · Commits: b97058a (merged in 27f1087) · built by a parallel agent, reviewed and merged here
+- Commands: `make eval-fetch` (from empty `eval/sources/`), `make eval-fetch eval-build && git diff --exit-code`, `make test-unit`
+- Output: build items=122 docs=15 train=50 test=72 smoke=21, 0 gold not found, FinanceBench pages 14/14; git diff clean (golden/documents unchanged); fixture + corpus tests pass (hashes 15/15, gold located 100/100, fixtures deterministic, 7 upload types, 9 zoo cases). Without `eval/sources/` the corpus tests skip with a reason.
+- Status: AC1–AC6 VERIFIED · AC7 UNVERIFIED (user action: confirm tier, set $200 Console spend limit, record OpenAI tier)
+- Found: the original `fetch_sources.sh` silently kept a truncated CUAD zip (21.6/106 MB, exit 0). Rewritten to fail loudly and resume.
+- Plan edits: AC3 now says "evidence-graded item" (summarize/meta items have no gold by design, so the old wording could not pass). `[tool.uv] default-groups = ["dev","eval"]` so fixture tests run in `make test`.
+- [T] changes approved: none
+
+### S0.21 — Spike: geometry transforms
+- Date: 2026-11-12 · Commit: fb84346 (merged in 27f1087) · Evidence: `docs/evidence/spike_geometry/`
+- Commands: `cd backend && uv run --frozen --group eval python ../scripts/spikes/geometry_spike.py --case {cropbox,rotate90,ligature}` (+ rotate270)
+- Output: cropbox IoU 0.909 (uncorrected 0.000); rotate90 0.911/0.911 (both variants natural order); rotate270 0.911; ligature: 8/41 QASPER paragraphs matched exactly, 8/8 round-trip, all ligature glyphs mapped; exit 0 for all.
+- Status: VERIFIED. **Finding: research 05 §3.3 is wrong for rotation** (see followups F-007).
+- [T] changes approved: none
+
+### S0.22 — Spike: collector config validation in grafana/otel-lgtm
+- Date: 2026-11-12 · Commit: (this commit) · Notes: `ops/otel/README.md`
+- Commands: `make otel-validate`; `make otel-validate CONFIG=ops/otel/tests/broken.yaml`
+- Output: good config exit 0; config referencing an undefined processor exit 2 ("references processor does_not_exist which is not configured"). The image's collector is `/otel-lgtm/otelcol-contrib/otelcol-contrib`; our config is mounted over `/otel-lgtm/otelcol-config.yaml`.
+- Status: VERIFIED
+- [T] changes approved: none
+
+### S0.15 — OpenTelemetry instrumentation and collector config
+- Date: 2026-11-12 · Commit: (this commit)
+- Commands: `make test-integration` (test_trace_propagation.py); `make test-unit` (test_collector_config.py); `make otel-validate`; `cd backend && uv run --frozen python ../scripts/check_trace.py` against the running stack
+- Output: AC1 a FastAPI server span and the Celery worker span (real in-process worker over an in-memory broker, context via task headers) share one trace_id; AC2 validate exit 0; AC3 the three `gen_ai.*` attributes deleted in the traces and logs pipelines, ahead of `batch`, behind `memory_limiter`; AC4 request with a known trace id found in Tempo (service `vault-api`).
+- Status: AC1–AC4 VERIFIED · AC5 UNVERIFIED (Anthropic client metadata-only; arrives with S0.13's provider code)
+- Notes: setup is idempotent per process (the solo Celery pool fires `worker_process_init` in-process and had created real OTLP exporters inside tests). Tail sampling is defined but not in any dev pipeline. Tempo's HTTP port 3200 is published for the check script.
+- [T] changes approved: none

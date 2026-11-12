@@ -1,0 +1,84 @@
+# Vault collector config (dev): mounted over /otel-lgtm/otelcol-config.yaml in the grafana/otel-lgtm image.
+# Exporters target the image's bundled backends (Prometheus, Tempo, Loki, Pyroscope) on localhost.
+# Design §17: memory_limiter → redaction backstop → batch. Tail sampling is defined, enabled only in prod
+# (ops/otel/collector.prod.yaml, S7.11).
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
+  prometheus/collector:
+    config:
+      scrape_configs:
+        - job_name: "opentelemetry-collector"
+          scrape_interval: 10s
+          static_configs:
+            - targets: ["127.0.0.1:8888"]
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+    path: "/ready"
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 20
+  # Backstop: SDKs run metadata-only, but never let prompt/completion content reach storage.
+  attributes/redact_genai:
+    actions:
+      - key: gen_ai.input.messages
+        action: delete
+      - key: gen_ai.output.messages
+        action: delete
+      - key: gen_ai.system_instructions
+        action: delete
+  batch:
+  tail_sampling:  # defined, not in a dev pipeline (keep 100% in dev)
+    decision_wait: 10s
+    policies:
+      - name: errors
+        type: status_code
+        status_code: { status_codes: [ERROR] }
+      - name: baseline
+        type: probabilistic
+        probabilistic: { sampling_percentage: 15 }
+
+exporters:
+  otlp_http/metrics:
+    endpoint: http://127.0.0.1:9090/api/v1/otlp
+    tls: { insecure: true }
+  otlp_http/traces:
+    endpoint: http://127.0.0.1:4418
+    tls: { insecure: true }
+  otlp_http/logs:
+    endpoint: http://127.0.0.1:3100/otlp
+    tls: { insecure: true }
+  otlp_grpc/profiles:
+    endpoint: http://127.0.0.1:4040
+    tls: { insecure: true }
+
+service:
+  extensions: [health_check]
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/redact_genai, batch]
+      exporters: [otlp_http/traces]
+    metrics:
+      receivers: [otlp, prometheus/collector]
+      processors: [memory_limiter, batch]
+      exporters: [otlp_http/metrics]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, attributes/redact_genai, batch]
+      exporters: [otlp_http/logs]
+    profiles:
+      receivers: [otlp]
+      exporters: [otlp_grpc/profiles]

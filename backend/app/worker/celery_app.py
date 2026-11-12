@@ -5,6 +5,7 @@ idempotent. Durable job state lives in `processing_jobs`, never only in Celery.
 """
 
 from celery import Celery
+from celery.signals import worker_process_init
 from kombu import Queue
 
 from app.core.settings import get_settings
@@ -42,3 +43,12 @@ def make_celery() -> Celery:
 
 
 celery_app = make_celery()
+
+
+@worker_process_init.connect
+def _init_telemetry(**_: object) -> None:
+    """Prefork children start without providers: install OTel in each (not fired for the solo pool)."""
+    from app.observability.otel import setup_telemetry
+
+    settings = get_settings()
+    setup_telemetry(settings, settings.otel_service_name)

@@ -1,0 +1,14 @@
+# Deliberately invalid: pipeline references an undefined processor (S0.22 AC2).
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+exporters:
+  debug: {}
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [does_not_exist]
+      exporters: [debug]
