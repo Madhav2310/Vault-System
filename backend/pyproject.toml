@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "Evidence-first document intelligence (case study)"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "celery[redis]>=5.4",
     "fastapi>=0.115",
+    "pydantic-settings>=2.6",
     "uvicorn[standard]>=0.32",
 ]
 
@@ -58,7 +60,8 @@ markers = [
     "e2e: full stack via HTTP",
     "live: calls real provider APIs (excluded from ci)",
 ]
-addopts = "-ra --strict-markers"
+addopts = "-ra --strict-markers --import-mode=importlib"
+pythonpath = ["."]
 
 [tool.coverage.run]
 source = ["app"]

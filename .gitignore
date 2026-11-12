@@ -27,3 +27,6 @@ docs/archive/
 
 # Third-party eval sources (fetched by eval/build/fetch_sources.sh)
 eval/sources/
+
+# Claude Code local state (agent worktrees)
+.claude/

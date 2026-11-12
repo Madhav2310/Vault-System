@@ -1,0 +1,58 @@
+"""Typed configuration. Every configurable value lives here and is listed in `.env.example`.
+
+Later slices add their fields here; `tests/unit/core/test_settings.py` keeps `.env.example` in sync.
+"""
+
+from functools import lru_cache
+from typing import Literal
+
+from pydantic import Field, SecretStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    # --- environment ---
+    environment: Literal["dev", "test", "prod"] = "dev"
+    service_version: str = "dev"
+
+    # --- infrastructure (required: no safe default) ---
+    database_url: str = Field(description="postgresql+asyncpg://user:pass@host:5432/db")
+    redis_url: str = Field(description="redis://host:6379/0")
+    db_pool_size: int = 10
+    db_max_overflow: int = 5
+
+    # --- object store ---
+    object_store_backend: Literal["local", "s3"] = "local"
+    object_store_root: str = "/data/blobs"
+
+    # --- reranker service ---
+    reranker_url: str = "http://reranker:8080"
+    reranker_timeout_ms: int = 800
+
+    # --- providers (optional at boot; /readyz reports what's missing) ---
+    anthropic_api_key: SecretStr | None = None
+    openai_api_key: SecretStr | None = None
+    deepseek_api_key: SecretStr | None = None
+
+    # --- models (design §4; no date suffixes) ---
+    answer_model: str = "claude-sonnet-5-5"
+    haiku_model: str = "claude-haiku-5-5"
+    opus_model: str = "claude-opus-5-5"
+    embedding_model: str = "text-embedding-3-small"
+    embedding_dim: int = 1536
+
+    # --- upload / ingestion limits (design §6) ---
+    max_upload_bytes: int = 25 * 1024 * 1024
+    parse_timeout_s: int = 120
+
+    # --- telemetry (design §17, §20.1) ---
+    otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
+    otel_service_name: str = "vault-api"
+    log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+
+@lru_cache(maxsize=1)
+def get_settings() -> Settings:
+    return Settings()  # type: ignore[call-arg]  # required fields come from the environment
