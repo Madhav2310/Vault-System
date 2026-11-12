@@ -37,11 +37,12 @@ for f in P.glob("*.md"):
 # regenerate README checklist
 readme = P / "README.md"
 r = readme.read_text()
+done = set(re.findall(r"\[x\] (S\d+\.\d+)", r))  # preserve ticks; README IDs were already rewritten above
 lines = []
 for f in slices:
     k = int(f.stem[1:])
     ids = [m.group(1) for m in TASK.finditer(f.read_text())]
-    lines.append(f"**S{k}** — " + " ".join(f"[ ] {i}" + (" (gate)" if j == len(ids) - 1 else "") for j, i in enumerate(ids)))
+    lines.append(f"**S{k}** — " + " ".join(f"[{'x' if i in done else ' '}] {i}" +(" (gate)" if j == len(ids) - 1 else "") for j, i in enumerate(ids)))
 r = re.sub(r"(Tick a box only when the task's definition of done is met\.\n\n)(.*)$", lambda m: m.group(1) + "\n\n".join(lines) + "\n", r, flags=re.S)
 readme.write_text(r)
 print(f"renumbered {len(changed)} task ids")

@@ -5,7 +5,7 @@ readme = (P / "README.md").read_text()
 cov = (P / "coverage.md").read_text()
 slices = sorted(P.glob("S*.md"), key=lambda p: int(p.stem[1:]))
 errs, warns = [], []
-checklist = set(re.findall(r"\[ \] (S\d+\.\d+)", readme))
+checklist = set(re.findall(r"\[[ x]\] (S\d+\.\d+)", readme))
 tasks, deps, acs_by_task, test_ids = {}, {}, {}, collections.defaultdict(list)
 for f in slices:
     text = f.read_text()
@@ -18,7 +18,7 @@ for f in slices:
         d = re.search(r"^Deps: ([^·\n]+)", body, re.M)
         if not d: errs.append(f"{tid}: no Deps line")
         else: deps[tid] = d.group(1)
-        acs = re.findall(r"^- \[ \] (AC\d+) (.+)$", body, re.M)
+        acs = re.findall(r"^- \[[ x]\] (AC\d+) (.+)$", body, re.M)
         if not acs: errs.append(f"{tid}: no ACs")
         nums = [int(a[0][2:]) for a in acs]
         if nums != list(range(1, len(nums) + 1)): errs.append(f"{tid}: AC numbering {nums}")
