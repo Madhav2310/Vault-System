@@ -44,6 +44,8 @@ OTEL_OPTION: anthropic.OpenTelemetryClientOption = {"traces": {"content_mode": "
 
 def build_params(req: ChatRequest) -> dict[str, Any]:
     """Request body for `messages.create` / `messages.stream`. Pure: unit-testable without a client."""
+    if req.effort == "none":
+        raise errors.RequestConflictError("effort 'none' is not supported by the Anthropic adapter")
     output_config: dict[str, Any] = {"effort": req.effort}
     if req.output_schema is not None:
         output_config["format"] = {

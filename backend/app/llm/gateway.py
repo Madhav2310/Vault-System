@@ -680,14 +680,13 @@ def _usage_of(r: object) -> Usage:
 @lru_cache(maxsize=1)
 def get_gateway() -> LlmGateway:
     from app.db.session import get_sessionmaker
-    from app.llm.providers.anthropic import AnthropicProvider
     from app.llm.providers.openai import OpenAIEmbeddingProvider
+    from app.llm.providers.openai_chat import OpenAIResponsesProvider
 
     s = get_settings()
-    anthropic_key = s.anthropic_api_key.get_secret_value() if s.anthropic_api_key else None
     openai_key = s.openai_api_key.get_secret_value() if s.openai_api_key else None
     return LlmGateway(
-        chat=AnthropicProvider(anthropic_key, s.llm_timeout_s),
+        chat=OpenAIResponsesProvider(openai_key, s.llm_timeout_s),
         embeddings=OpenAIEmbeddingProvider(openai_key, s.llm_timeout_s),
         prompts=default_registry(),
         prices=price_table_from_settings(s),

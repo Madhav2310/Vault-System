@@ -1,10 +1,12 @@
-"""Live provider smoke (S0.13 AC13): one Haiku structured call and one embedding call through the gateway.
+"""Live provider smoke (S0.13 AC13): one `fast`-role strict-schema call (gpt-6-luna)
+and one embedding call through the gateway.
 
 Spends real money (well under $0.001 each). Run with `make smoke-providers`; excluded from `make ci`.
 Fails (does not skip) when keys are missing, so the make target cannot pass vacuously.
 """
 
 import os
+from decimal import Decimal
 
 import pytest
 from pydantic import BaseModel, ConfigDict
@@ -13,8 +15,8 @@ from app.core.settings import get_settings
 from app.llm.gateway import LlmGateway, MemoryLedger
 from app.llm.pricing import price_table_from_settings
 from app.llm.prompts import default_registry
-from app.llm.providers.anthropic import AnthropicProvider
 from app.llm.providers.openai import OpenAIEmbeddingProvider
+from app.llm.providers.openai_chat import OpenAIResponsesProvider
 
 pytestmark = pytest.mark.live
 
@@ -29,10 +31,9 @@ def _gateway(ledger: MemoryLedger, need: tuple[str, ...]) -> LlmGateway:
     missing = [k for k in need if not (os.environ.get(k) or getattr(s, k.lower()))]
     if missing:
         pytest.fail(f"live smoke needs {missing} in the environment or .env")
-    a = s.anthropic_api_key.get_secret_value() if s.anthropic_api_key else None
     o = s.openai_api_key.get_secret_value() if s.openai_api_key else None
     return LlmGateway(
-        chat=AnthropicProvider(a, s.llm_timeout_s),
+        chat=OpenAIResponsesProvider(o, s.llm_timeout_s),
         embeddings=OpenAIEmbeddingProvider(o, s.llm_timeout_s),
         prompts=default_registry(),
         prices=price_table_from_settings(s),
@@ -51,20 +52,22 @@ def _report(ledger: MemoryLedger) -> None:
         )
 
 
-async def test_live_haiku() -> None:
+async def test_live_fast_structured() -> None:
     ledger = MemoryLedger()
-    gw = _gateway(ledger, ("ANTHROPIC_API_KEY",))
+    gw = _gateway(ledger, ("OPENAI_API_KEY",))
     r = await gw.call(
         purpose="smoke",
         lane="background",
         prompt=("_example", 1),
         owner_id=None,
+        model="gpt-6-luna",  # S0.24 replaces this with role routing
         schema=Echo,
         inputs={"word": "vault"},
     )
     assert r.output is not None and r.output.echo == "vault"
     _report(ledger)
-    assert [rec.provider for rec in ledger.records if rec.status == "ok"] == ["anthropic"]
+    assert [rec.provider for rec in ledger.records if rec.status == "ok"] == ["openai"]
+    assert sum(rec.cost_usd for rec in ledger.records) < Decimal("0.005")
 
 
 async def test_live_embedding() -> None:

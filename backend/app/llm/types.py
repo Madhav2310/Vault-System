@@ -7,13 +7,13 @@ from typing import Any, Literal
 
 from app.llm.errors import RequestConflictError
 
-Effort = Literal["low", "medium", "high", "xhigh", "max"]
+Effort = Literal["none", "low", "medium", "high", "xhigh", "max"]
 Lane = Literal["interactive", "background"]
 
 
 @dataclass(frozen=True)
 class Usage:
-    input_tokens: int = 0  # uncached input only (Anthropic semantics)
+    input_tokens: int = 0  # uncached input only; adapters subtract cache reads/writes
     output_tokens: int = 0
     cache_read_tokens: int = 0
     cache_write_tokens: int = 0
@@ -54,7 +54,8 @@ class ChatRequest:
     max_tokens: int
     effort: Effort
     output_schema: dict[str, Any] | None = None  # → output_config.format
-    search_results: tuple[SearchResult, ...] = ()  # → search_result blocks with citations enabled
+    search_results: tuple[SearchResult, ...] = ()  # → search_result blocks (Anthropic adapter only)
+    service_tier: str | None = None  # OpenAI: e.g. "flex"; None = standard
 
     def __post_init__(self) -> None:
         if self.output_schema is not None and self.search_results:

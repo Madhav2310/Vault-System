@@ -192,3 +192,11 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Design: §4 rewritten (roles `fast`/`balanced`/`deep`/`flagship` = `gpt-6-luna`/`gpt-6.1-terra`/`gpt-6.1-sol`/`gpt-6-astra`, routing table per node, effort support, role fallback, API facts); §5.3 gateway; §8.5 application-managed citations; §9.1 brief; §13 limiter and capacity; decisions D2, D12, D15, D22 revised, D26 and D27 added. `llm_calls` gains `role`, `resolved_model`.
 - Plan: new tasks S0.23 (OpenAI Responses provider), S0.24 (roles, router, fallback), S0.25 (citation spike), S4.19 (stage E per-node routing optimizer); S0.19 demoted to [OPT]; S0.13 AC13, S0.18 AC7, S2.14, S2.18, S3.06–S3.09, S3.16, S4.09, S4.13, S5.02, S5.06, S6.02 rewritten; gate renumbered S0.26. `plan_lint`: 194 tasks, 792 ACs, 0 errors.
 - Status: VERIFIED (lint, probes); nothing built on the new path yet.
+
+### S0.23 — OpenAI Responses provider (also closes S0.13 AC13)
+- Date: 2026-11-13 · Commit: (this commit)
+- Commands: `make ci` (lint, mypy strict, 72 unit tests pass); `make smoke-providers`
+- Output: `openai gpt-6-luna in=83 out=12 cost=$0.000014 latency=2378ms` (strict-schema call through the gateway) and `openai text-embedding-3-small in=3 cost=$0` (2 live calls, total under $0.0001).
+- Built: `app/llm/providers/openai_chat.py` (`OpenAIResponsesProvider`, strict-schema transform, usage mapping that subtracts cached and written tokens from OpenAI's total input, refusal/incomplete handling, streaming), OpenAI GPT-6 prices incl. 1.25× cache writes and the >272K surcharge in `pricing.py`, `Effort` gains `none`, `ChatRequest.service_tier`; `get_gateway()` now uses it. The Anthropic adapter is untouched and rejects effort `none`.
+- Not done here (S0.24): prompts still name `haiku_model` and the smoke test passes `model="gpt-6-luna"` explicitly until role routing lands.
+- [T] changes approved: none

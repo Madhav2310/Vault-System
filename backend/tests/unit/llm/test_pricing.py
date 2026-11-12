@@ -49,3 +49,19 @@ def test_cost_formula() -> None:
         price_table_from_settings(_settings(llm_prices={"claude-sonnet-5-5": {"inptu": 3}}))
     with pytest.raises(ValueError, match="lacks"):
         price_table_from_settings(_settings(llm_prices={"other": {"input": 3}}))
+
+
+def test_openai_prices() -> None:
+    t = PriceTable(DEFAULT_PRICES)
+    u = Usage(input_tokens=10_000, output_tokens=10_000, cache_read_tokens=10_000, cache_write_tokens=10_000)
+    # 10K tokens of each kind; $/MTok in + out + cached read + 30-minute write (1.25x input), design §4.1
+    assert t.cost("gpt-6-luna", u) == Decimal("0.007350")  # 0.10 + 0.50 + 0.01 + 0.125
+    assert t.cost("gpt-6.1-terra", u) == Decimal("0.073000")  # 1.00 + 5.00 + 0.05 + 1.25
+    assert t.cost("gpt-6.1-sol", u) == Decimal("0.146000")  # 2.00 + 10.00 + 0.10 + 2.50
+    assert t.cost("gpt-6-astra", u) == Decimal("0.735000")  # 10 + 50 + 1 + 12.5
+    # above 272K prompt tokens the whole request costs 2x input/cached/write and 1.5x output
+    big = Usage(input_tokens=200_000, output_tokens=10_000, cache_read_tokens=100_000)
+    assert t.cost("gpt-6.1-terra", big) == Decimal("0.485000")  # 400000 + 75000 + 10000 micro-dollars
+    assert t.cost("gpt-6.1-terra", Usage(input_tokens=272_000)) == Decimal(
+        "0.272000"
+    )  # at the line: base rate
