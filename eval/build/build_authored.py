@@ -4,16 +4,18 @@ Authored items cover categories the external datasets lack (compare, multi-turn,
 summarize, meta, identifier, injection, DOCX/MD). Wherever possible their ground truth is derived from
 the external expert labels (CUAD spans, QASPER abstracts, FinanceBench answers), not invented.
 
-Run: .venv/bin/python eval/build/build_authored.py   (after build_external.py)
+Run: make eval-build   (or: cd backend && uv run --frozen --group eval python ../eval/build/build_authored.py)   (after build_external.py)
 Output: eval/datasets/vault_eval_v1/{docs/*, authored.yaml, golden.yaml, splits.yaml, README.md}
 """
 from __future__ import annotations
 
 import hashlib
+import io
 import json
 import pathlib
 import random
 import sys
+import zipfile
 from collections import Counter, defaultdict
 
 import pdfplumber
@@ -73,6 +75,25 @@ Section 4.1. Expenses above $500 require written approval from a department head
 """
 
 
+def write_docx_stable(path: pathlib.Path, data: bytes) -> None:
+    """python-docx stamps every zip entry with the current time, so its bytes (and sha256 in
+    documents.yaml) change on each rebuild. Keep an existing file whose members are identical;
+    otherwise write the entries with a fixed date."""
+    def members(b: bytes) -> list:
+        with zipfile.ZipFile(io.BytesIO(b)) as z:
+            return [(i.filename, z.read(i)) for i in z.infolist()]
+
+    if path.exists() and members(path.read_bytes()) == members(data):
+        return
+    out = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(data)) as src, zipfile.ZipFile(out, "w") as dst:
+        for i in src.infolist():
+            zi = zipfile.ZipInfo(i.filename, date_time=(1980, 1, 1, 0, 0, 0))
+            zi.compress_type, zi.external_attr, zi.create_system = i.compress_type, i.external_attr, 3
+            dst.writestr(zi, src.read(i))
+    path.write_bytes(out.getvalue())
+
+
 def write_authored_docs(docs: dict) -> None:
     DOCS.mkdir(parents=True, exist_ok=True)
     (DOCS / "amendment_consulting.md").write_text(AMENDMENT_MD)
@@ -81,7 +102,9 @@ def write_authored_docs(docs: dict) -> None:
     for kind, text in SIDE_LETTER:
         (d.add_heading(text, level=1) if kind == "h" else d.add_paragraph(text))
     d.core_properties.created = __import__("datetime").datetime(2026, 1, 1)  # deterministic metadata
-    d.save(DOCS / "side_letter_endorsement.docx")
+    buf = io.BytesIO()
+    d.save(buf)
+    write_docx_stable(DOCS / "side_letter_endorsement.docx", buf.getvalue())
     for doc_id, fname, typ, title in [
         ("auth_amendment", "amendment_consulting.md", "contract", "First Amendment to Consulting Agreement"),
         ("auth_side_letter", "side_letter_endorsement.docx", "contract", "Side Letter to Endorsement Agreement"),

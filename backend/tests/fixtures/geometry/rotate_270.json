@@ -1,0 +1,81 @@
+{
+  "case": "rotate_270",
+  "file": "rotate_270.pdf",
+  "box_convention": "normalized [0,1] in the rendered page (CropBox, /Rotate applied), top-left origin; box = advance width x [baseline+descent, baseline+descent+size], Helvetica descent -0.207 em; one box per drawn line run; computed from the drawing commands, not from an extractor",
+  "pages": [
+    {
+      "page": 1,
+      "width_pt": 792,
+      "height_pt": 612
+    },
+    {
+      "page": 2,
+      "width_pt": 792,
+      "height_pt": 612
+    }
+  ],
+  "failure_modes": [
+    "F6"
+  ],
+  "targets": [
+    {
+      "text": "Quarterly revenue by segment (in millions)",
+      "color": "red",
+      "line": 1,
+      "variant": "content_unrotated",
+      "boxes": [
+        {
+          "page": 1,
+          "x0": 0.102144,
+          "top": 0.452676,
+          "x1": 0.119821,
+          "bottom": 0.882353
+        }
+      ]
+    },
+    {
+      "text": "Gaming 812, Data Center 1,295, Embedded 1,089",
+      "line": 2,
+      "variant": "content_unrotated",
+      "boxes": [
+        {
+          "page": 1,
+          "x0": 0.127396,
+          "top": 0.37117,
+          "x1": 0.145073,
+          "bottom": 0.882353
+        }
+      ]
+    },
+    {
+      "text": "Quarterly revenue by segment (in millions)",
+      "color": "red",
+      "line": 1,
+      "variant": "content_counter_rotated",
+      "boxes": [
+        {
+          "page": 2,
+          "x0": 0.126263,
+          "top": 0.177938,
+          "x1": 0.458285,
+          "bottom": 0.200814
+        }
+      ]
+    },
+    {
+      "text": "Gaming 812, Data Center 1,295, Embedded 1,089",
+      "line": 2,
+      "variant": "content_counter_rotated",
+      "boxes": [
+        {
+          "page": 2,
+          "x0": 0.126263,
+          "top": 0.210618,
+          "x1": 0.521268,
+          "bottom": 0.233493
+        }
+      ]
+    }
+  ],
+  "excluded": []
+}

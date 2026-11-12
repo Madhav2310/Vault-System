@@ -3,7 +3,7 @@
 Zero LLM cost. This is stage 1 of the convergence engine (docs/research/06-convergence-engine.md):
 upstream text quality is tuned first, because retrieval and citations can't recover from garbled text.
 
-Run: .venv/bin/python eval/build/extraction_sweep.py
+Run: make eval-build   (or: cd backend && uv run --frozen --group eval python ../eval/build/extraction_sweep.py)
 """
 from __future__ import annotations
 

@@ -1,0 +1,31 @@
+{
+  "case": "duplicate_glyphs",
+  "file": "duplicate_glyphs.pdf",
+  "box_convention": "normalized [0,1] in the rendered page (CropBox, /Rotate applied), top-left origin; box = advance width x [baseline+descent, baseline+descent+size], Helvetica descent -0.207 em; one box per drawn line run; computed from the drawing commands, not from an extractor",
+  "pages": [
+    {
+      "page": 1,
+      "width_pt": 612,
+      "height_pt": 792
+    }
+  ],
+  "failure_modes": [
+    "F10"
+  ],
+  "targets": [
+    {
+      "text": "Termination for Convenience",
+      "drawn_times": 2,
+      "boxes": [
+        {
+          "page": 1,
+          "x0": 0.117647,
+          "top": 0.102144,
+          "x1": 0.411327,
+          "bottom": 0.119821
+        }
+      ]
+    }
+  ],
+  "excluded": []
+}

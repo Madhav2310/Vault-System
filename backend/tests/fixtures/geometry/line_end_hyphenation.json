@@ -1,0 +1,38 @@
+{
+  "case": "line_end_hyphenation",
+  "file": "line_end_hyphenation.pdf",
+  "box_convention": "normalized [0,1] in the rendered page (CropBox, /Rotate applied), top-left origin; box = advance width x [baseline+descent, baseline+descent+size], Helvetica descent -0.207 em; one box per drawn line run; computed from the drawing commands, not from an extractor",
+  "pages": [
+    {
+      "page": 1,
+      "width_pt": 612,
+      "height_pt": 792
+    }
+  ],
+  "failure_modes": [
+    "F9"
+  ],
+  "targets": [
+    {
+      "text": "The proposed approach combines a multi- modal encoder with a sentence decoder.",
+      "dehyphenated": "The proposed approach combines a multimodal encoder with a sentence decoder.",
+      "boxes": [
+        {
+          "page": 1,
+          "x0": 0.117647,
+          "top": 0.104146,
+          "x1": 0.484902,
+          "bottom": 0.119298
+        },
+        {
+          "page": 1,
+          "x0": 0.117647,
+          "top": 0.123086,
+          "x1": 0.470765,
+          "bottom": 0.138237
+        }
+      ]
+    }
+  ],
+  "excluded": []
+}

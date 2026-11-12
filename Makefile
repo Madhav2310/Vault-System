@@ -52,3 +52,12 @@ loadtest:
 
 # Fails on the first error: lint → typecheck → unit tests.
 ci: lint typecheck test-unit
+
+# --- Eval corpus (S0.18): third-party sources -> eval/sources/ (gitignored); rebuild the golden set ---
+.PHONY: eval-fetch eval-build
+EVAL_PY := $(UV) --group eval python
+eval-fetch:
+	eval/build/fetch_sources.sh
+eval-build:
+	$(EVAL_PY) ../eval/build/build_external.py
+	$(EVAL_PY) ../eval/build/build_authored.py
