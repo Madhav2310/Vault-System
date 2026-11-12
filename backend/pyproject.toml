@@ -8,8 +8,10 @@ dependencies = [
     "asyncpg>=0.30",
     "celery[redis]>=5.4",
     "fastapi>=0.115",
+    "httpx>=0.28",
     "pgvector>=0.3.6",
     "pydantic-settings>=2.6",
+    "redis>=5.2",
     "sqlalchemy[asyncio]>=2.0.36",
     "structlog>=24.4",
     "uvicorn[standard]>=0.32",
@@ -75,3 +77,7 @@ pythonpath = ["."]
 [tool.coverage.run]
 source = ["app"]
 branch = true
+
+[[tool.mypy.overrides]]
+module = ["asyncpg", "asyncpg.*"]
+ignore_missing_imports = true

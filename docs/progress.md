@@ -94,3 +94,24 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Host ports: api 8100, postgres 5442, redis 6389, reranker 8180, grafana 3000, OTLP 4317/4318, all on 127.0.0.1 and overridable. Port 8000 is taken by another local project's container (left untouched).
 - Also: a minimal `/healthz` was added for the api healthcheck (S0.16 adds `/readyz`).
 - [T] changes approved: none
+
+### S0.09 — API-key auth and seeded dev users
+- Date: 2026-11-12 · Commit: cc0bb36
+- Commands: `make test-integration` (test_auth.py, test_users.py, test_seed.py); `make seed-users` ×2 against compose
+- Output: missing / wrong / malformed key → 401 `unauthenticated` with `WWW-Authenticate: Bearer`; valid key resolves alice (admin) and bob; only SHA-256 hashes stored; second seed creates no rows; live seed printed 2 keys once (redacted in the transcript), second run "exists (key unchanged)".
+- Status: VERIFIED
+- [T] changes approved: none
+
+### S0.10 — Owner-scoped repository pattern
+- Date: 2026-11-12 · Commit: c417f17
+- Commands: `make test-unit` (tests/unit/db/test_repository_contract.py)
+- Output: 2 passed — every Repository subclass in `app/` on an owned model extends OwnedRepository and every public method takes `owner_id` first; `_scoped()` always compiles to `documents.owner_id = '<uuid>'`; a missing owner raises.
+- Status: VERIFIED
+- [T] changes approved: none
+
+### S0.16 — Health endpoints
+- Date: 2026-11-12 · Commit: (this commit)
+- Commands: `make test-integration` (tests/integration/api/test_health.py) with the compose stack up
+- Output: 4 passed — `/healthz` 200 with dead DB/Redis URLs; `/readyz` 200 with all 5 checks ok; Redis on a closed port → 503 with only `redis` failing; DB down → 503 with only `database` failing and no password in the body.
+- Status: VERIFIED
+- [T] changes approved: none
