@@ -3,7 +3,7 @@
 Spec: `docs/spec/case-study.pdf`. **Design (source of truth): `docs/design.md`.** Plan (checklist + atomic acceptance criteria): `docs/plan/README.md` and `docs/plan/S0.md`…`S10.md`. Rationale/sources: `docs/research/01–06` (05 = PDF geometry chain, 06 = convergence engine). Eval set: `eval/datasets/vault_eval_v1/` (rebuild via `eval/build/*`; third-party sources in gitignored `eval/sources/`). Progress log: `docs/progress.md` and AI usage log: `AI_USAGE.md` (both created in S0).
 
 ## Stack
-Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector ≥0.8 (halfvec, hash-partitioned `chunks`), Celery + Redis, pdfplumber / python-docx, Anthropic SDK (generation/analysis), OpenAI SDK (embeddings, eval judge), reranker service (fastembed cross-encoder), OpenTelemetry + grafana/otel-lgtm, pytest, ruff, mypy, Locust. docker-compose for everything.
+Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector ≥0.8 (halfvec, hash-partitioned `chunks`), Celery + Redis, pdfplumber / python-docx, OpenAI SDK (Responses API for generation, analysis, extraction and judging; embeddings; Anthropic adapter kept dormant), reranker service (fastembed cross-encoder), OpenTelemetry + grafana/otel-lgtm, pytest, ruff, mypy, Locust. docker-compose for everything.
 
 ## Layout
 `backend/app/{api,core,db,documents,storage,ingestion,retrieval,chat,insights,matrix,feedback,llm,explain,observability}` · `backend/prompts/<id>@<version>.md` · `backend/tests/{unit,integration}` · `reranker/` · `eval/` · `loadtest/` · `ops/{otel,grafana}`
@@ -13,7 +13,9 @@ Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector �
 
 ## Hard rules
 - Every model call goes through `app.llm.gateway`. Never instantiate provider clients elsewhere.
-- Never combine citations and `output_config.format` in one request (400). Evidence goes in `search_result` blocks, one per chunk, one text block per sentence.
+- Citations are application-managed: evidence sentences get handles (`E3.1`), the model returns handles in a strict schema, and code validates them and copies `cited_text` from the stored sentences. Never trust model-written quotes; an unknown handle is dropped (`CITATION_UNRESOLVED`).
+- Model choice is code: only `app/llm/routing.py` (and settings) names models; nodes request a role (`fast`/`balanced`/`deep`/`flagship`). The LLM never picks its own model. Check effort support per model (`gpt-6.1-sol` rejects `none`).
+- Cost discipline: live tests, spikes and evals run on samples with a `--max-usd` cap; never run a full dataset to validate a change. Keys live only in the gitignored `.env`.
 - Only `chunks.original_text` is evidence. Prefixes and summaries are never cited.
 - Every repository method takes `owner_id` explicitly; every new resource gets a negative cross-user test (expect 404).
 - The LLM never widens scope, writes SQL, or picks control flow; it returns typed decisions that code applies.
@@ -39,4 +41,4 @@ Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector �
 7. Report VERIFIED vs UNVERIFIED. Stop at the slice gate; don't start the next slice unasked.
 
 ## Model IDs
-`claude-sonnet-5-5` (answers, default via `ANSWER_MODEL`), `claude-opus-5-5` (eval comparison), `claude-haiku-5-5` (analysis/gate/extraction). No date suffixes. Check SDK usage against current docs before writing — don't guess API shapes.
+Roles → defaults (no date suffixes, change via `MODEL_*` settings): `fast` = `gpt-6-luna`, `balanced` = `gpt-6.1-terra`, `deep` = `gpt-6.1-sol`, `flagship` = `gpt-6-astra` (judge calibration and stage E only); embeddings `text-embedding-3-small`. Routing table: design §4.2. Check SDK usage against current docs before writing — don't guess API shapes (use the Responses API).

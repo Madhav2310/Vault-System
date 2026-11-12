@@ -1,6 +1,7 @@
 # Pass 3 — Observability stack and dashboards
 
 > Rationale record. `docs/design.md` is authoritative; where this file differs, the design wins.
+> **Provider note (2026-11-13):** The runtime provider is OpenAI. The Anthropic OTel rows apply to the dormant adapter only; for OpenAI use the v2 instrumentation with content capture off (design §17).
 
 Tags: **[V]** verified this session · **[C]** believed, verify at build · **[U]** measure.
 

@@ -16,7 +16,7 @@ Errors flow downstream: garbled extraction can't be fixed by a better prompt, an
 | **B. Chunking & retrieval** | chunk target/max/overlap, structural prefix on/off, k_vec, k_lex, rrf_k, id_boost, top_n, reranker model, neighbor expansion | recall@8, MRR@40 (gold quote ∈ selected chunks) | ≈ 0 (embeddings cached by content hash; re-chunk costs cents) | Bayesian (Optuna TPE [C], MIT), ~100 trials |
 | **C. Gate & mode calibration** | gate HIGH / FLOOR bands, full-context threshold | Abstention F1, coverage-state accuracy (computed offline from recorded scores and one recorded LLM-gate pass) | One recording pass, then 0 | Exhaustive sweep over recorded scores |
 | **D. Prompts** | `analyze_query`, `evidence_gate`, `answer_rag/full`, `brief_extract` | Faithfulness, citation precision, completeness, routing accuracy (judge) | Full LLM runs | LLM-analyzer hill-climb (one change per round) |
-| **E. Model & mode** | `ANSWER_MODEL` ∈ {Sonnet 5.5, Opus 5.5}, effort, RAG vs full-context | All quality metrics + latency + cost | Full LLM runs | Ablation matrix (fixed, not searched) |
+| **E. Model routing & mode** | per node: role ∈ {fast, balanced, deep} × effort; RAG vs full-context | Node's primary metric + latency + cost | Replay of one node at a time | Candidate list per node; pick the **cheapest non-inferior** candidate (design §4.2) |
 
 Re-entry rule: if a later stage's failure attribution (§2) shows that most remaining failures belong to an earlier stage, the engine goes back to that stage.
 
@@ -77,19 +77,19 @@ report: baseline → winner on TEST with CIs, per-round table, failure buckets b
 | **Stage caching**: results keyed by `(item, stage-config hash, prompt@v, model)` | Only stages downstream of a change re-run |
 | **Frozen-evidence replay** (design §10.3) for stage D | Prompt rounds skip retrieval entirely |
 | **Smoke screening** (21 items) before a full train+test run | Bad ideas die cheap |
-| **Message Batches API** for full runs (50% price, not subject to ramp limits [V]) | Halves cost; async (fine for a loop) |
-| **Prompt caching** of system prompt and full-context evidence (cache reads don't count toward ITPM [V]) | Lower cost and higher throughput |
+| **OpenAI Batch API** for full runs (50% price, 24 h window [D]) | Halves cost; async (fine for a loop). Flex (Batch prices, synchronous) worked on `gpt-6-luna` but hit a capacity 429 on `gpt-6.1-terra`, so it is opportunistic only [V] |
+| **Prompt caching** (automatic on OpenAI; cached reads cost 0.05–0.1× input, but still count toward TPM [D]) | Lower cost; the static prefix goes first |
 | **Spend ledger with hard ceiling** (from `llm_calls`) | The engine stops itself; budget is a user decision |
 
-**Cost per full run (estimate; measured in S3.15 and replaces these numbers):** 122 items × 2 reps ≈ 250 answer turns. RAG on Sonnet 5.5 ≈ $0.02/turn plus judge ≈ $0.005/turn → **≈ $6 per full run (≈ $3 via Batch)**. Opus 5.5 ≈ 2× the generation part. The full ablation matrix (RAG/full-context × Sonnet/Opus) ≈ $25–40. A 10-round prompt loop with smoke screening ≈ $30–60.
+**Cost per full run (estimate on OpenAI prices; measured in S3.15 and replaces these numbers):** 122 items × 2 reps ≈ 250 turns. Per turn: analyze on `fast` ≈ $0.0002, gate on `balanced` (about half the turns) ≈ $0.003, generate on `balanced` ≈ $0.008, judge on `deep` (1–2 calls, deterministic graders first) ≈ $0.016 → **≈ $7 per full run sync (≈ $3.5 via Batch)**. Stage E (per-node replay; `deep` generation ≈ 2×, `flagship` only on the compare subset) ≈ $15–35. A 10-round prompt loop with smoke screening ≈ $25–50. Judge calibration on `flagship` (60 items) ≈ $3.
 
 ---
 
-**Chosen policy (user decision 2026-11-12): Balanced.**
-- Sync calls for smoke and dev runs; Message Batches API for full train+test runs and the stage E ablations.
-- `ANSWER_MODEL` = Sonnet 5.5 throughout tuning; Opus 5.5 appears only in the stage E ablation.
-- reps = 2. Console spend limit **$200**, and the engine's `BUDGET_USD` defaults to $150 for the whole project.
-- Estimated total eval spend ≈ $80–150.
+**Chosen policy (user decision 2026-11-12, re-based on OpenAI 2026-11-13): Balanced.**
+- Sync calls for smoke and dev runs; the OpenAI Batch API for full train+test runs and stage E.
+- Generation runs on role `balanced` (`gpt-6.1-terra`) unless stage E picks otherwise; the judge is `deep` (`gpt-6.1-sol`); `flagship` (`gpt-6-astra`) is used only for the judge-calibration subset and compare-node candidates.
+- reps = 2. The user's OpenAI project limit is set around **$200**, and the engine's `BUDGET_USD` defaults to $150 for the whole project. Validation always uses samples first (README, cost discipline).
+- Estimated total eval spend ≈ $50–100 [U until S3.15].
 
 ## 5. Targets, with sources (the [T] values the engine converges to)
 
@@ -100,13 +100,13 @@ Where literature or vendor numbers exist, the target sits at the **ambitious end
 | Gold-quote locatability after extraction | ≥ 99% [T] | **Measured: 99/100** with the tuned config [V] |
 | Highlight round-trip (V1) | 100% fixtures [A], ≥ 99.5% corpus [T] | Construction guarantees it when I1 holds; residual for invisible/odd glyphs |
 | recall@8 (gold in selected evidence) | ≥ 0.85 [T] | Reported production floor for context recall ≥ 0.85 (vendor guides list 0.70–0.85) [C] |
-| Faithfulness (judge) | ≥ 0.90 [T] | Reported targets range 0.75–0.92 [C]; native citations + gate justify the top of the range |
-| Citation integrity | 100% [A] | API extracts `cited_text` and guarantees valid pointers [V: citations docs] |
+| Faithfulness (judge) | ≥ 0.90 [T] | Reported targets range 0.75–0.92 [C]; the evidence gate and code-validated citations justify the top of the range |
+| Citation integrity | 100% [A] | Code resolves every handle against the stored sentences and copies `cited_text` itself, so pointers are valid by construction (design §8.5) |
 | Citation precision (cited sentence supports the claim) | ≥ 0.85 [T] | No public benchmark; set at the faithfulness level minus margin |
 | Abstention precision and recall (expert-labelled unanswerables) | ≥ 0.85 each [T] | No standard; FinanceBench showed refusals/incorrect answers are a top failure for retrieval systems (81% of sample questions failed for a 2023 GPT-4-Turbo + retrieval baseline) [C] |
 | FinanceBench slice correctness | ≥ 0.60 [T] | Hard numeric/table questions; 2023 baseline 19% correct [C]. Tracked per slice so it doesn't mask contract/paper results |
 | Judge–human agreement | ≥ 0.80 [T] | LLM-judge agreement with humans >80%, on par with human–human agreement (Zheng et al. 2023, MT-Bench) [C] |
-| Routing accuracy | ≥ 0.90 [T] | Small closed label set; Haiku structured output |
+| Routing accuracy | ≥ 0.90 [T] | Small closed label set; strict structured output on `fast` |
 | Sentence segmentation | ≥ 96% on the 50-case fixture [T] | Rule-based segmenters report ≈ 98% on standard "golden rules" suites (pySBD) [C] |
 | Reranker latency, 40 pairs | p95 < 100 ms on M-series [T] | Qdrant measured MiniLM-L6 ONNX at ≈ 0.5–1.7 ms per pair on an M4 Max [C] → 20–70 ms |
 | RAG TTFT p95 | ≤ 3 s [T]; full-context ≤ 8 s [T] | Estimated budget (research 04); measured in S5.14 |
@@ -121,7 +121,7 @@ Where literature or vendor numbers exist, the target sits at the **ambitious end
 
 ## Sources
 - Claude API skill: `shared/evals/eval-hillclimb.md`, `build-eval.md` (methodology)
-- [Anthropic rate limits](https://platform.claude.com/docs/en/api/rate-limits) (cache-aware ITPM, ramp limits, Batches limits, spend caps)
+- [OpenAI pricing](https://developers.openai.com/api/docs/pricing) and [prompt caching](https://developers.openai.com/api/docs/guides/prompt-caching) (rates, Batch/Flex, cache write and read pricing, cached tokens counting toward TPM); probes in `docs/evidence/spike_openai.md`
 - [RAGAS metric targets — premai](https://blog.premai.io/rag-evaluation-metrics-frameworks-testing-2026) · [markaicode](https://www.markaicode.com/rag-evaluation-ragas-metrics-production/) · [dev.to](https://dev.to/anna_danilec/rag-evaluation-with-ragas-measuring-faithfulness-context-precision-and-recall-in-production-31hj)
 - [FinanceBench paper](https://www.emergentmind.com/papers/2311.11944) · [FinanceBench repo](https://github.com/AI-App/Patronus-AI.FinanceBench)
 - [Qdrant — cross-encoder latency](https://qdrant.tech/blog/oxidizing-cross-encoders/)

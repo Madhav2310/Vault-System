@@ -31,7 +31,7 @@ Review log at the bottom.
 | PostgreSQL | S0.04, S0.08 |
 | Task queue (Celery + Redis) | S0.14 |
 | File processing libraries | S1.12–S1.18 |
-| LLM API (Claude) + embeddings | S0.13, S1.24 |
+| LLM API (OpenAI) + embeddings | S0.13, S0.23, S0.24, S1.24 |
 | Storage (local / S3) | S0.11, S0.12 [OPT] |
 | RAG framework (recommended, optional) | Not used by design (design §21 D1); rationale documented in README (S10.03) |
 | API documentation (FastAPI docs) | S7.14 AC1, S10.03 |
@@ -82,7 +82,7 @@ Review log at the bottom.
 | §2 Tier C: export, support badges, OCR fallback, version diff, ⌘K, share link | stretch X.05, X.04, X.03, X.06, X.09 |
 | §2 Answer format policy (no tables, answer-first, per-route) | S3.07, S4.05, S4.07 AC2, S4.11, S9.11 AC1 |
 | §3 Topology & boundaries | S0.04, S2.07, S0.16 |
-| §4 Model defaults & IDs | S0.05 AC4, S0.13, S4.19 AC5 |
+| §4 Model defaults & IDs | S0.05 AC4, S0.13, S4.20 AC5 |
 | §4 Citations ≠ structured outputs | S0.13 AC11, S3.08 AC1 |
 | §4 Effort per route | S0.13 AC12, S3.05 AC4, S3.07 AC2 |
 | §4 stop_reason handling | S0.13 AC6–AC7, S3.08 AC3–AC4 |
@@ -108,7 +108,9 @@ Review log at the bottom.
 | §8.2 Graph | S3 (linear path), S4.03–S4.13 |
 | §8.3 Nodes (each) | guard: S3.02/S3.03/S2.01 · load_memory: S3.04 · analyze_query: S3.05 · meta_ops: S4.04, S6.09 · select_mode: S4.13 · retrieve/rerank/expand: S2.*, S4.07 · evidence_gate: S4.08, S4.09 · generate: S3.08 · resolve_citations: S3.09 · persist: S3.10 · release_turn: S3.02 |
 | §8.4 Tiered gate + policy | S4.08, S4.09, S4.10, S4.17 |
-| §8.5 search_result blocks, manifest, resolution, highlight, caching, injection stance | S3.06, S3.09, S1.29, S3.08, S4.13, S3.07 (injection stance in prompt) |
+| §4.1–4.2 model roles, routing table, effort support, role fallback | S0.24, S4.19 |
+| §4.4 OpenAI API facts (Responses, streaming, caching, limits) | S0.23, S0.25, S5.06 |
+| §8.5 handles, strict answer schema, manifest, code-side resolution, highlight, caching, injection stance | S3.06, S3.09, S1.29, S3.08, S4.13, S3.07 (injection stance in prompt) |
 | §8.6 SSE events, heartbeat, disconnect, reconnect, JSON mode | S5.01–S5.04 |
 | §8.7 Session CAS, client_message_id, no connection held | S3.02, S3.03 |
 | §8.8 Memory types | S3.04, S4.15 |
@@ -141,7 +143,7 @@ Review log at the bottom.
 | §20.1 Dev compose (+ optional profiles) | S0.04, S0.12, S7.13, S9.02 |
 | §20.2 1000-DAU topology | S5.10 (PgBouncer), S10.08 |
 | §21 Decision log | Realized by the tasks above; summarized in README (S10.03) |
-| §22 Unknowns (each) | tier limits: S0.18 AC7 · cache/ITPM: resolved from Anthropic docs (cache reads don't count toward ITPM; research 06) · reranker: S2.07, S2.19 · exact-search latency: S2.20 · halfvec: S2.20 AC4 · gate bands/threshold: S4.17 · extraction quality: S1.13, S1.16, S2.17 · Docling: X.02 · contextual prefixes: X.01 · TTFT split: S5.12 · judge reliability: S2.18 |
+| §22 Unknowns (each) | tier limits: S0.18 AC7 · cache/TPM: resolved from OpenAI docs (cached tokens count toward TPM; S5.14 AC5 re-confirms from headers) · reranker: S2.07, S2.19 · exact-search latency: S2.20 · halfvec: S2.20 AC4 · gate bands/threshold: S4.17 · extraction quality: S1.13, S1.16, S2.17 · Docling: X.02 · contextual prefixes: X.01 · TTFT split: S5.12 · judge reliability: S2.18 |
 | §23 Deferred | Documented: S10.08 AC1; optional builds: stretch.md |
 
 ## C. Research-doc commitments not phrased as design sections
@@ -179,10 +181,10 @@ Review log at the bottom.
 | Stage B retrieval optimizer | S2.19 |
 | Stage C calibration | S4.17 |
 | Stage D prompt hill-climb | S4.18 |
-| Stage E ablations and convergence run | S4.19 |
+| Stage E ablations and convergence run | S4.20 |
 | Inter-judge agreement now; human agreement at the end | S2.18, S10.01 |
 | Final golden-set review and post-review re-evaluation (user decision) | S10.01, S10.02 |
-| Brief extraction with native citations | S6.02, S6.03 |
+| Brief extraction with handle citations | S6.02, S6.03 |
 | Scale simulated (DB model, capacity simulation) | S2.20, S5.12 |
 | Architecture diagrams | S10.04 |
 

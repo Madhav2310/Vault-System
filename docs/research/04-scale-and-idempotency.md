@@ -1,6 +1,7 @@
 # Pass 4 — Scale (1000 DAU / 100 concurrent), idempotency, load testing
 
 > Rationale record. `docs/design.md` is authoritative; where this file differs, the design wins.
+> **Provider note (2026-11-13):** The token, cost and rate-limit numbers below assumed Sonnet/Haiku on Anthropic. The current figures for OpenAI (roles `balanced`/`fast`, TPM instead of ITPM/OTPM, ≈$0.011/turn, provider limits not the bottleneck on this key) are in design §13.3; the idempotency analysis is unchanged.
 
 Every number below is an **estimate from stated assumptions** [U] unless tagged. Prices are [V] from the Claude API skill table (cached 2026-10-06); the OpenAI embedding price is [C]. The point is the *formulas and the bottleneck ordering*; the load test (§6) replaces the guesses with measurements.
 

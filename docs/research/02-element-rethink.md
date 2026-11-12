@@ -1,6 +1,7 @@
 # Pass 2 — Element-by-element rethink, failure modes, explainability
 
 > Rationale record. `docs/design.md` is authoritative; where this file differs, the design wins.
+> **Provider note (2026-11-13):** The A10 section below (Anthropic `search_result` blocks, `citations_delta`, Anthropic caching and 429 rows) is superseded by design §8.5 (application-managed citations) and §4 (OpenAI roles); model names map to roles `fast`/`balanced`.
 
 Tags: **[V]** verified this session (docs/repo checked) · **[C]** believed, verify at build · **[U]** unknown until measured.
 

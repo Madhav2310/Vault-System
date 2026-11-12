@@ -1,6 +1,7 @@
 # Pass 1 — What users of document-AI tools want, what they hate, what builders get wrong
 
 > Rationale record. `docs/design.md` is authoritative; where this file differs, the design wins.
+> **Provider note (2026-11-13):** Citations are now application-managed (handles + strict schema, design §8.5) and vision/entailment/Haiku mentions below map to OpenAI roles (`fast`/`balanced`, design §4).
 
 Evidence quality: mostly reviews, practitioner blogs, GitHub issues and one peer-reviewed paper. Treat individual claims as **signals**, not statistics. Sources at bottom.
 

@@ -100,7 +100,7 @@ browser / API client ──► │ api (FastAPI, uvicorn ×2)  REST + SSE · aut
                          │ otel-lgtm     (Collector + Prometheus + Tempo + Loki + Grafana + Pyroscope; dev/demo only)   │
                          │ frontend      (S9)                                                                           │
                          └─────────────────────────────────────────────────────────────────────────────────────────────┘
-External: Anthropic (generation, analysis, extraction) · OpenAI (embeddings, eval judge) · DeepSeek (alternate judge)
+External: OpenAI (generation, analysis, extraction, embeddings, eval judge). Optional and dormant: Anthropic adapter.
 ```
 
 **System boundaries**
@@ -116,25 +116,62 @@ External: Anthropic (generation, analysis, extraction) · OpenAI (embeddings, ev
 
 ## 4. Models & providers
 
-| Purpose | Model / service | Settings |
+OpenAI is the sole runtime provider: the assignment supplies an OpenAI key, and the spec lists "OpenAI API (GPT-4 + Embeddings API, or Claude)". One vendor offers a ladder of models from $0.10 to $10 per MTok of input, so the product **routes each node to the cheapest model that meets its quality bar** instead of using one model for everything. Model IDs and prices below come from `GET /v1/models` with the project key and the OpenAI pricing page, read on 2026-11-13.
+
+### 4.1 Model roles
+Code addresses *roles*; settings map roles to models (no date suffixes). The response's resolved model is recorded in `llm_calls`.
+
+| Role | Default model | $/MTok: input · cached input · output | Context | Typical use |
+|---|---|---|---|---|
+| `fast` | `gpt-6-luna` | 0.10 · 0.01 · 0.50 | 1.05M | query analysis, follow-ups, tags, memory compaction, contextual prefixes |
+| `balanced` | `gpt-6.1-terra` | 1.00 · 0.05 · 5.00 | 1.05M | answers, evidence gate, briefs, summaries |
+| `deep` | `gpt-6.1-sol` | 2.00 · 0.10 · 10.00 | 1.05M | multi-document comparison, conflict answers, eval judge |
+| `flagship` | `gpt-6-astra` | 10.00 · 1.00 · 50.00 | 1.05M | judge-calibration subset and the stage E ablation only |
+
+Older models on the same key (`gpt-5.4-mini` $0.75/$4.50, `gpt-5.5` $5/$30, the `gpt-5.6-*` line) cost more than the GPT-6 line at the same tier; `gpt-5.4-mini` stays a stage E candidate for `fast`. Prompts over 272K input tokens cost 2× input and 1.5× output for the whole request, so full-context mode stays well below that line (threshold 100K).
+
+### 4.2 Routing table
+`ModelRouter.resolve(node, route, mode) -> (role, model, effort)` is **code**: the LLM never picks its own model. These are defaults; the convergence engine tunes them in stage E, and `MODEL_ROUTES` (JSON) overrides them.
+
+| Node / purpose | Role | Effort | Lane | Why |
+|---|---|---|---|---|
+| `analyze_query` | `fast` | none | interactive | tiny structured output on the critical path (1.6–2.3 s sync in a probe) |
+| `evidence_gate` | `balanced` | low | interactive | answer-or-abstain is precision-critical; stage E tests `fast` |
+| `generate`, route qa/lookup, RAG | `balanced` | none → low (tuned) | interactive | writing quality at a fifth of `deep`'s output price |
+| `generate`, FULL_CONTEXT | `balanced` | low | interactive | the cached document prefix reads at $0.05/MTok |
+| `generate`, route compare, or gate reported conflicts | `deep` | low | interactive | hardest reasoning, small share of turns |
+| `brief_extract`, summaries | `balanced` | low | background | fidelity matters; off the request path |
+| follow-ups, memory compaction, tags/category, contextual prefixes | `fast` | none | background | cheap and tolerant of small errors |
+| `matrix_cell` | `balanced` | low | background | same work as a RAG turn |
+| `eval_judge` | `deep` | low | eval | judge tier ≥ generator tier; `flagship` for the human-calibration subset |
+
+Rules:
+- **Effort support is per model** (probed 2026-11-13): `gpt-6-luna` and `gpt-6.1-terra` accept `none` to `max`; **`gpt-6.1-sol` rejects `none` (minimum `low`)**. The gateway holds an `EFFORT_SUPPORT` table and validates every route at startup. It raises on an unsupported pairing and never clamps silently.
+- Escalation (balanced → deep) happens only on typed signals available to code (route, conflicts reported by the gate), never on the model's self-reported confidence. A confidence cascade is a stretch item, gated on eval.
+- **Within-provider fallback**: when a role's model still fails with a retryable error after retries (5xx, overloaded, capacity 429), the gateway makes one attempt on the role's fallback (`fast → balanced`, `balanced → deep`) and records `degraded=model_fallback` / `DEGRADED_MODEL_FALLBACK`. There is no cross-vendor failover.
+- Every `llm_calls` row records `purpose`, `role`, requested and resolved model, so cost and quality are attributable per node (dashboards D3, D5).
+
+### 4.3 Other services
+| Purpose | Model / service | Notes |
 |---|---|---|
-| Answer generation (RAG and full-context) | `ANSWER_MODEL`, default `claude-sonnet-5-5`; `claude-opus-5-5` compared in eval | Streaming; citations via `search_result` blocks; `effort` tuned per route (start `low` for lookups) [V: effort param] |
-| Query analysis, evidence gate, brief extraction, summaries, follow-ups, memory compaction, contextual prefixes | `claude-haiku-5-5` | Structured outputs (`output_config.format`) [V]; `effort: low` |
-| Embeddings | OpenAI `text-embedding-3-small`, 1536 dims [C], stored as `halfvec(1536)` [C] | Batched (≤128 inputs), cached |
-| Rerank | Local cross-encoder in `reranker` service via fastembed: default `Xenova/ms-marco-MiniLM-L-6-v2` (Apache [C]); candidate `BAAI/bge-reranker-base` (MIT [C]) | **No non-commercial-licensed models** (e.g., Jina v2 CC-BY-NC) |
-| Eval judge | OpenAI (primary) / DeepSeek (alternate) | Different model family from the generator |
+| Embeddings | `text-embedding-3-small`, 1536 dims ($0.02/MTok), stored as `halfvec(1536)` | Batched (≤128 inputs), cached by content hash. Stage B may test `text-embedding-3-large` with `dimensions=1536` ($0.13/MTok) in the same column |
+| Rerank | Local cross-encoder in the `reranker` service via fastembed: default `Xenova/ms-marco-MiniLM-L-6-v2` (Apache [C]); candidate `BAAI/bge-reranker-base` (MIT [C]) | **No non-commercial-licensed models** (e.g. Jina v2 CC-BY-NC) |
+| Eval judge | role `deep` (`flagship` on the calibration subset) | Same vendor as the generator, see §18 for how that bias is handled |
 
-**API facts the design depends on**
-- `search_result` content blocks: `source`, `title`, `content: [text blocks]`, `citations: {enabled: true}`. Citations return `search_result_location` with `search_result_index` and a **half-open** block range `[start_block_index, end_block_index)`; `cited_text` is exactly the cited blocks' text; **a text block is the minimal citable unit**, so one block per sentence gives sentence-precise citations [V: docs]. Streaming emits `citations_delta` [V: docs].
-- **Citations and `output_config.format` cannot be combined in one request; the API returns 400** [V]. All JSON-producing calls are separate requests.
-- Prices per MTok [V, skill cache 2026-10-06]: Sonnet 5.5 $2 in / $10 out / $0.20 cache read; Opus 5.5 $4 / $20 / $0.20; Haiku 5.5 $0.10 / $0.50.
-- Rate limits are per model: RPM, input TPM, output TPM, enforced as token buckets; 429 includes `retry-after` [V]. **Cache reads don't count toward ITPM**; ramp limits cap sudden growth (`ramp_limit_exceeded`), and the Batches API isn't subject to them [V: rate-limit docs]. Start tier: 4,000 RPM, 2M ITPM, 400k OTPM per 5.5 model; $500/month spend cap [V].
-- Sonnet 5.5 / Haiku 5.5 run adaptive thinking by default; `budget_tokens` is rejected; `temperature`/`top_p` are not used [V].
-- Forced `tool_choice` (`any`/`tool`) returns 400 on Sonnet 5.5. We don't use tools on the chat path at all [V].
-- Always check `stop_reason` (`refusal`, `max_tokens`) before reading content [V].
-- Anthropic Python SDK has native OpenTelemetry (beta); we use `content_mode: metadata_only` (default) [V].
+### 4.4 API facts the design depends on
+Tags: [V] verified by a probe or response headers on 2026-11-13 (raw numbers in `docs/evidence/spike_openai.md`), [D] from OpenAI documentation, [C] to confirm.
+- All chat and JSON calls use the **Responses API**. Structured outputs: `text.format = {type: json_schema, strict: true}`; all fields required, `additionalProperties: false`; limits: ≤5000 properties, ≤10 nesting levels, **≤1000 enum values in total**, a single enum above 250 values is limited to 15,000 characters, 120,000 characters across names and enum values [D]. A strict schema with a 14-value enum worked on three models with 0 invalid values in 6 calls [V].
+- Streaming emits `response.output_text.delta` events; usage arrives in `response.completed` [V]. A refusal arrives as a `refusal` content part, and truncation as `status=incomplete` with `incomplete_details` [D].
+- **Reasoning effort**: `none` produces zero reasoning tokens [V]; the default is `medium` [D], so every call sets effort explicitly.
+- **Prompt caching** is automatic for prefixes of ≥1,024 tokens [D]. On GPT-5.6 and later, a 30-minute write costs 1.25× the input rate (12 h: 2.5×) and reads cost 0.1× (0.05× on `gpt-6.1-terra` and `gpt-6.1-sol`) [D]. Observed: 2,604 tokens written on the first call, read on the second [V]. Usage fields: `input_tokens_details.cached_tokens` and `cache_write_tokens` [V]. **Cached tokens still count toward TPM** [D].
+- **Rate limits on this key** (response headers): `gpt-6.1-terra` 15,000 RPM / 40M TPM; `gpt-6-luna` 30,000 RPM / 180M TPM [V]. Embeddings 10,000 RPM [V].
+- **Batch** is 50% off (24 h window). **Flex** has Batch prices with synchronous calls: it worked on `gpt-6-luna` (12.8 s for a trivial call) and returned a capacity 429 on `gpt-6.1-terra` [V]. Flex is therefore an optional optimization for the background lane with fallback to standard processing, never a requirement.
+- Latency observed on a 320-token prompt: `gpt-6-luna` 1.6–2.3 s, `gpt-5.4-mini` 1.5 s, `gpt-6.1-terra` 2.0–5.8 s; streamed first token from `gpt-6.1-terra` at 1.4 s [V]. Latency varies, so TTFT targets stay [T] and are measured in S3.15 and S5.14.
+- Instrumentation: OpenAI v2 OTel instrumentation with content capture off [C].
 
-**No silent provider failover.** If Anthropic is unavailable, chat returns `503 provider_unavailable` (retryable). Failover is deferred until another adapter satisfies the `EvidenceReference` contract and passes the eval.
+**Citations are application-managed** (§8.5): no provider-native citation feature is used, which keeps the pipeline model-agnostic.
+
+**No silent cross-vendor failover.** If OpenAI is unavailable after retries and the role fallback, chat returns `503 provider_unavailable` (retryable). An Anthropic adapter exists (built in S0.13) but stays dormant: it is enabled only by configuration, and would be compared in stage E if a key becomes available (D27).
 
 ---
 
@@ -155,7 +192,7 @@ External: Anthropic (generation, analysis, extraction) · OpenAI (embeddings, ev
 | `retrieval` | Scoped exact/HNSW vector search, lexical, RRF, neighbor expansion, rerank client, candidate recording | `retrieve(scope, query, cfg) -> RetrievalResult` |
 | `chat.harness` | TurnLimits/TurnBudget, node runner, StepRecords, deadlines, reason codes | `run_turn(req) -> AsyncIterator[Event]` |
 | `chat.nodes` | One module per node (§8.3) | `async (state, ctx) -> state` |
-| `chat.evidence` | Build `search_result` blocks, manifest, citation resolver, highlight mapping | `build_blocks`, `resolve(citations) -> list[AnswerSegment]` |
+| `chat.evidence` | Build the evidence set (handles), manifest, strict answer schema, citation resolver, highlight mapping | `build_evidence`, `resolve(segments) -> list[AnswerSegment]` |
 | `chat.memory` | Working window, rolling summary, resolved entities | `MemoryView` |
 | `chat.sessions` | CAS run ownership, `client_message_id` dedupe | `claim_turn`, `release_turn` |
 | `insights` | Brief extraction and verification, summaries, follow-ups, dates, staleness | Celery tasks + services |
@@ -206,24 +243,29 @@ class StepRecord(BaseModel):
 ```python
 await gateway.call(
     purpose="analyze_query", lane="interactive", prompt=("analyze_query", 1),
-    model=settings.HAIKU, inputs={...}, schema=AnalyzeQueryOut,   # structured
-    run_id=..., job_id=None, budget=turn_budget,
-) -> CallResult[AnalyzeQueryOut]
+    inputs={...}, schema=AnalyzeQueryOut,          # strict structured output
+    owner_id=..., run_id=..., job_id=None, budget=turn_budget,
+) -> CallResult[AnalyzeQueryOut]                   # role/model/effort from prompt front-matter + router
 
 async for ev in gateway.stream(
     purpose="generate", lane="interactive", prompt=("answer_rag", 1),
-    model=settings.ANSWER_MODEL, search_results=[...], messages=[...], run_id=..., budget=...
-): ...   # yields TextDelta | CitationDelta | Final(usage, stop_reason)
+    route=route, mode=mode, evidence=evidence_set, messages=[...], owner_id=..., run_id=..., budget=...
+): ...   # yields TextDelta | SegmentDone(text, handles) | Final(usage, status)
+
+await gateway.embed(purpose="embed_chunks", lane="background", texts=[...], owner_id=...)
 ```
 The gateway, in order:
-1. acquires rate-limit tokens (lane-aware)
-2. charges the turn budget
-3. opens an OTel span
-4. calls the provider with typed error handling
-5. retries with jitter (honoring `retry-after`) on retryable errors only
-6. updates the circuit breaker
-7. writes one `llm_calls` row per attempt (tokens incl. cache, cost, latency, status)
-8. validates structured output against the schema
+1. resolves role → model through the router and validates the effort for that model
+2. acquires rate-limit tokens (lane-aware)
+3. charges the turn budget
+4. opens an OTel span
+5. calls the provider (OpenAI Responses API) with typed error handling
+6. retries with jitter (honoring `retry-after`) on retryable errors only, then one role fallback (§4.2)
+7. updates the circuit breaker
+8. writes one `llm_calls` row per attempt (tokens incl. cached and cache-write, cost, latency, status)
+9. validates structured output against the schema; streamed segments are validated as each one closes
+
+Providers implement one protocol (`ChatProvider`, `EmbeddingProvider`). `OpenAIResponsesProvider` is the default; the Anthropic adapter is dormant.
 
 ---
 
@@ -268,7 +310,7 @@ ready/enriched ─► superseded       (a newer version of the same document rea
   - **Coordinates** normalized to the rendered page: CropBox offset removed (pdfplumber coords are MediaBox-relative while renderers draw the CropBox [V]), `/Rotate` applied via de-rotated extraction (rotated pages otherwise scramble word order [V]), top-left origin, [0,1].
   - Headings: font size above the body median plus bold or short line. Tables: `find_tables` → markdown with the header row captured.
   - **Glyph boxes are stored per page** in `layouts/{version_id}.json.gz` as `{page: {"w","h","glyphs":[[x0,top,x1,bottom],…], "char_to_glyph":[…]}}` (normalized).
-- **Scanned pages**: text chars per page < threshold → page flag `needs_ocr`. If most pages are flagged → version `needs_ocr`. Stretch: Claude vision transcription for flagged pages (no geometry → page-level highlight only).
+- **Scanned pages**: text chars per page < threshold → page flag `needs_ocr`. If most pages are flagged → version `needs_ocr`. Stretch: vision transcription for flagged pages with an image-capable model (`balanced`) (no geometry → page-level highlight only).
 - **Encrypted PDFs** → `unsupported/encrypted`. **Corrupt** → `failed/corrupt_file`.
 - **DOCX (python-docx)**: headings from paragraph styles; tables → markdown; `page=None`; location = `section_path` + paragraph index; highlights in a text view.
 - **TXT/MD**: markdown headings → sections; plain text → paragraphs.
@@ -348,7 +390,7 @@ A **speculative retrieval** on the raw query starts in parallel with `analyze_qu
 | Retrieval result | standalone query + sorted version IDs + `retrieval@v` | Redis | 1 h |
 | Document embeddings | `content_hash + model` | Postgres (chunks) | permanent |
 | Paid ingestion LLM outputs | `content_hash + prompt@v + model` | Postgres `llm_cache` | permanent |
-| Anthropic prompt cache | provider-side | — | 5 min default |
+| OpenAI prompt cache | provider-side, automatic, prefix ≥ 1,024 tokens | — | 30 min default (12 h optional) |
 | **Answers** | — | **never cached** | — |
 
 ---
@@ -395,13 +437,13 @@ guard → load_memory → analyze_query (‖ speculative_retrieve)
 |---|---|---|---|
 | `guard` | code | request → claimed session (CAS), `rag_runs` row, `run_versions` snapshot, dedupe by `client_message_id` | `SCOPE_EMPTY`, `TURN_IN_PROGRESS` |
 | `load_memory` | code | session → last turns (≤3k tokens) + rolling summary + resolved entities | — |
-| `analyze_query` | Haiku, structured | → `{intent, standalone_query, target_document_ids, dimensions[], needs_whole_document, clarification?: {question, options[]}}` | `CLARIFY_AMBIGUOUS_DOCUMENT`, `CLARIFY_AMBIGUOUS_QUERY` |
+| `analyze_query` | `fast`, strict structured output | → `{intent, standalone_query, target_document_ids, dimensions[], needs_whole_document, clarification?: {question, options[]}}` | `CLARIFY_AMBIGUOUS_DOCUMENT`, `CLARIFY_AMBIGUOUS_QUERY` |
 | `meta_ops` | code | allowlisted ops: `DOCUMENT_COUNT`, `LIST_RECENT_DOCUMENTS`, `GET_PROCESSING_STATUS`, `GET_DOCUMENT_METADATA`, `LIST_KEY_DATES` (from briefs) | `META_<OP>` |
 | `select_mode` | code | FULL_CONTEXT if (`needs_whole_document` or intent=summarize, or compare across all dimensions) **and** scope tokens ≤ threshold (initial 100k, calibrated); else RAG | `MODE_RAG_DEFAULT`, `MODE_FULL_CONTEXT_WHOLE_DOC_INTENT`, `FULL_CONTEXT_TOO_LARGE` |
 | `retrieve` / `rerank` / `expand` | code / service | §7.3 | `DEGRADED_LEXICAL_ONLY`, `DEGRADED_NO_RERANK` |
 | `evidence_gate` | tiered (§8.4) | → `{coverage: {doc × dimension → supported|partial|not_found}, conflicts: [{dimension, chunk_ids}], decision, suggested_query}` | `GATE_SKIPPED_HIGH_SCORE`, `GATE_PARTIAL_COVERAGE`, `RETRY_LOW_COVERAGE`, `ABSTAIN_NO_EVIDENCE`, `ABSTAIN_AFTER_RETRY`, `CONFLICT_DETECTED` |
-| `generate` | ANSWER_MODEL, stream, citations | `search_result` blocks + history + instructions → text and citation deltas | `STOP_REFUSAL`, `STOP_MAX_TOKENS` |
-| `resolve_citations` | code | citations → `AnswerSegment[]`; unknown index → drop + `CITATION_UNRESOLVED` | `CITATION_UNRESOLVED` |
+| `generate` | routed model (§4.2), stream, strict segment schema | evidence set (handles) + history + instructions → streamed segments `{text, evidence[]}` | `STOP_REFUSAL`, `STOP_MAX_TOKENS` |
+| `resolve_citations` | code | segments → `AnswerSegment[]`; unknown handle → drop + `CITATION_UNRESOLVED`; no valid handle → `support=none` | `CITATION_UNRESOLVED` |
 | `persist` | code | message, segments, evidence, steps, candidates, run totals | — |
 | `release_turn` | code | CAS release fenced by `run_id` | — |
 
@@ -412,7 +454,7 @@ Score bands on the top rerank score are calibrated on the golden set (§18). Ini
 |---|---|---|
 | route=qa, ≤1 dimension, top score ≥ HIGH | coverage=supported, ANSWER | no |
 | no candidate ≥ FLOOR | ABSTAIN (`ABSTAIN_NO_EVIDENCE`) | no |
-| otherwise, or route=compare, or >1 dimension | Haiku gate → matrix + conflicts → policy below | yes |
+| otherwise, or route=compare, or >1 dimension | `balanced` gate → matrix + conflicts → policy below | yes |
 
 Policy applied in code:
 - all cells supported → ANSWER
@@ -421,23 +463,30 @@ Policy applied in code:
 - all not_found → ABSTAIN
 - conflicts → ANSWER with the conflict instruction set
 
-### 8.5 Evidence blocks and citations
-- Each evidence chunk → one `search_result`:
-  - `source = "vault://chunk/{chunk_id}"`
-  - `title = "{doc title} v{n} · p.{page_start}{-page_end} · {section}"`
-  - `content` = **one text block per sentence** of `original_text`
-- FULL_CONTEXT mode uses the same format with every chunk of the version in reading order. One resolver serves both modes.
-- **Manifest** per request: `result_index → chunk_id` and `(result_index, block_index) → sentence offsets`. Defense in depth, since `source` already carries the chunk ID.
-- **Resolution**: citation → `(chunk_id, sentence_start..end)` → `EvidenceReference`, with `cited_text` from the API.
-- **Highlight**: sentence offsets → `spans` → page char range → word boxes from the layout file → rectangles. Precision level recorded: `sentence` | `chunk` | `page`.
-- **Prompt caching**: breakpoint after the system prompt; in FULL_CONTEXT, a second breakpoint after the evidence so follow-ups read from cache.
-- **Prompt-injection stance**: evidence is data inside `search_result` blocks; the system prompt states it is untrusted content and never instructions; the chat path has no tools and no side effects, so the worst case is a wrong answer, which citations make visible.
+### 8.5 Evidence set and citations (application-managed)
+No provider-native citation feature is used. The pipeline owns citations end to end, so they behave identically on any model.
+- **Evidence set**: each evidence chunk gets a request-scoped handle `E<k>`, and its `original_text` is split into sentences `E<k>.<i>`. The prompt shows:
+  ```
+  [E3] Services Agreement v2 · p.4 · §Termination
+  E3.0 The Consultant shall provide the Services for twelve months.
+  E3.1 Either party may terminate on thirty days written notice.
+  ```
+  Handles are short on purpose: they cost few tokens and the model never copies UUIDs.
+- **Answer schema** (strict structured output): `{segments: [{text, evidence: [handle, …]}]}`, with `text` listed before `evidence`. In RAG mode each `evidence` item is an **enum of the handles present in this request**, so the decoder cannot emit an unknown handle (probe: 0 invalid handles in 6 calls on three models). The API allows ≤1000 enum values in total, so FULL_CONTEXT mode (thousands of sentences) uses plain strings and relies on the code check below.
+- **Manifest** per request: `handle → (chunk_id, sentence index)`, stored in the ledger with the candidates.
+- **Resolution (code)**: every handle is looked up in the manifest; adjacent sentences of one chunk merge into a half-open range `[sentence_start, sentence_end)`; `cited_text` is **copied by code from the stored `original_text`**, never taken from the model. Unknown handle → dropped + `CITATION_UNRESOLVED`. A segment with no valid handle is kept, marked `support=none`, and shown as uncited.
+- **What this guarantees**: [A] every `EvidenceReference` points to a stored sentence and carries its exact text, by construction. Whether a cited sentence *supports* its claim was never guaranteed by provider-native citations either (the model chooses the span). It is measured (citation precision [T]) and optionally verified per sentence (Tier C).
+- **Highlight**: unchanged. Sentence offsets → `spans` → page char range → word boxes from the layout file → rectangles. Precision level recorded: `sentence` | `chunk` | `page`.
+- **Prompt caching** (automatic, prefix-based): static content first (system prompt, schema, instructions), then in FULL_CONTEXT the document text, then history, then the question. Follow-up turns on the same document read the document prefix from cache ($0.05/MTok on `gpt-6.1-terra` against $1.00 uncached).
+- **Prompt-injection stance**: evidence is data inside a delimited `<evidence>` block; the system prompt states it is untrusted content and never instructions; the chat path has no tools and no side effects, so the worst case is a wrong answer, which citations make visible. The strict schema also means an injected "reply only with X" cannot change the output shape.
+
 
 ### 8.6 Streaming (SSE)
 Events, all JSON, each with `run_id`:
 `run.started{run_id, message_id}` · `status{node, detail}` · `coverage{matrix, conflicts}` · `token{text}` · `citation{segment_index, evidence}` · `done{message_id, coverage_state, reason_codes, usage{tokens, cost_usd}, links}` · `error{code, retryable, detail}`.
 
 - Transport: `sse-starlette` [C], heartbeat comment every 15 s, header `X-Accel-Buffering: no`.
+- `token` events carry the streamed `text` of the current segment; the `citation` event fires when that segment's `evidence` array closes (the schema lists `text` first). A small incremental JSON reader extracts both from `response.output_text.delta` events.
 - **Disconnect**: generation continues and is persisted.
 - **Reconnect**: client calls `GET /v1/runs/{run_id}` (status + partial/full content); no event replay buffer.
 - JSON mode (no `Accept: text/event-stream`): blocks until done, returns the final message.
@@ -457,7 +506,7 @@ Events, all JSON, each with `run_id`:
 | Type | Content | Store | Lifetime |
 |---|---|---|---|
 | Working | last turns ≤ 3k tokens verbatim | `chat_messages` | session |
-| Compressed episodic | rolling summary of older turns + **resolved entities** ("the agreement" → doc X) | `chat_sessions` | session; updated async by Haiku after turns that push history past budget; failure → smaller window, never blocks |
+| Compressed episodic | rolling summary of older turns + **resolved entities** ("the agreement" → doc X) | `chat_sessions` | session; updated async by the `fast` model after turns that push history past budget; failure → smaller window, never blocks |
 | Session scope | selected documents | `chat_sessions.scope_document_ids` | session |
 | Semantic | chunks, embeddings, briefs | Postgres | version |
 | Procedural | versioned prompts | repo | deploy |
@@ -468,9 +517,9 @@ Excluded on purpose: cross-session user memory; semantic answer caching.
 
 ## 9. Document intelligence & living answers
 
-### 9.1 DocumentBrief (`brief_extract@1`, Haiku, structured)
+### 9.1 DocumentBrief (`brief_extract@1`, `balanced`, strict structured)
 - Schema (generic core, all fields optional): `document_type, title, parties[], dates[] {label, date, kind: effective|expiry|deadline|other}, key_points[], obligations[] {party, obligation}, financial_terms[], termination_conditions[], unusual_clauses[], summary`.
-- **Native citations, not JSON:** chunks are sent as `search_result` blocks (one text block per sentence) and the prompt asks for one `field: value` line per fact, each cited — Anthropic's documented pattern for structured data with citations (JSON-only prompts can yield few or no citations) [V]. Code parses lines into the schema; each fact carries `EvidenceReference`s through the same resolver as chat, so brief facts highlight exactly like answers.
+- **Handle citations, strict schema:** chunks go in as the same evidence set (§8.5); the output is `facts: [{field, value, evidence[]}]` in a strict schema. Each fact carries `EvidenceReference`s through the same resolver as chat, so brief facts highlight exactly like answers.
 - **Verification status:** `verified` iff the fact has ≥1 citation resolving to the same version and its value is supported by the cited sentences (containment for dates/amounts/names, token overlap otherwise); else `unverified` (dimmed, excluded from vault views).
 - Large documents: map over section groups that fit the window → merge with dedupe by `(field, normalized value)`.
 - Also produces 4–6 **suggested questions** and `category`/`tags`.
@@ -479,7 +528,7 @@ Excluded on purpose: cross-session user memory; semantic answer caching.
 `POST /documents/{id}/summaries {length: short|medium|long, focus?: str, tone?: neutral|executive|plain}`. Cached by `(version, params_hash, prompt@v)`. Produced by FULL_CONTEXT generation with citations (summaries are cited too). Documents above the full-context threshold → `422 document_too_large_for_summary` (a map-reduce summary is deferred).
 
 ### 9.3 Follow-up suggestions
-Async Haiku after each answer: 3 questions answerable from the current scope. Delivered via the message resource (and an SSE `followups` event if the stream is still open).
+Async `fast` model after each answer: 3 questions answerable from the current scope. Delivered via the message resource (and an SSE `followups` event if the stream is still open).
 
 ### 9.4 Compare Matrix (Tier B)
 - `POST /matrices {document_ids, columns?}` (cap: 20 documents × 12 columns; documents must be ready). If columns are omitted, suggest up to 8 questions from brief fields present in at least half of the documents (parties, term, notice period, payment terms, termination, governing law…).
@@ -502,7 +551,7 @@ When a version becomes `ready`, a job marks `chat_messages.stale_since=now()` fo
 ### 10.1 Reason codes
 Defined in `app/explain/codes.py`. Each code has: an operator description, a user template with parameters, and a severity. Initial set:
 
-`MODE_RAG_DEFAULT, MODE_FULL_CONTEXT_WHOLE_DOC_INTENT, FULL_CONTEXT_TOO_LARGE, GATE_SKIPPED_HIGH_SCORE, GATE_PARTIAL_COVERAGE, RETRY_LOW_COVERAGE, ABSTAIN_NO_EVIDENCE, ABSTAIN_AFTER_RETRY, CONFLICT_DETECTED, CLARIFY_AMBIGUOUS_DOCUMENT, CLARIFY_AMBIGUOUS_QUERY, DEGRADED_LEXICAL_ONLY, DEGRADED_NO_RERANK, CITATION_UNRESOLVED, BUDGET_EXCEEDED, STOP_REFUSAL, STOP_MAX_TOKENS, SCOPE_EMPTY, TURN_IN_PROGRESS, ANSWER_STALE_VERSION, META_*`
+`MODE_RAG_DEFAULT, MODE_FULL_CONTEXT_WHOLE_DOC_INTENT, FULL_CONTEXT_TOO_LARGE, GATE_SKIPPED_HIGH_SCORE, GATE_PARTIAL_COVERAGE, RETRY_LOW_COVERAGE, ABSTAIN_NO_EVIDENCE, ABSTAIN_AFTER_RETRY, CONFLICT_DETECTED, CLARIFY_AMBIGUOUS_DOCUMENT, CLARIFY_AMBIGUOUS_QUERY, DEGRADED_LEXICAL_ONLY, DEGRADED_NO_RERANK, DEGRADED_MODEL_FALLBACK, CITATION_UNRESOLVED, BUDGET_EXCEEDED, STOP_REFUSAL, STOP_MAX_TOKENS, SCOPE_EMPTY, TURN_IN_PROGRESS, ANSWER_STALE_VERSION, META_*`
 
 ### 10.2 Views
 | Audience | Where | Contents |
@@ -589,7 +638,7 @@ answer_segments(id PK, run_id, message_id, ordinal, text, support NULL)
 segment_evidence(segment_id, chunk_id, sentence_start, sentence_end, cited_text,
                  PRIMARY KEY(segment_id, chunk_id, sentence_start))
 
-llm_calls(id PK, owner_id, run_id NULL, job_id NULL, purpose, lane, provider, model, prompt_id, prompt_version,
+llm_calls(id PK, owner_id, run_id NULL, job_id NULL, purpose, lane, provider, role, model, resolved_model, prompt_id, prompt_version,
           attempt, input_tokens, output_tokens, cache_read_tokens, cache_write_tokens, cost_usd,
           latency_ms, ttft_ms, status, error_type, created_at)
   INDEX (created_at), INDEX (owner_id, created_at), INDEX (run_id)
@@ -663,7 +712,7 @@ Conventions:
 ## 13. Concurrency, capacity & backpressure
 
 ### 13.1 Concurrency model
-- **API**: fully async (asyncpg, async SQLAlchemy, `AsyncAnthropic`, `AsyncOpenAI`, httpx to the reranker).
+- **API**: fully async (asyncpg, async SQLAlchemy, `AsyncOpenAI`, httpx to the reranker).
   - DB pool 10 per process; connections acquired per node, never across an LLM call or stream.
   - CPU-bound helpers (token estimation on large inputs, layout JSON parsing) run in a bounded thread pool.
   - Event-loop lag is measured.
@@ -671,8 +720,8 @@ Conventions:
 - **Workers**: `ingest` prefork, concurrency ≈ cores (CPU-bound). `ai` higher concurrency (I/O-bound), sync SDK clients. Beat: single instance.
 
 ### 13.2 Rate limiter (inside the gateway)
-- Redis token buckets **per model** for RPM, ITPM and OTPM, plus a concurrency cap. Configured from the account's tier limits.
-- Pre-call estimate (heuristic or `count_tokens` for large prompts), reconciled post-call from `usage`.
+- Redis token buckets **per model** for RPM and TPM (input plus output; **cached input tokens still count**), plus a concurrency cap. Limits are read from the `x-ratelimit-limit-*` response headers at startup and refreshed from responses; on this key they are far above peak (§13.3).
+- Pre-call estimate (heuristic or a local tokenizer for large prompts), reconciled post-call from `usage`.
 - **Lanes**: `interactive` may drain buckets to 0; `background` acquires only while the level is above a reserve floor (default 30%), otherwise backs off. Background borrows idle capacity; it yields immediately when interactive demand rises.
 - On 429: honor `retry-after`, temporarily shrink the bucket. Circuit breaker per model (open after N consecutive failures, half-open probe).
 - If Redis is unavailable: fail open, alert, rely on provider 429 handling.
@@ -681,13 +730,13 @@ Conventions:
 | Target | 20 concurrent (assignment) | 1000 DAU / 100 concurrent |
 |---|---|---|
 | Peak turns/min | ~30 | ~133 |
-| Sonnet input TPM (RAG) | ~0.2M | ~0.93M (+ ~0.8M cached full-context reads) |
-| Haiku input TPM | ~0.15M | ~0.67M |
+| `balanced` input TPM (RAG + gate) | ~0.15M | ~1.1M (+ ~0.8M cached full-context reads, which still count) |
+| `fast` input TPM | ~0.04M | ~0.23M |
 | Reranker pairs/s | ~20 | ~90–100 |
-| Cost/turn (Sonnet RAG) | ~$0.018 | ~$0.018 → ~$270/day |
+| Cost/turn (analyze + RAG + gate share) | ~$0.011 | ~$0.011 → ~$165/day [U until S3.15] |
 | Chunks in DB | small | +~4.5M/month |
-| **First bottleneck** | provider tier limits [U] | provider tier limits [U] |
-| Second | — | reranker CPU |
+| **First bottleneck** | reranker CPU / DB pool (provider limits on this key are ≥ 30× peak [V]) | same |
+| Second | provider latency variance (`gpt-6.1-terra` 2.0–5.8 s on a tiny prompt) → TTFT budget | — |
 
 ### 13.4 Backpressure & fairness
 - Per user: ≤1 active turn per session, ≤3 concurrent turns, 20 turns/min, daily token quota → `429` with `Retry-After`.
@@ -760,7 +809,7 @@ Details, metrics catalog and dashboard panels: research 03.
 - **Two telemetry kinds**: the ledger (product, Postgres, permanent) and OTel (operational, rolling), linked by `trace_id` on `rag_runs` and in every log line.
 - **Instrumentation**: OTel SDK in api, workers and reranker.
   - FastAPI, SQLAlchemy/asyncpg, Redis, httpx, Celery instrumentation (trace context through task headers; init in `worker_process_init` for prefork [C]).
-  - Anthropic SDK native OTel (metadata-only); OpenAI v2 instrumentation (content capture off) [C].
+  - OpenAI v2 instrumentation (content capture off) [C]; the dormant Anthropic adapter uses the SDK's native OTel in metadata-only mode.
   - Custom spans `vault.node.*`, `vault.stage.*`.
 - **Backend**: `grafana/otel-lgtm` for dev/demo (Collector + Prometheus + Tempo + Loki + Grafana + Pyroscope) [C]. Production: the same components deployed separately or managed. Langfuse/Phoenix are possible later through OTLP with no code change.
 - **Collector**: memory_limiter, batch, **redaction** of `gen_ai.*messages*`/`system_instructions`, tail sampling at scale (keep errors, slow, abstained, degraded, negatively rated), resource attributes.
@@ -778,14 +827,14 @@ Dataset and tuning are specified in `eval/datasets/vault_eval_v1/README.md` and 
 - **Vault-Eval v1** (built during planning): **122 items over 15 documents**. 86 items carry third-party expert/annotator labels — CUAD (54; contracts from EDGAR; CC BY 4.0), QASPER (18; two-column arXiv papers; CC BY 4.0), FinanceBench open sample (14; 10-K/10-Q/earnings; CC BY-NC 4.0) — and 36 authored items (compare, multi-turn, conflict + controls, summarize with rubrics, identifier, meta, injection, DOCX/MD) whose ground truth derives from those labels where possible. Every gold quote is located in the production extractor's text (0 unlocated); FinanceBench evidence pages agree 14/14.
 - **Gold is chunker-independent:** verbatim quotes + pages, mapped to chunks at run time.
 - **Splits:** train 50 / test 72 / smoke 21, with **document-level holdout** (`cuad_license`, `qasper_kurdish`, `fb_3m_10q`, `auth_side_letter` are test-only).
-- **Review:** the user reviews the set and labels judge-agreement samples **at the end** (S10.01); numbers before that are labelled *pre-review*. Until then judge reliability is checked by inter-judge agreement (OpenAI vs DeepSeek), and decisions prefer deterministic graders (abstention, `must_not_contain`, numeric, gold-citation overlap).
+- **Review:** the user reviews the set and labels judge-agreement samples **at the end** (S10.01); numbers before that are labelled *pre-review*. Until then judge reliability is checked by inter-judge agreement (`deep` vs `flagship`; the judge shares the generator's vendor, so deterministic graders and the human-labelled agreement check carry the weight, and a cross-vendor judge is optional if a key exists), and decisions prefer deterministic graders (abstention, `must_not_contain`, numeric, gold-citation overlap).
 - **Metrics:** retrieval recall@8 and MRR@40 · faithfulness · citation precision · citation integrity · completeness per dimension · abstention precision/recall · coverage-state accuracy · conflict detection (incl. controls) · routing accuracy · highlight precision level · TTFT, latency, cost per question · per-source slices (contracts / papers / filings).
-- **Convergence engine:** stage-ordered tuning (A extraction → B chunking/retrieval → C gate/mode calibration → D prompt hill-climb → E model/mode ablations), automatic failure attribution from the ledger, paired-bootstrap decisions above a measured noise floor, revert on regression, plateau/budget/target stopping, stage caching, frozen-evidence replay, Batch API for full runs. Targets and their sources: research 06 §5.
+- **Convergence engine:** stage-ordered tuning (A extraction → B chunking/retrieval → C gate/mode calibration → D prompt hill-climb → E model-role/mode ablations: per node, which role and effort meet the target at the lowest cost), automatic failure attribution from the ledger, paired-bootstrap decisions above a measured noise floor, revert on regression, plateau/budget/target stopping, stage caching, frozen-evidence replay, Batch API for full runs. Targets and their sources: research 06 §5.
 - **Commands:** `make eval` · `make eval-retrieval` · `make eval-smoke` · `make eval-geometry` · `make tune STAGE=<a|b|c|d>` · `make tune-all BUDGET_USD=<n>`. Results go to `eval_runs`/`eval_results` and reports in `eval/reports/`.
 
 ## 19. Prompts
 
-Stored as `backend/prompts/<id>@<version>.md` with front-matter (`model`, `purpose`, `output: schema|citations|text`, `effort`). Changing one bumps its version; every run records the versions used.
+Stored as `backend/prompts/<id>@<version>.md` with front-matter (`role` = fast|balanced|deep|flagship, `purpose`, `output: schema|segments|text`, `effort`, `max_tokens`). The router may override role and effort per route (§4.2); a prompt's front-matter is its default. Changing one bumps its version; every run records the versions used.
 
 | Prompt | Purpose |
 |---|---|
@@ -834,7 +883,7 @@ No Kubernetes required; any container platform works. Beyond ~10k DAU: see §23.
 | # | Decision | Alternatives rejected | Why |
 |---|---|---|---|
 | D1 | Deterministic orchestration, bounded LLM judgment | Agentic RAG loop; LangGraph | Known paths, predictable latency, testable nodes, explainability |
-| D2 | `search_result` blocks, sentence-level text blocks | Custom-content documents; model-written `[n]` markers | Purpose-built RAG citations, sentence precision, chunk ID in `source` |
+| D2 | Application-managed sentence handles + strict schema; code copies the cited text | Anthropic native `search_result` citations (no key available); free-text `[n]` markers | Works on any model; the handle enum makes an unknown citation undecodable in RAG mode; the chunk/sentence mapping and exact text stay in our code |
 | D3 | Answers never cached | Semantic answer cache | Stale/wrong answers are a top complaint |
 | D4 | pgvector exact search within owner scope; hash partitions; halfvec | Global HNSW; external vector DB | Owner-scoped corpora are small; perfect recall; avoids filtered-HNSW recall loss and RAM blowup |
 | D5 | Hybrid + identifier tsvector + RRF + cross-encoder | Vector-only; real BM25 now | Practitioner consensus; identifiers; BM25 only if eval demands |
@@ -844,20 +893,22 @@ No Kubernetes required; any container platform works. Beyond ~10k DAU: see §23.
 | D9 | Reason codes + templates for explanations | LLM self-explanation | Deterministic, verifiable |
 | D10 | Celery + Postgres job table with leases + sweeper | Transactional outbox; Temporal | Enough for the scale; outbox documented as upgrade |
 | D11 | CAS session ownership | Postgres advisory locks | Advisory session locks need a held connection; conflicts with streaming |
-| D12 | Lane-aware token buckets (RPM/ITPM/OTPM) | Static 60/40 split; semaphore | Limits are token-based; idle capacity shouldn't be wasted |
+| D12 | Lane-aware token buckets (RPM/TPM, cached tokens counted) | Static 60/40 split; semaphore | Limits are token-based; idle capacity shouldn't be wasted |
 | D13 | pdfplumber (+ Docling hi-fi, eval-gated) | PyMuPDF | License (AGPL); geometry available |
 | D14 | OpenAI embeddings | Local fastembed embeddings | Quality, zero ops, spec-named |
-| D15 | Claude-only generation, no silent failover | DeepSeek/OpenAI failover now | Would lose native citations silently |
+| D15 | OpenAI as sole runtime provider; one within-provider model fallback; no cross-vendor failover | Claude-only; multi-vendor failover now | The assignment supplies an OpenAI key; a vendor switch would silently change citation behaviour |
 | D16 | Model never writes tables; UI renders comparisons | Markdown tables in answers | Citations fragment tables |
 | D17 | OTel + grafana/otel-lgtm; ledger as LLM observability | Self-hosted Langfuse | Infrastructure weight; ledger is domain-specific; OTLP keeps the option |
 | D18 | Versions as first-class; per-run version snapshot | Single version per document | Staleness, change awareness, reproducibility |
 | D19 | Full-context mode, routed and calibrated | RAG-only | Fixes trimmed-context failures; eval baseline |
 | D20 | Content-addressed blobs; streamed hashing | Random keys; in-memory upload | Idempotent writes, dedupe, constant memory |
 | D21 | Glyph-mapped char stream + tuned extraction config | `extract_text()` defaults | Measured: 86→99/100 gold quotes located; offsets can't drift |
-| D22 | Brief facts via native citations (`field: value` lines) | JSON + verbatim-quote matching | API-guaranteed pointers; same highlight path as answers |
+| D22 | Brief facts via the same handle-citation schema (`facts[]`) | JSON + verbatim-quote matching | Same resolver and highlight path as answers |
 | D23 | Expert-labelled public datasets as the eval core | Self-authored questions only | External validation; expert unanswerables |
 | D24 | Stage-ordered convergence engine with failure attribution | Manual prompt tweaking | Fixes the owning stage; anti-overfit holdout; budgeted |
 | D25 | Scale validated by calibrated simulation | Full 4.5M-row / 100-user runs on a laptop | User decision; laptop runs would skew results anyway |
+| D26 | Role-based model routing chosen by code per node, route and mode | One model for everything; LLM-chosen routing | Price differs 100× across the line, and per-node quality is measurable (stage E) |
+| D27 | Anthropic adapter kept dormant, enabled only by configuration | Delete it | Already built and tested (S0.13); becomes a stage E comparison if a key arrives |
 
 ---
 
@@ -865,8 +916,8 @@ No Kubernetes required; any container platform works. Beyond ~10k DAU: see §23.
 
 | Unknown | Measured in | Method |
 |---|---|---|
-| Anthropic tier limits vs peak TPM | S0.18 | Start tier (Sonnet/Haiku/Opus 5.5): 4,000 RPM, 2M ITPM, 400k OTPM, $500/month cap [V: docs]; user confirms account tier |
-| Whether cache reads count toward ITPM | resolved | **No** — cache reads don't count toward ITPM or ramp limits [V: rate-limit docs] |
+| OpenAI tier limits vs peak TPM | resolved | Response headers on the project key: `gpt-6.1-terra` 15,000 RPM / 40M TPM, `gpt-6-luna` 30,000 RPM / 180M TPM [V, 2026-11-13]; the user still records the tier and a spend cap in S0.18 |
+| Whether cached tokens count toward TPM | resolved | **Yes**, cached input tokens still count toward TPM [D]; the limiter counts them |
 | Reranker latency/quality (MiniLM vs bge) | S2 | Eval ablation + latency benchmark per core |
 | Exact-search latency at 4.5M rows | S2 | Measured at 10k/50k/200k rows, fitted model, extrapolated (simulated per user decision) |
 | halfvec recall impact | S2 | Eval ablation vs `vector` |

@@ -1,6 +1,7 @@
 # Pass 5 — The PDF geometry chain (citation → exact highlight)
 
 > Rationale record. `docs/design.md` is authoritative; where this file differs, the design wins.
+> **Provider note (2026-11-13):** Provider-specific rows below (Anthropic citations, Claude Haiku vision) are historical; citations are application-managed (design §8.5) and V4 uses the `balanced` role with image input.
 
 The Tier A feature "click a citation → see the exact sentence highlighted on the original page" depends on five links:
 **extraction → sentence offsets → page spans → glyph boxes → screen rectangles.** Each link can fail silently. This pass collects how other systems solve it, records failures **reproduced on our own corpus**, and specifies a chain whose correctness is checked mechanically.

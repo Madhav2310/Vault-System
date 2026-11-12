@@ -176,11 +176,19 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 ### S0.19 — Spike: live `search_result` citations
 - Date: 2026-11-12 · Status: **BLOCKED / SUPERSEDED PENDING DECISION.** The user has only an OpenAI key (the assignment supplied it; no Anthropic key). The spike tests Anthropic-native citations, which cannot run. See followups F-015; the replacement spike depends on the provider decision.
 
-### S0.23 — S0 Gate (partial)
+### S0.26 — S0 Gate (partial)
 - Date: 2026-11-12 · Commit: (this commit)
 - Commands: `scripts/fresh_clone_check.sh`; `make ci`; `make test`
 - Output: AC1 fresh clone of HEAD (7622584) built and all 8 services healthy; AC2 `make ci` passes; AC3 `make test` 111 passed (62 unit + 46 integration + 3 e2e); AC4 entries exist for S0.01–S0.22 (S0.12 skipped, S0.19 blocked).
-- Status: AC1–AC4 pass mechanically, but the gate is **NOT closed**: S0.19 (spike) is blocked and S0.18 AC7 (user: tier/spend limit) is open. Closing needs the provider decision.
+- Status: AC1–AC4 passed mechanically before the provider change. The gate is **NOT closed**: the new tasks S0.23–S0.25 (OpenAI provider, model roles, citation spike) and S0.18 AC7 (user: spend limit) are open; its AC4 loop now covers S0.01–S0.25.
 - Fixed on the way: the trace-propagation test left Celery on an in-memory broker and broke the e2e tests when run in one process (`make test`); it now restores the broker, AMQP and backend caches.
 - Finding: OpenAI key models (from `GET /v1/models`): gpt-5.5, gpt-5.4(-mini/-nano/-pro), gpt-5.6-luna/sol/terra, gpt-5.2, gpt-5.1, gpt-5(-mini/-nano/-pro), gpt-4.1(-mini), gpt-4o(-mini), o3(-pro), text-embedding-3-small/large. Embeddings limit 10,000 RPM.
 - [T] changes approved: none
+
+### Provider change: OpenAI as sole runtime provider (design + plan rewrite)
+- Date: 2026-11-13 · Commit: (this commit)
+- Why: the user has only the OpenAI key supplied with the assignment; the spec allows "OpenAI API (GPT-4 + Embeddings API, or Claude)".
+- Research: OpenAI pricing and model pages, structured-outputs, prompt-caching and streaming guides, plus probes on the project key (`docs/evidence/spike_openai.md`): strict schema with a handle enum gave 0 invalid citations in 6 calls; caching, rate limits (terra 15,000 RPM / 40M TPM), Flex and effort support measured.
+- Design: §4 rewritten (roles `fast`/`balanced`/`deep`/`flagship` = `gpt-6-luna`/`gpt-6.1-terra`/`gpt-6.1-sol`/`gpt-6-astra`, routing table per node, effort support, role fallback, API facts); §5.3 gateway; §8.5 application-managed citations; §9.1 brief; §13 limiter and capacity; decisions D2, D12, D15, D22 revised, D26 and D27 added. `llm_calls` gains `role`, `resolved_model`.
+- Plan: new tasks S0.23 (OpenAI Responses provider), S0.24 (roles, router, fallback), S0.25 (citation spike), S4.19 (stage E per-node routing optimizer); S0.19 demoted to [OPT]; S0.13 AC13, S0.18 AC7, S2.14, S2.18, S3.06–S3.09, S3.16, S4.09, S4.13, S5.02, S5.06, S6.02 rewritten; gate renumbered S0.26. `plan_lint`: 194 tasks, 792 ACs, 0 errors.
+- Status: VERIFIED (lint, probes); nothing built on the new path yet.

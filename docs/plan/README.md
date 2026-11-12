@@ -50,7 +50,9 @@ Evidence: what to paste into docs/progress.md
 Every non-[OPT] task is done, and the slice's **Gate** task (last task in each file) is done.
 
 ### Eval spend policy
-Balanced (user decision 2026-11-12, research 06 §4): sync for smoke/dev runs, Batch API for full runs and ablations, Sonnet 5.5 for tuning, Opus 5.5 only in the stage E ablation, reps = 2, Console spend limit $200, engine `BUDGET_USD` default $150.
+Balanced (user decision 2026-11-12; re-based on OpenAI 2026-11-13, research 06 §4): sync for smoke/dev runs, OpenAI Batch API (50% off) for full runs and ablations; `balanced` generator, `deep` judge, `flagship` only on the judge-calibration subset and in stage E; reps = 2; engine `BUDGET_USD` default $150.
+
+**Cost discipline (user instruction 2026-11-12):** validate on samples, never on full datasets. Every live test, spike and eval command takes a sample size and a `--max-usd` cap, and the default cap is small. Full runs happen only inside the convergence engine under its budget.
 
 ### Slice rules
 - Slices run in order. A slice starts only after the previous gate passes.
@@ -81,7 +83,7 @@ Balanced (user decision 2026-11-12, research 06 §4): sync for smoke/dev runs, B
 ## Execution sequence (authoritative order)
 
 1. **S0** (incl. de-risking spikes S0.19–S0.22; if a spike fails, stop and revise the design before S1)
-2. **S1** → **S2** → **S3** → **S4** (S4 ends with the convergence run, S4.19)
+2. **S1** → **S2** → **S3** → **S4** (S4 ends with the convergence run, S4.20)
 3. **Milestone M1 — spec-complete backend** (below)
 4. **S5**
 5. **S6 ∥ S7** (parallel worktrees allowed)
@@ -102,7 +104,7 @@ Reached after S4, before S5. Guarantees a submittable result even if later work 
 
 Tick a box only when the task's definition of done is met.
 
-**S0** — [x] S0.01 [x] S0.02 [x] S0.03 [x] S0.04 [x] S0.05 [x] S0.06 [x] S0.07 [x] S0.08 [x] S0.09 [x] S0.10 [x] S0.11 [ ] S0.12 [ ] S0.13 [x] S0.14 [x] S0.15 [x] S0.16 [x] S0.17 [ ] S0.18 [ ] S0.19 [ ] S0.20 [x] S0.21 [x] S0.22 [ ] S0.23 (gate)
+**S0** — [x] S0.01 [x] S0.02 [x] S0.03 [x] S0.04 [x] S0.05 [x] S0.06 [x] S0.07 [x] S0.08 [x] S0.09 [x] S0.10 [x] S0.11 [ ] S0.12 [ ] S0.13 [x] S0.14 [x] S0.15 [x] S0.16 [x] S0.17 [ ] S0.18 [ ] S0.19 [ ] S0.20 [x] S0.21 [x] S0.22 [ ] S0.23 [ ] S0.24 [ ] S0.25 [ ] S0.26 (gate)
 
 **S1** — [ ] S1.01 [ ] S1.02 [ ] S1.03 [ ] S1.04 [ ] S1.05 [ ] S1.06 [ ] S1.07 [ ] S1.08 [ ] S1.09 [ ] S1.10 [ ] S1.11 [ ] S1.12 [ ] S1.13 [ ] S1.14 [ ] S1.15 [ ] S1.16 [ ] S1.17 [ ] S1.18 [ ] S1.19 [ ] S1.20 [ ] S1.21 [ ] S1.22 [ ] S1.23 [ ] S1.24 [ ] S1.25 [ ] S1.26 [ ] S1.27 [ ] S1.28 [ ] S1.29 [ ] S1.30 [ ] S1.31 [ ] S1.32 (gate)
 
@@ -110,7 +112,7 @@ Tick a box only when the task's definition of done is met.
 
 **S3** — [ ] S3.01 [ ] S3.02 [ ] S3.03 [ ] S3.04 [ ] S3.05 [ ] S3.06 [ ] S3.07 [ ] S3.08 [ ] S3.09 [ ] S3.10 [ ] S3.11 [ ] S3.12 [ ] S3.13 [ ] S3.14 [ ] S3.15 [ ] S3.16 [ ] S3.17 (gate)
 
-**S4** — [ ] S4.01 [ ] S4.02 [ ] S4.03 [ ] S4.04 [ ] S4.05 [ ] S4.06 [ ] S4.07 [ ] S4.08 [ ] S4.09 [ ] S4.10 [ ] S4.11 [ ] S4.12 [ ] S4.13 [ ] S4.14 [ ] S4.15 [ ] S4.16 [ ] S4.17 [ ] S4.18 [ ] S4.19 [ ] S4.20 (gate)
+**S4** — [ ] S4.01 [ ] S4.02 [ ] S4.03 [ ] S4.04 [ ] S4.05 [ ] S4.06 [ ] S4.07 [ ] S4.08 [ ] S4.09 [ ] S4.10 [ ] S4.11 [ ] S4.12 [ ] S4.13 [ ] S4.14 [ ] S4.15 [ ] S4.16 [ ] S4.17 [ ] S4.18 [ ] S4.19 [ ] S4.20 [ ] S4.21 (gate)
 
 **S5** — [ ] S5.01 [ ] S5.02 [ ] S5.03 [ ] S5.04 [ ] S5.05 [ ] S5.06 [ ] S5.07 [ ] S5.08 [ ] S5.09 [ ] S5.10 [ ] S5.11 [ ] S5.12 [ ] S5.13 [ ] S5.14 [ ] S5.15 [ ] S5.16 (gate)
 
