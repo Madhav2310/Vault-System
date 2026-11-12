@@ -77,3 +77,8 @@ otel-validate:
 	docker run --rm --entrypoint /otel-lgtm/otelcol-contrib/otelcol-contrib \
 	  -v "$(abspath $(CONFIG))":/cfg/config.yaml:ro grafana/otel-lgtm:0.38.1 \
 	  validate --feature-gates service.profilesSupport --config=file:/cfg/config.yaml
+
+# S0.13 AC13: one live Haiku call + one live embedding call (needs ANTHROPIC_API_KEY, OPENAI_API_KEY; <$0.001).
+.PHONY: smoke-providers
+smoke-providers:
+	$(UV) pytest -m live tests/live -s

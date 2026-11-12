@@ -151,7 +151,7 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Date: 2026-11-12 · Commit: (this commit)
 - Commands: `make test-integration` (test_trace_propagation.py); `make test-unit` (test_collector_config.py); `make otel-validate`; `cd backend && uv run --frozen python ../scripts/check_trace.py` against the running stack
 - Output: AC1 a FastAPI server span and the Celery worker span (real in-process worker over an in-memory broker, context via task headers) share one trace_id; AC2 validate exit 0; AC3 the three `gen_ai.*` attributes deleted in the traces and logs pipelines, ahead of `batch`, behind `memory_limiter`; AC4 request with a known trace id found in Tempo (service `vault-api`).
-- Status: AC1–AC4 VERIFIED · AC5 UNVERIFIED (Anthropic client metadata-only; arrives with S0.13's provider code)
+- Status: AC1–AC5 VERIFIED (AC5 `tests/unit/llm/test_providers.py::test_anthropic_otel_metadata_only` added after S0.13 merged: the SDK client is built with `content_mode=metadata_only`)
 - Notes: setup is idempotent per process (the solo Celery pool fires `worker_process_init` in-process and had created real OTLP exporters inside tests). Tail sampling is defined but not in any dev pipeline. Tempo's HTTP port 3200 is published for the check script.
 - [T] changes approved: none
 
@@ -160,4 +160,12 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Commands: `make test-unit` (tests/unit/support/test_leak_guard.py); `make ci`
 - Output: 3 passed — a planted string is caught when logged via structlog, caught when set as a span attribute, and clean logs/spans pass. Fixture `leak_guard` (tests/support/leak_guard.py) captures stdlib/structlog records and spans from its own tracer and from the global SDK provider if present; `assert_no_leak(secrets)` raises `LeakError` naming only the first 12 characters of a leaked string.
 - Status: VERIFIED
+- [T] changes approved: none
+
+### S0.13 — LLM gateway core
+- Date: 2026-11-12 · Commit: 080c933 (merged) · built by a parallel agent, reviewed and merged here
+- Commands: `make ci`; `make test-integration`; `make test-e2e`; `make smoke-providers` (no keys)
+- Output: AC1–AC12 named tests pass (one `llm_calls` row per attempt; retry-after honoured; 3-attempt cap; schema/refusal/max_tokens typed errors; cost incl. cache tokens; AST scan finds no provider client outside `app/llm`; citations+format refused before any call; effort from front-matter). Extra: 10 tests drive the real anthropic 2.8.0 / openai 3.49.0 clients over canned HTTP (request shape, citations, SSE `citations_delta`, error mapping). Merged tree: 61 unit, 46 integration, 3 e2e pass.
+- Status: AC1–AC12 VERIFIED · AC13 UNVERIFIED (no API keys; `make smoke-providers` fails with a clear message)
+- Design facts found (details in followups): Haiku 5.5 costs more above 100K prompt tokens; cited text must never go back as user content (400); Haiku cache-read and embedding prices are unconfirmed (overridable via `LLM_PRICES`).
 - [T] changes approved: none

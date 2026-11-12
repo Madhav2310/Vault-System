@@ -43,6 +43,15 @@ class Settings(BaseSettings):
     embedding_model: str = "text-embedding-3-small"
     embedding_dim: int = 1536
 
+    # --- LLM gateway (design §5.3, §15) ---
+    llm_timeout_s: float = 120.0
+    llm_max_retries: int = 2  # retries after the first attempt, retryable errors only
+    llm_retry_base_s: float = 0.5  # backoff base when no retry-after is given
+    llm_retry_max_s: float = 8.0
+    # Per-model price overrides, USD per MTok, merged over app/llm/pricing.py defaults. JSON, e.g.
+    # {"claude-sonnet-5-5": {"input": 2, "output": 10, "cache_read": 0.2, "cache_write": 2.5}}
+    llm_prices: dict[str, dict[str, float]] = Field(default_factory=dict)
+
     # --- upload / ingestion limits (design §6) ---
     max_upload_bytes: int = 25 * 1024 * 1024
     parse_timeout_s: int = 120
