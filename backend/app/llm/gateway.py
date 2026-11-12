@@ -1,5 +1,6 @@
 """LLM gateway (design §5.3): the only path to a model. Per call, in order:
 
+0. resolve node → role → model + effort through the router (design §4.2)
 1. rate-limit tokens (lane-aware; stub until S5)
 2. charge the turn budget
 3. one OTel span per attempt (IDs/counters only)
@@ -8,6 +9,7 @@
 6. update the circuit breaker (stub until S5)
 7. one `llm_calls` row per attempt (own short DB session)
 8. stop_reason checks, then schema validation
+9. after retries on a retryable error: one attempt on the role's fallback (`DEGRADED_MODEL_FALLBACK`)
 
 No DB connection is held across a provider call: each ledger row is written in its own short session after the
 attempt finishes. No prompt, input or completion text reaches spans, logs or exception messages.
@@ -20,7 +22,7 @@ import time
 import uuid
 from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from contextlib import aclosing
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from decimal import Decimal
 from functools import lru_cache
 from typing import Any, Protocol, TypeVar, overload
@@ -46,6 +48,7 @@ from app.llm.errors import (
 from app.llm.pricing import PriceTable, price_table_from_settings
 from app.llm.prompts import Prompt, PromptRegistry, default_registry
 from app.llm.providers import ChatProvider, EmbeddingProvider
+from app.llm.routing import DEGRADED_MODEL_FALLBACK, ModelRouter, Resolved, Route
 from app.llm.types import (
     ChatRequest,
     ChatResponse,
@@ -133,7 +136,9 @@ class LlmCallRecord:
     purpose: str
     lane: str
     provider: str
+    role: str | None
     model: str
+    resolved_model: str | None
     prompt_id: str | None
     prompt_version: int | None
     attempt: int
@@ -166,7 +171,9 @@ class DbLedgerWriter:
                     purpose=rec.purpose,
                     lane=rec.lane,
                     provider=rec.provider,
+                    role=rec.role,
                     model=rec.model,
+                    resolved_model=rec.resolved_model,
                     prompt_id=rec.prompt_id,
                     prompt_version=rec.prompt_version,
                     attempt=rec.attempt,
@@ -207,6 +214,8 @@ class CallResult[M: BaseModel]:
     model: str
     attempts: int
     call_ids: tuple[uuid.UUID, ...]
+    role: str | None = None
+    degraded: tuple[str, ...] = ()  # reason codes, e.g. DEGRADED_MODEL_FALLBACK
 
     @property
     def text(self) -> str:
@@ -226,6 +235,7 @@ class _Meta:
     purpose: str
     lane: Lane
     provider: str
+    role: str | None
     model: str
     prompt_id: str | None
     prompt_version: int | None
@@ -238,6 +248,7 @@ class _Meta:
         attrs: dict[str, str | int] = {
             "gen_ai.provider.name": self.provider,
             "gen_ai.request.model": self.model,
+            "vault.llm.role": self.role or "",
             "vault.llm.purpose": self.purpose,
             "vault.llm.lane": self.lane,
             "vault.llm.attempt": attempt,
@@ -264,6 +275,15 @@ def _check_stop(stop_reason: str, refusal_category: str | None) -> None:
         raise TruncatedError(stop_reason)
 
 
+@dataclass
+class _Account:
+    """Running totals across the attempts (and the fallback) of one logical call."""
+
+    ids: list[uuid.UUID]
+    total: Decimal = Decimal(0)
+    attempts: int = 0
+
+
 class LlmGateway:
     def __init__(
         self,
@@ -274,6 +294,7 @@ class LlmGateway:
         ledger: LedgerWriter,
         settings: Settings,
         embeddings: EmbeddingProvider | None = None,
+        router: ModelRouter | None = None,
         rate_limiter: RateLimiter | None = None,
         breaker: CircuitBreaker | None = None,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
@@ -281,6 +302,7 @@ class LlmGateway:
     ):
         self.chat, self.embeddings, self.prompts, self.prices = chat, embeddings, prompts, prices
         self.ledger, self.settings = ledger, settings
+        self.router = router or ModelRouter.from_settings(settings)
         self.rate_limiter = rate_limiter or NoopRateLimiter()
         self.breaker = breaker or NoopCircuitBreaker()
         self._sleep, self._rng = sleep, rng
@@ -297,6 +319,8 @@ class LlmGateway:
         owner_id: uuid.UUID | None,
         schema: type[T],
         model: str | None = None,
+        route: str | None = None,
+        mode: str | None = None,
         inputs: Mapping[str, Any] | None = None,
         messages: Sequence[Mapping[str, Any]] | None = None,
         search_results: Sequence[SearchResult] = (),
@@ -315,6 +339,8 @@ class LlmGateway:
         owner_id: uuid.UUID | None,
         schema: None = None,
         model: str | None = None,
+        route: str | None = None,
+        mode: str | None = None,
         inputs: Mapping[str, Any] | None = None,
         messages: Sequence[Mapping[str, Any]] | None = None,
         search_results: Sequence[SearchResult] = (),
@@ -332,6 +358,8 @@ class LlmGateway:
         owner_id: uuid.UUID | None,
         schema: type[BaseModel] | None = None,
         model: str | None = None,
+        route: str | None = None,
+        mode: str | None = None,
         inputs: Mapping[str, Any] | None = None,
         messages: Sequence[Mapping[str, Any]] | None = None,
         search_results: Sequence[SearchResult] = (),
@@ -339,8 +367,10 @@ class LlmGateway:
         job_id: uuid.UUID | None = None,
         budget: Budget | None = None,
     ) -> CallResult[Any]:
-        p, req = self._prepare(prompt, model, inputs, messages, schema, search_results)
-        meta = self._meta(purpose, lane, self.chat.name, req, p, owner_id, run_id, job_id)
+        p, req, res = self._prepare(
+            prompt, purpose, model, route, mode, inputs, messages, schema, search_results
+        )
+        meta = self._meta(purpose, lane, self.chat.name, req, p, res.role, owner_id, run_id, job_id)
         parsed: list[BaseModel] = []
 
         def check(r: ChatResponse) -> None:
@@ -351,16 +381,31 @@ class LlmGateway:
                 except ValidationError as e:  # message carries counts only, never the model's output
                     raise SchemaValidationError(f"{schema.__name__}: {e.error_count()} errors") from None
 
-        r, attempts, cost, ids = await self._run(meta, budget, lambda: self.chat.complete(req), check)
+        acct = _Account(ids=[])
+        degraded: tuple[str, ...] = ()
+        try:
+            r = await self._run(meta, budget, lambda: self.chat.complete(req), check, acct)
+        except (ProviderError, CircuitOpenError) as e:
+            fb = self.router.fallback(res) if model is None and e.retryable else None
+            if fb is None:
+                raise
+            # One attempt on the next role up (no retries); a second failure propagates.
+            req = replace(req, model=fb.model, effort=fb.effort)
+            meta = replace(meta, role=fb.role, model=fb.model)
+            parsed.clear()
+            r = await self._run(meta, budget, lambda: self.chat.complete(req), check, acct, retries=0)
+            degraded = (DEGRADED_MODEL_FALLBACK,)
         return CallResult(
             output=parsed[0] if parsed else None,
             parts=r.parts,
             usage=r.usage,
-            cost_usd=cost,
+            cost_usd=acct.total,
             stop_reason=r.stop_reason,
             model=req.model,
-            attempts=attempts,
-            call_ids=ids,
+            attempts=acct.attempts,
+            call_ids=tuple(acct.ids),
+            role=meta.role,
+            degraded=degraded,
         )
 
     async def stream(
@@ -371,6 +416,8 @@ class LlmGateway:
         prompt: tuple[str, int],
         owner_id: uuid.UUID | None,
         model: str | None = None,
+        route: str | None = None,
+        mode: str | None = None,
         inputs: Mapping[str, Any] | None = None,
         messages: Sequence[Mapping[str, Any]] | None = None,
         search_results: Sequence[SearchResult] = (),
@@ -380,8 +427,10 @@ class LlmGateway:
     ) -> AsyncIterator[TextDelta | CitationDelta | Final]:
         """Yields TextDelta | CitationDelta, then Final. Retries only before the first event was yielded;
         refusal / max_tokens raise typed errors after the row is written."""
-        p, req = self._prepare(prompt, model, inputs, messages, None, search_results)
-        meta = self._meta(purpose, lane, self.chat.name, req, p, owner_id, run_id, job_id)
+        p, req, res = self._prepare(
+            prompt, purpose, model, route, mode, inputs, messages, None, search_results
+        )
+        meta = self._meta(purpose, lane, self.chat.name, req, p, res.role, owner_id, run_id, job_id)
         self._admit(meta, budget)
         ids: list[uuid.UUID] = []
         total = Decimal(0)
@@ -407,7 +456,7 @@ class LlmGateway:
                     raise ProviderConnectionError("stream ended without a final event")
             except ProviderError as e:
                 ids.append(
-                    await self._record(meta, attempt, Usage(), Decimal(0), _ms(t0), ttft, e.error_type)
+                    await self._record(meta, attempt, Usage(), Decimal(0), _ms(t0), ttft, e.error_type, None)
                 )
                 recorded = True
                 self._on_failure(meta, e, span)
@@ -419,7 +468,7 @@ class LlmGateway:
                     kind = (
                         "cancelled" if isinstance(e, GeneratorExit | asyncio.CancelledError) else "unexpected"
                     )
-                    await self._record(meta, attempt, Usage(), Decimal(0), _ms(t0), ttft, kind)
+                    await self._record(meta, attempt, Usage(), Decimal(0), _ms(t0), ttft, kind, None)
                 raise
             else:
                 cost = self.prices.cost(meta.model, final.usage)
@@ -432,7 +481,14 @@ class LlmGateway:
                     err = e
                 ids.append(
                     await self._record(
-                        meta, attempt, final.usage, cost, _ms(t0), ttft, err.error_type if err else None
+                        meta,
+                        attempt,
+                        final.usage,
+                        cost,
+                        _ms(t0),
+                        ttft,
+                        err.error_type if err else None,
+                        final.resolved_model,
                     )
                 )
                 if err is not None:
@@ -468,6 +524,7 @@ class LlmGateway:
             purpose,
             lane,
             embeddings.name,
+            None,
             model_,
             None,
             None,
@@ -481,20 +538,24 @@ class LlmGateway:
             if len(r.vectors) != len(texts) or any(len(v) != dims for v in r.vectors):
                 raise SchemaValidationError("embedding count or dimension mismatch")
 
-        r, _, cost, ids = await self._run(meta, budget, lambda: embeddings.embed(model_, texts, dims), check)
-        return EmbedResult(vectors=r.vectors, usage=r.usage, cost_usd=cost, call_ids=ids)
+        acct = _Account(ids=[])
+        r = await self._run(meta, budget, lambda: embeddings.embed(model_, texts, dims), check, acct)
+        return EmbedResult(vectors=r.vectors, usage=r.usage, cost_usd=acct.total, call_ids=tuple(acct.ids))
 
     # --- internals ------------------------------------------------------------------------------
 
     def _prepare(
         self,
         prompt: tuple[str, int],
+        node: str,
         model: str | None,
+        route: str | None,
+        mode: str | None,
         inputs: Mapping[str, Any] | None,
         messages: Sequence[Mapping[str, Any]] | None,
         schema: type[BaseModel] | None,
         search_results: Sequence[SearchResult],
-    ) -> tuple[Prompt, ChatRequest]:
+    ) -> tuple[Prompt, ChatRequest, Resolved]:
         p = self.prompts.get(*prompt)
         if schema is not None and search_results:
             raise RequestConflictError("citations and output_config.format cannot be combined in one request")
@@ -511,16 +572,18 @@ class LlmGateway:
             if messages is not None
             else [{"role": "user", "content": render_inputs(inputs or {})}]
         )
+        # Table row for the node (most specific wins), else the prompt's front-matter role and effort.
+        res = self.router.resolve(node, route, mode, default=Route(p.role, p.effort))
         req = ChatRequest(
-            model=model or str(getattr(self.settings, p.model_key)),
+            model=model or res.model,  # an explicit `model` pins the call and bypasses role fallback
             system=p.body,
             messages=msgs,
             max_tokens=p.max_tokens,
-            effort=p.effort,
+            effort=res.effort,
             output_schema=schema.model_json_schema() if schema is not None else None,
             search_results=tuple(search_results),
         )
-        return p, req
+        return p, req, res
 
     @staticmethod
     def _meta(
@@ -529,6 +592,7 @@ class LlmGateway:
         provider: str,
         req: ChatRequest,
         p: Prompt,
+        role: str,
         owner_id: uuid.UUID | None,
         run_id: uuid.UUID | None,
         job_id: uuid.UUID | None,
@@ -536,7 +600,7 @@ class LlmGateway:
         chars = len(req.system) + sum(len(str(m.get("content", ""))) for m in req.messages)
         chars += sum(len(s) for sr in req.search_results for s in sr.sentences)
         return _Meta(
-            purpose, lane, provider, req.model, p.id, p.version, owner_id, run_id, job_id, chars // 4
+            purpose, lane, provider, role, req.model, p.id, p.version, owner_id, run_id, job_id, chars // 4
         )
 
     def _admit(self, meta: _Meta, budget: Budget | None) -> None:
@@ -566,10 +630,13 @@ class LlmGateway:
         if budget is not None:
             budget.record_usage(usage)
 
-    def _retry_delay(self, e: ProviderError, attempt: int, budget: Budget | None) -> float | None:
+    def _retry_delay(
+        self, e: ProviderError, attempt: int, budget: Budget | None, retries: int | None = None
+    ) -> float | None:
         """None = do not retry. Honors retry-after (plus jitter); otherwise jittered exponential backoff."""
         s = self.settings
-        if not e.retryable or attempt > s.llm_max_retries:
+        cap_retries = s.llm_max_retries if retries is None else retries
+        if not e.retryable or attempt > cap_retries:
             return None
         if e.retry_after is not None:
             delay = e.retry_after + self._rng() * s.llm_retry_base_s
@@ -593,6 +660,7 @@ class LlmGateway:
         latency_ms: int,
         ttft_ms: int | None,
         error_type: str | None,
+        resolved_model: str | None,
     ) -> uuid.UUID:
         rec = LlmCallRecord(
             id=uuid7(),
@@ -602,7 +670,9 @@ class LlmGateway:
             purpose=meta.purpose,
             lane=meta.lane,
             provider=meta.provider,
+            role=meta.role,
             model=meta.model,
+            resolved_model=resolved_model,
             prompt_id=meta.prompt_id,
             prompt_version=meta.prompt_version,
             attempt=attempt,
@@ -622,51 +692,62 @@ class LlmGateway:
         budget: Budget | None,
         op: Callable[[], Awaitable[R]],
         check: Callable[[R], None],
-    ) -> tuple[R, int, Decimal, tuple[uuid.UUID, ...]]:
+        acct: _Account,
+        retries: int | None = None,
+    ) -> R:
         """Attempt loop for request/response calls. `check` raises an LlmError for unusable results
-        (refusal, truncation, schema), which is recorded on the attempt's row and never retried."""
+        (refusal, truncation, schema), which is recorded on the attempt's row and never retried.
+        `retries` overrides the configured retry cap (0 for the single role-fallback attempt)."""
         self._admit(meta, budget)
-        ids: list[uuid.UUID] = []
-        total = Decimal(0)
         attempt = 0
         while True:
             attempt += 1
+            acct.attempts += 1
             await self._acquire(meta)
             t0 = time.monotonic()
-            with _tracer.start_as_current_span("llm.call", attributes=meta.span_attrs(attempt)) as span:
+            with _tracer.start_as_current_span("llm.call", attributes=meta.span_attrs(acct.attempts)) as span:
                 try:
                     r = await op()
                 except ProviderError as e:
-                    ids.append(
-                        await self._record(meta, attempt, Usage(), Decimal(0), _ms(t0), None, e.error_type)
+                    acct.ids.append(
+                        await self._record(
+                            meta, attempt, Usage(), Decimal(0), _ms(t0), None, e.error_type, None
+                        )
                     )
                     self._on_failure(meta, e, span)
-                    delay = self._retry_delay(e, attempt, budget)
+                    delay = self._retry_delay(e, attempt, budget, retries)
                     if delay is None:
                         raise
                 except (Exception, asyncio.CancelledError) as e:
                     kind = "cancelled" if isinstance(e, asyncio.CancelledError) else "unexpected"
-                    await self._record(meta, attempt, Usage(), Decimal(0), _ms(t0), None, kind)
+                    await self._record(meta, acct.attempts, Usage(), Decimal(0), _ms(t0), None, kind, None)
                     raise
                 else:
                     usage = _usage_of(r)
                     cost = self.prices.cost(meta.model, usage)
-                    total += cost
+                    acct.total += cost
                     self._on_success(meta, usage, budget, span)
                     err: LlmError | None = None
                     try:
                         check(r)
                     except LlmError as e:
                         err = e
-                    ids.append(
+                    acct.ids.append(
                         await self._record(
-                            meta, attempt, usage, cost, _ms(t0), None, err.error_type if err else None
+                            meta,
+                            acct.attempts,
+                            usage,
+                            cost,
+                            _ms(t0),
+                            None,
+                            err.error_type if err else None,
+                            getattr(r, "resolved_model", None),
                         )
                     )
                     if err is not None:
                         span.set_attribute("error.type", err.error_type)
                         raise err
-                    return r, attempt, total, tuple(ids)
+                    return r
             await self._sleep(delay)
 
 

@@ -42,7 +42,7 @@ def make_registry(d: pathlib.Path) -> PromptRegistry:
             id=pid,
             version=ver,
             purpose=pid,
-            model="haiku_model",
+            role="fast",
             output=output,
             effort=effort,
             max_tokens=512,

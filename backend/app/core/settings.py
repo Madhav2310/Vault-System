@@ -36,10 +36,15 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr | None = None
     deepseek_api_key: SecretStr | None = None
 
-    # --- models (design §4; no date suffixes) ---
-    answer_model: str = "claude-sonnet-5-5"
-    haiku_model: str = "claude-haiku-5-5"
-    opus_model: str = "claude-opus-5-5"
+    # --- model roles (design §4.1; no date suffixes). Only app/llm/routing.py reads these. ---
+    model_fast: str = "gpt-6-luna"
+    model_balanced: str = "gpt-6.1-terra"
+    model_deep: str = "gpt-6.1-sol"
+    model_flagship: str = "gpt-6-astra"
+    # Per-node overrides over the routing table (design §4.2), JSON, e.g.
+    # {"analyze_query": {"role": "balanced", "effort": "low"},
+    #  "generate:compare": {"role": "deep", "effort": "low"}}
+    model_routes: dict[str, dict[str, str]] = Field(default_factory=dict)
     embedding_model: str = "text-embedding-3-small"
     embedding_dim: int = 1536
 
@@ -49,7 +54,7 @@ class Settings(BaseSettings):
     llm_retry_base_s: float = 0.5  # backoff base when no retry-after is given
     llm_retry_max_s: float = 8.0
     # Per-model price overrides, USD per MTok, merged over app/llm/pricing.py defaults. JSON, e.g.
-    # {"claude-sonnet-5-5": {"input": 2, "output": 10, "cache_read": 0.2, "cache_write": 2.5}}
+    # {"gpt-6.1-terra": {"input": 1, "output": 5, "cache_read": 0.05, "cache_write": 1.25}}
     llm_prices: dict[str, dict[str, float]] = Field(default_factory=dict)
 
     # --- upload / ingestion limits (design §6) ---

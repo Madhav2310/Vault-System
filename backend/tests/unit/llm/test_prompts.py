@@ -15,7 +15,7 @@ GOOD = {
     "id": "analyze_query",
     "version": 1,
     "purpose": "analyze_query",
-    "model": "haiku_model",
+    "role": "fast",
     "output": "schema",
     "effort": "low",
     "max_tokens": 2048,
@@ -26,12 +26,12 @@ def test_registry_validation(tmp_path: pathlib.Path) -> None:
     a, b = tmp_path / "a", tmp_path / "b"
     a.mkdir(), b.mkdir()
     p = parse_prompt(write_prompt(a, "analyze_query@1.md", **GOOD))
-    assert (p.id, p.version, p.effort, p.output, p.model_key, p.max_tokens) == (
+    assert (p.id, p.version, p.effort, p.output, p.role, p.max_tokens) == (
         "analyze_query",
         1,
         "low",
         "schema",
-        "haiku_model",
+        "fast",
         2048,
     )
     assert len(p.digest) == 64
@@ -56,7 +56,7 @@ def test_registry_validation(tmp_path: pathlib.Path) -> None:
     cases = {
         "effort": ("extreme", "effort must be"),
         "output": ("markdown", "output must be"),
-        "model": ("claude-haiku-5-5", "model must be"),
+        "role": ("gpt-6-luna", "role must be"),
         "version": ("one", "must be integers"),
     }
     for field, (value, msg) in cases.items():
@@ -83,4 +83,22 @@ def test_registry_validation(tmp_path: pathlib.Path) -> None:
 def test_repo_prompts_load() -> None:
     reg = default_registry()
     ex = reg.get("_example", 1)
-    assert (ex.output, ex.effort, ex.model_key) == ("schema", "low", "haiku_model")
+    assert (ex.output, ex.effort, ex.role) == ("schema", "low", "fast")
+
+
+def test_role_frontmatter(tmp_path: pathlib.Path) -> None:
+    for role in ("fast", "balanced", "deep", "flagship"):
+        d = tmp_path / role
+        d.mkdir()
+        assert parse_prompt(write_prompt(d, "analyze_query@1.md", **{**GOOD, "role": role})).role == role
+    for bad in ("turbo", "haiku_model", "claude-haiku-5-5"):
+        d = tmp_path / f"bad_{bad}"
+        d.mkdir()
+        write_prompt(d, "analyze_query@1.md", **{**GOOD, "role": bad})
+        with pytest.raises(PromptRegistryError, match="role must be one of"):
+            PromptRegistry.load(d)
+    d = tmp_path / "old"  # the previous `model:` key is no longer accepted in place of `role`
+    d.mkdir()
+    write_prompt(d, "analyze_query@1.md", **{**{k: v for k, v in GOOD.items() if k != "role"}, "model": "x"})
+    with pytest.raises(PromptRegistryError, match=r"missing front-matter fields \['role'\]"):
+        PromptRegistry.load(d)

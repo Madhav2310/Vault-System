@@ -103,7 +103,7 @@ class FakeProvider:
     async def complete(self, req: ChatRequest) -> ChatResponse:
         self.requests.append(req)
         r = await self._next()
-        return ChatResponse(r.parts, r.stop_reason, r.usage, r.refusal_category)
+        return ChatResponse(r.parts, r.stop_reason, r.usage, r.refusal_category, req.model)
 
     async def stream(self, req: ChatRequest) -> AsyncGenerator[StreamEvent, None]:
         self.requests.append(req)
@@ -117,7 +117,7 @@ class FakeProvider:
                     raise r.fail_with or errors.ProviderConnectionError()
                 yield ev
                 sent += 1
-        yield ProviderFinal(r.stop_reason, r.usage, r.refusal_category)
+        yield ProviderFinal(r.stop_reason, r.usage, r.refusal_category, req.model)
 
     async def embed(self, model: str, texts: Sequence[str], dimensions: int) -> EmbeddingResponse:
         self.embed_calls.append((model, tuple(texts), dimensions))

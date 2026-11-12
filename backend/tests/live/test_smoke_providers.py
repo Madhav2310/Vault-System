@@ -60,13 +60,13 @@ async def test_live_fast_structured() -> None:
         lane="background",
         prompt=("_example", 1),
         owner_id=None,
-        model="gpt-6-luna",  # S0.24 replaces this with role routing
         schema=Echo,
         inputs={"word": "vault"},
     )
     assert r.output is not None and r.output.echo == "vault"
     _report(ledger)
     assert [rec.provider for rec in ledger.records if rec.status == "ok"] == ["openai"]
+    assert [(rec.role, rec.model) for rec in ledger.records] == [("fast", "gpt-6-luna")]  # routed, not pinned
     assert sum(rec.cost_usd for rec in ledger.records) < Decimal("0.005")
 
 

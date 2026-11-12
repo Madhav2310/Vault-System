@@ -7,7 +7,7 @@ from collections.abc import AsyncIterator
 from decimal import Decimal
 
 import pytest
-from sqlalchemy import delete, select
+from sqlalchemy import delete, select, text
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker
 
 from app.db.models.ledger import LlmCall
@@ -37,7 +37,9 @@ async def owner(engine: AsyncEngine) -> AsyncIterator[uuid.UUID]:
 
 async def _rows(engine: AsyncEngine, owner: uuid.UUID) -> list[LlmCall]:
     async with async_sessionmaker(engine)() as s:
-        res = await s.execute(select(LlmCall).where(LlmCall.owner_id == owner).order_by(LlmCall.attempt))
+        res = await s.execute(
+            select(LlmCall).where(LlmCall.owner_id == owner).order_by(LlmCall.created_at, LlmCall.id)
+        )
         return list(res.scalars())
 
 
@@ -47,8 +49,9 @@ def _gw(tmp: pathlib.Path, engine: AsyncEngine, script: list[fake.Step], real_sl
     )
 
 
-async def _call(gw, owner: uuid.UUID):  # type: ignore[no-untyped-def]
+async def _call(gw, owner: uuid.UUID, **kw):  # type: ignore[no-untyped-def]
     return await gw.call(
+        **kw,
         purpose="analyze_query",
         lane="interactive",
         prompt=("t_schema", 1),
@@ -68,7 +71,7 @@ async def test_success_one_row(tmp_path: pathlib.Path, engine: AsyncEngine, owne
         "analyze_query",
         "interactive",
         "fake",
-        "claude-haiku-5-5",
+        "gpt-6-luna",  # analyze_query routes to role fast
     )
     assert (row.prompt_id, row.prompt_version) == ("t_schema", 1)
     assert (row.input_tokens, row.output_tokens, row.cache_read_tokens, row.cache_write_tokens) == (
@@ -77,7 +80,7 @@ async def test_success_one_row(tmp_path: pathlib.Path, engine: AsyncEngine, owne
         3000,
         400,
     )
-    # Haiku 5.5: (1000*0.10 + 200*0.50 + 3000*0.01 + 400*0.125) / 1e6
+    # gpt-6-luna: (1000*0.10 + 200*0.50 + 3000*0.01 + 400*0.125) / 1e6
     assert row.cost_usd == Decimal("0.000280") == result.cost_usd
     assert row.latency_ms is not None and row.latency_ms >= 0
 
@@ -110,7 +113,7 @@ async def test_non_retryable_no_retry(tmp_path: pathlib.Path, engine: AsyncEngin
 async def test_retry_cap(tmp_path: pathlib.Path, engine: AsyncEngine, owner: uuid.UUID) -> None:
     gw, prov, _, slp = _gw(tmp_path, engine, [fake.overloaded(), fake.timeout(), fake.rate_limited(0.0), OK])
     with pytest.raises(errors.RateLimitedError):
-        await _call(gw, owner)
+        await _call(gw, owner, model="gpt-6-luna")  # a pinned model never falls back
     rows = await _rows(engine, owner)
     assert [(r.attempt, r.error_type) for r in rows] == [
         (1, "overloaded"),
@@ -121,3 +124,51 @@ async def test_retry_cap(tmp_path: pathlib.Path, engine: AsyncEngine, owner: uui
     assert len(prov.requests) == 3 and len(slp.delays) == 2
     # no retry-after → jittered exponential backoff: base 0.5 s, rng 0.5 → 0.375 s then 0.75 s
     assert slp.delays == [pytest.approx(0.375), pytest.approx(0.75)]
+
+
+FAILS = [fake.overloaded(), fake.timeout(), fake.rate_limited(0.0)]
+
+
+async def test_role_fallback(tmp_path: pathlib.Path, engine: AsyncEngine, owner: uuid.UUID) -> None:
+    gw, prov, _, slp = _gw(tmp_path, engine, [*FAILS, OK])
+    result = await _call(gw, owner)  # analyze_query: role fast → fallback role balanced
+    rows = await _rows(engine, owner)
+    assert [(r.attempt, r.role, r.model, r.status) for r in rows] == [
+        (1, "fast", "gpt-6-luna", "error"),
+        (2, "fast", "gpt-6-luna", "error"),
+        (3, "fast", "gpt-6-luna", "error"),
+        (4, "balanced", "gpt-6.1-terra", "ok"),
+    ]
+    assert result.degraded == ("DEGRADED_MODEL_FALLBACK",) and result.model == "gpt-6.1-terra"
+    assert result.attempts == 4 and len(prov.requests) == 4 and len(slp.delays) == 2  # no sleep before it
+    assert [r.model for r in prov.requests] == ["gpt-6-luna"] * 3 + ["gpt-6.1-terra"]
+    assert prov.requests[3].effort == "none"  # balanced supports the node's effort
+
+    # a second failure on the fallback propagates; there is no further fallback
+    gw2, prov2, _, _ = _gw(tmp_path, engine, [*FAILS, fake.overloaded(), OK])
+    with pytest.raises(errors.OverloadedError):
+        await _call(gw2, owner)
+    assert len(prov2.requests) == 4
+
+
+async def test_no_fallback_on_bad_request(
+    tmp_path: pathlib.Path, engine: AsyncEngine, owner: uuid.UUID
+) -> None:
+    gw, prov, _, _ = _gw(tmp_path, engine, [fake.bad_request(), OK])
+    with pytest.raises(errors.BadRequestError):
+        await _call(gw, owner)
+    assert len(prov.requests) == 1  # a 400 would fail on any model
+
+
+async def test_row_has_role_and_resolved_model(
+    tmp_path: pathlib.Path, engine: AsyncEngine, owner: uuid.UUID
+) -> None:
+    gw, _, _, _ = _gw(tmp_path, engine, [OK])
+    await _call(gw, owner)
+    (row,) = await _rows(engine, owner)
+    assert (row.role, row.model, row.resolved_model) == ("fast", "gpt-6-luna", "gpt-6-luna")
+    async with async_sessionmaker(engine)() as s:
+        cols = await s.execute(
+            text("SELECT column_name FROM information_schema.columns WHERE table_name = 'llm_calls'")
+        )
+        assert {"role", "resolved_model"} <= {c for (c,) in cols}

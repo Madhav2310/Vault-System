@@ -2,7 +2,7 @@
 id: _example
 version: 1
 purpose: example
-model: haiku_model
+role: fast
 output: schema
 effort: low
 max_tokens: 1024

@@ -68,6 +68,7 @@ class ChatResponse:
     stop_reason: str
     usage: Usage
     refusal_category: str | None = None
+    resolved_model: str | None = None  # the model the API reports having served
 
     @property
     def text(self) -> str:
@@ -102,6 +103,7 @@ class ProviderFinal:
     stop_reason: str
     usage: Usage
     refusal_category: str | None = None
+    resolved_model: str | None = None
 
 
 @dataclass(frozen=True)

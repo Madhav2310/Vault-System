@@ -4,9 +4,9 @@
     id: analyze_query
     version: 1
     purpose: analyze_query
-    model: haiku_model        # a Settings field name, resolved at call time
+    role: fast                # fast | balanced | deep | flagship; the router maps it to a model
     output: schema            # schema | citations | text
-    effort: low               # → output_config.effort
+    effort: low               # none | low | medium | high | xhigh | max (per-model support: routing.py)
     max_tokens: 2048
     ---
     <system prompt body>
@@ -22,13 +22,13 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Literal, cast, get_args
 
+from app.llm.routing import ROLES, Role
 from app.llm.types import Effort
 
 PROMPTS_DIR = pathlib.Path(__file__).resolve().parents[2] / "prompts"
 
 Output = Literal["schema", "citations", "text"]
-REQUIRED_FIELDS = ("id", "version", "purpose", "model", "output", "effort", "max_tokens")
-MODEL_KEYS = frozenset({"answer_model", "haiku_model", "opus_model"})
+REQUIRED_FIELDS = ("id", "version", "purpose", "role", "output", "effort", "max_tokens")
 _FILENAME = re.compile(r"^(?P<id>[a-z_][a-z0-9_]*)@(?P<version>[1-9][0-9]*)\.md$")
 _FRONT = re.compile(r"\A---\n(?P<head>.*?)\n---\n(?P<body>.*)\Z", re.S)
 
@@ -42,7 +42,7 @@ class Prompt:
     id: str
     version: int
     purpose: str
-    model_key: str
+    role: Role
     output: Output
     effort: Effort
     max_tokens: int
@@ -74,8 +74,8 @@ def parse_prompt(path: pathlib.Path) -> Prompt:
         raise PromptRegistryError(f"{where}: output must be one of {get_args(Output)}")
     if meta["effort"] not in get_args(Effort):
         raise PromptRegistryError(f"{where}: effort must be one of {get_args(Effort)}")
-    if meta["model"] not in MODEL_KEYS:
-        raise PromptRegistryError(f"{where}: model must be one of {sorted(MODEL_KEYS)}")
+    if meta["role"] not in ROLES:
+        raise PromptRegistryError(f"{where}: role must be one of {list(ROLES)}")
     try:
         version, max_tokens = int(meta["version"]), int(meta["max_tokens"])
     except ValueError:
@@ -90,7 +90,7 @@ def parse_prompt(path: pathlib.Path) -> Prompt:
         id=meta["id"],
         version=version,
         purpose=meta["purpose"],
-        model_key=meta["model"],
+        role=meta["role"],
         output=cast(Output, meta["output"]),
         effort=cast(Effort, meta["effort"]),
         max_tokens=max_tokens,

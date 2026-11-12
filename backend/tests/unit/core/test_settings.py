@@ -46,11 +46,12 @@ def test_secrets_masked(clean_env: pytest.MonkeyPatch) -> None:
             assert "SecretStr" in str(field.annotation), name
 
 
-def test_model_ids_no_date_suffix(clean_env: pytest.MonkeyPatch) -> None:
+def test_model_role_defaults(clean_env: pytest.MonkeyPatch) -> None:
     s = make(clean_env)
-    for mid in (s.answer_model, s.haiku_model, s.opus_model):
-        assert re.fullmatch(r"claude-[a-z]+-\d+-\d+", mid), mid
-    assert s.answer_model == "claude-sonnet-5-5"
-    assert s.haiku_model == "claude-haiku-5-5"
+    roles = (s.model_fast, s.model_balanced, s.model_deep, s.model_flagship)
+    assert roles == ("gpt-6-luna", "gpt-6.1-terra", "gpt-6.1-sol", "gpt-6-astra")
+    for mid in (*roles, s.embedding_model):
+        assert not re.search(r"-\d{4}-\d{2}-\d{2}$|-\d{8}$", mid), mid  # no date suffix
+    assert s.model_routes == {}
     assert s.embedding_model == "text-embedding-3-small"
     assert s.embedding_dim == 1536

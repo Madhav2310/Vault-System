@@ -2,6 +2,7 @@
 
 import ast
 import pathlib
+import re
 
 BACKEND = pathlib.Path(__file__).resolve().parents[2]
 PROVIDER_MODULES = {"anthropic", "openai"}
@@ -68,3 +69,29 @@ def test_no_provider_clients_outside_llm() -> None:
         v for p in inside for v in violations(p.read_text(encoding="utf-8"), p.name) if "(...)" in v
     ]
     assert not bad_inside, bad_inside
+
+
+MODEL_ID = re.compile(
+    r"\b(?:gpt-[0-9][\w.-]*|o[0-9]-?[\w-]*|claude-[a-z]+-[0-9][\w.-]*|text-embedding-[\w-]+)\b"
+)
+MODEL_ID_ALLOWED = {"app/llm/routing.py", "app/llm/pricing.py", "app/core/settings.py"}
+
+
+def test_no_hardcoded_model_ids() -> None:
+    """Model IDs appear only in the router, price table and settings (CLAUDE.md: model choice is code)."""
+    assert MODEL_ID.search("m = 'gpt-6.1-terra'") and MODEL_ID.search('"claude-sonnet-5-5"')
+    assert not MODEL_ID.search("tokens = input_tokens / output")
+    app = BACKEND / "app"
+    bad = []
+    for path in app.rglob("*.py"):
+        rel = path.relative_to(BACKEND).as_posix()
+        if rel in MODEL_ID_ALLOWED:
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        docstrings = {id(n.value) for n in ast.walk(tree) if isinstance(n, ast.Expr)}
+        for node in ast.walk(tree):
+            if id(node) in docstrings:
+                continue
+            if isinstance(node, ast.Constant) and isinstance(node.value, str) and MODEL_ID.search(node.value):
+                bad.append(f"{rel}:{node.lineno} {node.value[:40]!r}")
+    assert not bad, "model IDs named outside the router/settings:\n" + "\n".join(bad)

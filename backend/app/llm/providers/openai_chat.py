@@ -121,7 +121,13 @@ def to_response(resp: Response) -> ChatResponse:
         for c in item.content
         if c.type == "output_text"
     )
-    return ChatResponse(parts=parts, stop_reason=stop, usage=_usage(resp.usage), refusal_category=category)
+    return ChatResponse(
+        parts=parts,
+        stop_reason=stop,
+        usage=_usage(resp.usage),
+        refusal_category=category,
+        resolved_model=resp.model,
+    )
 
 
 class OpenAIResponsesProvider:
@@ -154,7 +160,10 @@ class OpenAIResponsesProvider:
                 elif ev.type in ("response.completed", "response.incomplete", "response.failed"):
                     r = to_response(ev.response)
                     yield ProviderFinal(
-                        stop_reason=r.stop_reason, usage=r.usage, refusal_category=r.refusal_category
+                        stop_reason=r.stop_reason,
+                        usage=r.usage,
+                        refusal_category=r.refusal_category,
+                        resolved_model=r.resolved_model,
                     )
                     return
                 elif ev.type == "error":

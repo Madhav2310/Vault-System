@@ -200,3 +200,11 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Built: `app/llm/providers/openai_chat.py` (`OpenAIResponsesProvider`, strict-schema transform, usage mapping that subtracts cached and written tokens from OpenAI's total input, refusal/incomplete handling, streaming), OpenAI GPT-6 prices incl. 1.25× cache writes and the >272K surcharge in `pricing.py`, `Effort` gains `none`, `ChatRequest.service_tier`; `get_gateway()` now uses it. The Anthropic adapter is untouched and rejects effort `none`.
 - Not done here (S0.24): prompts still name `haiku_model` and the smoke test passes `model="gpt-6-luna"` explicitly until role routing lands.
 - [T] changes approved: none
+
+### S0.24 — Model roles, router and role fallback
+- Date: 2026-11-13 · Commit: (this commit)
+- Commands: `make lint typecheck` (ruff, mypy strict clean); `make ci` (78 unit tests); `make test-integration` (49 tests, incl. migration round trip with 0002); `make smoke-providers` (2 live calls, ≈ $0.000014).
+- Built: `app/llm/routing.py` (`ModelRouter`, default routing table from design §4.2, `EFFORT_SUPPORT`, `FALLBACK_ROLE`, `MODEL_ROUTES` overrides with specificity order `node:route:mode` → `node:route` → `node::mode` → `node`); settings `MODEL_FAST/BALANCED/DEEP/FLAGSHIP` + `MODEL_ROUTES` replace the three Claude model fields; prompt front-matter uses `role`; the gateway resolves through the router, records `role` and `resolved_model` (migration 0002), and makes one fallback attempt after retries on a retryable error (`CallResult.degraded = ("DEGRADED_MODEL_FALLBACK",)`). Attempt numbers run continuously across the fallback.
+- Behavior changes to note: a pinned `model=` never falls back; the retry-cap tests pin a model. Router construction validates every row, so a bad `MODEL_*` value fails at startup and names the node.
+- Not done: stream fallback (F-018).
+- [T] changes approved: none

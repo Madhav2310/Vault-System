@@ -236,7 +236,7 @@ async def test_budget_charged_once_and_deadline_stops_retry(tmp_path: pathlib.Pa
 
     gw2, prov2, _, _ = make_gateway(tmp_path, [fake.rate_limited(60)])
     with pytest.raises(errors.RateLimitedError):  # retry-after would overrun the deadline → no retry
-        await _schema_call(gw2, budget=FakeBudget(deadline_s=5))
+        await _schema_call(gw2, budget=FakeBudget(deadline_s=5), model="gpt-6.1-terra")  # pinned: no fallback
     assert len(prov2.requests) == 1
 
 

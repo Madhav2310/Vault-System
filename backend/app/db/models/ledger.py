@@ -113,7 +113,9 @@ class LlmCall(CreatedAt, Base):
     purpose: Mapped[str]
     lane: Mapped[str]
     provider: Mapped[str]
-    model: Mapped[str]
+    role: Mapped[str | None]  # fast | balanced | deep | flagship; NULL for embeddings
+    model: Mapped[str]  # requested
+    resolved_model: Mapped[str | None]  # what the API reports having served
     prompt_id: Mapped[str | None]
     prompt_version: Mapped[int | None]
     attempt: Mapped[int]
