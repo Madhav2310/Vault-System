@@ -14,7 +14,7 @@ define not_implemented
 endef
 
 .PHONY: help up down logs test test-unit test-integration test-e2e lint fmt typecheck migrate seed \
-        eval eval-retrieval eval-smoke loadtest ci
+        seed-users eval eval-retrieval eval-smoke loadtest ci
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | tr '\n' ' '; echo
@@ -47,8 +47,9 @@ typecheck:
 
 migrate:
 	$(COMPOSE) run --rm --no-deps api alembic upgrade head
-seed:
-	$(call not_implemented,S0.09)
+seed: seed-users
+seed-users:
+	$(COMPOSE) exec -T api python -m app.db.seed users
 eval:
 	$(call not_implemented,S2.14)
 eval-retrieval:
