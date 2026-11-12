@@ -154,3 +154,10 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Status: AC1–AC4 VERIFIED · AC5 UNVERIFIED (Anthropic client metadata-only; arrives with S0.13's provider code)
 - Notes: setup is idempotent per process (the solo Celery pool fires `worker_process_init` in-process and had created real OTLP exporters inside tests). Tail sampling is defined but not in any dev pipeline. Tempo's HTTP port 3200 is published for the check script.
 - [T] changes approved: none
+
+### S0.17 — Content-leak guard harness
+- Date: 2026-11-12 · Commit: (this commit)
+- Commands: `make test-unit` (tests/unit/support/test_leak_guard.py); `make ci`
+- Output: 3 passed — a planted string is caught when logged via structlog, caught when set as a span attribute, and clean logs/spans pass. Fixture `leak_guard` (tests/support/leak_guard.py) captures stdlib/structlog records and spans from its own tracer and from the global SDK provider if present; `assert_no_leak(secrets)` raises `LeakError` naming only the first 12 characters of a leaked string.
+- Status: VERIFIED
+- [T] changes approved: none
