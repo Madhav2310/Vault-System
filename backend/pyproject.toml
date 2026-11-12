@@ -30,10 +30,22 @@ dev = [
     "types-pyyaml>=6.0.12.20261111",
     "opentelemetry-sdk>=1.28",
 ]
+eval = [
+    "pdfplumber>=0.11,<0.12",
+    "pillow>=13.0",
+    "pypdf>=7.0",
+    "pypdfium2>=5.15",
+    "python-docx>=1.2",
+    "pyyaml>=6.0",
+    "rapidfuzz>=3.14",
+    "reportlab>=5.1",
+]
 
 [tool.uv]
 # Never probe Homebrew/system interpreters (a Homebrew python@3.13 probe crashed on 2026-11-12)
 python-preference = "only-managed"
+# eval: corpus build + fixture generator; its tests run in `make test`, so sync it by default
+default-groups = ["dev", "eval"]
 
 [build-system]
 requires = ["hatchling"]

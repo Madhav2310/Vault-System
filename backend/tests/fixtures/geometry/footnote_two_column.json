@@ -1,0 +1,53 @@
+{
+  "case": "footnote_two_column",
+  "file": "footnote_two_column.pdf",
+  "box_convention": "normalized [0,1] in the rendered page (CropBox, /Rotate applied), top-left origin; box = advance width x [baseline+descent, baseline+descent+size], Helvetica descent -0.207 em; one box per drawn line run; computed from the drawing commands, not from an extractor",
+  "pages": [
+    {
+      "page": 1,
+      "width_pt": 612,
+      "height_pt": 792
+    }
+  ],
+  "failure_modes": [
+    "F2",
+    "F4"
+  ],
+  "targets": [
+    {
+      "text": "We instead annotate every tweet with fine-grained labels from experts.",
+      "note": "box 1 starts at the line start; the sentence starts after 'class. ' (sub-line)",
+      "boxes": [
+        {
+          "page": 1,
+          "x0": 0.117647,
+          "top": 0.121301,
+          "x1": 0.401912,
+          "bottom": 0.133927
+        },
+        {
+          "page": 1,
+          "x0": 0.117647,
+          "top": 0.136452,
+          "x1": 0.384624,
+          "bottom": 0.149078
+        }
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "text": "1 https://github.com/example/vault-fixtures",
+      "reason": "footnote",
+      "boxes": [
+        {
+          "page": 1,
+          "x0": 0.117647,
+          "top": 0.891981,
+          "x1": 0.331879,
+          "bottom": 0.900819
+        }
+      ]
+    }
+  ]
+}

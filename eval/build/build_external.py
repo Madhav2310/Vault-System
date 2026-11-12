@@ -3,7 +3,7 @@
 Every gold quote is located in the PDF text extracted by pdfplumber (the production extractor),
 so the dataset doubles as an extraction check: an unlocatable expert span is reported, not hidden.
 
-Run: .venv/bin/python eval/build/build_external.py   (after eval/build/fetch_sources.sh)
+Run: make eval-build   (or: cd backend && uv run --frozen --group eval python ../eval/build/build_external.py)   (after eval/build/fetch_sources.sh)
 Output: eval/datasets/vault_eval_v1/external.yaml, eval/datasets/vault_eval_v1/documents.yaml
 """
 from __future__ import annotations

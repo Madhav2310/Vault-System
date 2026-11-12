@@ -7,10 +7,12 @@ Status: **draft — awaiting human review** (`status: draft` on every item). Rev
 ## Rebuild
 
 ```bash
-eval/build/fetch_sources.sh                      # third-party sources → eval/sources/ (gitignored, ~150 MB)
-.venv/bin/python eval/build/build_external.py    # CUAD/QASPER/FinanceBench items, gold quotes located in PDF text
-.venv/bin/python eval/build/build_authored.py    # authored docs + items, quote verification, splits
-.venv/bin/python eval/build/extraction_sweep.py  # extractor-config sweep (stage 1 of the convergence engine)
+make eval-fetch   # eval/build/fetch_sources.sh: third-party sources → eval/sources/ (gitignored, ~300 MB)
+make eval-build   # runs, under backend/'s uv `eval` dependency group:
+                  #   build_external.py   CUAD/QASPER/FinanceBench items, gold quotes located in PDF text
+                  #   build_authored.py   authored docs + items, quote verification, splits
+# extractor-config sweep (stage 1 of the convergence engine), run separately:
+cd backend && uv run --frozen --group eval python ../eval/build/extraction_sweep.py
 ```
 
 ## Composition

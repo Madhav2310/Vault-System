@@ -1,0 +1,45 @@
+{
+  "case": "invisible_text",
+  "file": "invisible_text.pdf",
+  "box_convention": "normalized [0,1] in the rendered page (CropBox, /Rotate applied), top-left origin; box = advance width x [baseline+descent, baseline+descent+size], Helvetica descent -0.207 em; one box per drawn line run; computed from the drawing commands, not from an extractor",
+  "pages": [
+    {
+      "page": 1,
+      "width_pt": 612,
+      "height_pt": 792
+    }
+  ],
+  "failure_modes": [
+    "F11"
+  ],
+  "targets": [
+    {
+      "text": "The deposit is refundable within 14 days.",
+      "boxes": [
+        {
+          "page": 1,
+          "x0": 0.117647,
+          "top": 0.104146,
+          "x1": 0.472941,
+          "bottom": 0.119298
+        }
+      ]
+    }
+  ],
+  "excluded": [
+    {
+      "text": "Hidden layer: the deposit is never refundable.",
+      "reason": "invisible",
+      "render_mode": 3,
+      "boxes": [
+        {
+          "page": 1,
+          "x0": 0.117647,
+          "top": 0.167278,
+          "x1": 0.512176,
+          "bottom": 0.182429
+        }
+      ]
+    }
+  ]
+}
