@@ -1,0 +1,168 @@
+# Vault dev/demo topology (design §3, §20.1). All images pinned; host ports overridable via .env.
+name: vault
+
+x-app: &app
+  build: ./backend
+  image: vault-backend:0.1.0
+  env_file:
+    - path: .env
+      required: false
+  environment: &app-env
+    DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-vault}:${POSTGRES_PASSWORD:-vault}@postgres:5432/${POSTGRES_DB:-vault}
+    REDIS_URL: redis://redis:6379/0
+    RERANKER_URL: http://reranker:8080
+    OBJECT_STORE_ROOT: /data/blobs
+    OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
+    OTEL_RESOURCE_ATTRIBUTES: deployment.environment=dev,service.version=${GIT_SHA:-dev}
+  volumes:
+    - blobs:/data/blobs
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+  restart: unless-stopped
+
+x-celery-health: &celery-health
+  interval: 30s
+  timeout: 15s
+  retries: 3
+  start_period: 30s
+
+services:
+  api:
+    <<: *app
+    environment:
+      <<: *app-env
+      OTEL_SERVICE_NAME: vault-api
+    ports: ["127.0.0.1:${API_PORT:-8100}:8000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8000/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+
+  reranker:
+    build: ./reranker
+    image: vault-reranker:0.1.0
+    ports: ["127.0.0.1:${RERANKER_PORT:-8180}:8080"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+    restart: unless-stopped
+
+  worker-ingest:
+    <<: *app
+    environment:
+      <<: *app-env
+      OTEL_SERVICE_NAME: vault-worker-ingest
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "-Q", "ingest", "-c", "2", "-n", "ingest@%h", "--loglevel", "INFO"]
+    healthcheck:
+      <<: *celery-health
+      test: ["CMD-SHELL", "celery -A app.worker.celery_app inspect ping -d ingest@$$HOSTNAME --timeout 10"]
+    mem_limit: 1g
+
+  worker-ai:
+    <<: *app
+    environment:
+      <<: *app-env
+      OTEL_SERVICE_NAME: vault-worker-ai
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "-Q", "ai,maintenance", "-c", "4", "-n", "ai@%h", "--loglevel", "INFO"]
+    healthcheck:
+      <<: *celery-health
+      test: ["CMD-SHELL", "celery -A app.worker.celery_app inspect ping -d ai@$$HOSTNAME --timeout 10"]
+
+  beat:
+    <<: *app
+    environment:
+      <<: *app-env
+      OTEL_SERVICE_NAME: vault-beat
+    command: ["celery", "-A", "app.worker.celery_app", "beat", "-s", "/tmp/celerybeat-schedule", "--loglevel", "INFO"]
+    deploy:
+      replicas: 1  # exactly one scheduler (design §3)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import sys; sys.exit(0 if b'beat' in open('/proc/1/cmdline','rb').read() else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg16-bookworm
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-vault}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vault}
+      POSTGRES_DB: ${POSTGRES_DB:-vault}
+    ports: ["127.0.0.1:${POSTGRES_PORT:-5442}:5432"]
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4.9-alpine
+    command: ["redis-server", "--appendonly", "no", "--save", ""]  # rebuildable state only (design §3)
+    ports: ["127.0.0.1:${REDIS_PORT:-6389}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  otel-lgtm:
+    image: grafana/otel-lgtm:0.38.1
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3000}:3000"
+      - "127.0.0.1:${OTLP_GRPC_PORT:-4317}:4317"
+      - "127.0.0.1:${OTLP_HTTP_PORT:-4318}:4318"
+    volumes:
+      - lgtm:/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:3000/api/health >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+    restart: unless-stopped
+
+  # ---- optional profiles (filled by later tasks) ----
+  minio:  # S0.12 [OPT]. MinIO images are no longer on Docker Hub; SeaweedFS provides the S3 API (followups F-003).
+    profiles: ["minio"]
+    image: chrislusf/seaweedfs:4.50
+    command: ["server", "-s3", "-dir=/data"]
+    ports: ["127.0.0.1:${S3_PORT:-8333}:8333"]
+    volumes:
+      - s3data:/data
+
+  phoenix:  # S7.13 [OPT]
+    profiles: ["phoenix"]
+    image: arizephoenix/phoenix:version-21.0.0
+    ports: ["127.0.0.1:${PHOENIX_PORT:-6006}:6006"]
+
+  pgexporter:  # S7.13 [OPT]
+    profiles: ["pgexporter"]
+    image: prometheuscommunity/postgres-exporter:v0.20.1
+    environment:
+      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-vault}:${POSTGRES_PASSWORD:-vault}@postgres:5432/${POSTGRES_DB:-vault}?sslmode=disable
+    depends_on: [postgres]
+
+  pgbouncer:  # design §20.2 (scale topology); not used in dev
+    profiles: ["pgbouncer"]
+    image: edoburu/pgbouncer:v1.26.1-p0
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-vault}:${POSTGRES_PASSWORD:-vault}@postgres:5432/${POSTGRES_DB:-vault}
+      POOL_MODE: transaction
+      AUTH_TYPE: scram-sha-256
+    depends_on: [postgres]
+
+volumes:
+  pgdata:
+  blobs:
+  lgtm:
+  s3data:

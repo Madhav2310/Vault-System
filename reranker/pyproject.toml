@@ -1,0 +1,10 @@
+[project]
+name = "vault-reranker"
+version = "0.1.0"
+description = "Cross-encoder rerank service (stub until S2: identity scores)"
+requires-python = ">=3.12,<3.13"
+dependencies = ["fastapi>=0.115", "uvicorn>=0.32"]
+
+[tool.uv]
+package = false
+python-preference = "only-managed"

@@ -7,6 +7,7 @@ dependencies = [
     "celery[redis]>=5.4",
     "fastapi>=0.115",
     "pydantic-settings>=2.6",
+    "structlog>=24.4",
     "uvicorn[standard]>=0.32",
 ]
 
@@ -19,6 +20,9 @@ dev = [
     "pytest-cov>=6.0",
     "httpx>=0.28",
     "celery-types>=0.26.0",
+    "pyyaml>=6.0.3",
+    "types-pyyaml>=6.0.12.20261111",
+    "opentelemetry-sdk>=1.28",
 ]
 
 [tool.uv]

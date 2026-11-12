@@ -8,21 +8,24 @@ define not_implemented
 	@echo "make $@: not implemented yet ($(1))"; exit 1
 endef
 
-.PHONY: help up down logs test test-unit test-integration lint fmt typecheck migrate seed \
+.PHONY: help up down logs test test-unit test-integration test-e2e lint fmt typecheck migrate seed \
         eval eval-retrieval eval-smoke loadtest ci
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | tr '\n' ' '; echo
 
 up:
-	$(call not_implemented,S0.04)
+	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) up -d --build
+	scripts/wait_healthy.sh 180
 down:
-	$(call not_implemented,S0.04)
+	$(COMPOSE) down
 logs:
-	$(call not_implemented,S0.04)
+	$(COMPOSE) logs -f --tail=200
 
 test:
-	$(UV) pytest
+	$(UV) pytest tests/unit tests/integration tests/e2e
+test-e2e:
+	$(UV) pytest tests/e2e
 test-unit:
 	$(UV) pytest tests/unit
 test-integration:
