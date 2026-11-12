@@ -18,6 +18,7 @@ How AI tools were used to design and build this project, including where they we
 - S0.01–S0.03: repo init, uv/ruff/mypy/pytest skeleton, logs.
 - S0.04–S0.22: compose stack, settings, logging, errors, DB schema, auth, repository pattern, object store, LLM gateway, Celery, OpenTelemetry, health, leak guard, eval wiring and spikes. Two tasks were built by parallel subagents in isolated git worktrees (S0.18+S0.21, S0.13); their branches were reviewed and merged by the main session.
 - 2026-11-13 provider change: the runtime moved from Anthropic to OpenAI only (no Anthropic key). Claude Code researched current models, pricing, structured outputs, caching and rate limits, ran sub-cent probes on the real key, and rewrote design §4/§5.3/§8.5/§9.1/§13 and the affected plan tasks (new S0.23–S0.25, S4.19).
+- S0.23–S0.25 (same day): the OpenAI Responses provider, model roles with the router and a one-attempt role fallback, and a citation spike on 12 sampled smoke items (17 live calls, $0.054 of a $0.50 cap). Live checks are capped samples; the spike's checks read a saved results file so re-running them costs nothing.
 
 ## Corrections
 | Date | Task | What the AI got wrong | How it was caught | Fix |
@@ -28,6 +29,7 @@ How AI tools were used to design and build this project, including where they we
 | 2026-11-13 | provider change | In the first discussion of the change I said native citations guarantee a relevant span; they only guarantee a valid pointer and exact text (the model still picks the span) | Re-reading the citation docs while writing §8.5 | Design now states precisely what is guaranteed by code and what is measured |
 | 2026-11-13 | provider change | A first model list filtered out the newest family (GPT-6) because of a regex that only kept older name patterns | The models page named IDs the list lacked; re-listed without the filter | Routing is built on the GPT-6 line, which the key can call |
 | 2026-11-13 | S0.15 | Test left Celery on an in-memory broker, breaking e2e tests in a single `make test` run | Full-suite run | Fixture restores broker, AMQP and result-backend caches |
+| 2026-11-13 | S0.25 | The design treated OpenAI prompt caching as free upside (cheap reads). The spike's usage fields showed every prompt over 1,024 tokens billed as a 1.25× cache write, including RAG prompts nobody reuses | Reading `cache_write_tokens` in the spike output, then a probe on a fresh prompt | `cache_mode=explicit` support in the provider, design §4.4 rule, follow-up F-021 for the gateway default |
 | 2026-11-12 | S0.03 | Plan scripts assumed unticked boxes; ticking progress would have broken lint and been wiped by renumbering | Read before ticking | Regexes accept `[x]`; renumber preserves ticks |
 
 ## Prompt iteration log

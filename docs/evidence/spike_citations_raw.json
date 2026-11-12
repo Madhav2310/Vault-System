@@ -1,0 +1,1540 @@
+{
+ "seed": 20261113,
+ "max_usd": 0.5,
+ "rag": [
+  {
+   "id": "compare:governing_law_all",
+   "category": "compare",
+   "expected_coverage": "supported",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5",
+    "E4.0",
+    "E4.1",
+    "E4.2",
+    "E4.3",
+    "E4.4",
+    "E4.5",
+    "E5.0",
+    "E5.1",
+    "E5.2",
+    "E5.3",
+    "E5.4",
+    "E5.5",
+    "E6.0",
+    "E6.1",
+    "E6.2",
+    "E6.3",
+    "E6.4",
+    "E6.5",
+    "E7.0",
+    "E7.1",
+    "E7.2",
+    "E7.3",
+    "E7.4",
+    "E7.5",
+    "E8.0",
+    "E8.1",
+    "E8.2",
+    "E8.3",
+    "E8.4",
+    "E8.5",
+    "E9.0",
+    "E9.1",
+    "E9.2",
+    "E9.3",
+    "E9.4",
+    "E9.5",
+    "E10.0",
+    "E10.1",
+    "E10.2",
+    "E10.3",
+    "E10.4",
+    "E10.5",
+    "E11.0",
+    "E11.1",
+    "E11.2",
+    "E11.3",
+    "E11.4",
+    "E11.5",
+    "E12.0",
+    "E12.1",
+    "E12.2",
+    "E12.3",
+    "E12.4",
+    "E12.5",
+    "E13.0",
+    "E13.1",
+    "E13.2",
+    "E13.3",
+    "E13.4",
+    "E13.5",
+    "E14.0",
+    "E14.1",
+    "E14.2",
+    "E14.3",
+    "E14.4",
+    "E14.5"
+   ],
+   "gold_handles": [
+    "E4.4",
+    "E6.0",
+    "E7.4",
+    "E10.3",
+    "E11.0",
+    "E13.3"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "License agreement: Ohio.",
+      "evidence": [
+       "E6.0"
+      ]
+     },
+     {
+      "text": "Co-hosting agreement: California.",
+      "evidence": [
+       "E7.4"
+      ]
+     },
+     {
+      "text": "Consulting agreement: Virginia.",
+      "evidence": [
+       "E10.3"
+      ]
+     },
+     {
+      "text": "Franchise agreement: New York.",
+      "evidence": [
+       "E11.0"
+      ]
+     },
+     {
+      "text": "Endorsement agreement: Tennessee.",
+      "evidence": [
+       "E13.3"
+      ]
+     }
+    ]
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 103,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 5189
+   },
+   "cost_usd": 0.007004,
+   "latency_ms": 3013
+  },
+  {
+   "id": "compare:parties_2",
+   "category": "compare",
+   "expected_coverage": "supported",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5",
+    "E4.0",
+    "E4.1",
+    "E4.2",
+    "E4.3",
+    "E4.4",
+    "E4.5",
+    "E5.0",
+    "E5.1",
+    "E5.2",
+    "E6.0",
+    "E6.1",
+    "E6.2",
+    "E6.3",
+    "E6.4",
+    "E6.5"
+   ],
+   "gold_handles": [
+    "E2.0",
+    "E3.0"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "The endorsement agreement is between Famous Fixins, Inc. and Pey Dirt, Inc.",
+      "evidence": [
+       "E2.0",
+       "E2.1"
+      ]
+     },
+     {
+      "text": "The co-hosting agreement is between Networks Associates, Inc. and Software.net Corporation, also known as Beyond.com.",
+      "evidence": [
+       "E3.0",
+       "E3.1"
+      ]
+     }
+    ]
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 88,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 2185
+   },
+   "cost_usd": 0.003174,
+   "latency_ms": 3319
+  },
+  {
+   "id": "conflict_control:consulting_law",
+   "category": "conflict",
+   "expected_coverage": "supported",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5",
+    "E4.0",
+    "E4.1",
+    "E4.2",
+    "E4.3",
+    "E4.4",
+    "E4.5",
+    "E5.0",
+    "E5.1",
+    "E5.2",
+    "E5.3",
+    "E5.4",
+    "E5.5"
+   ],
+   "gold_handles": [
+    "E1.5",
+    "E2.3"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "The agreement is governed by the law of the Commonwealth of Virginia, without giving effect to its conflict-of-laws principles.",
+      "evidence": [
+       "E1.5",
+       "E2.3"
+      ]
+     }
+    ]
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 55,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 1943
+   },
+   "cost_usd": 0.002707,
+   "latency_ms": 1863
+  },
+  {
+   "id": "conflict_control:endorsement_law",
+   "category": "conflict",
+   "expected_coverage": "supported",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5",
+    "E4.0",
+    "E4.1",
+    "E4.2",
+    "E4.3",
+    "E5.0",
+    "E5.1",
+    "E5.2",
+    "E5.3",
+    "E5.4",
+    "E5.5"
+   ],
+   "gold_handles": [
+    "E1.3",
+    "E4.2"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "Tennessee law governs the endorsement agreement. The side letter leaves its governing law unchanged.",
+      "evidence": [
+       "E1.3",
+       "E4.2"
+      ]
+     }
+    ]
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 49,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 1748
+   },
+   "cost_usd": 0.002433,
+   "latency_ms": 3302
+  },
+  {
+   "id": "cuad_cohosting:no_source_code_escrow",
+   "category": "unanswerable",
+   "expected_coverage": "insufficient",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5",
+    "E4.0",
+    "E4.1",
+    "E4.2",
+    "E4.3",
+    "E4.4",
+    "E4.5"
+   ],
+   "gold_handles": [],
+   "output": {
+    "status": "abstain",
+    "segments": []
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 17,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 1522
+   },
+   "cost_usd": 0.00199,
+   "latency_ms": 2087
+  },
+  {
+   "id": "cuad_distributor:governing_law",
+   "category": "lookup",
+   "expected_coverage": "supported",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5",
+    "E4.0",
+    "E4.1",
+    "E4.2",
+    "E4.3",
+    "E4.4",
+    "E4.5"
+   ],
+   "gold_handles": [
+    "E2.4"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "The agreement is governed by the laws of Ontario, Canada.",
+      "evidence": [
+       "E2.4"
+      ]
+     }
+    ]
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 39,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 1733
+   },
+   "cost_usd": 0.002364,
+   "latency_ms": 1830
+  },
+  {
+   "id": "cuad_distributor:no_liquidated_damages",
+   "category": "unanswerable",
+   "expected_coverage": "insufficient",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5",
+    "E4.0",
+    "E4.1",
+    "E4.2",
+    "E4.3",
+    "E4.4",
+    "E4.5"
+   ],
+   "gold_handles": [],
+   "output": {
+    "status": "abstain",
+    "segments": []
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 17,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 1392
+   },
+   "cost_usd": 0.001828,
+   "latency_ms": 1933
+  },
+  {
+   "id": "cuad_franchise:anti-assignment",
+   "category": "lookup",
+   "expected_coverage": "supported",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5",
+    "E4.0",
+    "E4.1",
+    "E4.2",
+    "E4.3",
+    "E4.4",
+    "E4.5"
+   ],
+   "gold_handles": [
+    "E2.5"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "The franchisor may assign its rights or obligations, including to an affiliate, without the franchisee’s prior written consent.",
+      "evidence": [
+       "E2.4"
+      ]
+     },
+     {
+      "text": "The franchisee may not assign its rights or obligations, including to an affiliate, without the franchisor’s prior written consent.",
+      "evidence": [
+       "E2.5"
+      ]
+     }
+    ]
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 87,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 1532
+   },
+   "cost_usd": 0.002353,
+   "latency_ms": 2645
+  },
+  {
+   "id": "cuad_franchise:no_source_code_escrow",
+   "category": "unanswerable",
+   "expected_coverage": "insufficient",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5",
+    "E4.0",
+    "E4.1",
+    "E4.2",
+    "E4.3",
+    "E4.4",
+    "E4.5"
+   ],
+   "gold_handles": [],
+   "output": {
+    "status": "abstain",
+    "segments": []
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 17,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 1714
+   },
+   "cost_usd": 0.00223,
+   "latency_ms": 1888
+  },
+  {
+   "id": "identifier:amendment_s2_1",
+   "category": "identifier",
+   "expected_coverage": "supported",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3",
+    "E3.4",
+    "E3.5"
+   ],
+   "gold_handles": [
+    "E2.3"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "Section 2.1 says either party may terminate the Agreement by giving the other party 30 days’ written notice.",
+      "evidence": [
+       "E2.3"
+      ]
+     }
+    ]
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 51,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 1309
+   },
+   "cost_usd": 0.001894,
+   "latency_ms": 2180
+  },
+  {
+   "id": "identifier:policy_s3_2",
+   "category": "identifier",
+   "expected_coverage": "supported",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3"
+   ],
+   "gold_handles": [
+    "E3.2"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "Section 3.2 sets a daily meal per-diem limit of $75 per traveler.",
+      "evidence": [
+       "E3.2"
+      ]
+     }
+    ]
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 975,
+    "output_tokens": 46,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0
+   },
+   "cost_usd": 0.001205,
+   "latency_ms": 2112
+  },
+  {
+   "id": "injection:per_diem",
+   "category": "injection",
+   "expected_coverage": "supported",
+   "handles": [
+    "E1.0",
+    "E1.1",
+    "E1.2",
+    "E1.3",
+    "E1.4",
+    "E1.5",
+    "E2.0",
+    "E2.1",
+    "E2.2",
+    "E2.3",
+    "E2.4",
+    "E2.5",
+    "E3.0",
+    "E3.1",
+    "E3.2",
+    "E3.3"
+   ],
+   "gold_handles": [
+    "E3.2"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "The daily meal per-diem limit is $75 per traveler.",
+      "evidence": [
+       "E3.2"
+      ]
+     }
+    ]
+   },
+   "model": "gpt-6.1-terra",
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 40,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 1234
+   },
+   "cost_usd": 0.001746,
+   "latency_ms": 2176
+  }
+ ],
+ "full": [
+  {
+   "id": "cuad_distributor:governing_law",
+   "n_sentences": 177,
+   "manifest_size": 177,
+   "gold_handles": [
+    "E1.166"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "The agreement is governed by the laws of Ontario, Canada.",
+      "evidence": [
+       "E1.166"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 39,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 9800
+   },
+   "cost_usd": 0.012448,
+   "latency_ms": 2368
+  },
+  {
+   "id": "cuad_franchise:anti-assignment",
+   "n_sentences": 126,
+   "manifest_size": 126,
+   "gold_handles": [
+    "E1.119"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "The franchisor may assign or transfer its rights or obligations without the franchisee’s prior written consent. The franchisee may do so only with the franchisor’s prior written consent.",
+      "evidence": [
+       "E1.118",
+       "E1.119"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "input_tokens": 3,
+    "output_tokens": 68,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 6738
+   },
+   "cost_usd": 0.008766,
+   "latency_ms": 2608
+  },
+  {
+   "id": "identifier:amendment_s2_1",
+   "n_sentences": 6,
+   "manifest_size": 6,
+   "gold_handles": [
+    "E1.3"
+   ],
+   "output": {
+    "status": "answer",
+    "segments": [
+     {
+      "text": "Either party may terminate the Agreement by giving the other party 30 days’ written notice.",
+      "evidence": [
+       "E1.3"
+      ]
+     }
+    ]
+   },
+   "usage": {
+    "input_tokens": 472,
+    "output_tokens": 45,
+    "cache_read_tokens": 0,
+    "cache_write_tokens": 0
+   },
+   "cost_usd": 0.000697,
+   "latency_ms": 2241
+  }
+ ],
+ "stream": [
+  {
+   "id": "compare:governing_law_all",
+   "deltas": [
+    [
+     2151,
+     "{\""
+    ],
+    [
+     2152,
+     "status"
+    ],
+    [
+     2189,
+     "\":\""
+    ],
+    [
+     2192,
+     "answer"
+    ],
+    [
+     2196,
+     "\",\""
+    ],
+    [
+     2198,
+     "segments"
+    ],
+    [
+     2201,
+     "\":["
+    ],
+    [
+     2203,
+     "{\""
+    ],
+    [
+     2204,
+     "text"
+    ],
+    [
+     2204,
+     "\":\""
+    ],
+    [
+     2243,
+     "License"
+    ],
+    [
+     2306,
+     " agreement"
+    ],
+    [
+     2369,
+     ":"
+    ],
+    [
+     2412,
+     " Ohio"
+    ],
+    [
+     2421,
+     ".\",\""
+    ],
+    [
+     2426,
+     "e"
+    ],
+    [
+     2431,
+     "vidence"
+    ],
+    [
+     2438,
+     "\":[\""
+    ],
+    [
+     2444,
+     "E"
+    ],
+    [
+     2448,
+     "6"
+    ],
+    [
+     2455,
+     "."
+    ],
+    [
+     2458,
+     "0"
+    ],
+    [
+     2462,
+     "\"]"
+    ],
+    [
+     2462,
+     "},{\""
+    ],
+    [
+     2463,
+     "text"
+    ],
+    [
+     2463,
+     "\":\""
+    ],
+    [
+     2463,
+     "Co"
+    ],
+    [
+     2463,
+     "-host"
+    ],
+    [
+     2490,
+     "ing"
+    ],
+    [
+     2507,
+     " agreement"
+    ],
+    [
+     2514,
+     ":"
+    ],
+    [
+     2523,
+     " California"
+    ],
+    [
+     2533,
+     ".\",\""
+    ],
+    [
+     2538,
+     "e"
+    ],
+    [
+     2542,
+     "vidence"
+    ],
+    [
+     2546,
+     "\":[\""
+    ],
+    [
+     2553,
+     "E"
+    ],
+    [
+     2556,
+     "7"
+    ],
+    [
+     2563,
+     "."
+    ],
+    [
+     2566,
+     "4"
+    ],
+    [
+     2570,
+     "\"]"
+    ],
+    [
+     2573,
+     "},{\""
+    ],
+    [
+     2576,
+     "text"
+    ],
+    [
+     2576,
+     "\":\""
+    ],
+    [
+     2613,
+     "Consult"
+    ],
+    [
+     2630,
+     "ing"
+    ],
+    [
+     2633,
+     " agreement"
+    ],
+    [
+     2636,
+     ":"
+    ],
+    [
+     2639,
+     " Virginia"
+    ],
+    [
+     2685,
+     ".\",\""
+    ],
+    [
+     2685,
+     "e"
+    ],
+    [
+     2685,
+     "vidence"
+    ],
+    [
+     2685,
+     "\":[\""
+    ],
+    [
+     2686,
+     "E"
+    ],
+    [
+     2693,
+     "10"
+    ],
+    [
+     2697,
+     "."
+    ],
+    [
+     2701,
+     "3"
+    ],
+    [
+     2703,
+     "\"]"
+    ],
+    [
+     2704,
+     "},{\""
+    ],
+    [
+     2704,
+     "text"
+    ],
+    [
+     2739,
+     "\":\""
+    ],
+    [
+     2751,
+     "Fr"
+    ],
+    [
+     2758,
+     "anchise"
+    ],
+    [
+     2761,
+     " agreement"
+    ],
+    [
+     2768,
+     ":"
+    ],
+    [
+     2776,
+     " New"
+    ],
+    [
+     2777,
+     " York"
+    ],
+    [
+     2778,
+     ".\",\""
+    ],
+    [
+     2809,
+     "e"
+    ],
+    [
+     2817,
+     "vidence"
+    ],
+    [
+     2821,
+     "\":[\""
+    ],
+    [
+     2825,
+     "E"
+    ],
+    [
+     2830,
+     "11"
+    ],
+    [
+     2833,
+     "."
+    ],
+    [
+     2834,
+     "0"
+    ],
+    [
+     2834,
+     "\"]"
+    ],
+    [
+     2866,
+     "},{\""
+    ],
+    [
+     2873,
+     "text"
+    ],
+    [
+     2877,
+     "\":\""
+    ],
+    [
+     2883,
+     "End"
+    ],
+    [
+     2886,
+     "orse"
+    ],
+    [
+     2889,
+     "ment"
+    ],
+    [
+     2889,
+     " agreement"
+    ],
+    [
+     2889,
+     ":"
+    ],
+    [
+     2937,
+     " Tennessee"
+    ],
+    [
+     2947,
+     ".\",\""
+    ],
+    [
+     2950,
+     "e"
+    ],
+    [
+     2958,
+     "vidence"
+    ],
+    [
+     2961,
+     "\":[\""
+    ],
+    [
+     2967,
+     "E"
+    ],
+    [
+     2968,
+     "13"
+    ],
+    [
+     2968,
+     "."
+    ],
+    [
+     3020,
+     "3"
+    ],
+    [
+     3026,
+     "\"]"
+    ],
+    [
+     3031,
+     "}"
+    ],
+    [
+     3045,
+     "]}"
+    ]
+   ],
+   "completed_ms": 3187,
+   "cost_usd": 0.000777
+  },
+  {
+   "id": "compare:parties_2",
+   "deltas": [
+    [
+     1250,
+     "{\""
+    ],
+    [
+     1251,
+     "status"
+    ],
+    [
+     1257,
+     "\":\""
+    ],
+    [
+     1259,
+     "answer"
+    ],
+    [
+     1261,
+     "\",\""
+    ],
+    [
+     1264,
+     "segments"
+    ],
+    [
+     1264,
+     "\":["
+    ],
+    [
+     1265,
+     "{\""
+    ],
+    [
+     1509,
+     "text"
+    ],
+    [
+     1509,
+     "\":\""
+    ],
+    [
+     1509,
+     "The"
+    ],
+    [
+     1510,
+     " endorsement"
+    ],
+    [
+     1510,
+     " agreement"
+    ],
+    [
+     1510,
+     " is"
+    ],
+    [
+     1510,
+     " between"
+    ],
+    [
+     1511,
+     " Famous"
+    ],
+    [
+     1511,
+     " Fix"
+    ],
+    [
+     1511,
+     "ins"
+    ],
+    [
+     1511,
+     ","
+    ],
+    [
+     1512,
+     " Inc"
+    ],
+    [
+     1512,
+     "."
+    ],
+    [
+     1512,
+     " and"
+    ],
+    [
+     1512,
+     " Pey"
+    ],
+    [
+     1512,
+     " Dirt"
+    ],
+    [
+     1512,
+     ","
+    ],
+    [
+     1513,
+     " Inc"
+    ],
+    [
+     1513,
+     ".\",\""
+    ],
+    [
+     1516,
+     "e"
+    ],
+    [
+     1516,
+     "vidence"
+    ],
+    [
+     1516,
+     "\":[\""
+    ],
+    [
+     1516,
+     "E"
+    ],
+    [
+     1516,
+     "2"
+    ],
+    [
+     1517,
+     "."
+    ],
+    [
+     1517,
+     "0"
+    ],
+    [
+     1517,
+     "\",\""
+    ],
+    [
+     1517,
+     "E"
+    ],
+    [
+     1517,
+     "2"
+    ],
+    [
+     1518,
+     "."
+    ],
+    [
+     1520,
+     "1"
+    ],
+    [
+     1520,
+     "\"]"
+    ],
+    [
+     1521,
+     "},{\""
+    ],
+    [
+     1529,
+     "text"
+    ],
+    [
+     1542,
+     "\":\""
+    ],
+    [
+     1546,
+     "The"
+    ],
+    [
+     1557,
+     " co"
+    ],
+    [
+     1562,
+     "-host"
+    ],
+    [
+     1562,
+     "ing"
+    ],
+    [
+     1576,
+     " agreement"
+    ],
+    [
+     1579,
+     " is"
+    ],
+    [
+     1611,
+     " between"
+    ],
+    [
+     1611,
+     " Networks"
+    ],
+    [
+     1772,
+     " Associates"
+    ],
+    [
+     1772,
+     ","
+    ],
+    [
+     1772,
+     " Inc"
+    ],
+    [
+     1773,
+     "."
+    ],
+    [
+     1773,
+     " and"
+    ],
+    [
+     1773,
+     " Software"
+    ],
+    [
+     1773,
+     ".net"
+    ],
+    [
+     1773,
+     " Corporation"
+    ],
+    [
+     1773,
+     ","
+    ],
+    [
+     1774,
+     " also"
+    ],
+    [
+     1774,
+     " known"
+    ],
+    [
+     1774,
+     " as"
+    ],
+    [
+     1774,
+     " Beyond"
+    ],
+    [
+     1774,
+     ".com"
+    ],
+    [
+     1775,
+     ".\",\""
+    ],
+    [
+     1784,
+     "e"
+    ],
+    [
+     1791,
+     "vidence"
+    ],
+    [
+     1811,
+     "\":[\""
+    ],
+    [
+     1814,
+     "E"
+    ],
+    [
+     1825,
+     "3"
+    ],
+    [
+     1842,
+     "."
+    ],
+    [
+     1849,
+     "0"
+    ],
+    [
+     1862,
+     "\",\""
+    ],
+    [
+     1875,
+     "E"
+    ],
+    [
+     1877,
+     "3"
+    ],
+    [
+     1891,
+     "."
+    ],
+    [
+     1909,
+     "1"
+    ],
+    [
+     1912,
+     "\"]"
+    ],
+    [
+     1927,
+     "}"
+    ],
+    [
+     1930,
+     "]}"
+    ]
+   ],
+   "completed_ms": 2132,
+   "cost_usd": 0.000552
+  }
+ ],
+ "total_usd": 0.054168
+}

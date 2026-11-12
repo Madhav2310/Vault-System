@@ -104,7 +104,7 @@ Reached after S4, before S5. Guarantees a submittable result even if later work 
 
 Tick a box only when the task's definition of done is met.
 
-**S0** — [x] S0.01 [x] S0.02 [x] S0.03 [x] S0.04 [x] S0.05 [x] S0.06 [x] S0.07 [x] S0.08 [x] S0.09 [x] S0.10 [x] S0.11 [ ] S0.12 [x] S0.13 [x] S0.14 [x] S0.15 [x] S0.16 [x] S0.17 [ ] S0.18 [ ] S0.19 [ ] S0.20 [x] S0.21 [x] S0.22 [x] S0.23 [x] S0.24 [ ] S0.25 [ ] S0.26 (gate)
+**S0** — [x] S0.01 [x] S0.02 [x] S0.03 [x] S0.04 [x] S0.05 [x] S0.06 [x] S0.07 [x] S0.08 [x] S0.09 [x] S0.10 [x] S0.11 [ ] S0.12 [x] S0.13 [x] S0.14 [x] S0.15 [x] S0.16 [x] S0.17 [ ] S0.18 [ ] S0.19 [ ] S0.20 [x] S0.21 [x] S0.22 [x] S0.23 [x] S0.24 [x] S0.25 [ ] S0.26 (gate)
 
 **S1** — [ ] S1.01 [ ] S1.02 [ ] S1.03 [ ] S1.04 [ ] S1.05 [ ] S1.06 [ ] S1.07 [ ] S1.08 [ ] S1.09 [ ] S1.10 [ ] S1.11 [ ] S1.12 [ ] S1.13 [ ] S1.14 [ ] S1.15 [ ] S1.16 [ ] S1.17 [ ] S1.18 [ ] S1.19 [ ] S1.20 [ ] S1.21 [ ] S1.22 [ ] S1.23 [ ] S1.24 [ ] S1.25 [ ] S1.26 [ ] S1.27 [ ] S1.28 [ ] S1.29 [ ] S1.30 [ ] S1.31 [ ] S1.32 (gate)
 

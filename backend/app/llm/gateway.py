@@ -415,6 +415,7 @@ class LlmGateway:
         lane: Lane,
         prompt: tuple[str, int],
         owner_id: uuid.UUID | None,
+        schema: type[BaseModel] | None = None,
         model: str | None = None,
         route: str | None = None,
         mode: str | None = None,
@@ -425,10 +426,11 @@ class LlmGateway:
         job_id: uuid.UUID | None = None,
         budget: Budget | None = None,
     ) -> AsyncIterator[TextDelta | CitationDelta | Final]:
-        """Yields TextDelta | CitationDelta, then Final. Retries only before the first event was yielded;
-        refusal / max_tokens raise typed errors after the row is written."""
+        """Yields TextDelta | CitationDelta, then Final. With `schema`, the deltas are fragments of the strict
+        JSON document and the consumer parses them incrementally. Retries only before the first event was
+        yielded; refusal / max_tokens raise typed errors after the row is written."""
         p, req, res = self._prepare(
-            prompt, purpose, model, route, mode, inputs, messages, None, search_results
+            prompt, purpose, model, route, mode, inputs, messages, schema, search_results
         )
         meta = self._meta(purpose, lane, self.chat.name, req, p, res.role, owner_id, run_id, job_id)
         self._admit(meta, budget)

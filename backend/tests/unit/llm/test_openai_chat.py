@@ -97,6 +97,8 @@ def test_request_shape() -> None:
     assert "default" not in json.dumps(schema) and "title" not in json.dumps(schema)
     assert strict_schema({"type": "string"}) == {"type": "string"}
     assert build_params(ChatRequest("m", "s", [], 5, "none", service_tier="flex"))["service_tier"] == "flex"
+    cached = build_params(ChatRequest("m", "s", [], 5, "none", cache_mode="explicit"))
+    assert cached["prompt_cache_options"] == {"mode": "explicit"}
     with pytest.raises(errors.RequestConflictError):
         build_params(ChatRequest("m", "s", [], 5, "low", search_results=(SearchResult("a", "b", ("c",)),)))
 

@@ -208,3 +208,11 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Behavior changes to note: a pinned `model=` never falls back; the retry-cap tests pin a model. Router construction validates every row, so a bad `MODEL_*` value fails at startup and names the node.
 - Not done: stream fallback (F-018).
 - [T] changes approved: none
+
+### S0.25 — Spike: application-managed citations on OpenAI
+- Date: 2026-11-13 · Commit: (this commit)
+- Commands: `cd backend && uv run --frozen python ../scripts/spikes/citations_spike.py --run --max-usd 0.50` (17 calls, $0.054), then `--check enum_validity|segment_support|gold_cited|streaming|full_context_validity|cost`: all six exit 0. Report: `docs/evidence/spike_citations.md`; raw results: `docs/evidence/spike_citations_raw.json`.
+- Output: 0 invalid handles in 12 RAG items; 15 of 15 segments carry a valid handle; the gold sentence was cited in 5 of 5 lookup-type items; 3 of 3 unanswerable items abstained; FULL_CONTEXT 0 of 4 handles invalid; two streams parsed incrementally and equal the non-streamed parse.
+- Findings: (1) cache writes are billed by default (+25% on never-reused prompts); `prompt_cache_options.mode=explicit` removes it (F-021, design §4.4, S3.06 note). (2) The sample is small (F-022), so the targets are indicative only. (3) Provider stream now closes the HTTP stream deterministically (`async with`); an early `return` left an `aclose()` traceback.
+- Also: `gateway.stream` accepts a `schema` (JSON fragments as deltas); `ChatRequest.cache_mode`; dev stack rebuilt and migrated to 0002.
+- [T] changes approved: none (targets met on the sample; recorded as weak evidence).

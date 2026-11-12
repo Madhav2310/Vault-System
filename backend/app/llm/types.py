@@ -56,6 +56,7 @@ class ChatRequest:
     output_schema: dict[str, Any] | None = None  # → output_config.format
     search_results: tuple[SearchResult, ...] = ()  # → search_result blocks (Anthropic adapter only)
     service_tier: str | None = None  # OpenAI: e.g. "flex"; None = standard
+    cache_mode: Literal["implicit", "explicit"] | None = None  # OpenAI prompt_cache_options.mode
 
     def __post_init__(self) -> None:
         if self.output_schema is not None and self.search_results:

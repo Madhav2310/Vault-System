@@ -70,6 +70,8 @@ def build_params(req: ChatRequest) -> dict[str, Any]:
                 "schema": strict_schema(req.output_schema),
             }
         }
+    if req.cache_mode is not None:  # "explicit" without breakpoints = no caching, hence no cache-write charge
+        params["prompt_cache_options"] = {"mode": req.cache_mode}
     if req.service_tier is not None:
         params["service_tier"] = req.service_tier
     return params
@@ -152,22 +154,26 @@ class OpenAIResponsesProvider:
 
     async def stream(self, req: ChatRequest) -> AsyncGenerator[StreamEvent, None]:
         params = build_params(req)
+        final: ProviderFinal | None = None
         try:
-            events = await self.client.responses.create(**params, stream=True)
-            async for ev in events:
-                if ev.type == "response.output_text.delta":
-                    yield TextDelta(ev.output_index, ev.delta)
-                elif ev.type in ("response.completed", "response.incomplete", "response.failed"):
-                    r = to_response(ev.response)
-                    yield ProviderFinal(
-                        stop_reason=r.stop_reason,
-                        usage=r.usage,
-                        refusal_category=r.refusal_category,
-                        resolved_model=r.resolved_model,
-                    )
-                    return
-                elif ev.type == "error":
-                    raise errors.ProviderServerError(ev.code or "stream error")
+            # `async with` closes the HTTP stream deterministically, also when the consumer stops early.
+            async with await self.client.responses.create(**params, stream=True) as events:
+                async for ev in events:
+                    if ev.type == "response.output_text.delta":
+                        yield TextDelta(ev.output_index, ev.delta)
+                    elif ev.type in ("response.completed", "response.incomplete", "response.failed"):
+                        r = to_response(ev.response)
+                        final = ProviderFinal(
+                            stop_reason=r.stop_reason,
+                            usage=r.usage,
+                            refusal_category=r.refusal_category,
+                            resolved_model=r.resolved_model,
+                        )
+                        break
+                    elif ev.type == "error":
+                        raise errors.ProviderServerError(ev.code or "stream error")
         except openai.APIError as e:
             raise map_error(e) from e
-        raise errors.ProviderConnectionError("stream ended without a terminal event")
+        if final is None:
+            raise errors.ProviderConnectionError("stream ended without a terminal event")
+        yield final
