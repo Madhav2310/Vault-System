@@ -115,3 +115,11 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Output: 4 passed — `/healthz` 200 with dead DB/Redis URLs; `/readyz` 200 with all 5 checks ok; Redis on a closed port → 503 with only `redis` failing; DB down → 503 with only `database` failing and no password in the body.
 - Status: VERIFIED
 - [T] changes approved: none
+
+### S0.20 — Spike: partitioned halfvec with composite GIN
+- Date: 2026-11-12 · Commit: (this commit) · Evidence: `docs/evidence/spike_schema.md`
+- Commands: `scripts/spikes/run_schema_spike.sh ddl` (16.8 s, exit 0); `scripts/spikes/run_schema_spike.sh explain`; manual plans on a 21k-chunk owner
+- Output: AC1 DDL ok (GIN on all 32 partitions); AC2 vector query prunes to 1 partition, exact top-40 in 8.9 ms; **AC3 NOT MET**: the planner never uses the `(owner_id, tsv_en)` GIN (seq scan 2.7 ms, or PK bitmap when seq scans are disabled).
+- Status: AC1, AC2 VERIFIED · AC3 UNVERIFIED (open; spike texts are too short to be representative; decision moved to S2.20, see followups F-006)
+- Plan edits: AC commands now use the compose wrapper script (no host `psql` connection needed); AC2 counts *distinct* partitions (the original line count also matched the lexical plan); AC3 now requires the scan to be on the tsv_en GIN, not just any bitmap scan, so it can't pass on the PK.
+- [T] changes approved: none
