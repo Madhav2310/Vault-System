@@ -1,6 +1,8 @@
 """Live provider smoke (S0.13 AC13): one Haiku structured call and one embedding call through the gateway.
-Spends real money (well under $0.001). Run with `make smoke-providers`; excluded from `make ci`.
-Fails (does not skip) when keys are missing, so the make target cannot pass vacuously."""
+
+Spends real money (well under $0.001 each). Run with `make smoke-providers`; excluded from `make ci`.
+Fails (does not skip) when keys are missing, so the make target cannot pass vacuously.
+"""
 
 import os
 
@@ -22,11 +24,9 @@ class Echo(BaseModel):
     echo: str
 
 
-def _gateway(ledger: MemoryLedger) -> LlmGateway:
+def _gateway(ledger: MemoryLedger, need: tuple[str, ...]) -> LlmGateway:
     s = get_settings()
-    missing = [
-        k for k in ("ANTHROPIC_API_KEY", "OPENAI_API_KEY") if not (os.environ.get(k) or getattr(s, k.lower()))
-    ]
+    missing = [k for k in need if not (os.environ.get(k) or getattr(s, k.lower()))]
     if missing:
         pytest.fail(f"live smoke needs {missing} in the environment or .env")
     a = s.anthropic_api_key.get_secret_value() if s.anthropic_api_key else None
@@ -41,10 +41,19 @@ def _gateway(ledger: MemoryLedger) -> LlmGateway:
     )
 
 
-async def test_live_haiku_and_embedding() -> None:
-    ledger = MemoryLedger()
-    gw = _gateway(ledger)
+def _report(ledger: MemoryLedger) -> None:
+    for rec in ledger.records:  # token counts are the AC13 evidence; no content is printed
+        u = rec.usage
+        print(
+            f"\n{rec.provider} {rec.model} attempt={rec.attempt} status={rec.status} in={u.input_tokens} "
+            f"out={u.output_tokens} cache_r={u.cache_read_tokens} cache_w={u.cache_write_tokens} "
+            f"cost=${rec.cost_usd} latency={rec.latency_ms}ms"
+        )
 
+
+async def test_live_haiku() -> None:
+    ledger = MemoryLedger()
+    gw = _gateway(ledger, ("ANTHROPIC_API_KEY",))
     r = await gw.call(
         purpose="smoke",
         lane="background",
@@ -54,14 +63,14 @@ async def test_live_haiku_and_embedding() -> None:
         inputs={"word": "vault"},
     )
     assert r.output is not None and r.output.echo == "vault"
+    _report(ledger)
+    assert [rec.provider for rec in ledger.records if rec.status == "ok"] == ["anthropic"]
+
+
+async def test_live_embedding() -> None:
+    ledger = MemoryLedger()
+    gw = _gateway(ledger, ("OPENAI_API_KEY",))
     e = await gw.embed(purpose="smoke", lane="background", texts=["evidence-first"], owner_id=None)
     assert len(e.vectors[0]) == get_settings().embedding_dim
-
-    for rec in ledger.records:  # token counts are the AC13 evidence; no content is printed
-        u = rec.usage
-        print(
-            f"\n{rec.provider} {rec.model} attempt={rec.attempt} status={rec.status} in={u.input_tokens} "
-            f"out={u.output_tokens} cache_r={u.cache_read_tokens} cache_w={u.cache_write_tokens} "
-            f"cost=${rec.cost_usd} latency={rec.latency_ms}ms"
-        )
-    assert {rec.provider for rec in ledger.records if rec.status == "ok"} == {"anthropic", "openai"}
+    _report(ledger)
+    assert [rec.provider for rec in ledger.records if rec.status == "ok"] == ["openai"]
