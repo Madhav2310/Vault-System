@@ -169,3 +169,18 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Status: AC1–AC12 VERIFIED · AC13 UNVERIFIED (no API keys; `make smoke-providers` fails with a clear message)
 - Design facts found (details in followups): Haiku 5.5 costs more above 100K prompt tokens; cited text must never go back as user content (400); Haiku cache-read and embedding prices are unconfirmed (overridable via `LLM_PRICES`).
 - [T] changes approved: none
+
+### S0.12 — [OPT] S3-compatible object store
+- Date: 2026-11-12 · Status: SKIPPED (optional; the `minio` profile is defined in compose using SeaweedFS, see followups F-003). Not needed for any acceptance criterion before S10.
+
+### S0.19 — Spike: live `search_result` citations
+- Date: 2026-11-12 · Status: **BLOCKED / SUPERSEDED PENDING DECISION.** The user has only an OpenAI key (the assignment supplied it; no Anthropic key). The spike tests Anthropic-native citations, which cannot run. See followups F-015; the replacement spike depends on the provider decision.
+
+### S0.23 — S0 Gate (partial)
+- Date: 2026-11-12 · Commit: (this commit)
+- Commands: `scripts/fresh_clone_check.sh`; `make ci`; `make test`
+- Output: AC1 fresh clone of HEAD (7622584) built and all 8 services healthy; AC2 `make ci` passes; AC3 `make test` 111 passed (62 unit + 46 integration + 3 e2e); AC4 entries exist for S0.01–S0.22 (S0.12 skipped, S0.19 blocked).
+- Status: AC1–AC4 pass mechanically, but the gate is **NOT closed**: S0.19 (spike) is blocked and S0.18 AC7 (user: tier/spend limit) is open. Closing needs the provider decision.
+- Fixed on the way: the trace-propagation test left Celery on an in-memory broker and broke the e2e tests when run in one process (`make test`); it now restores the broker, AMQP and backend caches.
+- Finding: OpenAI key models (from `GET /v1/models`): gpt-5.5, gpt-5.4(-mini/-nano/-pro), gpt-5.6-luna/sol/terra, gpt-5.2, gpt-5.1, gpt-5(-mini/-nano/-pro), gpt-4.1(-mini), gpt-4o(-mini), o3(-pro), text-embedding-3-small/large. Embeddings limit 10,000 RPM.
+- [T] changes approved: none
