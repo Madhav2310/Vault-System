@@ -60,3 +60,8 @@ loadtest:
 
 # Fails on the first error: lint → typecheck → unit tests.
 ci: lint typecheck test-unit
+
+# S0.13 AC13: one live Haiku call + one live embedding call (needs ANTHROPIC_API_KEY, OPENAI_API_KEY; <$0.001).
+.PHONY: smoke-providers
+smoke-providers:
+	$(UV) pytest -m live tests/live -s
