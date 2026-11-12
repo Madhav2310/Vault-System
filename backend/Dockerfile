@@ -13,6 +13,7 @@ ENV UV_COMPILE_BYTECODE=1 \
 WORKDIR /srv
 COPY pyproject.toml uv.lock .python-version ./
 RUN uv sync --frozen --no-dev --no-install-project
+COPY alembic.ini ./
 COPY app ./app
 RUN uv sync --frozen --no-dev \
  && useradd --create-home --uid 10001 vault \
