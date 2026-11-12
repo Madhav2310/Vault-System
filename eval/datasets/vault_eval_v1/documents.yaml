@@ -1,0 +1,126 @@
+documents:
+  cuad_consulting:
+    source: CUAD v1
+    license: CC BY 4.0
+    file: eval/sources/cuad_full/CUAD_v1/full_contract_pdf/Part_II/Consulting Agreements/MEDALISTDIVERSIFIEDREIT,INC_05_18_2020-EX-10.1-CONSULTING
+      AGREEMENT.PDF
+    sha256: da9a74de24e274a3e0d915dd43cac84d733d90181ef4655848ad1fbc67390aea
+    pages: 8
+    type: contract
+    title: MEDALISTDIVERSIFIEDREIT,INC_05_18_2020-EX-10.1-CONSULTING AGREEMENT
+  cuad_endorsement:
+    source: CUAD v1
+    license: CC BY 4.0
+    file: eval/sources/cuad_full/CUAD_v1/full_contract_pdf/Part_III/Endorsement Agreement/WARNINGMANAGEMENTSERVICESINC_12_10_1999-EX-10-ENDORSEMENT
+      AGREEMENT.PDF
+    sha256: 7182101aae93bba18526db7acbfad15b75b102169089dc854b615255d2d7a407
+    pages: 6
+    type: contract
+    title: WARNINGMANAGEMENTSERVICESINC_12_10_1999-EX-10-ENDORSEMENT AGREEMENT
+  cuad_cohosting:
+    source: CUAD v1
+    license: CC BY 4.0
+    file: eval/sources/cuad_full/CUAD_v1/full_contract_pdf/Part_III/Hosting/BEYONDCOMCORP_08_03_2000-EX-10.2-CO-HOSTING AGREEMENT.PDF
+    sha256: 2b1e9c4026b69aa324d01e9d2b6ea0ad752362129e03ee205b5ef8524bb89021
+    pages: 12
+    type: contract
+    title: BEYONDCOMCORP_08_03_2000-EX-10.2-CO-HOSTING AGREEMENT
+  cuad_distributor:
+    source: CUAD v1
+    license: CC BY 4.0
+    file: eval/sources/cuad_full/CUAD_v1/full_contract_pdf/Part_III/Distributor/ENTERTAINMENTGAMINGASIAINC_02_15_2005-EX-10.5-DISTRIBUTOR
+      AGREEMENT.PDF
+    sha256: 40843ae37bda539870e579ea6250436ff53ee0b8279ce69467519c9147e489e5
+    pages: 16
+    type: contract
+    title: ENTERTAINMENTGAMINGASIAINC_02_15_2005-EX-10.5-DISTRIBUTOR AGREEMENT
+  cuad_license:
+    source: CUAD v1
+    license: CC BY 4.0
+    file: eval/sources/cuad_full/CUAD_v1/full_contract_pdf/Part_I/License_Agreements/GpaqAcquisitionHoldingsInc_20200123_S-4A_EX-10.6_11951677_EX-10.6_License
+      Agreement.pdf
+    sha256: f4e98d86568f818283da3ffba389eb543de84e7e71089b631bdc40c8ead896b8
+    pages: 17
+    type: contract
+    title: GpaqAcquisitionHoldingsInc_20200123_S-4A_EX-10.6_11951677_EX-10.6_License Agreement
+  cuad_franchise:
+    source: CUAD v1
+    license: CC BY 4.0
+    file: eval/sources/cuad_full/CUAD_v1/full_contract_pdf/Part_I/Franchise/SimplicityEsportsGamingCompany_20181130_8-K_EX-10.1_11444071_EX-10.1_Franchise
+      Agreement.pdf
+    sha256: bef0da88d542d5f6bca89795103c8aac859b92d0d0cb0b9bb70950f655e013d6
+    pages: 9
+    type: contract
+    title: SimplicityEsportsGamingCompany_20181130_8-K_EX-10.1_11444071_EX-10.1_Franchise Agreement
+  qasper_factweet:
+    source: QASPER v0.3 (arXiv 1910.06592)
+    license: QASPER annotations CC BY 4.0; paper per arXiv license
+    file: eval/sources/qasper_pdfs/1910.06592.pdf
+    sha256: 3bdf7e026a91e3f3ee74f6cdc506beb257fbbb6b0e9f9eced99f6913a774a31d
+    pages: 8
+    type: paper
+    title: 'FacTweet: Profiling Fake News Twitter Accounts'
+  qasper_hatespeech:
+    source: QASPER v0.3 (arXiv 1910.03814)
+    license: QASPER annotations CC BY 4.0; paper per arXiv license
+    file: eval/sources/qasper_pdfs/1910.03814.pdf
+    sha256: e40196b735b8a36337b29c1aa3f6fd529ee064c067728f7f6ff5b0c2b405ba42
+    pages: 8
+    type: paper
+    title: Exploring Hate Speech Detection in Multimodal Publications
+  qasper_kurdish:
+    source: QASPER v0.3 (arXiv 1911.13087)
+    license: QASPER annotations CC BY 4.0; paper per arXiv license
+    file: eval/sources/qasper_pdfs/1911.13087.pdf
+    sha256: defd2c6d017979c825cd02fe77b0b63b58b77f3f5f7698345632f93d632a3379
+    pages: 4
+    type: paper
+    title: 'Kurdish (Sorani) Speech to Text: Presenting an Experimental Dataset'
+  fb_ulta_q4:
+    source: FinanceBench open sample
+    license: CC BY-NC 4.0 (non-commercial; assignment use)
+    file: eval/sources/fb_pdfs/ULTABEAUTY_2023Q4_EARNINGS.pdf
+    sha256: c7df6210a627042e231c9579982648a43f3ff8b630b4020540330c2a85e0d781
+    pages: 9
+    type: financial_filing
+    title: ULTABEAUTY_2023Q4_EARNINGS
+  fb_3m_10q:
+    source: FinanceBench open sample
+    license: CC BY-NC 4.0 (non-commercial; assignment use)
+    file: eval/sources/fb_pdfs/3M_2023Q2_10Q.pdf
+    sha256: 3e66115793459f42185feeeab4e7f07dd27ab6dd465d0694ce415e861029cf93
+    pages: 92
+    type: financial_filing
+    title: 3M_2023Q2_10Q
+  fb_amd_10k:
+    source: FinanceBench open sample
+    license: CC BY-NC 4.0 (non-commercial; assignment use)
+    file: eval/sources/fb_pdfs/AMD_2022_10K.pdf
+    sha256: a3bd74088fae0ad4aa03d04998a1f4c64fd0b3c693841601b0ac49b46cf5c1f4
+    pages: 121
+    type: financial_filing
+    title: AMD_2022_10K
+  auth_amendment:
+    source: authored for Vault-Eval
+    license: CC0 (authored)
+    file: eval/datasets/vault_eval_v1/docs/amendment_consulting.md
+    sha256: d50be4441a3d352dbe9908b47ee69a18e8cd5fa5c315199acd5c60c979640299
+    pages: null
+    type: contract
+    title: First Amendment to Consulting Agreement
+  auth_side_letter:
+    source: authored for Vault-Eval
+    license: CC0 (authored)
+    file: eval/datasets/vault_eval_v1/docs/side_letter_endorsement.docx
+    sha256: cf0f07a732b8b4a05e211f3550d58f045db813038708bed1e9e705808b0469cc
+    pages: null
+    type: contract
+    title: Side Letter to Endorsement Agreement
+  auth_travel_policy:
+    source: authored for Vault-Eval
+    license: CC0 (authored)
+    file: eval/datasets/vault_eval_v1/docs/travel_policy_injection.md
+    sha256: 6acb3c1b5dca68937a6a4958131ba0d8093808ed5a46752f4e99af2ce8df1300
+    pages: null
+    type: policy
+    title: Travel and Expense Policy

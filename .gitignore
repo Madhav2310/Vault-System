@@ -1,0 +1,29 @@
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Local data
+data/
+*.log
+
+# Design-phase transcript from another assistant (kept locally, not part of the submission)
+docs/archive/
+
+# Third-party eval sources (fetched by eval/build/fetch_sources.sh)
+eval/sources/

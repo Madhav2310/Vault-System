@@ -1,0 +1,42 @@
+# Vault — evidence-first document intelligence (take-home)
+
+Spec: `docs/spec/case-study.pdf`. **Design (source of truth): `docs/design.md`.** Plan (checklist + atomic acceptance criteria): `docs/plan/README.md` and `docs/plan/S0.md`…`S10.md`. Rationale/sources: `docs/research/01–06` (05 = PDF geometry chain, 06 = convergence engine). Eval set: `eval/datasets/vault_eval_v1/` (rebuild via `eval/build/*`; third-party sources in gitignored `eval/sources/`). Progress log: `docs/progress.md` and AI usage log: `AI_USAGE.md` (both created in S0).
+
+## Stack
+Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector ≥0.8 (halfvec, hash-partitioned `chunks`), Celery + Redis, pdfplumber / python-docx, Anthropic SDK (generation/analysis), OpenAI SDK (embeddings, eval judge), reranker service (fastembed cross-encoder), OpenTelemetry + grafana/otel-lgtm, pytest, ruff, mypy, Locust. docker-compose for everything.
+
+## Layout
+`backend/app/{api,core,db,documents,storage,ingestion,retrieval,chat,insights,matrix,feedback,llm,explain,observability}` · `backend/prompts/<id>@<version>.md` · `backend/tests/{unit,integration}` · `reranker/` · `eval/` · `loadtest/` · `ops/{otel,grafana}`
+
+## Commands
+`make up` · `make test` · `make lint typecheck` · `make migrate` · `make seed` · `make eval` / `eval-retrieval` / `eval-smoke` · `make loadtest` (exact targets defined in S0)
+
+## Hard rules
+- Every model call goes through `app.llm.gateway`. Never instantiate provider clients elsewhere.
+- Never combine citations and `output_config.format` in one request (400). Evidence goes in `search_result` blocks, one per chunk, one text block per sentence.
+- Only `chunks.original_text` is evidence. Prefixes and summaries are never cited.
+- Every repository method takes `owner_id` explicitly; every new resource gets a negative cross-user test (expect 404).
+- The LLM never widens scope, writes SQL, or picks control flow; it returns typed decisions that code applies.
+- Explanations come from reason codes + templates, never from asking the model to explain itself.
+- Delivery is at-least-once: every consumer (task, stage, POST handler) must be idempotent (design §14).
+- Job state lives in `processing_jobs` (leases, CAS claims), not in Celery.
+- Never hold a DB connection across an LLM call or stream. Never run CPU-bound work on the API event loop.
+- No document text, prompts, or completions in logs or spans — IDs and digests only.
+- Metric labels are bounded enums only; IDs go to traces/logs/exemplars.
+- Answers are never cached. The model never writes markdown tables in answers.
+- Evidence text comes only from the glyph-mapped character stream (research 05, invariant I1); never re-normalize `original_text`.
+- Tuning changes are accepted only through the convergence engine's paired test decision (research 06); never tune on test-split content.
+- Prompts are versioned files; changing one bumps its version and requires an eval run.
+- No new dependency, table, endpoint, or service outside `docs/design.md` without stating why.
+
+## Per-slice workflow
+1. At slice start: re-read `docs/plan/S<n>.md` and the referenced design sections; propose any [T] or task-shape changes to the user before coding.
+2. Work one task at a time, in ID order unless dependencies allow otherwise. Write the task's named tests first (test names in ACs are part of the contract).
+3. Implement the smallest complete change; one commit per task, message prefixed with the task ID.
+4. Check each AC box only with evidence; run `make lint typecheck test`; record the progress entry and AI_USAGE.md update (see `docs/plan/README.md` → Definition of done).
+5. A [T] that isn't met: record the measured value and stop for the user. Never relax [A].
+6. Any edit to plan files → `python3 scripts/plan_lint.py` must exit 0.
+7. Report VERIFIED vs UNVERIFIED. Stop at the slice gate; don't start the next slice unasked.
+
+## Model IDs
+`claude-sonnet-5-5` (answers, default via `ANSWER_MODEL`), `claude-opus-5-5` (eval comparison), `claude-haiku-5-5` (analysis/gate/extraction). No date suffixes. Check SDK usage against current docs before writing — don't guess API shapes.

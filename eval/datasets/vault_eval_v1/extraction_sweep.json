@@ -1,0 +1,42 @@
+{
+  "default": {
+    "located": 86,
+    "total": 100,
+    "exactish_ge97": 76,
+    "by_type": {
+      "contract": "63/63",
+      "paper": "9/23",
+      "financial_filing": "14/14"
+    }
+  },
+  "text_flow": {
+    "located": 93,
+    "total": 100,
+    "exactish_ge97": 77,
+    "by_type": {
+      "contract": "63/63",
+      "paper": "16/23",
+      "financial_filing": "14/14"
+    }
+  },
+  "text_flow+xtr0.15": {
+    "located": 99,
+    "total": 100,
+    "exactish_ge97": 92,
+    "by_type": {
+      "contract": "63/63",
+      "paper": "22/23",
+      "financial_filing": "14/14"
+    }
+  },
+  "xtr0.15": {
+    "located": 92,
+    "total": 100,
+    "exactish_ge97": 85,
+    "by_type": {
+      "contract": "63/63",
+      "paper": "15/23",
+      "financial_filing": "14/14"
+    }
+  }
+}
