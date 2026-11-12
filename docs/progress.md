@@ -216,3 +216,11 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Findings: (1) cache writes are billed by default (+25% on never-reused prompts); `prompt_cache_options.mode=explicit` removes it (F-021, design §4.4, S3.06 note). (2) The sample is small (F-022), so the targets are indicative only. (3) Provider stream now closes the HTTP stream deterministically (`async with`); an early `return` left an `aclose()` traceback.
 - Also: `gateway.stream` accepts a `schema` (JSON fragments as deltas); `ChatRequest.cache_mode`; dev stack rebuilt and migrated to 0002.
 - [T] changes approved: none (targets met on the sample; recorded as weak evidence).
+
+### S0.26 — S0 Gate (final)
+- Date: 2026-11-13 · Commit: (this commit) · Tested tree: a0db65a
+- Commands: `TMPDIR=$CLAUDE_JOB_DIR/tmp scripts/fresh_clone_check.sh`; `make ci`; `make test`; the AC4 loop.
+- Output: AC1 fresh clone of a0db65a built and all 8 services healthy; AC2 `make ci` exit 0 (ruff, mypy strict, 78 unit tests); AC3 `make test` 130 passed (78 unit + 49 integration + 3 e2e); AC4 loop printed nothing (S0.12 skipped and S0.19 demoted have entries).
+- Live spend in S0 after the provider change: smoke ≈ $0.0001 per run, citation spike $0.054, probes < $0.01.
+- **Open at the gate (not blocking the code path):** S0.18 AC7 (user records the OpenAI project spend limit), S0.20 AC3 (GIN index use at spike scale, F-006, re-measured in S2.20), F-014 (per-worktree test DB names before any parallel agent round).
+- [T] changes approved: none
