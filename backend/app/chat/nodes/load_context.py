@@ -8,7 +8,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.chat import sessions as svc
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.memory import load_memory
-from app.chat.nodes._common import FULL_CONTEXT_UNAVAILABLE
 from app.chat.nodes.analyze import ScopeDoc
 from app.retrieval.scope import Scope, compute_scope
 
@@ -30,7 +29,5 @@ async def load_context(state: TurnState, ctx: TurnCtx) -> TurnState:
             s, ctx.owner_id, ctx.session_id, exclude_message_id=ctx.user_message_id
         )
         state.docs = await _scope_docs(s, ctx.owner_id, state.scope)
-    if state.mode == "full_context":
-        state.reasons.append(FULL_CONTEXT_UNAVAILABLE)
     state.last_decision = {"documents": len(state.scope.entries)}
     return state

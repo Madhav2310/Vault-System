@@ -10,10 +10,12 @@ from app.llm.errors import LlmError
 async def generate(state: TurnState, ctx: TurnCtx) -> TurnState:
     assert state.analysis is not None
     state.evidence = build_evidence(state.chunks)
+    full = state.mode == "full_context"
     try:
         gen = await generate_answer(
             ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
-            question=state.analysis.standalone_query, route="qa", memory=state.memory,
+            question=state.analysis.standalone_query, route=state.analysis.intent if full else "qa",
+            mode="full_context" if full else "rag", memory=state.memory,
             run_id=ctx.run_id, budget=ctx.budget,
         )  # fmt: skip
     except LlmError as e:  # a handled failure: the turn completes with an error response

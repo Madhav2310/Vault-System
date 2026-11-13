@@ -78,6 +78,11 @@ class Settings(BaseSettings):
     brief_max_evidence_tokens: int = 12_000  # above this the brief maps over section groups, then merges
     brief_max_usd: float = 0.05  # per document; reaching it stops further map calls (BRIEF_PARTIAL_BUDGET)
 
+    # --- whole-document answering (design §8.2, S17.07) ---
+    full_context_auto: bool = False  # off until the answer A/B decides (docs/evidence/answer_ab.md)
+    full_context_max_docs: int = 3
+    full_context_max_tokens: int = 50_000
+
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"
