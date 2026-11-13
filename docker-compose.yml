@@ -46,11 +46,11 @@ services:
   reranker:
     profiles: ["rerank", "full"]
     mem_limit: 768m
-    cpus: 2
+    cpus: 3
     build: ./reranker
     image: vault-reranker:0.1.0
     environment:
-      RERANKER_THREADS: "2"  # = cpus; S16.02 (os.cpu_count() inside a container reports the VM)
+      RERANKER_THREADS: "3"  # = cpus; S16.02 (os.cpu_count() inside a container reports the VM)
     ports: ["127.0.0.1:${RERANKER_PORT:-8180}:8080"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=3)"]
