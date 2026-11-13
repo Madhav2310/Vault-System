@@ -17,11 +17,17 @@ QUEUES = ("ingest", "ai", "maintenance")
 ROUTES: dict[str, str] = {
     "vault.ping": "maintenance",
     "vault.maintenance.purge_idempotency_keys": "maintenance",
+    "vault.maintenance.purge_job_events": "maintenance",
+    "vault.maintenance.sweep_jobs": "maintenance",
+    "vault.ingest.stage": "ingest",
+    "vault.ai.stage": "ai",
 }
 
 # beat: name → (task, seconds). Every entry's task must be routed.
 BEAT: dict[str, tuple[str, float]] = {
     "purge-idempotency-keys": ("vault.maintenance.purge_idempotency_keys", 3600.0),
+    "purge-job-events": ("vault.maintenance.purge_job_events", 86400.0),
+    "sweep-jobs": ("vault.maintenance.sweep_jobs", 60.0),
 }
 
 VISIBILITY_TIMEOUT_S = 3600  # > longest stage time (design §6.6)
@@ -34,7 +40,7 @@ def make_celery() -> Celery:
         "vault",
         broker=s.redis_url,
         backend=s.redis_url,
-        include=["app.worker.tasks.ping", "app.worker.tasks.maintenance"],
+        include=["app.worker.tasks.ping", "app.worker.tasks.maintenance", "app.worker.tasks.ingest"],
     )
     app.conf.update(
         task_acks_late=True,

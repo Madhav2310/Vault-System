@@ -341,7 +341,8 @@ A chunker version change triggers re-chunking of affected versions. Chunks from 
   ```
   No row → another worker holds a live lease → the task exits (duplicate delivery collapses).
 - **Heartbeat**: a long stage extends its lease every 60 s.
-- **Stage commit**: one transaction replaces the stage's outputs, advances `current_stage`, appends `job_events`, and enqueues the next stage (CAS dispatch).
+- **Stage commit**: one transaction, fenced by the worker's lease (`SELECT … FOR UPDATE WHERE lease_owner = me`), replaces the stage's outputs, advances `current_stage`, resets the job to `pending` with no lease, appends `job_events`; after commit the next stage is CAS-dispatched. A worker that lost its lease commits nothing.
+- **Stage handoff**: the `extract` output (`ExtractedDocument`) is persisted as `extracted/{version_id}.json.gz` in the object store (replaced on re-run), so later stages and retries never re-parse.
 - **Failure**: permanent errors (corrupt, encrypted, unsupported) → terminal status immediately. Retryable errors (provider 429/5xx, timeouts) → `attempt_count+1`, `next_attempt_at = now() + backoff(attempt)` with jitter. Past `max_attempts` → `dead` + version `failed` with a retry action.
 - **Sweeper** (beat, every 60 s) re-dispatches only:
   (a) `pending`/`dispatched` with `last_dispatched_at` older than the grace period (5 min) and no live lease,
@@ -657,7 +658,7 @@ eval_results(eval_run_id, question_id, metric, value, PRIMARY KEY(eval_run_id, q
 ```
 
 **Evidence ledger** = `rag_runs + run_versions + run_steps + retrieval_candidates + answer_segments + segment_evidence + llm_calls`.
-**Object store**: `blobs/{sha256}`, `layouts/{version_id}.json.gz`.
+**Object store**: `blobs/{sha256}`, `extracted/{version_id}.json.gz` (stage handoff), `layouts/{version_id}.json.gz`.
 **Retention**: ledger is permanent (product data). `idempotency_keys` 24 h. `job_events` 90 d.
 
 ---
@@ -755,7 +756,7 @@ Delivery is **at-least-once** everywhere. Consumers are idempotent, so effects h
 |---|---|
 | Resource-creating POSTs | `Idempotency-Key` → `idempotency_keys`; same key + different body hash → `422 idempotency_key_reused` |
 | Upload content | `(owner_id, sha256)` natural dedupe; content-addressed blob key |
-| Job dispatch | `UPDATE processing_jobs SET last_dispatched_at=now(), status='dispatched' WHERE id=:id AND (last_dispatched_at IS NULL OR last_dispatched_at < :cutoff) AND (lease_expires_at IS NULL OR lease_expires_at < now()) RETURNING id`; only the winner enqueues |
+| Job dispatch | `UPDATE processing_jobs SET last_dispatched_at=now(), status='dispatched' WHERE id=:id AND status IN ('pending','dispatched','running','failed') AND (last_dispatched_at IS NULL OR last_dispatched_at < :cutoff) AND (lease_expires_at IS NULL OR lease_expires_at < now()) AND (next_attempt_at IS NULL OR next_attempt_at <= now()) RETURNING current_stage`; only the winner enqueues. Stage commit and stage failure clear the lease and `last_dispatched_at`, so the next stage or the retry is dispatchable at once (S1.07 found that otherwise the grace period blocks every next-stage dispatch) |
 | Task execution | Payload is `job_id` only; lease-claim CAS; live lease → no-op |
 | Stage outputs | Single transaction: delete stage outputs for the version → insert → advance stage; unique keys `(owner_id, version_id, ordinal)` |
 | Paid ingestion LLM work | `llm_cache` keyed by `content_hash + prompt@v + model` |

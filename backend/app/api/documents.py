@@ -1,12 +1,13 @@
 """Document endpoints (design §12). Upload: §6.1."""
 
 import asyncio
+import uuid
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Header, Request, Response
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db, get_store
+from app.api.deps import get_db, get_enqueue, get_store
 from app.api.idempotency import canonical_response, check_key, request_hash, run_idempotent
 from app.core.auth import CurrentUser
 from app.core.settings import get_settings
@@ -14,6 +15,7 @@ from app.documents.blobs import store_blob
 from app.documents.service import create_from_upload
 from app.documents.sniff import sniff
 from app.documents.upload import receive_upload
+from app.ingestion.jobs import Enqueue, dispatch
 from app.storage.base import ObjectStore
 
 router = APIRouter(prefix="/v1", tags=["documents"])
@@ -60,6 +62,7 @@ async def upload_document(
     user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
     store: Annotated[ObjectStore, Depends(get_store)],
+    enqueue: Annotated[Enqueue, Depends(get_enqueue)],
     idempotency_key: Annotated[str | None, Header()] = None,
 ) -> Response:
     """Upload a PDF, DOCX, TXT or MD file (≤ 25 MB). Returns 202 and starts processing; re-uploading the same
@@ -77,4 +80,8 @@ async def upload_document(
 
         h = request_hash(route="POST /v1/documents", sha256=f.sha256, filename=f.filename, title=f.title)
         status, body = await run_idempotent(db, user.id, key, h, op)
+    if status == 202 and body.get("job_id"):
+        # After commit (§6.1 step 7). CAS-guarded, so an idempotent replay cannot enqueue twice; if this
+        # enqueue is lost, the sweeper re-dispatches after the grace period.
+        await dispatch(db, uuid.UUID(body["job_id"]), enqueue)
     return canonical_response(status, body)

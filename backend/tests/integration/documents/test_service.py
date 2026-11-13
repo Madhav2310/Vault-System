@@ -49,7 +49,11 @@ async def test_creates_three_rows(api: httpx.AsyncClient, make_owner, sm) -> Non
             )
         ).one()
     assert tuple(v) == (1, "uploaded", "application/pdf")
-    assert tuple(j) == ("pending", "extract", r.json()["version_id"])
+    assert tuple(j) == (
+        "dispatched",
+        "extract",
+        r.json()["version_id"],
+    )  # created pending, dispatched after commit
 
 
 async def test_dedupe_same_owner(api: httpx.AsyncClient, make_owner, sm) -> None:  # type: ignore[no-untyped-def]

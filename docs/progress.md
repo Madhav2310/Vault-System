@@ -243,3 +243,12 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Evidence notes: streamed 25 MB upload grows the Python heap by 2.2 MB vs 25 MB buffered (probe), so the AC4 test discriminates (F-025: tracemalloc, not RSS). The first idempotency run failed on byte order of the replayed JSON (JSONB reorders keys); fixed with canonical serialization.
 - Not yet: the job stays `pending` until S1.07 dispatch lands.
 - [T] changes approved: none
+
+### S1.07–S1.10 — Job pipeline: dispatch, claim/lease, stage runner, sweeper (core path C1)
+- Date: 2026-11-13 · Commit: (this commit). One commit: the runner's commit path dispatches (S1.07), claims (S1.08) and is recovered by the sweeper (S1.10); the tests exercise them together.
+- Commands: `make ci` (86 unit); `make test` (178 passed: 86 unit + 89 integration + 3 e2e).
+- Built: `app/ingestion/{jobs,runner,sweeper,status,errors,stages}.py`, Celery tasks `vault.ingest.stage` / `vault.ai.stage` (payload = job id), beat `sweep_jobs` (60 s) and `purge_job_events` (daily, 90 days); upload dispatches after commit (CAS, so idempotent replays and dedupe hits never enqueue twice).
+- Design corrections (written into design §6.6 and §14): (1) the §14 dispatch CAS as written would block every next-stage dispatch and every retry (fresh `last_dispatched_at`, live lease), so stage commit/failure now clear both and the CAS also honours `next_attempt_at`; (2) the stage commit is fenced by the lease (`FOR UPDATE … lease_owner = me`), so a worker that lost its lease writes nothing; (3) the extract output is handed to later stages via `extracted/{version_id}.json.gz` (design §6.3 named no location).
+- Status machine: the table is checked against an independently written §6.2 edge list plus 2,000 random walks (seeded; no new dependency).
+- Not yet: no stage is implemented, so a real upload sits at `extract` failing retryably with `stage_unavailable` until C1c lands.
+- [T] changes approved: none

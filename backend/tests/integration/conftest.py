@@ -19,7 +19,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
-from app.api.deps import get_db, get_store
+from app.api.deps import get_db, get_enqueue, get_store
 from app.core.auth import hash_api_key, new_api_key
 from app.db.models import User
 from app.main import create_app
@@ -143,9 +143,24 @@ async def make_owner(sm: async_sessionmaker[AsyncSession]) -> AsyncIterator[Call
         await s.commit()
 
 
+class EnqueueRecorder:
+    """Stands in for Celery: records (stage, job_id) instead of sending to Redis."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, uuid.UUID]] = []
+
+    async def __call__(self, stage: str, job_id: uuid.UUID) -> None:
+        self.calls.append((stage, job_id))
+
+
+@pytest.fixture
+def enqueued() -> EnqueueRecorder:
+    return EnqueueRecorder()
+
+
 @pytest.fixture
 async def api(
-    sm: async_sessionmaker[AsyncSession], store: LocalObjectStore
+    sm: async_sessionmaker[AsyncSession], store: LocalObjectStore, enqueued: EnqueueRecorder
 ) -> AsyncIterator[httpx.AsyncClient]:
     app = create_app()
 
@@ -155,6 +170,7 @@ async def api(
 
     app.dependency_overrides[get_db] = _db
     app.dependency_overrides[get_store] = lambda: store
+    app.dependency_overrides[get_enqueue] = lambda: enqueued
     transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
     async with httpx.AsyncClient(transport=transport, base_url="http://test", timeout=60) as c:
         yield c

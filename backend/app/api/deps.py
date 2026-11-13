@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.settings import get_settings
 from app.db.session import get_sessionmaker
+from app.ingestion.jobs import Enqueue, celery_enqueue
 from app.storage.base import ObjectStore
 from app.storage.factory import get_object_store
 
@@ -15,6 +16,10 @@ async def get_db() -> AsyncIterator[AsyncSession]:
     """Request-scoped session. Handlers must not hold it across LLM calls or streams."""
     async with get_sessionmaker()() as session:
         yield session
+
+
+def get_enqueue() -> Enqueue:
+    return celery_enqueue()
 
 
 @lru_cache(maxsize=1)

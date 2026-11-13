@@ -30,3 +30,28 @@ async def test_idempotency_purge(sm, make_owner) -> None:  # type: ignore[no-unt
         )
     assert left == ["edge", "new"] and deleted >= 1
     assert uuid.UUID(str(o.id))
+
+
+async def test_job_events_purge(sm, make_owner) -> None:  # type: ignore[no-untyped-def]
+    from app.worker.tasks.maintenance import purge_job_events
+    from tests.support.jobs import make_job
+
+    ref = await make_job(sm, (await make_owner()).id)
+    async with sm() as s:
+        for stage, age_d in (("old", 91), ("recent", 89)):
+            await s.execute(
+                text(
+                    "INSERT INTO job_events (id, job_id, stage, status, attempt, created_at) "
+                    "VALUES (:id, :j, :st, 'succeeded', 1, now() - make_interval(days => :a))"
+                ),
+                {"id": uuid.uuid4(), "j": ref.job_id, "st": stage, "a": age_d},
+            )
+        await s.commit()
+    await purge_job_events(sm)
+    async with sm() as s:
+        left = (
+            (await s.execute(text("SELECT stage FROM job_events WHERE job_id = :j"), {"j": ref.job_id}))
+            .scalars()
+            .all()
+        )
+    assert left == ["recent"]
