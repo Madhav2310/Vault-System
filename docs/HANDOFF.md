@@ -16,15 +16,13 @@ Do not read the older S0–S15 files except where a v3 task points to one.
 - **Status:** `docs/STATUS.md`.
 - **Root-cause analysis** of the reranker and extraction: v3.md §6, measured natively on this machine.
 
-## Recommended order for S16 (least Docker first)
-1. **S16.02** reranker configuration fix. Native benchmark only; no Docker until AC6.
-2. **S16.03** focus windows. Unit tests need no Docker; AC5 needs `make up-test`.
-3. **S16.06** README skeleton and `scripts/quickstart.sh`. No Docker, except AC3.
-4. **S16.01** compose profiles and limits.
-   - Ask the user to set Docker Desktop to 6 GB and 4 CPUs (`docs/dev-environment.md`) and to start Docker.
-   - Then `make up-test` and run the merged-lanes gate (S16.01, step 5).
-5. **S16.05** extraction memory and time. Native profiling first; `make c1-check` needs `make up-test`.
-6. **S16.04** degraded guard. Then **S16.07**, the gate: report to the user and stop.
+## Order
+**Follow the execution sequence table in `docs/plan/v3.md` §2 literally.** It covers every task from S16.02 to S20.08, with Docker needs, lanes and stop points. The first three tasks need no Docker:
+1. S16.02
+2. S16.03
+3. S16.06
+
+Then S16.01: ask the user to set Docker Desktop to 6 GB / 4 CPUs and start it.
 
 ## Lanes
 At most two at once. A lane gets a brief built from the task text, with:
