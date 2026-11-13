@@ -32,6 +32,7 @@ NODE_STAGE: dict[str, Stage] = {
     "gate": "checking_evidence",
     "generate": "writing",
     "clarify": "writing",
+    "meta": "writing",
     "abstain_no_documents": "writing",
     "abstain_no_evidence": "writing",
     "verify": "verifying",

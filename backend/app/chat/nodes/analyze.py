@@ -16,13 +16,14 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 from app.chat.memory import Memory, Msg
+from app.chat.meta import META_OP_REJECTED, MetaOp, MetaOpOut, validate_op
 from app.core.logging import get_logger
 from app.llm.errors import LlmError
 from app.llm.gateway import Budget, LlmGateway
 
 _log = get_logger("vault.chat.analyze")
 
-PROMPT: tuple[str, int] = ("analyze_query", 1)
+PROMPT: tuple[str, int] = ("analyze_query", 2)
 
 CLARIFY_AMBIGUOUS_DOCUMENT = "CLARIFY_AMBIGUOUS_DOCUMENT"
 CLARIFY_AMBIGUOUS_QUERY = "CLARIFY_AMBIGUOUS_QUERY"
@@ -65,6 +66,7 @@ class AnalyzeQueryOut(BaseModel):
     intent: Intent
     needs_whole_document: bool
     clarification: ClarificationOut | None
+    meta_op: MetaOpOut | None = None  # strict mode still requires it; the default keeps scripted tests small
 
 
 @dataclass(frozen=True)
@@ -94,6 +96,7 @@ class AnalyzeResult:
     cost_usd: Decimal = Decimal(0)
     call_ids: tuple[uuid.UUID, ...] = ()
     degraded: tuple[str, ...] = ()
+    meta_op: MetaOp | None = None  # set only with intent == "meta" (validated against the allowlist)
 
 
 def _cap(s: str, n: int) -> str:
@@ -146,11 +149,16 @@ def _fallback(question: str, error: LlmError) -> AnalyzeResult:
     )
 
 
-def _resolve_targets(refs: Sequence[str], documents: Sequence[ScopeDoc]) -> tuple[tuple[uuid.UUID, ...], int]:
+def _doc_keys(documents: Sequence[ScopeDoc]) -> dict[str, uuid.UUID]:
     by_key: dict[str, uuid.UUID] = {}
     for i, d in enumerate(list(documents)[:MAX_DOCUMENTS], 1):
         by_key[f"D{i}"] = d.id
         by_key[str(d.id)] = d.id
+    return by_key
+
+
+def _resolve_targets(refs: Sequence[str], documents: Sequence[ScopeDoc]) -> tuple[tuple[uuid.UUID, ...], int]:
+    by_key = _doc_keys(documents)
     kept: list[uuid.UUID] = []
     dropped = 0
     for r in refs:
@@ -200,6 +208,12 @@ def apply_decision(
             codes.append(CLARIFY_REJECTED)
         else:
             codes.append(CLARIFY_AMBIGUOUS_DOCUMENT if clar.kind == "document" else CLARIFY_AMBIGUOUS_QUERY)
+    meta_op: MetaOp | None = None
+    if intent == "meta":
+        meta_op = validate_op(out.meta_op, _doc_keys(documents))
+        if meta_op is None:  # unknown op or unusable parameters: answer it as an ordinary question
+            intent = "qa"
+            codes.append(META_OP_REJECTED)
     if intent in ("meta", "chitchat", "clarify"):
         targets, dims = (), ()
     return AnalyzeResult(
@@ -211,6 +225,7 @@ def apply_decision(
         clarification=clar,
         reason_codes=tuple(codes),
         dropped_targets=dropped,
+        meta_op=meta_op,
     )
 
 
