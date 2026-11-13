@@ -394,3 +394,8 @@ Before/after (AMD 10-K, native, same 420251 chars): 37 s / 720 MB -> 11.3 s / 19
 - Lesson: a second pytest run against the same per-checkout test DB while one was still running caused an apparent hang; never overlap test runs.
 - S17.01: `eval.paired` (bootstrap CI, exact McNemar 9-1 -> p 0.0215, 8-2 -> 0.1094) and `<run_id>.json` sidecar. My first S17.01 commit broke `ItemResult` positional args (multiturn); fixed by moving the new field last (eval tests 111 passed).
 - Gates: `make ci` 328 passed; `make test-integration` 338 passed, 1 failed (`test_trace_propagation`, flaky under load, passes alone).
+
+## 2026-11-13 — S16 Docker gate (first `make up-test` / `make up` run after Docker was restored)
+- Docker Desktop at 4 CPUs / 6 GB. Backend image build stalled twice on uv downloads (Docker VM network), fixed by UV_HTTP_TIMEOUT/UV_CONCURRENT_DOWNLOADS and a retry.
+- `make up`: readyz `degraded` (reranker absent, by design); idle memory ~690 MB total for 6 containers. `make test`: 669 passed, 1 failed (F-048 flaky trace test). `make c1-check`: 19 passed in 36 s (was 113 s before S16.05).
+- Ticked the merged-lane ACs (S12.06/07/08, S14.01/03/05/06 AC1-3) on this evidence, plus S16.01 AC3/AC4/AC6, S16.03 AC5, S16.05 AC6.
