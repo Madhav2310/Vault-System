@@ -5,7 +5,8 @@ import dataclasses
 import uuid
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -13,6 +14,8 @@ from app.api.deps import TurnRunner, get_db, get_turn_runner
 from app.api.errors import DomainError
 from app.chat import history
 from app.chat import sessions as svc
+from app.chat import stream as stream_mod
+from app.chat.events import event_schema
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 
@@ -94,23 +97,40 @@ async def list_messages(
     return {"items": items, "next_cursor": nxt}
 
 
+@router.get("/events/schema")
+async def events_schema(user: CurrentUser) -> dict[str, Any]:
+    """JSON Schema of the SSE turn events (`TurnEvent`, discriminated on `type`), to generate client types."""
+    return event_schema()
+
+
 @router.post(
     "/sessions/{session_id}/messages",
     status_code=202,
-    responses={200: {"description": "Retried client_message_id of a finished turn: the stored result"}},
+    response_model=None,
+    responses={
+        200: {
+            "description": "Retried client_message_id of a finished turn: the stored result. With "
+            "`Accept: text/event-stream` the response is an SSE stream of turn events (see "
+            "`GET /v1/chat/events/schema`)",
+            "content": {"text/event-stream": {"schema": {"type": "string"}}},
+        }
+    },
 )
 async def post_message(
     session_id: uuid.UUID,
     body: PostMessage,
+    request: Request,
     user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
     response: Response,
     run_turn: Annotated[TurnRunner, Depends(get_turn_runner)],
-) -> dict[str, Any]:
+) -> Any:
     """Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
     while running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion
-    before the response (non-streaming; SSE comes with S5) and returns 200 with the assistant message; it
-    keeps running and persists even if the client disconnects."""
+    before the response and returns 200 with the assistant message; it keeps running and persists even if the
+    client disconnects. With `Accept: text/event-stream` the turn streams events instead (S18.01): the
+    status codes above are decided before the stream starts and the stream itself answers 200."""
+    sse = "text/event-stream" in request.headers.get("accept", "")
     try:
         t = await svc.start_turn(db, user.id, session_id, body.content, body.client_message_id, body.mode)
     except svc.SessionNotFound:
@@ -121,6 +141,16 @@ async def post_message(
         raise DomainError(
             ErrorCode.IDEMPOTENCY_KEY_REUSED, "client_message_id was used with different content"
         ) from None
+    if sse:
+        if t.created:
+            sink, turn = stream_mod.start_sink_task(
+                lambda: run_turn(user.id, session_id, t.run_id, t.user_message_id, body.content, body.mode),
+                _TASKS,
+            )
+            frames = stream_mod.stream_new_turn(db, user.id, t.run_id, t.user_message_id, sink, turn)
+        else:
+            frames = stream_mod.stream_existing_turn(db, user.id, t.run_id, t.user_message_id)
+        return StreamingResponse(frames, media_type="text/event-stream", headers=stream_mod.SSE_HEADERS)
     if t.created:
         task: asyncio.Future[None] = asyncio.ensure_future(
             run_turn(user.id, session_id, t.run_id, t.user_message_id, body.content, body.mode)

@@ -36,6 +36,7 @@ class EvidenceChunk:
     section_path: tuple[str, ...]
     original_text: str
     sentences: tuple[tuple[int, int], ...]  # half-open offsets into original_text
+    document_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)

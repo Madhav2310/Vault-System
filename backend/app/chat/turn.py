@@ -16,10 +16,18 @@ import time
 import uuid
 
 from app.chat import sessions as svc
+from app.chat.events import NullSink, current_sink
 from app.chat.graph import END, TURN_ERROR, Graph, TurnCtx, TurnDeps, TurnState, router
 from app.chat.harness import DEFAULT_LIMITS, TurnBudget
 from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_turn
-from app.chat.nodes._common import ERROR_TEXT, FULL_CONTEXT_UNAVAILABLE, NO_DOCUMENTS, NO_EVIDENCE, plain
+from app.chat.nodes._common import (
+    ERROR_TEXT,
+    FULL_CONTEXT_UNAVAILABLE,
+    NO_DOCUMENTS,
+    NO_EVIDENCE,
+    flush_segments,
+    plain,
+)
 from app.chat.nodes.gate import gate
 from app.chat.nodes.load_context import load_context
 from app.chat.nodes.retrieve import retrieve
@@ -96,6 +104,8 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
     gen = state.generation
     if state.failure or gen is None:
         gen = plain("error", ERROR_TEXT, state.failure or (TURN_ERROR,))
+        state.generation = gen
+    await flush_segments(state, ctx)  # whatever the stream has not shown yet (the error response, ...)
     retrieval, analysis = state.retrieval, state.analysis
     rec = TurnRecord(
         run_id=ctx.run_id,
@@ -178,7 +188,10 @@ async def _run_turn(
     mode: str = "auto",
 ) -> PersistedTurn:
     """Run one turn to completion and persist it. Idempotent per run (a finished run is returned as is)."""
-    ctx = TurnCtx(deps, owner_id, session_id, run_id, user_message_id, TurnBudget(DEFAULT_LIMITS))
+    ctx = TurnCtx(
+        deps, owner_id, session_id, run_id, user_message_id, TurnBudget(DEFAULT_LIMITS),
+        sink=current_sink.get() or NullSink(),
+    )  # fmt: skip
     state = await GRAPH.run(TurnState(question=question, mode=mode), ctx)
     assert state.persisted is not None
     result: PersistedTurn = state.persisted
