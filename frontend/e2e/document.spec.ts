@@ -107,13 +107,13 @@ test("unverified labelled", async ({ page }) => {
 test("suggested question starts chat", async ({ page }) => {
   await mock(page, { doc: DOC, chunk: CHUNK, pages: [3, 3] });
   await page.goto(`/app/documents/${DOC}`);
+  const created = page.waitForRequest((r) => r.url().includes("/v1/chat/sessions") && r.method() === "POST");
   await page.getByRole("link", { name: "What is the termination notice period?" }).click();
   await expect(page).toHaveURL(/\/chat\?/);
+  expect(JSON.parse((await created).postData() ?? "{}").document_ids).toEqual([DOC]);  // a scoped chat starts
   const params = new URL(page.url()).searchParams;
   expect(params.get("doc")).toBe(DOC);
   expect(params.get("q")).toBe("What is the termination notice period?");
-  // TODO(S19.05): once the chat screen exists, assert that the question was sent and answered.
-  await expect(page.getByTestId("chat-q")).toHaveText("What is the termination notice period?");
 });
 
 test("custom summary", async ({ page }) => {
