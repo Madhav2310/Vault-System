@@ -121,6 +121,8 @@ class FakeProvider:
 
     async def embed(self, model: str, texts: Sequence[str], dimensions: int) -> EmbeddingResponse:
         self.embed_calls.append((model, tuple(texts), dimensions))
+        if self.latency_s:
+            await asyncio.sleep(self.latency_s)
         step = self._queue.popleft() if self._queue else None
         if isinstance(step, errors.ProviderError):
             raise step

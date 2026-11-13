@@ -25,10 +25,8 @@ class ItemResult:
     split: str
     metrics: dict[str, float]
     error: str | None = None
-    quote_hits: list[bool] | None = (
-        None  # per mapped gold quote: acceptable chunk in the top 8 (paired tests)
-    )
     turns: list[ItemResult] = field(default_factory=list)  # multi-turn: one per turn, ids `<id>#t<n>`
+    quote_hits: list[bool] | None = None  # per mapped gold quote: hit in the top 8 (paired tests)
 
 
 @dataclass

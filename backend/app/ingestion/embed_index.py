@@ -9,6 +9,7 @@ Index: the version becomes `ready`, `documents.current_version_id` moves to it, 
 version is marked `superseded`. All of it happens inside the runner's fenced commit.
 """
 
+import asyncio
 import uuid
 from typing import Any
 
@@ -105,29 +106,38 @@ class EmbedStage:
                     )
                 ).all()
             pending = list(still)
-        calls = 0
-        for i in range(0, len(pending), EMBED_BATCH):
-            batch = pending[i : i + EMBED_BATCH]
-            try:
-                out = await gateway.embed(
-                    purpose="embed",
-                    lane="background",
-                    texts=[r.embedding_text for r in batch],
-                    owner_id=job.owner_id,
-                    job_id=job.id,
+        sem = asyncio.Semaphore(settings.embed_concurrency)
+
+        async def embed_batch(batch: list[Any]) -> None:
+            async with sem:
+                try:
+                    out = await gateway.embed(
+                        purpose="embed",
+                        lane="background",
+                        texts=[r.embedding_text for r in batch],
+                        owner_id=job.owner_id,
+                        job_id=job.id,
+                    )
+                except BadRequestError as e:  # the input itself is rejected: retrying cannot help
+                    raise PermanentStageError("embedding_rejected", e.error_type) from None
+                except LlmError as e:
+                    raise RetryableStageError(e.error_type, "embedding provider failed") from None
+                await _persist(  # each batch persists in its own short session: a failure keeps finished ones
+                    ctx.sm,
+                    job.owner_id,
+                    job.version_id,
+                    model,
+                    [(r.id, v) for r, v in zip(batch, out.vectors, strict=True)],
                 )
-            except BadRequestError as e:  # the input itself is rejected: retrying cannot help
-                raise PermanentStageError("embedding_rejected", e.error_type) from None
-            except LlmError as e:
-                raise RetryableStageError(e.error_type, "embedding provider failed") from None
-            calls += 1
-            await _persist(
-                ctx.sm,
-                job.owner_id,
-                job.version_id,
-                model,
-                [(r.id, v) for r, v in zip(batch, out.vectors, strict=True)],
-            )
+
+        batches = [pending[i : i + EMBED_BATCH] for i in range(0, len(pending), EMBED_BATCH)]
+        try:
+            async with asyncio.TaskGroup() as tg:  # first failure cancels the rest
+                for b in batches:
+                    tg.create_task(embed_batch(b))
+        except ExceptionGroup as eg:
+            raise eg.exceptions[0] from None  # same mapped StageError as the sequential version
+        calls = len(batches)
         detail = {"chunks": total, "embedded": len(pending), "reused": reused, "calls": calls, "model": model}
         return StageResult(detail=detail)
 

@@ -79,6 +79,7 @@ class ExtractStage:
             del data
             env = {k: os.environ[k] for k in _PARSER_ENV_KEYS if k in os.environ}
             env["VAULT_PARSE_MEMORY_MB"] = str(settings.parse_memory_mb)
+            env["VAULT_MAX_PAGES"] = str(settings.max_pages)
             proc = await asyncio.create_subprocess_exec(
                 sys.executable,
                 "-m",

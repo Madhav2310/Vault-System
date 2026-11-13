@@ -60,6 +60,8 @@ class Settings(BaseSettings):
     # --- upload / ingestion limits (design §6) ---
     max_upload_bytes: int = 25 * 1024 * 1024
     parse_timeout_s: int = 120
+    embed_concurrency: int = 4  # concurrent embedding batches per document (ingest stage)
+    brief_concurrency: int = 3  # concurrent brief map calls per document
     max_pages: int = 600  # PDFs above this end `unsupported` / `too_many_pages` before extraction
     parse_memory_mb: int = 2048  # address-space cap of the extraction subprocess (Linux only)
 

@@ -217,21 +217,24 @@ async def generate_brief(
     job_id: uuid.UUID | None,
     groups: Sequence[Sequence[uuid.UUID]],
     max_usd: Decimal,
+    concurrency: int = 1,
 ) -> Generated:
     """Extract per group (sequential, so the cost cap is exact), then merge. `load` returns a group's chunks
     (the stage reads them in a short session). Raises `LlmError` (or the underlying error) when an extract
     call fails; the stage turns that into a failed row."""
-    parts: list[Part] = []
     reasons: list[str] = []
     spent = Decimal(0)
+    reserved = Decimal(0)  # estimated cost of calls in flight
     calls = 0
     model = ""
     partial = False
-    for i, ids in enumerate(groups):
-        if i > 0 and spent >= max_usd:
-            partial = True
-            reasons.append(BRIEF_PARTIAL_BUDGET)
-            break
+    estimate = Decimal(0)  # per-call cost estimate: the largest actual cost seen so far
+    slots: list[tuple[Part, list[str], str] | None] = [None] * len(groups)
+    next_group = 0
+    first_done = asyncio.Event()
+
+    async def run_group(i: int, ids: Sequence[uuid.UUID]) -> None:
+        nonlocal spent, reserved, calls, model, estimate
         evidence = build_evidence(await load(list(ids)))
         res = await gateway.call(
             purpose="brief_extract",
@@ -245,11 +248,45 @@ async def generate_brief(
         assert res.output is not None
         calls += 1
         spent += res.cost_usd
+        estimate = max(estimate, res.cost_usd)
         model = model or res.model
         fields = normalize(res.output)
         resolved, resolve_reasons = resolve_facts(fields.facts, evidence)
-        reasons += [*fields.reasons, *resolve_reasons]
-        parts.append(Part(fields, tuple(resolved)))
+        slots[i] = (Part(fields, tuple(resolved)), [*fields.reasons, *resolve_reasons], res.model)
+
+    async def worker() -> None:
+        nonlocal next_group, reserved, partial
+        while next_group < len(groups):
+            i = next_group
+            next_group += 1  # claim the group before any await: two workers must never take the same one
+            if i > 0:
+                await first_done.wait()  # the first call sets the cost estimate used for reservations
+                if spent + reserved >= max_usd:  # in-flight calls count at the largest cost seen
+                    partial = True
+                    next_group = len(groups)  # nobody starts later groups either
+                    return
+            reserve = estimate
+            reserved += reserve
+            try:
+                await run_group(i, groups[i])
+            finally:
+                reserved -= reserve
+                if i == 0:
+                    first_done.set()
+
+    try:
+        async with asyncio.TaskGroup() as tg:
+            for _ in range(max(1, min(concurrency, len(groups)))):
+                tg.create_task(worker())
+    except ExceptionGroup as eg:
+        raise eg.exceptions[0] from None
+    if partial:
+        reasons.append(BRIEF_PARTIAL_BUDGET)
+    parts: list[Part] = []
+    for slot in slots:  # merged in group order, never completion order
+        if slot is not None:
+            parts.append(slot[0])
+            reasons += slot[1]
     if not parts:
         raise NoChunksError("the version has no chunks to brief")
     all_facts = [f for p in parts for f in p.facts]
@@ -375,6 +412,7 @@ class BriefStage:
                 job_id=job.id,
                 groups=groups,
                 max_usd=Decimal(str(settings.brief_max_usd)),
+                concurrency=settings.brief_concurrency,
             )
         except asyncio.CancelledError:
             raise

@@ -6,6 +6,7 @@ them into lines, split lines into headings and paragraphs, then assemble the pag
 char maps to a glyph (or -1 for a synthetic newline/space); element texts are exact slices of the page text.
 """
 
+import os
 import re
 import statistics
 from dataclasses import dataclass
@@ -16,7 +17,6 @@ from pdfminer.pdfdocument import PDFEncryptionError, PDFPasswordIncorrect
 from pdfminer.psparser import PSException
 from pdfplumber.utils.exceptions import PdfminerException
 
-from app.core.settings import get_settings
 from app.ingestion.errors import PermanentStageError, UnsupportedContentError
 from app.ingestion.extract.base import SYNTH, Element, ElementKind, ExtractedDocument, PageText
 from app.ingestion.extract.glyphs import (
@@ -280,7 +280,7 @@ class PdfExtractor:
     def _read(self, path: str) -> list[_Page]:
         out: list[_Page] = []
         with _open(path) as pdf:
-            limit = get_settings().max_pages
+            limit = int(os.environ.get("VAULT_MAX_PAGES", 600))  # set by the extract stage (minimal env)
             if len(pdf.pages) > limit:
                 raise UnsupportedContentError("too_many_pages", f"{len(pdf.pages)} pages (limit {limit})")
             for i, page in enumerate(pdf.pages):

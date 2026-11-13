@@ -6,7 +6,6 @@ import sys
 
 import pytest
 
-from app.core.settings import get_settings
 from app.ingestion.errors import UnsupportedContentError
 from app.ingestion.extract.pdf import PdfExtractor
 from tests.support.uploads import FIXTURES
@@ -41,8 +40,7 @@ def test_amd_wall_time() -> None:
 
 
 def test_page_cap(monkeypatch: pytest.MonkeyPatch) -> None:
-    capped = get_settings().model_copy(update={"max_pages": 0})
-    monkeypatch.setattr("app.ingestion.extract.pdf.get_settings", lambda: capped)
+    monkeypatch.setenv("VAULT_MAX_PAGES", "0")
     with pytest.raises(UnsupportedContentError) as e:
         PdfExtractor().extract(str(FIXTURES / "geometry" / "ligatures.pdf"))
     assert e.value.code == "too_many_pages"
