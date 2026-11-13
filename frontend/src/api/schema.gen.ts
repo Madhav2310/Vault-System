@@ -4,6 +4,46 @@
  */
 
 export interface paths {
+    "/healthz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Liveness
+         * @description Process liveness only; never touches dependencies.
+         */
+        get: operations["healthz_healthz_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/readyz": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Readiness
+         * @description Database, Redis, object store, reranker (optional) and provider configuration. 503 when a required check fails (the body is the same `Readiness` object).
+         */
+        get: operations["readyz_readyz_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/chat/sessions": {
         parameters: {
             query?: never;
@@ -11,11 +51,14 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Sessions */
+        /**
+         * List chat sessions
+         * @description Your sessions, most recently updated first, cursor-paginated.
+         */
         get: operations["list_sessions_v1_chat_sessions_get"];
         put?: never;
         /**
-         * Create Session
+         * Create a chat session
          * @description Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404.
          */
         post: operations["create_session_v1_chat_sessions_post"];
@@ -32,7 +75,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Session */
+        /**
+         * Get a chat session
+         * @description One session with its document scope (`document_ids: null` means all documents).
+         */
         get: operations["get_session_v1_chat_sessions__session_id__get"];
         put?: never;
         post?: never;
@@ -50,13 +96,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List Messages
+         * List messages
          * @description History, oldest first within a page; pages walk backwards from the newest (`next_cursor` = older).
          */
         get: operations["list_messages_v1_chat_sessions__session_id__messages_get"];
         put?: never;
         /**
-         * Post Message
+         * Post a message and get a cited answer
          * @description Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
          *     while running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion
          *     before the response (non-streaming; SSE comes with S5) and returns 200 with the assistant message; it
@@ -77,8 +123,11 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Chunk
+         * Inspect a source chunk
          * @description `text` is `chunks.original_text` (the only citable text); prefixes are never returned.
+         *
+         *     `prev_chunk_id` / `next_chunk_id` are the neighbours by ordinal within the same document version
+         *     (`null` at the ends).
          */
         get: operations["get_chunk_v1_chunks__chunk_id__get"];
         put?: never;
@@ -97,13 +146,13 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List Documents
+         * List documents
          * @description Newest first, keyset-paginated on (created_at, id). `status` is the current version's status.
          */
         get: operations["list_documents_v1_documents_get"];
         put?: never;
         /**
-         * Upload Document
+         * Upload a document
          * @description Upload a PDF, DOCX, TXT or MD file (≤ 25 MB). Returns 202 and starts processing; re-uploading the same
          *     bytes returns the existing version with `deduplicated: true` (200).
          */
@@ -121,12 +170,15 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Get Document */
+        /**
+         * Get a document with its versions
+         * @description The document, its current status and quality, and every version newest first.
+         */
         get: operations["get_document_v1_documents__document_id__get"];
         put?: never;
         post?: never;
         /**
-         * Delete Document
+         * Delete a document
          * @description Soft delete: hidden from every read immediately; chunks, insights, layouts and the blob go in an
          *     async purge.
          */
@@ -144,7 +196,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Document Brief
+         * Get the document brief
          * @description The cited brief of the document's current version. `status: pending` (200) until it exists;
          *     `include_unverified=false` drops facts the application could not verify against their citations.
          */
@@ -167,7 +219,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Create Summary
+         * Request a cited summary
          * @description A cited summary of the document's current version (`length`, optional `focus` and `tone`). 200 with
          *     the summary when the same parameters were already produced, else 202 with a poll URL.
          */
@@ -186,7 +238,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Summary
+         * Get a summary
          * @description The summary: `status` is `pending`, `ready` (segments with citations) or `failed`.
          */
         get: operations["get_summary_v1_documents__document_id__summaries__summary_id__get"];
@@ -208,7 +260,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Upload New Version
+         * Upload a new version
          * @description Upload a new version (`version_no = max + 1`) of one of your documents and start processing it. When
          *     it becomes ready it replaces the current version (the old one becomes `superseded`) and new chat scopes
          *     use it. Identical bytes to the newest version return that version with `deduplicated: true` (200).
@@ -230,7 +282,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Post Feedback
+         * Rate an answer
          * @description Rate an assistant answer (or one of its segments). Idempotent per (message, segment): posting again
          *     replaces your earlier rating. Another user's message, or one that is not an answer, is 404.
          */
@@ -248,7 +300,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Chat Metrics Endpoint */
+        /**
+         * Chat metrics
+         * @description Turns, outcomes, coverage, latency and TTFT percentiles, cost, tokens and answer feedback.
+         */
         get: operations["chat_metrics_endpoint_v1_metrics_chat_get"];
         put?: never;
         post?: never;
@@ -265,7 +320,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Documents Metrics */
+        /**
+         * Document metrics
+         * @description Counts by status, type and category, pages, chunks, storage and time to ready.
+         */
         get: operations["documents_metrics_v1_metrics_documents_get"];
         put?: never;
         post?: never;
@@ -282,7 +340,10 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** Processing Metrics Endpoint */
+        /**
+         * Processing metrics
+         * @description Throughput, stage durations, failures by error code, retries and queue age.
+         */
         get: operations["processing_metrics_endpoint_v1_metrics_processing_get"];
         put?: never;
         post?: never;
@@ -300,7 +361,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get File
+         * Download the original file
          * @description The original bytes (`blobs/{sha256}`).
          */
         get: operations["get_file_v1_versions__version_id__file_get"];
@@ -320,7 +381,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Page Layout
+         * Page layout for highlighting
          * @description Page size and glyph boxes from `layouts/{version_id}.json.gz` (design §6.4).
          */
         get: operations["page_layout_v1_versions__version_id__pages__page__layout_get"];
@@ -340,7 +401,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Processing
+         * Processing status of a version
          * @description Stage timeline from `job_events` (oldest first), the job's state, per-page flags and quality.
          */
         get: operations["processing_v1_versions__version_id__processing_get"];
@@ -360,7 +421,7 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Processing Stream
+         * Stream processing status
          * @description Server-sent events: one `stage{name, status, attempt, at, error_code?}` per `job_events` row (the past
          *     first, then live as stages commit), then a terminal `done{status, error_code}`. `: heartbeat` comments
          *     every 15 s; closes at a terminal status or after 10 minutes (`timeout`: reconnect to resume).
@@ -378,12 +439,297 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** BriefOut */
+        BriefOut: {
+            /** Category */
+            category?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Document Type */
+            document_type?: string | null;
+            /**
+             * Facts
+             * @description Cited facts, each `verified` or not
+             * @default []
+             */
+            facts: {
+                [key: string]: unknown;
+            }[];
+            /** Model */
+            model?: string | null;
+            /**
+             * Status
+             * @description `pending`, `ready`, `partial` or `failed`
+             */
+            status: string;
+            /**
+             * Suggested Questions
+             * @default []
+             */
+            suggested_questions: string[];
+            /** Summary */
+            summary?: string | null;
+            /**
+             * Tags
+             * @default []
+             */
+            tags: string[];
+            /** Version Id */
+            version_id?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** ChatMetrics */
+        ChatMetrics: {
+            cost_per_turn_usd: components["schemas"]["Percentiles"];
+            /** Coverage */
+            coverage: {
+                [key: string]: number;
+            };
+            /** Degraded */
+            degraded: {
+                [key: string]: number;
+            };
+            feedback: components["schemas"]["FeedbackSummary"];
+            latency_ms: components["schemas"]["Percentiles"];
+            llm: components["schemas"]["LlmMetrics"];
+            /** Outcomes */
+            outcomes: {
+                [key: string]: number;
+            };
+            /** Scope */
+            scope: string;
+            ttft_ms: components["schemas"]["Percentiles"];
+            /** Turns */
+            turns: number;
+            /** Window */
+            window: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** Check */
+        Check: {
+            /** Duration Ms */
+            duration_ms: number;
+            /** Error */
+            error?: string | null;
+            /**
+             * Required
+             * @default true
+             */
+            required: boolean;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "fail";
+        };
+        /** ChunkOut */
+        ChunkOut: {
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Next Chunk Id
+             * @description Next chunk by ordinal in the same version; `null` for the last
+             */
+            next_chunk_id?: string | null;
+            /** Ordinal */
+            ordinal: number;
+            /** Page End */
+            page_end: number;
+            /**
+             * Page Start
+             * @description 0 for flow documents (DOCX/TXT/MD): no pages
+             */
+            page_start: number;
+            /**
+             * Prev Chunk Id
+             * @description Previous chunk by ordinal in the same version; `null` for the first
+             */
+            prev_chunk_id?: string | null;
+            /** Section Path */
+            section_path: string[];
+            /** Sentences */
+            sentences: unknown[];
+            /**
+             * Text
+             * @description `chunks.original_text`: the only citable text
+             */
+            text: string;
+            /** Token Count */
+            token_count: number;
+            version: components["schemas"]["ChunkVersion"];
+        } & {
+            [key: string]: unknown;
+        };
+        /** ChunkVersion */
+        ChunkVersion: {
+            /** Filename */
+            filename: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Version No */
+            version_no: number;
+        } & {
+            [key: string]: unknown;
+        };
         /** CreateSession */
         CreateSession: {
             /** Document Ids */
             document_ids?: string[] | null;
             /** Title */
             title?: string | null;
+        };
+        /** DocumentDetail */
+        DocumentDetail: {
+            /** Category */
+            category?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Current Version Id */
+            current_version_id?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Quality */
+            quality?: {
+                [key: string]: unknown;
+            } | null;
+            /** Status */
+            status?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Title */
+            title: string;
+            /** Versions */
+            versions: components["schemas"]["VersionOut"][];
+        } & {
+            [key: string]: unknown;
+        };
+        /** DocumentList */
+        DocumentList: {
+            /** Items */
+            items: components["schemas"]["DocumentListItem"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** DocumentListItem */
+        DocumentListItem: {
+            /** Category */
+            category?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Status */
+            status: string;
+            /** Summary Snippet */
+            summary_snippet?: string | null;
+            /** Tags */
+            tags?: string[] | null;
+            /** Title */
+            title: string;
+            version: components["schemas"]["VersionOut"];
+        } & {
+            [key: string]: unknown;
+        };
+        /** DocumentsMetrics */
+        DocumentsMetrics: {
+            /** Brief Cost Usd */
+            brief_cost_usd: {
+                [key: string]: number | null;
+            };
+            /** By Category */
+            by_category: {
+                [key: string]: number;
+            };
+            /** By Mime */
+            by_mime: {
+                [key: string]: number;
+            };
+            /** By Status */
+            by_status: {
+                [key: string]: number;
+            };
+            /** Chunks */
+            chunks: unknown;
+            /** Documents */
+            documents: number;
+            /** Enriched */
+            enriched: number;
+            /** Facts */
+            facts: {
+                [key: string]: unknown;
+            };
+            /** Needs Ocr */
+            needs_ocr: number;
+            /** Pages */
+            pages: number;
+            /** Scope */
+            scope: string;
+            /** Storage Bytes */
+            storage_bytes: number;
+            time_to_ready_seconds: components["schemas"]["Percentiles"];
+        } & {
+            [key: string]: unknown;
+        };
+        /**
+         * ErrorResponse
+         * @description `application/problem+json` body of every 4xx/5xx (RFC 9457 shape plus `code` and `retryable`).
+         */
+        ErrorResponse: {
+            /**
+             * Code
+             * @description Stable machine-readable error code
+             */
+            code: string;
+            /**
+             * Detail
+             * @default null
+             */
+            detail: string | null;
+            /**
+             * Errors
+             * @description Validation errors (422): field location, message and type only
+             * @default null
+             */
+            errors: {
+                [key: string]: unknown;
+            }[] | null;
+            /**
+             * Retryable
+             * @description Whether retrying the same request can succeed
+             */
+            retryable: boolean;
+            /** Status */
+            status: number;
+            /** Title */
+            title: string;
+            /**
+             * Type
+             * @description Problem type URI
+             */
+            type: string;
         };
         /** FeedbackIn */
         FeedbackIn: {
@@ -407,10 +753,166 @@ export interface components {
              */
             segment_ordinal?: number | null;
         };
-        /** HTTPValidationError */
-        HTTPValidationError: {
-            /** Detail */
-            detail?: components["schemas"]["ValidationError"][];
+        /** FeedbackOut */
+        FeedbackOut: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Message Id
+             * Format: uuid
+             */
+            message_id: string;
+            /** Note */
+            note?: string | null;
+            /** Rating */
+            rating: string;
+            /** Reason */
+            reason?: string | null;
+            /** Segment Ordinal */
+            segment_ordinal?: number | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** FeedbackSummary */
+        FeedbackSummary: {
+            /** By Reason */
+            by_reason: {
+                [key: string]: number;
+            };
+            /** Down */
+            down: number;
+            /** Up */
+            up: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /** JobState */
+        JobState: {
+            /** Attempt Count */
+            attempt_count: number;
+            /** Current Stage */
+            current_stage?: string | null;
+            /** Error Code */
+            error_code?: string | null;
+            /** Status */
+            status: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** Liveness */
+        Liveness: {
+            /** Status */
+            status: string;
+        };
+        /** LlmMetrics */
+        LlmMetrics: {
+            /** Cache Hit Ratio */
+            cache_hit_ratio?: number | null;
+            /** Calls */
+            calls: number;
+            /** Cost By Purpose */
+            cost_by_purpose: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Tokens */
+            tokens: {
+                [key: string]: unknown;
+            }[];
+            /** Total Cost Usd */
+            total_cost_usd?: number | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** MessageList */
+        MessageList: {
+            /** Items */
+            items: components["schemas"]["MessageOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** MessageOut */
+        MessageOut: {
+            /** Content */
+            content: string;
+            /** Coverage State */
+            coverage_state?: string | null;
+            /** Created At */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Response Type */
+            response_type?: string | null;
+            /** Role */
+            role: string;
+            /** Run Id */
+            run_id?: string | null;
+            /**
+             * Segments
+             * @description Assistant answers: segments with citations
+             * @default []
+             */
+            segments: {
+                [key: string]: unknown;
+            }[];
+            /** Staleness */
+            staleness?: {
+                [key: string]: unknown;
+            } | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PageFlags */
+        PageFlags: {
+            /** Flags */
+            flags?: unknown;
+            /** Page No */
+            page_no: number;
+            /** Quality Score */
+            quality_score?: number | null;
+            /** Text Chars */
+            text_chars?: number | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** PageLayoutOut */
+        PageLayoutOut: {
+            /**
+             * Glyphs
+             * @description Glyph boxes in page coordinates (design §6.4)
+             */
+            glyphs: unknown[];
+            /** Height */
+            height: number;
+            /** Page */
+            page: number;
+            /**
+             * Version Id
+             * Format: uuid
+             */
+            version_id: string;
+            /** Width */
+            width: number;
+        } & {
+            [key: string]: unknown;
+        };
+        /** Percentiles */
+        Percentiles: {
+            /** P50 */
+            p50?: number | null;
+            /** P95 */
+            p95?: number | null;
+        } & {
+            [key: string]: unknown;
         };
         /** PostMessage */
         PostMessage: {
@@ -424,6 +926,195 @@ export interface components {
              * @enum {string}
              */
             mode: "auto" | "full_context";
+        };
+        /** PostMessageOut */
+        PostMessageOut: {
+            /** Deduplicated */
+            deduplicated: boolean;
+            /**
+             * Message
+             * @description The assistant message once finished
+             */
+            message?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /**
+             * Status
+             * @description `running` or a terminal status
+             */
+            status: string;
+            /**
+             * User Message Id
+             * Format: uuid
+             */
+            user_message_id: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** ProcessingMetrics */
+        ProcessingMetrics: {
+            /** Failures By Error Code */
+            failures_by_error_code: {
+                [key: string]: number;
+            };
+            /** Oldest Pending Age Seconds */
+            oldest_pending_age_seconds?: number | null;
+            /** Redispatch Candidates */
+            redispatch_candidates: unknown;
+            /** Retries */
+            retries: unknown;
+            /** Scope */
+            scope: string;
+            /** Stage Duration Ms */
+            stage_duration_ms: {
+                [key: string]: {
+                    [key: string]: unknown;
+                };
+            };
+            /** Throughput */
+            throughput: {
+                [key: string]: unknown;
+            };
+            /** Window */
+            window: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** ProcessingOut */
+        ProcessingOut: {
+            /** Error Code */
+            error_code?: string | null;
+            job?: components["schemas"]["JobState"] | null;
+            /** Pages */
+            pages: components["schemas"]["PageFlags"][];
+            /** Quality */
+            quality?: {
+                [key: string]: unknown;
+            } | null;
+            /** Stages */
+            stages: components["schemas"]["StageEvent"][];
+            /** Status */
+            status: string;
+            /**
+             * Version Id
+             * Format: uuid
+             */
+            version_id: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** Readiness */
+        Readiness: {
+            /** Checks */
+            checks: {
+                [key: string]: components["schemas"]["Check"];
+            };
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ok" | "degraded" | "fail";
+        };
+        /** SessionList */
+        SessionList: {
+            /** Items */
+            items: components["schemas"]["SessionOut"][];
+            /** Next Cursor */
+            next_cursor?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
+        /** SessionOut */
+        SessionOut: {
+            /** Created At */
+            created_at: string;
+            /**
+             * Document Ids
+             * @description `null` = all documents
+             */
+            document_ids?: string[] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Title */
+            title?: string | null;
+            /** Updated At */
+            updated_at: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** StageEvent */
+        StageEvent: {
+            /** At */
+            at: string;
+            /** Attempt */
+            attempt: number;
+            /** Duration Ms */
+            duration_ms?: number | null;
+            /** Stage */
+            stage: string;
+            /** Status */
+            status: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** SummaryOut */
+        SummaryOut: {
+            /** Created At */
+            created_at?: string | null;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Error Code */
+            error_code?: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Model */
+            model?: string | null;
+            /** Params */
+            params?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Poll
+             * @description Pending only: URL to poll
+             */
+            poll?: string | null;
+            /** Reasons */
+            reasons?: string[] | null;
+            /**
+             * Segments
+             * @description Ready only: cited segments
+             */
+            segments?: {
+                [key: string]: unknown;
+            }[] | null;
+            /**
+             * Status
+             * @description `pending`, `ready` or `failed`
+             */
+            status: string;
+            /**
+             * Version Id
+             * Format: uuid
+             */
+            version_id: string;
+            /** Word Count */
+            word_count?: number | null;
+        } & {
+            [key: string]: unknown;
         };
         /**
          * SummaryRequest
@@ -444,18 +1135,70 @@ export interface components {
              */
             tone: "neutral" | "executive" | "plain";
         };
-        /** ValidationError */
-        ValidationError: {
-            /** Context */
-            ctx?: Record<string, never>;
-            /** Input */
-            input?: unknown;
-            /** Location */
-            loc: (string | number)[];
-            /** Message */
-            msg: string;
-            /** Error Type */
-            type: string;
+        /** UploadAccepted */
+        UploadAccepted: {
+            /** Deduplicated */
+            deduplicated: boolean;
+            /**
+             * Document Id
+             * Format: uuid
+             */
+            document_id: string;
+            /** Job Id */
+            job_id: string | null;
+            links: components["schemas"]["UploadLinks"];
+            /** Status */
+            status: string;
+            /**
+             * Version Id
+             * Format: uuid
+             */
+            version_id: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** UploadLinks */
+        UploadLinks: {
+            /** Document */
+            document: string;
+            /** Processing */
+            processing: string;
+        } & {
+            [key: string]: unknown;
+        };
+        /** VersionOut */
+        VersionOut: {
+            /** Created At */
+            created_at?: string | null;
+            /** Error Code */
+            error_code?: string | null;
+            /** Filename */
+            filename: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mime */
+            mime: string;
+            /** Page Count */
+            page_count?: number | null;
+            /** Quality */
+            quality?: {
+                [key: string]: unknown;
+            } | null;
+            /** Ready At */
+            ready_at?: string | null;
+            /** Sha256 */
+            sha256: string;
+            /** Size Bytes */
+            size_bytes: number;
+            /** Status */
+            status: string;
+            /** Version No */
+            version_no: number;
+        } & {
+            [key: string]: unknown;
         };
     };
     responses: never;
@@ -466,6 +1209,46 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    healthz_healthz_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Liveness"];
+                };
+            };
+        };
+    };
+    readyz_readyz_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Readiness"];
+                };
+            };
+        };
+    };
     list_sessions_v1_chat_sessions_get: {
         parameters: {
             query?: {
@@ -484,18 +1267,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SessionList"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -519,18 +1318,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SessionOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description A document in `document_ids` is not yours or was deleted */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -552,18 +1376,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SessionOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -588,18 +1437,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["MessageList"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -624,7 +1498,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["PostMessageOut"];
+                };
             };
             /** @description Successful Response */
             202: {
@@ -632,18 +1508,61 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PostMessageOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your session */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Another turn is running in this session (`turn_in_progress`) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Model provider or capacity unavailable */
+            503: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -665,18 +1584,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ChunkOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your chunk */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -703,18 +1647,34 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DocumentList"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -743,7 +1703,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UploadAccepted"];
+                };
             };
             /** @description Successful Response */
             202: {
@@ -751,16 +1713,52 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["UploadAccepted"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description File larger than the upload limit */
+            413: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not a PDF, DOCX, TXT or MD file */
+            415: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -782,18 +1780,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DocumentDetail"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your document */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -816,13 +1839,40 @@ export interface operations {
                 };
                 content?: never;
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your document */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -846,18 +1896,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["BriefOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your document */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -883,7 +1958,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["SummaryOut"];
                 };
             };
             /** @description Queued: poll the returned URL until `status` is `ready` */
@@ -891,15 +1966,44 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["SummaryOut"];
+                };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your document */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -922,18 +2026,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["SummaryOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your document or summary */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -963,7 +2092,9 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/json": components["schemas"]["UploadAccepted"];
+                };
             };
             /** @description Successful Response */
             202: {
@@ -971,7 +2102,16 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/json": components["schemas"]["UploadAccepted"];
+                };
+            };
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
             /** @description Not the caller's document, or deleted */
@@ -979,15 +2119,26 @@ export interface operations {
                 headers: {
                     [name: string]: unknown;
                 };
-                content?: never;
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
             };
-            /** @description Validation Error */
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1011,18 +2162,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["FeedbackOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your message, or not an answer */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1047,18 +2223,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ChatMetrics"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `scope=global` is admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1081,18 +2282,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["DocumentsMetrics"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `scope=global` is admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1117,18 +2343,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ProcessingMetrics"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description `scope=global` is admin only */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1144,22 +2395,49 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description Successful Response */
+            /** @description The original bytes with the stored media type */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "application/octet-stream": string;
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your version, or the file is gone */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1182,18 +2460,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["PageLayoutOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your version, or no layout for that page */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1215,18 +2518,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": {
-                        [key: string]: unknown;
-                    };
+                    "application/json": components["schemas"]["ProcessingOut"];
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your version */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };
@@ -1248,16 +2576,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "text/event-stream": unknown;
+                    "text/event-stream": string;
                 };
             };
-            /** @description Validation Error */
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your version */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
             422: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
         };

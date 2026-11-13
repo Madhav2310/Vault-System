@@ -1,4 +1,5 @@
 import type { DocumentListItem } from "../api/types";
+import { hrefFor, linkClick } from "../document/nav";
 import { isFailure, isLive, reasonInWords, statusLabel } from "./stages";
 import { useProcessing } from "./useProcessing";
 
@@ -27,7 +28,11 @@ export function DocRow({ doc, canRetry, onChanged, onRemove, onRetry }: Props) {
   return (
     <li className="row" data-testid="doc-row" data-status={doc.status}>
       <div>
-        <div className="row-title">{doc.title}</div>
+        <div className="row-title">
+          <a href={hrefFor(`/documents/${doc.id}`)} onClick={linkClick(`/documents/${doc.id}`)}>
+            {doc.title}
+          </a>
+        </div>
         <div className="row-meta">
           <span className={chipClass}>{statusLabel(doc.status)}</span>
           {doc.category && <span>{doc.category}</span>}
