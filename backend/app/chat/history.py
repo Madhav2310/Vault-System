@@ -106,7 +106,9 @@ async def _segments(
                     "document_title": r["title"],
                     "version_id": str(r["version_id"]) if r["version_id"] else None,
                     "version_no": r["version_no"],
-                    "pages": [r["page_start"], r["page_end"]] if r["page_start"] is not None else None,
+                    "pages": [r["page_start"], r["page_end"]]
+                    if r["page_start"]
+                    else None,  # 0: flow document
                     "section_path": list(r["section_path"]) if r["section_path"] is not None else None,
                     "sentence_start": r["sentence_start"],
                     "sentence_end": r["sentence_end"],
