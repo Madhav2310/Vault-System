@@ -55,6 +55,9 @@ def _payload(**kw: Any) -> dict[str, Any]:
         "tags": ["consulting"],
         "suggested_questions": ["Who are the parties?"],
         "facts": [],
+        "tone": "neutral",
+        "tone_note": "Plain.",
+        "tone_evidence": [],
     }
     return {**base, **kw}
 

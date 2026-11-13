@@ -26,8 +26,8 @@ from tests.support.brief_seed import (
 from tests.support.embed import add_chunks
 from tests.support.jobs import job_row, make_job, version_status
 
-EXTRACT = default_registry().get("brief_extract", 1).body
-MERGE = default_registry().get("brief_merge", 1).body
+EXTRACT = default_registry().get("brief_extract", 2).body
+MERGE = default_registry().get("brief_merge", 2).body
 
 
 def fact(field: str, value: str, *handles: str) -> dict[str, Any]:
@@ -55,7 +55,7 @@ async def test_single_call(sm, make_owner, enqueued) -> None:  # type: ignore[no
     rows = await insight_rows(sm, seeded.ref.version_id)
     assert len(rows) == 1
     row = rows[0]
-    assert (row["kind"], row["status"], row["prompt_version"], row["owner_id"]) == ("brief", "done", 1, o.id)
+    assert (row["kind"], row["status"], row["prompt_version"], row["owner_id"]) == ("brief", "done", 2, o.id)
     assert row["params_hash"] and row["params"] == {} and row["model"]
     c = row["content"]
     statuses = {f["value"]: (f["status"], f["reason"]) for f in c["facts"]}

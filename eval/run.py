@@ -41,7 +41,9 @@ import argparse
 import asyncio
 import dataclasses
 import datetime as dt
+import functools
 import importlib
+import inspect
 import math
 import pathlib
 import subprocess
@@ -121,6 +123,8 @@ def _extra(out: ItemOutput) -> dict[str, float]:
     m: dict[str, float] = {}
     if out.latency_ms is not None:
         m["latency_ms"] = float(out.latency_ms)
+    if out.ttft_ms is not None:
+        m["ttft_ms"] = float(out.ttft_ms)
     if out.cost_usd is not None:
         m["cost_usd"] = float(out.cost_usd)
     return m
@@ -209,12 +213,28 @@ async def _persist(sm: async_sessionmaker[AsyncSession], run: RunResult) -> None
         await s.commit()
 
 
-def _load_setup(spec: str) -> Callable[[str], Awaitable[Harness]]:
+def _load_setup(spec: str, *, stream: bool = False) -> Callable[[str], Awaitable[Harness]]:
     mod, _, attr = spec.partition(":")
     if not attr:
         raise SystemExit("--pipeline must be module:callable")
-    fn: Callable[[str], Awaitable[Harness]] = getattr(importlib.import_module(mod), attr)
-    return fn
+    fn: Callable[..., Awaitable[Harness]] = getattr(importlib.import_module(mod), attr)
+    if not stream:
+        return fn
+    if "stream" not in inspect.signature(fn).parameters:
+        raise SystemExit(f"--stream: {spec} does not support streaming")
+    return functools.partial(fn, stream=True)
+
+
+def ttft_summary(run: RunResult) -> str | None:
+    """`ttft_ms p50 <n> p95 <n> (n=<k>)` over the items that streamed a segment; None when none did."""
+    vals = sorted(
+        m["ttft_ms"] for i in run.items for r in (i.turns or [i]) if (m := r.metrics) and "ttft_ms" in m
+    )
+    if not vals:
+        return None
+    p50 = vals[(len(vals) - 1) // 2]
+    p95 = vals[min(len(vals) - 1, math.ceil(0.95 * len(vals)) - 1)]
+    return f"ttft_ms p50 {p50:.0f} p95 {p95:.0f} (n={len(vals)})"
 
 
 async def _main(a: argparse.Namespace) -> int:
@@ -225,7 +245,8 @@ async def _main(a: argparse.Namespace) -> int:
     split = "smoke" if a.suite == "smoke" else a.split
     items = select_filter(ds.select(split), a.filter)
     t_wall = time.monotonic()
-    harness = await _load_setup(a.pipeline)(a.config)
+    stream = getattr(a, "stream", False)
+    harness = await (_load_setup(a.pipeline, stream=True) if stream else _load_setup(a.pipeline))(a.config)
     sm = None if a.no_db else get_sessionmaker()
     try:
         run, path = await run_suite(
@@ -243,6 +264,8 @@ async def _main(a: argparse.Namespace) -> int:
             await harness.close()
     print(f"wall_s {time.monotonic() - t_wall:.1f}")
     print(f"degraded_rate {run.degraded_rate():.3f} {run.degraded_by_kind()}")
+    if stream:
+        print(ttft_summary(run) or "ttft_ms: no streamed segment events")
     if run.config.get("stopped") == "budget":
         print(f"stopped: budget (cap ${a.max_usd}); partial run, nothing frozen")
         return 3
@@ -287,6 +310,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     )
     p.add_argument("--max-usd", type=float, default=None, help="stop before an item once spend reaches this")
     p.add_argument("--filter", default=None, help="only items matching, e.g. scope_docs=1")
+    p.add_argument(
+        "--stream",
+        action="store_true",
+        help="answer over the SSE stream and report TTFT (p50/p95); needs a setup with a `stream` parameter",
+    )
     p.add_argument("--no-db", action="store_true", help="skip eval_runs/eval_results rows")
     return asyncio.run(_main(p.parse_args(argv)))
 

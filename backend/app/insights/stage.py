@@ -40,25 +40,29 @@ from app.insights.brief import (
     EMPTY_PARAMS_HASH,
     KIND,
     MAX_FACTS,
+    MAX_TONE_EVIDENCE,
     PROMPT_VERSION,
     Brief,
     BriefOut,
     MergeOut,
     Normalized,
     ResolvedFact,
+    StoredEvidence,
     StoredFact,
+    StoredTone,
     brief_schema,
     dedupe_facts,
     normalize,
     resolve_facts,
+    resolve_tone,
 )
-from app.insights.verify import verify_fact
+from app.insights.verify import verify_fact, verify_tone
 from app.llm.errors import LlmError
 from app.llm.gateway import LlmGateway
 from app.retrieval.load import load_evidence_chunks
 
 EXTRACT_PROMPT: tuple[str, int] = ("brief_extract", PROMPT_VERSION)
-MERGE_PROMPT: tuple[str, int] = ("brief_merge", 1)
+MERGE_PROMPT: tuple[str, int] = ("brief_merge", PROMPT_VERSION)
 MAX_MERGE_FACTS_PER_PART = 60
 MAX_MERGE_VALUE_CHARS = 200
 
@@ -127,6 +131,7 @@ class NoChunksError(Exception):
 class Part:
     fields: Normalized
     facts: tuple[ResolvedFact, ...]
+    tone_evidence: tuple[StoredEvidence, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -146,6 +151,8 @@ def _merge_inputs(parts: Sequence[Part]) -> dict[str, Any]:
                 "category": p.fields.category,
                 "tags": list(p.fields.tags),
                 "suggested_questions": list(p.fields.suggested_questions),
+                "tone": p.fields.tone,
+                "tone_note": p.fields.tone_note,
                 "facts": [
                     {"field": f.field, "value": f.value[:MAX_MERGE_VALUE_CHARS]}
                     for f in p.facts[:MAX_MERGE_FACTS_PER_PART]
@@ -163,7 +170,12 @@ def _fallback_fields(parts: Sequence[Part]) -> Normalized:
     category = Counter(p.fields.category for p in parts).most_common(1)[0][0]
     tags = [t for p in parts for t in p.fields.tags]
     questions = [q for p in parts for q in p.fields.suggested_questions]
+    tone = Counter(p.fields.tone for p in parts).most_common(1)[0][0]
+    note = next(p.fields.tone_note for p in parts if p.fields.tone == tone)
     out = BriefOut(
+        tone=tone,  # type: ignore[arg-type]
+        tone_note=note,
+        tone_evidence=[],
         document_type=first.document_type,
         summary=first.summary,
         category=category,  # type: ignore[arg-type]
@@ -180,7 +192,9 @@ def _finalize(
     version_id: uuid.UUID,
     reasons: list[str],
     partial: bool,
+    tone_evidence: Sequence[StoredEvidence] = (),
 ) -> Brief:
+    tone_verdict = verify_tone(tone_evidence, version_id)
     united = dedupe_facts(facts)
     if len(united) > MAX_FACTS:
         united = united[:MAX_FACTS]
@@ -206,7 +220,29 @@ def _finalize(
         facts=stored,
         reasons=list(dict.fromkeys(reasons)),
         partial=partial,
+        tone=StoredTone(
+            label=fields.tone,
+            note=fields.tone_note,
+            status=tone_verdict.status,
+            reason=tone_verdict.reason,
+            evidence=list(tone_evidence),
+        ),
     )
+
+
+def _merged_tone_evidence(parts: Sequence[Part], label: str) -> list[StoredEvidence]:
+    """Tone citations of the merged brief come from the map step, never from the merge model: the parts that
+    chose the merged label first, then the others; one per sentence range; at most `MAX_TONE_EVIDENCE`."""
+    ordered = [p for p in parts if p.fields.tone == label] + [p for p in parts if p.fields.tone != label]
+    out: list[StoredEvidence] = []
+    seen: set[tuple[uuid.UUID, int, int]] = set()
+    for p in ordered:
+        for e in p.tone_evidence:
+            key = (e.chunk_id, e.sentence_start, e.sentence_end)
+            if key not in seen:
+                seen.add(key)
+                out.append(e)
+    return out[:MAX_TONE_EVIDENCE]
 
 
 async def generate_brief(
@@ -253,7 +289,12 @@ async def generate_brief(
         model = model or res.model
         fields = normalize(res.output)
         resolved, resolve_reasons = resolve_facts(fields.facts, evidence)
-        slots[i] = (Part(fields, tuple(resolved)), [*fields.reasons, *resolve_reasons], res.model)
+        tone_refs, tone_reasons = resolve_tone(fields.tone_note, fields.tone_evidence, evidence)
+        slots[i] = (
+            Part(fields, tuple(resolved), tone_refs),
+            [*fields.reasons, *resolve_reasons, *tone_reasons],
+            res.model,
+        )
 
     async def worker() -> None:
         nonlocal next_group, reserved, partial
@@ -293,7 +334,10 @@ async def generate_brief(
     all_facts = [f for p in parts for f in p.facts]
     if len(parts) == 1:
         return Generated(
-            _finalize(parts[0].fields, all_facts, version_id, reasons, partial), model, spent, calls
+            _finalize(parts[0].fields, all_facts, version_id, reasons, partial, parts[0].tone_evidence),
+            model,
+            spent,
+            calls,
         )
     try:
         res_m = await gateway.call(
@@ -308,11 +352,14 @@ async def generate_brief(
         assert res_m.output is not None
         calls += 1
         spent += res_m.cost_usd
-        fields = normalize(BriefOut(**res_m.output.model_dump(), facts=[]))
+        fields = normalize(BriefOut(**res_m.output.model_dump(), facts=[], tone_evidence=[]))
     except LlmError:
         reasons.append(BRIEF_MERGE_FALLBACK)
         fields = _fallback_fields(parts)
-    return Generated(_finalize(fields, all_facts, version_id, reasons, partial), model, spent, calls)
+    tone_refs = _merged_tone_evidence(parts, fields.tone)
+    return Generated(
+        _finalize(fields, all_facts, version_id, reasons, partial, tone_refs), model, spent, calls
+    )
 
 
 # --- persistence ------------------------------------------------------------------------------------------
