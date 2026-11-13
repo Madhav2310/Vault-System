@@ -19,7 +19,7 @@ from app.core.error_codes import ErrorCode
 from app.core.settings import get_settings
 from app.documents.blobs import store_blob
 from app.documents.delete import PurgeEnqueue, get_purge_enqueue, soft_delete
-from app.documents.service import create_from_upload
+from app.documents.service import create_from_upload, create_new_version, owns_live_document
 from app.documents.sniff import sniff
 from app.documents.upload import receive_upload
 from app.ingestion.jobs import Enqueue, dispatch
@@ -286,3 +286,68 @@ async def get_document(
         "quality": current["quality"] if current else None,
         "versions": versions,
     }
+
+
+# --- new version of an existing document (S14.03) ----------------------------------------------------------
+@router.post(
+    "/documents/{document_id}/versions",
+    status_code=202,
+    responses={
+        200: {"description": "Identical bytes to the document's newest version (deduplicated)"},
+        404: {"description": "Not the caller's document, or deleted"},
+    },
+    openapi_extra={
+        "requestBody": {
+            "required": True,
+            "content": {
+                "multipart/form-data": {
+                    "schema": {
+                        "type": "object",
+                        "required": ["file"],
+                        "properties": {"file": {"type": "string", "format": "binary"}},
+                    }
+                }
+            },
+        }
+    },
+)
+async def upload_new_version(
+    document_id: uuid.UUID,
+    request: Request,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    store: Annotated[ObjectStore, Depends(get_store)],
+    enqueue: Annotated[Enqueue, Depends(get_enqueue)],
+    idempotency_key: Annotated[str | None, Header()] = None,
+) -> Response:
+    """Upload a new version (`version_no = max + 1`) of one of your documents and start processing it. When
+    it becomes ready it replaces the current version (the old one becomes `superseded`) and new chat scopes
+    use it. Identical bytes to the newest version return that version with `deduplicated: true` (200)."""
+    key = check_key(idempotency_key)
+    if not await owns_live_document(db, user.id, document_id):
+        raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND)
+    await db.rollback()  # no connection is held while the body streams in
+    settings = get_settings()
+    async with receive_upload(request, settings.max_upload_bytes) as f:
+        mime = await asyncio.to_thread(sniff, f.path, f.filename)
+        await store_blob(store, f.path, f.sha256)
+
+        async def op() -> tuple[int, dict[str, Any]]:
+            out = await create_new_version(db, user.id, document_id, f, mime)
+            if out is None:  # deleted (or never owned) between the pre-check and now
+                raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND)
+            body = _body(out.document_id, out.version_id, out.job_id, out.status, out.deduplicated)
+            return (200 if out.deduplicated else 202), body
+
+        h = request_hash(
+            route="POST /v1/documents/{id}/versions",
+            document_id=str(document_id),
+            sha256=f.sha256,
+            filename=f.filename,
+        )
+        status, body = await run_idempotent(db, user.id, key, h, op)
+        if status == 202:
+            await store_blob(store, f.path, f.sha256)  # re-assert after commit (see upload_document)
+    if status == 202 and body.get("job_id"):
+        await dispatch(db, uuid.UUID(body["job_id"]), enqueue)
+    return canonical_response(status, body)
