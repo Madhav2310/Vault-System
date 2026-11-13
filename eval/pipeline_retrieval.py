@@ -1,9 +1,9 @@
 """Retrieval-only harness for `eval.run` (plan S11.01): no analyze, no generation, no chat-model calls.
 
-`python -m eval.run --suite retrieval --config retrieval@1 --pipeline eval.pipeline_retrieval:setup` answers
-each item by calling `Retriever.retrieve` in process against the dev database, for a stable eval user
+`python -m eval.run --suite retrieval --config retrieval@1 --pipeline eval.pipeline_retrieval:setup`
+answers each item by calling `Retriever.retrieve` in process against the dev database, for a stable eval user
 (`eval-retrieval@vault.local`). The 15 Vault-Eval documents are uploaded once (through the running stack's
-HTTP API) and reused by sha256 afterwards. Only `embed_query` rows reach `llm_calls` (about $0.00001 per item).
+HTTP API) and reused by sha256 afterwards. Only `embed_query` rows reach `llm_calls` (about $0.00001 each).
 `--config` names a retrieval config file (`backend/config/<name>.yaml`).
 """
 
@@ -34,6 +34,7 @@ from app.retrieval.retrieve import Retriever
 from app.retrieval.scope import compute_scope
 from eval.loader import load_dataset
 from eval.mapping import ChunkInfo, chunks_from_rows
+from eval.multiturn import Pipeline
 from eval.run import Harness
 from eval.schema import EvalContext, ItemOutput, Query
 
@@ -65,7 +66,8 @@ async def find_ingested(
             row = (
                 await s.execute(
                     text(
-                        "SELECT d.id FROM documents d JOIN document_versions v ON v.id = d.current_version_id "
+                        "SELECT d.id FROM documents d "
+                        "JOIN document_versions v ON v.id = d.current_version_id "
                         "WHERE d.owner_id = :o AND d.deleted_at IS NULL AND v.sha256 = :h "
                         "AND v.status IN ('ready', 'enriched') LIMIT 1"
                     ),
@@ -126,7 +128,7 @@ async def _chunks(
             .all()
         )
     chunks: dict[str, list[ChunkInfo]] = {k: [] for k in doc_ids}
-    for c in chunks_from_rows([r for r in rows if str(r["document_id"]) in by_id], by_id):
+    for c in chunks_from_rows([dict(r) for r in rows if str(r["document_id"]) in by_id], by_id):
         chunks[c.doc_id].append(c)
     return chunks
 
@@ -136,7 +138,7 @@ def make_pipeline(
     retriever: Retriever,
     owner_id: uuid.UUID,
     doc_ids: Mapping[str, str],
-):  # type: ignore[no-untyped-def]
+) -> Pipeline:
     async def pipeline(q: Query, ctx: EvalContext) -> ItemOutput:
         scope_ids = [uuid.UUID(doc_ids[d]) for d in q.scope_docs] if q.scope_docs else None
         async with sm() as s:

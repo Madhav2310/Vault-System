@@ -5,3 +5,16 @@ Rows are appended per experiment. Regenerate with the command in the last column
 | date | split | config | recall@8 | mrr@40 | wall_s | cost | command |
 |---|---|---|---:|---:|---:|---:|---|
 | 2026-11-13 | all (100 items with gold) | retrieval@1 (MiniLM rerank, AND lexical) | 0.744 | 0.508 | 145 (warm) | ~$0.0001 | `make eval-retrieval-fast` |
+
+## Replay of stored candidates, eval run 2026-11-13 (`python -m eval.replay --run latest --rank X`)
+Per-quote recall@8 (133 quotes / 75 items with gold; replay command from `backend/`: `PYTHONPATH=.. uv run --frozen python -m eval.replay --run latest --rank rrf --by-category`).
+
+| ranking | quote_recall@8 | item_recall@8 | recall@20 | recall@40 | note |
+|---|---:|---:|---:|---:|---|
+| rrf (fusion) | 0.639 | 0.701 | 0.789 | 0.827 | |
+| vector only | 0.632 | 0.704 | 0.737 | 0.789 | |
+| lexical only (AND query) | 0.150 | 0.153 | 0.165 | 0.165 | |
+| rerank (only runs that were reranked) | 0.173 | 0.273 | - | - | **126 of 159 runs had no rerank** |
+| final (as served) | 0.654 | 0.727 | 0.789 | 0.827 | |
+
+**Finding (supersedes the "reranker hurts" reading in docs/plan/v2.md):** the MiniLM reranker needs 1.3-2.6 s for 40 passages on this machine (3 probes) but the client timeout is 800 ms, so it degraded (`no_rerank`) in 79% of the eval runs. The served ranking was therefore mostly plain RRF; the earlier number compared against a sort that ranked missing scores last. The real reranker effect is unmeasured; S11.05 must measure with a timeout that lets it finish, and weigh its latency.
