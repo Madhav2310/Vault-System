@@ -1,0 +1,32 @@
+flowchart LR
+    client["browser / API client"]
+    subgraph compose["docker-compose (default stack)"]
+        api["api<br/>FastAPI, REST + SSE, turn orchestration"]
+        wi["worker-ingest<br/>queue ingest: extract, quality, chunk"]
+        wa["worker-ai<br/>queue ai: embed, index, brief"]
+        beat["beat (single instance)<br/>sweepers, maintenance"]
+        pg[("postgres 16 + pgvector<br/>system of record, job state")]
+        redis[("redis<br/>Celery broker, rate limits, caches")]
+        blobs[("object store<br/>blobs volume")]
+    end
+    subgraph optional["optional profiles"]
+        rr["reranker<br/>profile rerank"]
+        obs["otel-lgtm<br/>profile obs"]
+    end
+    openai(["OpenAI<br/>generation, analysis, extraction, embeddings, judges"])
+    client --> api
+    api --> pg
+    api --> redis
+    api --> blobs
+    api -.-> rr
+    api --> openai
+    redis --> wi
+    redis --> wa
+    beat --> redis
+    wi --> pg
+    wi --> blobs
+    wa --> pg
+    wa --> openai
+    api -.-> obs
+    wi -.-> obs
+    wa -.-> obs

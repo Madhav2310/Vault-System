@@ -1,0 +1,19 @@
+flowchart TD
+    subgraph stages["stages: job state in processing_jobs, each stage idempotent with a fenced commit"]
+        direction LR
+        s1["extract<br/>queue ingest"] --> s2["quality<br/>ingest"] --> s3["chunk<br/>ingest"] --> s4["embed<br/>ai"] --> s5["index<br/>ai"] --> s6["brief<br/>ai"]
+    end
+    subgraph status["version status machine"]
+        direction TB
+        uploaded --> processing
+        processing --> ready
+        ready --> enriched
+        processing --> needs_ocr
+        processing --> unsupported
+        processing --> failed
+        ready --> superseded
+        enriched --> superseded
+    end
+    s1 -. "sets processing" .-> processing
+    s5 -. "sets ready" .-> ready
+    s6 -. "sets enriched" .-> enriched
