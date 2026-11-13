@@ -118,3 +118,9 @@ otel-validate:
 .PHONY: smoke-providers
 smoke-providers:
 	$(UV) pytest -m live tests/live -s
+
+# S20.02: regenerate the chat-turn source from GRAPH.describe(), then render docs/img/*.mmd to SVG (heavy: run once).
+.PHONY: diagrams
+diagrams:
+	$(UV) python ../scripts/gen_turn_diagram.py
+	for f in docs/img/*.mmd; do npx -y @mermaid-js/mermaid-cli@11.4.2 -i $$f -o $${f%.mmd}.svg || exit 1; done
