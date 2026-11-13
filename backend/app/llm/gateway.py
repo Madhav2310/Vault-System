@@ -781,6 +781,18 @@ def build_gateway(
     from app.llm.providers.openai_chat import OpenAIResponsesProvider
 
     s = settings or get_settings()
+    if s.llm_provider == "fake":  # UI test harness only; Settings refuses it in prod
+        from app.llm.fake import ScriptedProvider
+
+        fake = ScriptedProvider()
+        return LlmGateway(
+            chat=fake,
+            embeddings=fake,
+            prompts=default_registry(),
+            prices=price_table_from_settings(s),
+            ledger=DbLedgerWriter(sessionmaker),
+            settings=s,
+        )
     openai_key = s.openai_api_key.get_secret_value() if s.openai_api_key else None
     return LlmGateway(
         chat=OpenAIResponsesProvider(openai_key, s.llm_timeout_s),
