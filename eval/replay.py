@@ -141,7 +141,8 @@ async def _runs(s: AsyncSession, run: str) -> list[tuple[uuid.UUID, uuid.UUID, s
     if run == "latest":
         rows = await s.execute(
             text(
-                "SELECT DISTINCT ON (r.owner_id, r.original_query) r.id, r.owner_id, r.original_query FROM rag_runs r "
+                "SELECT DISTINCT ON (r.owner_id, r.original_query) r.id, r.owner_id, r.original_query "
+                "FROM rag_runs r "
                 "JOIN users u ON u.id = r.owner_id WHERE u.email LIKE 'eval-%' "
                 "ORDER BY r.owner_id, r.original_query, r.created_at DESC"
             )
@@ -161,7 +162,8 @@ async def _runs(s: AsyncSession, run: str) -> list[tuple[uuid.UUID, uuid.UUID, s
 async def _cands(s: AsyncSession, run_id: uuid.UUID) -> list[Cand]:
     rows = await s.execute(
         text(
-            "SELECT chunk_id::text, rrf_score, rerank_score, vector_rank, lexical_rank, selected, result_index "
+            "SELECT chunk_id::text, rrf_score, rerank_score, vector_rank, lexical_rank, selected, "
+            "result_index "
             "FROM retrieval_candidates WHERE run_id = :r"
         ),
         {"r": run_id},

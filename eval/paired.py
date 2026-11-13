@@ -1,6 +1,7 @@
 """Paired A/B comparison of two eval runs (plan S17.01).
 
-    cd backend && PYTHONPATH=.. uv run --frozen python -m eval.paired A.json B.json --metric recall@8 [--seed 7]
+    cd backend && PYTHONPATH=.. uv run --frozen python -m eval.paired A.json B.json \
+        --metric recall@8 [--seed 7]
 
 Items are paired by id (items present in only one run are excluded and counted). Prints the means, the
 delta (B - A) with a 95% paired-bootstrap CI over items (10,000 resamples, fixed seed), a p-value and a
@@ -44,7 +45,7 @@ class Comparison:
 
 def bootstrap_ci(deltas: Sequence[float], seed: int = 7, n: int = N_BOOT) -> tuple[float, float, float]:
     """(low, high, two-sided sign p) of the mean of `deltas` over `n` bootstrap resamples of items."""
-    rng = random.Random(seed)
+    rng = random.Random(seed)  # noqa: S311 (statistics, not security)
     m = len(deltas)
     means = sorted(sum(deltas[rng.randrange(m)] for _ in range(m)) / m for _ in range(n))
     low, high = means[int(0.025 * n)], means[min(n - 1, int(0.975 * n))]
@@ -111,7 +112,8 @@ def compare(a: Sidecar, b: Sidecar, metric: str, seed: int = 7) -> Comparison:
 def render(c: Comparison) -> str:
     return (
         f"metric {c.metric}: n_paired={c.n_paired} (only A {c.n_only_a}, only B {c.n_only_b})\n"
-        f"A={c.mean_a:.4f}  B={c.mean_b:.4f}  delta={c.delta:+.4f}  95% CI [{c.ci_low:+.4f}, {c.ci_high:+.4f}]\n"
+        f"A={c.mean_a:.4f}  B={c.mean_b:.4f}  delta={c.delta:+.4f}  "
+        f"95% CI [{c.ci_low:+.4f}, {c.ci_high:+.4f}]\n"
         f"p={c.p_value:.4f} ({c.p_kind})\n"
         f"verdict: {c.verdict}"
     )
