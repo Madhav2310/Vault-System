@@ -422,7 +422,10 @@ class MessageOut(Model):
     staleness: dict[str, Any] | None = None
     run_id: uuid.UUID | None = None
     segments: list[dict[str, Any]] = Field(
-        default=[], description="Assistant answers: segments with citations"
+        default=[],
+        description="Assistant answers: segments with citations. Each segment carries `verification` "
+        "(`supported`, `partial`, `unsupported` or `unchecked`; null when no support check ran) and a short "
+        "`verification_reason`.",
     )
 
 

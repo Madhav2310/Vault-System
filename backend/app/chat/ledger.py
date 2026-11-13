@@ -183,8 +183,8 @@ async def _insert_segments(
         sid = uuid7()
         await db.execute(
             text(
-                "INSERT INTO answer_segments (id, run_id, message_id, ordinal, text, support) "
-                "VALUES (:id, :r, :m, :ord, :t, :s)"
+                "INSERT INTO answer_segments (id, run_id, message_id, ordinal, text, support, "
+                "verification, verification_reason) VALUES (:id, :r, :m, :ord, :t, :s, :v, :vr)"
             ),
             {
                 "id": sid,
@@ -193,6 +193,8 @@ async def _insert_segments(
                 "ord": seg.ordinal,
                 "t": seg.text,
                 "s": seg.support,
+                "v": seg.verification,
+                "vr": seg.verification_reason,
             },
         )
         out.append((sid, seg))

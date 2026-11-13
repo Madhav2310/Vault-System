@@ -111,13 +111,14 @@ async def test_all_chunks_in_order(
         _analysis("What does it say?"),
         EMBED_SLOT,
         structured({"status": "answer", "segments": [{"text": "Beta.", "evidence": ["E2.0"]}]}),
+        structured({"verdicts": [{"index": 0, "verdict": "supported", "reason": "ok"}]}),
     ]
     r, prov, _sid = await _ask(sm, api, o, script, "full_context")
     assert r.status_code == 200, r.text
     assert r.json()["message"]["response_type"] == "answer"
-    # one analyze call and one generate call: no retrieval, no rerank
-    assert len(prov.requests) == 2
-    prompt = prov.requests[-1].messages[0]["content"]
+    # analyze, generate and the support check: no retrieval, no rerank
+    assert len(prov.requests) == 3
+    prompt = prov.requests[1].messages[0]["content"]
     pos = [prompt.index(w) for w in ("Alpha clause one.", "Beta clause one.", "Gamma clause one.")]
     assert pos == sorted(pos)  # ordinal order, although inserted in reverse
     assert prompt.count("[E") >= 3 and "E3.1 Gamma clause two." in prompt

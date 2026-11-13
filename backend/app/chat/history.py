@@ -94,6 +94,7 @@ async def _segments(
             await db.execute(
                 text(
                     "SELECT s.message_id, s.id AS segment_id, s.ordinal, s.text, s.support, "
+                    "s.verification, s.verification_reason, "
                     "e.chunk_id, e.sentence_start, e.sentence_end, e.cited_text, "
                     "c.page_start, c.page_end, c.section_path, c.version_id, v.version_no, "
                     "d.id AS document_id, d.title, (d.id IS NULL OR d.deleted_at IS NOT NULL) AS deleted "
@@ -117,7 +118,14 @@ async def _segments(
     for r in rows:
         seg = by_segment.get(r["segment_id"])
         if seg is None:
-            seg = {"ordinal": r["ordinal"], "text": r["text"], "support": r["support"], "evidence": []}
+            seg = {
+                "ordinal": r["ordinal"],
+                "text": r["text"],
+                "support": r["support"],
+                "verification": r["verification"],  # null: no check ran; see support_check.py
+                "verification_reason": r["verification_reason"],
+                "evidence": [],
+            }
             by_segment[r["segment_id"]] = seg
             out.setdefault(r["message_id"], []).append(seg)
         if r["chunk_id"] is not None:

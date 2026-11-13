@@ -61,7 +61,7 @@ async def test_shape_and_owner(
         nodes[0] == "load_context" and "generate" in nodes and nodes[-1] == "verify"
     )  # persist writes the steps, so it is not among them
     assert all(set(s) == {"node", "status", "duration_ms"} for s in v["steps"])
-    assert v["usage"]["calls"] == 2 and v["usage"]["input_tokens"] > 0 and v["usage"]["cost_usd"] >= 0
+    assert v["usage"]["calls"] == 3 and v["usage"]["input_tokens"] > 0 and v["usage"]["cost_usd"] >= 0
     assert v["message"]["content"] == "Twelve months. Thirty days notice."
     assert v["message"]["segments"][0]["evidence"][0]["cited_text"].startswith("The Consultant")
     assert v["explanation"] == ["Answered from 1 passage in 'Consulting Agreement' v1."]

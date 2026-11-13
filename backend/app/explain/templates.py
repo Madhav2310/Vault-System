@@ -35,6 +35,8 @@ REASON_TEMPLATES: dict[str, str] = {
     "GENERATION_INVALID": "The answer came back in an unusable form, so no answer is shown.",
     "TURN_ERROR": "Something went wrong while answering, so no answer was produced.",
     "FULL_CONTEXT_TOO_LARGE": "Too long to read whole, so passages were searched instead.",
+    "SUPPORT_CHECK_FAILED": "Citations could not be double-checked this time.",
+    "UNSUPPORTED_CLAIM": "A claim is not supported by its cited source.",
     "TURN_ABANDONED": "This turn stopped unexpectedly, so no answer was produced. Ask again.",
     "LOOP_GUARD": "",
     "BAD_ROUTE": "",
