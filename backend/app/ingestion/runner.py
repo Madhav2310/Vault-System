@@ -33,7 +33,7 @@ from app.ingestion.errors import PermanentStageError, RetryableStageError, Stage
 from app.ingestion.events import publish_wake
 from app.ingestion.jobs import HEARTBEAT_S, LEASE_S, ClaimedJob, Enqueue, claim, dispatch, heartbeat
 
-STAGE_ORDER: tuple[str, ...] = ("extract", "quality", "chunk", "embed", "index", "brief")
+STAGE_ORDER: tuple[str, ...] = ("extract", "quality", "chunk", "embed", "index", "brief", "contextualize")
 BACKOFF_BASE_S, BACKOFF_CAP_S, JITTER = 10.0, 600.0, 0.2
 _log = get_logger("vault.ingestion.runner")
 

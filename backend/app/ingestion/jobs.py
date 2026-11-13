@@ -28,6 +28,7 @@ STAGE_TASKS: dict[str, str] = {
     "embed": "vault.ai.stage",
     "index": "vault.ai.stage",
     "brief": "vault.ai.stage",
+    "contextualize": "vault.ai.stage",
 }
 
 Enqueue = Callable[[str, uuid.UUID], Awaitable[None]]  # (stage, job_id)

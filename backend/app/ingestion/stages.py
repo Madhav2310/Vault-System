@@ -240,6 +240,7 @@ class ChunkStage:
 
 
 def default_stages() -> dict[str, Stage]:
+    from app.ingestion.contextualize import ContextualizeStage
     from app.ingestion.embed_index import EmbedStage, IndexStage
     from app.insights.stage import BriefStage
 
@@ -250,4 +251,5 @@ def default_stages() -> dict[str, Stage]:
         "embed": EmbedStage(),
         "index": IndexStage(),
         "brief": BriefStage(),
+        "contextualize": ContextualizeStage(),
     }

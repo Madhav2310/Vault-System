@@ -89,7 +89,7 @@ class EmbedStage:
                         "embedding_model = src.embedding_model "
                         "FROM (SELECT DISTINCT ON (content_hash) content_hash, embedding, embedding_model "
                         "      FROM chunks WHERE owner_id = :o AND embedding IS NOT NULL "
-                        "      AND embedding_model = :m "
+                        "      AND embedding_model = :m AND contextual_prefix IS NULL "
                         "      AND version_id <> :v ORDER BY content_hash, created_at DESC) src "
                         "WHERE c.owner_id = :o AND c.version_id = :v AND c.content_hash = src.content_hash "
                         "AND (c.embedding IS NULL OR c.embedding_model <> :m)"
