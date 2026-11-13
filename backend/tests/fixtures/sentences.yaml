@@ -1,0 +1,258 @@
+# 50 sentence-segmentation cases. Each: text + expected sentence strings (exact substrings of text, in order).
+# Written from real-text patterns (contracts, 10-K filings, papers) before the implementation.
+# Single "\n" inside a sentence is a PDF line wrap; a blank line always ends a sentence.
+- id: legal-01-entities
+  text: "This Agreement is made as of January 1, 2021 between Acme Holdings, Inc. and Beta Services LLC. The term begins on the Effective Date."
+  sentences:
+    - "This Agreement is made as of January 1, 2021 between Acme Holdings, Inc. and Beta Services LLC."
+    - "The term begins on the Effective Date."
+- id: legal-02-clause-ref
+  text: "Section 4.2(b) applies. The Supplier shall deliver the Goods."
+  sentences:
+    - "Section 4.2(b) applies."
+    - "The Supplier shall deliver the Goods."
+- id: legal-03-money-percent
+  text: "The Company shall pay a fee of $1.5 million within thirty (30) days. Late payments accrue interest at 3.2% per annum."
+  sentences:
+    - "The Company shall pay a fee of $1.5 million within thirty (30) days."
+    - "Late payments accrue interest at 3.2% per annum."
+- id: legal-04-enumeration
+  text: "The Receiving Party shall: (a) keep the Confidential Information secret; (b) not disclose it to any third party; and (c) use it solely for the Purpose. Any breach shall be reported promptly."
+  sentences:
+    - "The Receiving Party shall: (a) keep the Confidential Information secret; (b) not disclose it to any third party; and (c) use it solely for the Purpose."
+    - "Any breach shall be reported promptly."
+- id: legal-05-sec-mr
+  text: "Pursuant to Sec. 12.3 of the Plan, Mr. Smith may exercise the option. The option expires on Dec. 31, 2025."
+  sentences:
+    - "Pursuant to Sec. 12.3 of the Plan, Mr. Smith may exercise the option."
+    - "The option expires on Dec. 31, 2025."
+- id: legal-06-us-lowercase
+  text: "This Agreement is governed by the laws of the U.S. and the State of Delaware. Each party submits to the jurisdiction of its courts."
+  sentences:
+    - "This Agreement is governed by the laws of the U.S. and the State of Delaware."
+    - "Each party submits to the jurisdiction of its courts."
+- id: legal-07-us-modifier
+  text: "The Licensee shall comply with all U.S. export laws. The Licensor makes no warranty."
+  sentences:
+    - "The Licensee shall comply with all U.S. export laws."
+    - "The Licensor makes no warranty."
+- id: legal-08-exhibit-letter
+  text: "See Exhibit A. The Services are described therein."
+  sentences:
+    - "See Exhibit A."
+    - "The Services are described therein."
+- id: legal-09-section-label
+  text: "Section 3.1. Except as expressly amended, all terms remain in full force and effect."
+  sentences:
+    - "Section 3.1. Except as expressly amended, all terms remain in full force and effect."
+- id: legal-10-paragraphs
+  text: "ARTICLE I\n\nDEFINITIONS\n\n\"Affiliate\" means any entity controlling a party.\nThe term includes subsidiaries."
+  sentences:
+    - "ARTICLE I"
+    - "DEFINITIONS"
+    - "\"Affiliate\" means any entity controlling a party."
+    - "The term includes subsidiaries."
+- id: legal-11-quote-close
+  text: "The Buyer said it \"will not renew.\" The Seller disagreed."
+  sentences:
+    - "The Buyer said it \"will not renew.\""
+    - "The Seller disagreed."
+- id: legal-12-line-wrap
+  text: "The Tenant shall pay rent monthly in\nadvance on the first day of each month. The Landlord\nmay enter the premises on 24 hours' notice."
+  sentences:
+    - "The Tenant shall pay rent monthly in\nadvance on the first day of each month."
+    - "The Landlord\nmay enter the premises on 24 hours' notice."
+- id: legal-13-case-cite
+  text: "Smith v. Jones, 123 F.3d 456 (9th Cir. 1999), held that the clause was enforceable. The court reasoned otherwise in Doe v. Roe."
+  sentences:
+    - "Smith v. Jones, 123 F.3d 456 (9th Cir. 1999), held that the clause was enforceable."
+    - "The court reasoned otherwise in Doe v. Roe."
+- id: legal-14-address
+  text: "Notice shall be sent to Medalist Diversified REIT, Inc., 1051 E. Hillsdale Blvd., Foster City, CA. Notice is effective upon receipt."
+  sentences:
+    - "Notice shall be sent to Medalist Diversified REIT, Inc., 1051 E. Hillsdale Blvd., Foster City, CA."
+    - "Notice is effective upon receipt."
+- id: legal-15-headed-list
+  text: "(a) Termination for Cause. Either party may terminate this Agreement upon material breach.\n(b) Termination for Convenience. Either party may terminate on 30 days' notice."
+  sentences:
+    - "(a) Termination for Cause."
+    - "Either party may terminate this Agreement upon material breach."
+    - "(b) Termination for Convenience."
+    - "Either party may terminate on 30 days' notice."
+- id: fin-01-growth
+  text: "Net revenue increased 3.2% to $1.5 million for the year ended December 31, 2023. Operating expenses rose 4.1%."
+  sentences:
+    - "Net revenue increased 3.2% to $1.5 million for the year ended December 31, 2023."
+    - "Operating expenses rose 4.1%."
+- id: fin-02-item-heading
+  text: "Item 1A. Risk Factors\n\nOur business is subject to numerous risks. See \"Risk Factors\" below."
+  sentences:
+    - "Item 1A. Risk Factors"
+    - "Our business is subject to numerous risks."
+    - "See \"Risk Factors\" below."
+- id: fin-03-manager-inc
+  text: "The Company, a Maryland corporation (the \"Company\"), is managed by Medalist Fund Manager, Inc. The Manager is an affiliate of the Company's sponsor."
+  sentences:
+    - "The Company, a Maryland corporation (the \"Company\"), is managed by Medalist Fund Manager, Inc."
+    - "The Manager is an affiliate of the Company's sponsor."
+- id: fin-04-us-then-name
+  text: "Revenue was $12.4 billion in fiscal 2023 vs. $11.8 billion in fiscal 2022. The increase was driven by growth in the U.S. Europe was flat."
+  sentences:
+    - "Revenue was $12.4 billion in fiscal 2023 vs. $11.8 billion in fiscal 2022."
+    - "The increase was driven by growth in the U.S."
+    - "Europe was flat."
+- id: fin-05-approx-dec
+  text: "Cash and cash equivalents were approx. $250 million at Dec. 31, 2023. We believe this is sufficient for the next twelve months."
+  sentences:
+    - "Cash and cash equivalents were approx. $250 million at Dec. 31, 2023."
+    - "We believe this is sufficient for the next twelve months."
+- id: fin-06-bank-na
+  text: "The Company is a party to a Credit Agreement, dated as of March 3, 2022, with JPMorgan Chase Bank, N.A., as administrative agent. Borrowings bear interest at SOFR plus 2.5%."
+  sentences:
+    - "The Company is a party to a Credit Agreement, dated as of March 3, 2022, with JPMorgan Chase Bank, N.A., as administrative agent."
+    - "Borrowings bear interest at SOFR plus 2.5%."
+- id: fin-07-ticker-quote
+  text: "Our common stock trades on the NYSE under the symbol \"ABC.\" Holders of record totaled 1,204 as of February 15, 2024."
+  sentences:
+    - "Our common stock trades on the NYSE under the symbol \"ABC.\""
+    - "Holders of record totaled 1,204 as of February 15, 2024."
+- id: fin-08-eps
+  text: "Net income per diluted share was $2.15, compared with $1.98 last year. Excluding one-time charges, adjusted EPS was $2.31."
+  sentences:
+    - "Net income per diluted share was $2.15, compared with $1.98 last year."
+    - "Excluding one-time charges, adjusted EPS was $2.31."
+- id: fin-09-table-in-text
+  text: "(in thousands, except per share data)\n\nTotal assets 45,210 41,882\nTotal liabilities 30,114 28,907"
+  sentences:
+    - "(in thousands, except per share data)"
+    - "Total assets 45,210 41,882\nTotal liabilities 30,114 28,907"
+- id: fin-10-sqft
+  text: "We lease approximately 12,000 sq. ft. of office space in Foster City, California. The lease expires in 2027."
+  sentences:
+    - "We lease approximately 12,000 sq. ft. of office space in Foster City, California."
+    - "The lease expires in 2027."
+- id: fin-11-employees
+  text: "As of December 31, 2023, we had 14 employees, of which 12 were full-time. None are covered by collective bargaining agreements."
+  sentences:
+    - "As of December 31, 2023, we had 14 employees, of which 12 were full-time."
+    - "None are covered by collective bargaining agreements."
+- id: fin-12-dividend
+  text: "The Board declared a dividend of $0.25 per share on Feb. 14, 2024, payable on March 15, 2024. Shareholders of record on March 1 will receive it."
+  sentences:
+    - "The Board declared a dividend of $0.25 per share on Feb. 14, 2024, payable on March 15, 2024."
+    - "Shareholders of record on March 1 will receive it."
+- id: fin-13-titles-initial
+  text: "Mr. John R. Smith, our Chief Executive Officer, signed the report. Ms. Jane Doe, our CFO, certified it."
+  sentences:
+    - "Mr. John R. Smith, our Chief Executive Officer, signed the report."
+    - "Ms. Jane Doe, our CFO, certified it."
+- id: fin-14-paren-close
+  text: "Gross margin was 38.5% (2022: 36.9%). Selling, general and administrative expenses were $4.2 million."
+  sentences:
+    - "Gross margin was 38.5% (2022: 36.9%)."
+    - "Selling, general and administrative expenses were $4.2 million."
+- id: fin-15-rule-plans
+  text: "Pursuant to Rule 10b5-1, certain officers adopted trading plans. The plans were adopted in Q3 2023 and terminate on Dec. 31, 2024."
+  sentences:
+    - "Pursuant to Rule 10b5-1, certain officers adopted trading plans."
+    - "The plans were adopted in Q3 2023 and terminate on Dec. 31, 2024."
+- id: acad-01-et-al-year
+  text: "Recent work by Smith et al. (2020) shows that retrieval improves factuality. We extend this result to long documents."
+  sentences:
+    - "Recent work by Smith et al. (2020) shows that retrieval improves factuality."
+    - "We extend this result to long documents."
+- id: acad-02-fig
+  text: "As shown in Fig. 3, accuracy saturates after 10 epochs. Table 2 lists the hyperparameters."
+  sentences:
+    - "As shown in Fig. 3, accuracy saturates after 10 epochs."
+    - "Table 2 lists the hyperparameters."
+- id: acad-03-initials
+  text: "J. R. R. Tolkien wrote The Hobbit in 1937. It was published by Allen & Unwin."
+  sentences:
+    - "J. R. R. Tolkien wrote The Hobbit in 1937."
+    - "It was published by Allen & Unwin."
+- id: acad-04-stats
+  text: "Our model achieves 92.4% accuracy (p < 0.05) on the benchmark. This outperforms the baseline by 3.1 points."
+  sentences:
+    - "Our model achieves 92.4% accuracy (p < 0.05) on the benchmark."
+    - "This outperforms the baseline by 3.1 points."
+- id: acad-05-eg
+  text: "We use several metrics, e.g. precision and recall, to evaluate the system. Results are averaged over five runs."
+  sentences:
+    - "We use several metrics, e.g. precision and recall, to evaluate the system."
+    - "Results are averaged over five runs."
+- id: acad-06-ie
+  text: "Let x denote the input, i.e., the query. The encoder maps x to a vector."
+  sentences:
+    - "Let x denote the input, i.e., the query."
+    - "The encoder maps x to a vector."
+- id: acad-07-question
+  text: "Is retrieval enough? We argue that it is not. Generation quality also matters!"
+  sentences:
+    - "Is retrieval enough?"
+    - "We argue that it is not."
+    - "Generation quality also matters!"
+- id: acad-08-citation-paren
+  text: "The dataset (Johnson and Lee, 2019) contains 1.2M documents. Each document has on average 3.4 paragraphs."
+  sentences:
+    - "The dataset (Johnson and Lee, 2019) contains 1.2M documents."
+    - "Each document has on average 3.4 paragraphs."
+- id: acad-09-eq-bracket
+  text: "Eq. (3) defines the loss. We minimize it with Adam [12]. Training takes approx. two hours on one GPU."
+  sentences:
+    - "Eq. (3) defines the loss."
+    - "We minimize it with Adam [12]."
+    - "Training takes approx. two hours on one GPU."
+- id: acad-10-sec-cf
+  text: "See Sec. 4.1 for details.\nThe appendix contains additional results (cf. Table 5). Code is available online."
+  sentences:
+    - "See Sec. 4.1 for details."
+    - "The appendix contains additional results (cf. Table 5)."
+    - "Code is available online."
+- id: gen-01-empty
+  text: ""
+  sentences: []
+- id: gen-02-whitespace
+  text: "   \n \n  "
+  sentences: []
+- id: gen-03-no-terminator
+  text: "Hello world"
+  sentences:
+    - "Hello world"
+- id: gen-04-ellipsis
+  text: "He paused... Then he continued. Nobody spoke."
+  sentences:
+    - "He paused..."
+    - "Then he continued."
+    - "Nobody spoke."
+- id: gen-05-dr-pm
+  text: "Dr. Watson arrived at 5 p.m. on Tuesday. He was late."
+  sentences:
+    - "Dr. Watson arrived at 5 p.m. on Tuesday."
+    - "He was late."
+- id: gen-06-curly-quotes
+  text: "“We are done,” she said. “Really?” he asked."
+  sentences:
+    - "“We are done,” she said."
+    - "“Really?” he asked."
+- id: gen-07-bang-run
+  text: "Wait!!! What happened? I don't know."
+  sentences:
+    - "Wait!!!"
+    - "What happened?"
+    - "I don't know."
+- id: gen-08-url-version
+  text: "Visit www.example.com for details. Version 2.0.1 was released on 2024-01-15."
+  sentences:
+    - "Visit www.example.com for details."
+    - "Version 2.0.1 was released on 2024-01-15."
+- id: gen-09-paragraph-no-period
+  text: "First paragraph without a period\n\nSecond paragraph here."
+  sentences:
+    - "First paragraph without a period"
+    - "Second paragraph here."
+- id: gen-10-saint
+  text: "He moved to St. Louis in 1990. She stayed behind."
+  sentences:
+    - "He moved to St. Louis in 1990."
+    - "She stayed behind."
