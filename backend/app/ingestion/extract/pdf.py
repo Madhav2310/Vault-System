@@ -14,7 +14,15 @@ from typing import Any
 import pdfplumber
 
 from app.ingestion.extract.base import SYNTH, Element, ElementKind, ExtractedDocument, PageText
-from app.ingestion.extract.glyphs import Line, PageGeo, build_lines, extract_words, upright_chars
+from app.ingestion.extract.glyphs import (
+    Line,
+    PageGeo,
+    build_lines,
+    extract_words,
+    text_rotation,
+    upright_chars,
+)
+from app.ingestion.extract.reading_order import order_page
 
 HEADING_SIZE_RATIO = 1.15
 # Structural headings (PART I, ITEM 1A., ARTICLE 5, SECTION 2.1, EXHIBIT A) or all-caps lines rank above
@@ -37,6 +45,7 @@ class _Page:
     width: float
     height: float
     lines: list[Line]
+    footnotes: list[Line]
     boxes: list[tuple[float, float, float, float]]
     glyph_count: int
     flags: list[str]
@@ -132,7 +141,10 @@ class PdfExtractor:
         for idx, p in enumerate(pages):
             text: list[str] = []
             src: list[int] = []
-            for block in _blocks(p.lines, body, p.width, levels):
+            blocks = _blocks(p.lines, body, p.width, levels) + [
+                _Block("footnote", [ln]) for ln in p.footnotes
+            ]
+            for block in blocks:
                 if text:
                     text.append("\n\n")
                     src.extend([SYNTH, SYNTH])
@@ -175,7 +187,9 @@ class PdfExtractor:
         geo = PageGeo.of(page)
         raw = page.dedupe_chars().chars
         chars = upright_chars(raw, page.width, page.height)
-        lines = build_lines(extract_words(chars))
+        rot = text_rotation(raw)
+        uw, uh = (page.height, page.width) if rot in (90, 270) else (page.width, page.height)
+        ordered = order_page(build_lines(extract_words(chars)), uw, uh)
         boxes = [geo.normalize((c["x0"], c["top"], c["x1"], c["bottom"])) for c in raw]
         w, h = geo.display_wh()
-        return _Page(page_no, w, h, lines, boxes, len(raw), [])
+        return _Page(page_no, w, h, ordered.body, ordered.footnotes, boxes, len(raw), ordered.flags)
