@@ -33,7 +33,7 @@ STAGE_ORDER: tuple[str, ...] = ("extract", "quality", "chunk", "embed", "index")
 BACKOFF_BASE_S, BACKOFF_CAP_S, JITTER = 10.0, 600.0, 0.2
 _log = get_logger("vault.ingestion.runner")
 
-Outcome = Literal["noop", "advanced", "finished", "retry", "dead", "lost_lease"]
+Outcome = Literal["noop", "advanced", "finished", "retry", "dead", "lost_lease", "deleted"]
 
 
 @dataclass(frozen=True)
@@ -70,6 +70,19 @@ async def _fence(s: AsyncSession, job: ClaimedJob, worker: str) -> bool:
                 "FOR UPDATE"
             ),
             {"id": job.id, "w": worker},
+        )
+    ).first()
+    return row is not None
+
+
+async def _document_deleted(s: AsyncSession, version_id: uuid.UUID) -> bool:
+    row = (
+        await s.execute(
+            text(
+                "SELECT 1 FROM document_versions v JOIN documents d ON d.id = v.document_id "
+                "WHERE v.id = :v AND d.deleted_at IS NOT NULL"
+            ),
+            {"v": version_id},
         )
     ).first()
     return row is not None
@@ -175,6 +188,16 @@ async def _commit(
         if not await _fence(s, job, worker):
             await s.rollback()
             return "lost_lease"
+        if await _document_deleted(s, job.version_id):  # DELETE arrived mid-stage: write nothing (§6.7)
+            await s.execute(
+                text(
+                    "UPDATE processing_jobs SET status = 'dead', lease_owner = NULL, "
+                    "lease_expires_at = NULL, error_code = 'deleted', error_detail = NULL WHERE id = :id"
+                ),
+                {"id": job.id},
+            )
+            await s.commit()
+            return "deleted"
         if result.write is not None:
             await result.write(s)
         if result.terminal_status is not None:
