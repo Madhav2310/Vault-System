@@ -20,4 +20,6 @@ def test_brief_and_merge_replies_validate() -> None:
     ev = "<evidence>\n[E1] T v1\nE1.0 The monthly fee is 4,500 dollars.\n</evidence>"
     brief = BriefOut.model_validate(p._brief(_req(brief_schema(None), ev), ev, facts=True))
     assert brief.facts[0].evidence == ["E1.0"] and "What is the monthly fee?" in brief.suggested_questions
-    MergeOut.model_validate(p._brief(_req(MergeOut, ev), ev, facts=False))
+    merge = MergeOut.model_validate(p._brief(_req(MergeOut, ev), ev, facts=False))
+    assert brief.tone == "neutral" and brief.tone_note and brief.tone_evidence == ["E1.0"]
+    assert merge.tone == "neutral" and merge.tone_note

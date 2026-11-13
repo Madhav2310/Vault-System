@@ -63,7 +63,7 @@ VERIFIED_TARGET = 0.80
 DEFAULT_DOCS = 10
 DEFAULT_FACTS_PER_DOC = 10
 COVERAGE_MIN = 0.8
-BRIEF_PROMPTS = {"brief_extract": ("brief_extract", 1), "brief_merge": ("brief_merge", 1)}
+BRIEF_PROMPTS = {"brief_extract": ("brief_extract", 2), "brief_merge": ("brief_merge", 2)}
 
 # CUAD clause type -> brief fact fields in which it may appear
 FIELD_MAP: dict[str, tuple[str, ...]] = {

@@ -269,3 +269,11 @@ def verify_fact(field: str, value: str, evidence: Sequence[Cited], version_id: u
     if _supported(field, value, "\n".join(texts)):
         return VERIFIED
     return UNVERIFIED
+
+
+def verify_tone(evidence: Sequence[Cited], version_id: uuid.UUID) -> Verdict:
+    """A tone label has no literal value to find in text, so it is `verified` iff at least one resolved
+    citation into `version_id` backs it; otherwise `unverified` with `NO_CITATION`."""
+    if any(e.version_id == version_id for e in evidence):
+        return VERIFIED
+    return Verdict("unverified", NO_CITATION)

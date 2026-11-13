@@ -11,7 +11,15 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.insights.brief import EMPTY_PARAMS_HASH, KIND, PROMPT_VERSION, Brief, StoredEvidence, StoredFact
+from app.insights.brief import (
+    EMPTY_PARAMS_HASH,
+    KIND,
+    PROMPT_VERSION,
+    Brief,
+    StoredEvidence,
+    StoredFact,
+    StoredTone,
+)
 
 SNIPPET_CHARS = 200
 
@@ -40,6 +48,17 @@ def _evidence(e: StoredEvidence) -> dict[str, Any]:
     }
 
 
+def _tone(t: StoredTone | None, include_unverified: bool) -> dict[str, Any] | None:
+    if t is None or (t.status != "verified" and not include_unverified):
+        return None
+    return {
+        "label": t.label,
+        "note": t.note,
+        "status": t.status,
+        "evidence": [_evidence(e) for e in t.evidence],
+    }
+
+
 def _fact(f: StoredFact) -> dict[str, Any]:
     return {
         "field": f.field,
@@ -59,6 +78,7 @@ def empty_brief(status: str, version_id: uuid.UUID | None) -> dict[str, Any]:
         "summary": None,
         "suggested_questions": [],
         "facts": [],
+        "tone": None,
         "model": None,
         "created_at": None,
     }
@@ -83,6 +103,7 @@ def brief_body(
         "summary": brief.summary,
         "suggested_questions": brief.suggested_questions,
         "facts": [_fact(f) for f in facts],
+        "tone": _tone(brief.tone, include_unverified),
         "model": model,
         "created_at": created_at.isoformat() if created_at else None,
     }
