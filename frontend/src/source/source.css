@@ -1,0 +1,88 @@
+.cite {
+  position: relative;
+  display: inline-block;
+}
+.cite-btn {
+  font: 500 12px var(--font-mono);
+  color: var(--red-ink);
+  background: transparent;
+  border: 0;
+  padding: 0 2px;
+  margin: 0 1px;
+  cursor: pointer;
+  border-radius: var(--radius);
+}
+.cite-btn:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+.cite-card {
+  position: absolute;
+  z-index: 5;
+  left: 0;
+  top: 100%;
+  width: min(360px, 80vw);
+  padding: var(--s3);
+  background: var(--surface);
+  border: 1px solid var(--ink);
+  border-radius: var(--radius);
+  font: 400 13px/1.45 var(--font-ui);
+  color: var(--ink);
+}
+.cite-card-text {
+  display: block;
+}
+.cite-card-meta {
+  display: block;
+  margin-top: var(--s2);
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.source-viewer {
+  border: 1px solid var(--ink);
+  background: var(--surface);
+  padding: var(--s4);
+  border-radius: var(--radius);
+}
+.source-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s3);
+}
+.source-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2) var(--s5);
+  margin: var(--s3) 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+.source-meta div {
+  display: flex;
+  gap: var(--s2);
+}
+.source-meta dt {
+  font-weight: 500;
+}
+.source-meta dd {
+  margin: 0;
+  color: var(--ink);
+}
+.source-text {
+  white-space: pre-wrap;
+  margin: var(--s3) 0;
+  color: var(--ink);
+}
+.source-text mark {
+  background: #ffe27a;
+  color: #141414;
+  padding: 1px 0;
+  box-shadow: 0 -2px 0 #ffe27a, 0 2px 0 #ffe27a;
+}
+.source-nav {
+  display: flex;
+  gap: var(--s2);
+  justify-content: space-between;
+}
