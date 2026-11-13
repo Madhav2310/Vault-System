@@ -131,6 +131,10 @@ async def make_owner(sm: async_sessionmaker[AsyncSession]) -> AsyncIterator[Call
             "DELETE FROM job_events WHERE job_id IN "
             "(SELECT id FROM processing_jobs WHERE owner_id = ANY(:ids))",
             "DELETE FROM processing_jobs WHERE owner_id = ANY(:ids)",
+            "DELETE FROM pages WHERE version_id IN "
+            "(SELECT id FROM document_versions WHERE owner_id = ANY(:ids))",
+            "DELETE FROM chunks WHERE owner_id = ANY(:ids)",
+            "DELETE FROM document_insights WHERE owner_id = ANY(:ids)",
             "UPDATE documents SET current_version_id = NULL WHERE owner_id = ANY(:ids)",
             "DELETE FROM document_versions WHERE owner_id = ANY(:ids)",
             "DELETE FROM documents WHERE owner_id = ANY(:ids)",

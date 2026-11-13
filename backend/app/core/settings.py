@@ -60,6 +60,7 @@ class Settings(BaseSettings):
     # --- upload / ingestion limits (design §6) ---
     max_upload_bytes: int = 25 * 1024 * 1024
     parse_timeout_s: int = 120
+    parse_memory_mb: int = 2048  # address-space cap of the extraction subprocess (Linux only)
 
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"

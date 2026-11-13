@@ -12,7 +12,11 @@ from dataclasses import dataclass
 from typing import Any
 
 import pdfplumber
+from pdfminer.pdfdocument import PDFEncryptionError, PDFPasswordIncorrect
+from pdfminer.psparser import PSException
+from pdfplumber.utils.exceptions import PdfminerException
 
+from app.ingestion.errors import PermanentStageError, UnsupportedContentError
 from app.ingestion.extract.base import SYNTH, Element, ElementKind, ExtractedDocument, PageText
 from app.ingestion.extract.glyphs import (
     Line,
@@ -157,6 +161,21 @@ def _carry_header(blocks: list[_Block], prev_tail: _Block | None, page_height: f
             return
 
 
+def _open(path: str) -> Any:
+    """pdfplumber.open with failure classes (design §6.2): encrypted → unsupported, unparseable → corrupt."""
+    try:
+        return pdfplumber.open(path)
+    except PdfminerException as e:
+        cause = e.args[0] if e.args else None
+        if isinstance(cause, PDFPasswordIncorrect | PDFEncryptionError):
+            raise UnsupportedContentError("encrypted", "the PDF is password protected") from None
+        raise PermanentStageError(
+            "corrupt_file", type(cause).__name__ if cause else "unparseable PDF"
+        ) from None
+    except (PSException, ValueError, KeyError, TypeError) as e:
+        raise PermanentStageError("corrupt_file", type(e).__name__) from None
+
+
 class PdfExtractor:
     name = "pdfplumber@1"
 
@@ -219,7 +238,7 @@ class PdfExtractor:
 
     def _read(self, path: str) -> list[_Page]:
         out: list[_Page] = []
-        with pdfplumber.open(path) as pdf:
+        with _open(path) as pdf:
             for i, page in enumerate(pdf.pages):
                 if self.page_numbers is not None and i + 1 not in self.page_numbers:
                     continue

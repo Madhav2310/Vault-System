@@ -293,3 +293,10 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Merge gate: diff and fixture reviewed (50 cases: 15 legal, 15 financial, 10 academic, 10 edge; written before the code, not tailored); `make ci` 131 passed on the merged tree.
 - Result: AC1 49/50 [T ≥ 48]; the miss is the deliberately ambiguous "…in the U.S. Europe was flat." (soft abbreviation followed by a non-opener). AC2 partition and AC3 clause numbers pass.
 - Design: hard abbreviations never split (Mr, No., Sec., Fig., months, e.g./i.e.); soft ones (Inc., Corp., U.S., etc., initials) split only before a typical sentence opener or an enumerator; clause labels ("Section 3.1.", "4.2(b).") stay with their sentence; blank line always splits, single newline never; `kind="table"`: one sentence per row.
+
+### S1.17 — PDF failure classes and parser timeout; S1.19 — page quality (AC1, AC3, AC4); S1.15 AC4
+- Date: 2026-11-13 · Commit: (this commit)
+- Commands: `make ci` (132 passed); `make test-integration` (97 passed) incl. `test_pdf_failures.py`, `test_quality.py`, `test_reading_order.py`.
+- Built: `ExtractStage` runs the extractor in a subprocess (`python -m app.ingestion.extract.worker`): killable on `PARSE_TIMEOUT_S` (→ permanent `parse_timeout`), address space capped by `PARSE_MEMORY_MB` on Linux (new setting), StageErrors returned as JSON (exit 3), crashes retried; the ExtractedDocument goes to `extracted/{version_id}.json.gz`. PDF failure classes: pdfminer `PDFPasswordIncorrect`/`PDFEncryptionError` → `unsupported/encrypted`; anything unparseable → `failed/corrupt_file` (no retries). `QualityStage` writes `pages` rows (text chars, quality score, extractor flags + `needs_ocr` < 50 chars + `garbled` > 5% replacement/cid) and the version `quality` summary; ≥ 80% OCR pages → terminal `needs_ocr` (job succeeded, zero chunks).
+- S1.19 AC2 (mixed document reaches `ready`) is open until chunk/embed/index exist; today the test shows the job continues past quality with page 5 flagged.
+- [T] changes approved: none
