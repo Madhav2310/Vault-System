@@ -3,6 +3,7 @@
 from sqlalchemy import text
 
 from app.api.idempotency import TTL_HOURS, purge_expired
+from app.chat.reaper import reap_abandoned_runs
 from app.core.logging import get_logger
 from app.ingestion.identifiers import backfill_tsv_ids
 from app.worker.celery_app import celery_app
@@ -53,3 +54,8 @@ async def backfill_tsv_ids_task_fn(sm: SessionFactory) -> int:
 @celery_app.task(name="vault.maintenance.backfill_tsv_ids")
 def backfill_tsv_ids_task() -> int:
     return run_db(backfill_tsv_ids_task_fn)
+
+
+@celery_app.task(name="vault.maintenance.reap_chat_runs")
+def reap_chat_runs_task() -> int:
+    return run_db(reap_abandoned_runs)

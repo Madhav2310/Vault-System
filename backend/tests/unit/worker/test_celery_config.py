@@ -24,3 +24,9 @@ def test_beat_schedule_routed() -> None:
     sched = celery_app.conf.beat_schedule
     assert sched["purge-idempotency-keys"]["schedule"] == 3600.0
     assert all(task in ROUTES for task, _ in BEAT.values())
+
+
+def test_reaper_scheduled() -> None:
+    entry = celery_app.conf.beat_schedule["reap-chat-runs"]
+    assert entry["task"] == "vault.maintenance.reap_chat_runs"
+    assert entry["schedule"] == 60.0
