@@ -5,6 +5,7 @@ flowchart TD
     analyze["analyze"]
     plan_context["plan_context"]
     retrieve["retrieve"]
+    compare_retrieve["compare_retrieve"]
     gate["gate"]
     generate["generate"]
     verify["verify"]
@@ -24,11 +25,15 @@ flowchart TD
     analyze__r --> plan_context
     plan_context --> plan_context__r{after_plan_context}
     plan_context__r --> retrieve
+    plan_context__r --> compare_retrieve
     plan_context__r --> generate
     plan_context__r --> abstain_no_evidence
     retrieve --> retrieve__r{after_retrieve}
     retrieve__r --> abstain_no_evidence
     retrieve__r --> gate
+    compare_retrieve --> compare_retrieve__r{after_retrieve}
+    compare_retrieve__r --> abstain_no_evidence
+    compare_retrieve__r --> gate
     gate --> gate__r{after_gate}
     gate__r --> abstain_no_evidence
     gate__r --> generate
