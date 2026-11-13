@@ -8,7 +8,8 @@ M0 scope: no evidence gate, no full-context route, no conflict detection (later 
 is recorded but answered through RAG with reason code `FULL_CONTEXT_UNAVAILABLE`.
 """
 
-import contextlib
+import asyncio
+import dataclasses
 import time
 import uuid
 from dataclasses import dataclass
@@ -42,6 +43,8 @@ NO_DOCUMENTS = "SCOPE_EMPTY"
 NO_EVIDENCE = "NO_EVIDENCE"
 TURN_ERROR = "TURN_ERROR"
 FULL_CONTEXT_UNAVAILABLE = "FULL_CONTEXT_UNAVAILABLE"
+TARGET_IGNORED = "TARGET_IGNORED"
+HEARTBEAT_S = 30.0
 NO_DOCUMENTS_TEXT = "No ready documents are in scope. Upload a document or wait for processing to finish."
 NO_EVIDENCE_TEXT = "I could not find anything in your documents that answers this."
 ERROR_TEXT = "Something went wrong while answering. Please try again."
@@ -100,7 +103,7 @@ async def _scope_docs(s: AsyncSession, owner_id: uuid.UUID, scope: Scope) -> lis
     return [ScopeDoc(d, titles[d]) for d in scope.document_ids if d in titles]
 
 
-async def run_turn(
+async def _run_turn(
     deps: TurnDeps,
     owner_id: uuid.UUID,
     session_id: uuid.UUID,
@@ -148,14 +151,17 @@ async def run_turn(
                 body = c.question + (" " + " / ".join(c.options) if c.options else "")
                 gen = _plain("clarify", body, analysis.reason_codes)
             else:
-                with contextlib.suppress(ScopeWideningError):  # analyze validates targets; never widen
+                try:
                     scope = narrow(scope, analysis.target_document_ids)
+                except ScopeWideningError:  # never widen; keep the wider scope but leave a trace
+                    extra_reasons.append(TARGET_IGNORED)
                 gen, retrieval = await _answer(deps, owner_id, run_id, analysis, scope, memory, budget, steps)
                 degraded += retrieval.degraded if retrieval else []
     except Exception as e:  # the turn must always finish; log type only
         _log.error("turn_failed", error_type=type(e).__name__, code=getattr(e, "error_type", None))
         status = "failed"
-        gen = _plain("error", ERROR_TEXT, (TURN_ERROR, getattr(e, "error_type", type(e).__name__)))
+        code = getattr(e, "error_type", None)
+        gen = _plain("error", ERROR_TEXT, (TURN_ERROR, code) if isinstance(code, str) else (TURN_ERROR,))
     rec = TurnRecord(
         run_id=run_id,
         route=route,
@@ -178,8 +184,54 @@ async def run_turn(
         limits={"max_llm_calls": budget.limits.max_llm_calls, "deadline_s": budget.limits.deadline_s},
         latency_ms=int((time.monotonic() - t_start) * 1000),
     )
-    async with deps.sm() as s:
-        return await persist_turn(s, owner_id, rec)
+    try:
+        async with deps.sm() as s:
+            return await persist_turn(s, owner_id, rec)
+    except Exception as e:
+        # A ledger/DB failure must not leave the run `running` and the session leased: retry minimally.
+        _log.error("persist_failed", error_type=type(e).__name__)
+        minimal = dataclasses.replace(
+            rec,
+            status="failed",
+            generation=_plain("error", ERROR_TEXT, (TURN_ERROR, "PERSIST_FAILED")),
+            candidates=(),
+            steps=(),
+            call_ids=(),
+            reason_codes=(TURN_ERROR, "PERSIST_FAILED"),
+        )
+        try:
+            async with deps.sm() as s:
+                return await persist_turn(s, owner_id, minimal)
+        except Exception as e2:
+            _log.error("persist_fallback_failed", error_type=type(e2).__name__)
+            async with deps.sm() as s:
+                await svc.release_turn(s, session_id, owner_id, run_id)
+            raise
+
+
+async def run_turn(
+    deps: TurnDeps,
+    owner_id: uuid.UUID,
+    session_id: uuid.UUID,
+    run_id: uuid.UUID,
+    user_message_id: uuid.UUID,
+    question: str,
+    mode: str = "auto",
+) -> PersistedTurn:
+    """`_run_turn` with a lease heartbeat, so a slow turn keeps its session while it runs."""
+
+    async def beat() -> None:
+        while True:
+            await asyncio.sleep(HEARTBEAT_S)
+            async with deps.sm() as s:
+                if not await svc.extend_lease(s, session_id, owner_id, run_id):
+                    return
+
+    hb = asyncio.ensure_future(beat())
+    try:
+        return await _run_turn(deps, owner_id, session_id, run_id, user_message_id, question, mode)
+    finally:
+        hb.cancel()
 
 
 async def _answer(

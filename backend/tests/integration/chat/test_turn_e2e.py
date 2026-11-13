@@ -15,7 +15,7 @@ from app.chat.turn import TurnDeps, run_turn
 from app.core.ids import uuid7
 from app.ingestion.sentences import split_sentences
 from app.llm.gateway import DbLedgerWriter
-from app.llm.providers.fake import structured
+from app.llm.providers.fake import refusal, structured
 from app.retrieval.query_embed import QueryEmbedder
 from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import Retriever
@@ -168,7 +168,6 @@ async def test_no_documents_abstains_without_model_call(
 async def test_model_failure_becomes_error_response(
     sm: async_sessionmaker[AsyncSession], ledger_owners: Callable[[], Any], api: httpx.AsyncClient
 ) -> None:
-    from app.llm.providers.fake import refusal
 
     o = await ledger_owners()
     await _seed_chunk(sm, o.id, "Doc")
@@ -186,3 +185,44 @@ async def test_model_failure_becomes_error_response(
         assert (
             await s.execute(text("SELECT active_run_id FROM chat_sessions WHERE id = :i"), {"i": sid})
         ).scalar_one() is None
+
+
+async def test_persist_failure_still_finishes_run(
+    sm: async_sessionmaker[AsyncSession],
+    ledger_owners: Callable[[], Any],
+    api: httpx.AsyncClient,
+    monkeypatch: Any,
+) -> None:
+    """A ledger failure on the full record falls back to a minimal error record (run finished)."""
+    import app.chat.turn as turn_mod
+
+    real = turn_mod.persist_turn
+    calls = {"n": 0}
+
+    async def flaky(db: AsyncSession, owner_id: uuid.UUID, rec: Any) -> Any:
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise RuntimeError("boom")
+        return await real(db, owner_id, rec)
+
+    monkeypatch.setattr(turn_mod, "persist_turn", flaky)
+    o = await ledger_owners()
+    await _seed_chunk(sm, o.id, "Doc")
+    gw, _ = fake_gateway([_analysis("terminate notice"), EMBED_SLOT, refusal()], ledger=DbLedgerWriter(sm))
+    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), _rerank(), None))
+
+    async def runner(*a: Any) -> None:
+        await run_turn(deps, *a)
+
+    api._transport.app.dependency_overrides[get_turn_runner] = lambda: runner  # type: ignore[attr-defined]
+    sid = uuid.UUID((await api.post("/v1/chat/sessions", json={}, headers=o.auth)).json()["id"])
+    r = await _post(api, o, sid, "terminate notice", "m1")
+    assert r.status_code == 200 and r.json()["message"]["response_type"] == "error" and calls["n"] == 2
+    async with sm() as s:
+        row = (
+            await s.execute(text("SELECT status FROM rag_runs WHERE owner_id = :o"), {"o": o.id})
+        ).scalar_one()
+        lease = (
+            await s.execute(text("SELECT active_run_id FROM chat_sessions WHERE id = :i"), {"i": sid})
+        ).scalar_one()
+    assert row == "failed" and lease is None

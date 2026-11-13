@@ -47,3 +47,13 @@ Each entry: `ID · date · task · kind` — description. Resolved entries are s
 | F-037 | 2026-11-13 | S1.27 | Gap (review #10) | The layout file is written by no code (task S1.20, deferred with the highlight work), so `GET /v1/versions/{vid}/pages/{n}/layout` returns 404 for every real version; its tests pass only because they seed the file. S1.27 AC5/AC6 are therefore "core-done". Write the file in the chunk stage when S1.20 lands (the extracted artifact already holds the glyph boxes). | open → highlight phase |
 | F-038 | 2026-11-13 | S1.13 | Risk (review #14) | No cap on pages or text per document: the whole glyph-box array of a long PDF is held in memory, re-parsed by quality and chunk stages, and `RLIMIT_AS` only applies on Linux. Add a page/char cap (permanent `document_too_large`) and per-page streaming if large filings matter. Product decision. | open |
 | F-039 | 2026-11-13 | S1.22 | Risk | The chunk stage runs the splitter/packer in a thread with no wall-clock bound (a thread cannot be killed). The quadratic case is fixed; a bound would need the work to move into the killable extraction subprocess. | open |
+
+## From the C2/C3 independent review (2026-11-13)
+Fixed in the review commit: persist failure now falls back to a minimal error record and releases the lease (F-040); lease heartbeat added; DB read transaction ended before the reranker call; TARGET_IGNORED reason code; reason codes whitelisted; degraded results never cached.
+- F-041 cancellation (shutdown) mid-turn leaves the run `running` until the lease expires; add a chat-run reaper/sweeper.
+- F-042 history still shows title and `cited_text` of soft-deleted documents (decide policy: redact vs keep); check design §6.7.
+- F-043 retrieval cache key lacks a per-version content digest and the embedding model; record `cache_hit` in the run.
+- F-044 `_version_of` N+1 for expansion neighbours; a missing version drops the candidate row silently.
+- F-045 `eval/pipeline_http.py`: eval user/docs never cleaned up, client not closed; engine budget does not see answering spend (pipeline returns cost only) before wiring `eval.engine` to the real pipeline.
+- F-046 judge `SpendGuard` is check-then-spend (concurrency overshoot); live gateway built outside `get_gateway` (still via LlmGateway). Add `eval_judge:flagship` to DEFAULT_ROUTES and design §4.2.
+- F-047 retrieval recall@8 0.759 < 0.85 [T]: weakest table 0.40, compare 0.55, conflict 0.58; MRR 0.50 even when recall@8 = 1 (reranker order). Tuning through the convergence engine (S2.19/S4), no hand tuning on test items.

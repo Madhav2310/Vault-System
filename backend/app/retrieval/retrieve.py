@@ -142,6 +142,7 @@ class Retriever:
         pool = fused[: cfg.rerank.candidates]
         texts = await self._passages(session, owner_id, [c.chunk_id for c in pool])
         pool = [c for c in pool if c.chunk_id in texts]  # a chunk deleted mid-request drops out
+        await session.rollback()  # end the read transaction: no connection held across the reranker call
         rr = await self._reranker.rerank(
             query, [RerankPassage(c.chunk_id, texts[c.chunk_id]) for c in pool], cfg.rerank.top_n
         )
@@ -170,7 +171,7 @@ class Retriever:
                         Candidate(cid, vid, selected=True, expanded_from=ef, result_index=order[cid][0])
                     )
         result = RetrievalResult(tuple(cands), tuple(cid for cid, _ in final), tuple(degraded), cfg.version)
-        if not degraded:
+        if not degraded and emb.vector is not None and not rr.degraded:
             await self._cache_set(key, result)
         return result
 
