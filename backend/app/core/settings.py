@@ -6,7 +6,7 @@ Later slices add their fields here; `tests/unit/core/test_settings.py` keeps `.e
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None
     deepseek_api_key: SecretStr | None = None
+
+    # `fake` = scripted UI-test model (app/llm/fake.py); refused when environment is prod
+    llm_provider: Literal["openai", "fake"] = "openai"
 
     # --- model roles (design §4.1; no date suffixes). Only app/llm/routing.py reads these. ---
     model_fast: str = "gpt-6-luna"
@@ -87,6 +90,12 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    @model_validator(mode="after")
+    def _no_fake_in_prod(self) -> "Settings":
+        if self.environment == "prod" and self.llm_provider == "fake":
+            raise ValueError("llm_provider=fake is not allowed when environment=prod")
+        return self
 
 
 @lru_cache(maxsize=1)

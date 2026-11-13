@@ -1,0 +1,28 @@
+# Scripted replies for the UI test harness (S19.02, LLM_PROVIDER=fake). Keyed by question text (case and
+# whitespace insensitive). `cite` lists substrings of evidence sentences: the fake picks the handles by
+# matching them, so citations do not depend on retrieval order. Documents: frontend/e2e/fixtures/.
+questions:
+  # lookup with a cited answer; `suggest` puts the question in each document's suggested questions
+  - question: What is the notice period for termination?
+    suggest: true
+    segments:
+      - text: Either party may end the agreement with 30 days written notice.
+        cite: ["30 days written notice"]
+      - text: The agreement runs for twelve months.
+        cite: ["twelve months"]
+  # follow-up in the same session
+  - question: And which law governs it?
+    segments:
+      - text: The agreement is governed by Delaware law.
+        cite: ["laws of the State of Delaware"]
+  # abstention: the documents do not cover it
+  - question: What is the CEO's favourite colour?
+    status: abstain
+  # conflict: two documents state different fees
+  - question: What is the monthly fee?
+    suggest: true
+    segments:
+      - text: The sources disagree. The Services Agreement sets the monthly fee at 4,500 dollars.
+        cite: ["4,500 dollars"]
+      - text: The Pricing Memo states a monthly fee of 5,200 dollars.
+        cite: ["5,200 dollars"]

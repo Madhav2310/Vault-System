@@ -92,6 +92,35 @@ ui-types-check:  ## non-zero when the committed generated types are stale
 ui-check:
 	@if [ -d frontend/node_modules ]; then cd frontend && npm run typecheck && npm run lint; else echo "frontend skipped (no frontend/node_modules)"; fi
 
+# S19.02: UI e2e against the fake-model stack (project vault-uitest on its own ports; the dev stack is untouched).
+# Starts the stack with docker-compose.ui-test.yml, seeds a user, uploads frontend/e2e/fixtures, runs headless
+# Chromium with one worker, then tears the stack (and its volumes) down whatever the outcome.
+.PHONY: ui-e2e
+UI_E2E_ENV := COMPOSE_PROJECT_NAME=vault-uitest COMPOSE_FILE=docker-compose.yml:docker-compose.ui-test.yml \
+              API_PORT=8190 POSTGRES_PORT=5542 REDIS_PORT=6489 RERANKER_PORT=8280
+ui-e2e:
+	@set -euo pipefail; export $(UI_E2E_ENV); base=http://localhost:8190; \
+	trap 'docker compose --profile "*" down -v' EXIT; \
+	docker compose --profile "*" down -v >/dev/null 2>&1 || true; \
+	GIT_SHA=$$(git rev-parse --short HEAD) docker compose build api; \
+	docker compose up -d postgres redis; scripts/wait_healthy.sh 120 postgres redis; \
+	docker compose run --rm --no-deps api alembic upgrade head; \
+	GIT_SHA=$$(git rev-parse --short HEAD) docker compose up -d; scripts/wait_healthy.sh 240 api worker-ingest worker-ai; \
+	key=$$(docker compose exec -T api python -m app.db.seed users | sed -n 's/^alice@vault.local: API key //p'); \
+	test -n "$$key" || { echo "ui-e2e: no API key from seed"; exit 1; }; \
+	for f in frontend/e2e/fixtures/*.txt; do \
+	  curl -fsS -H "Authorization: Bearer $$key" -F "file=@$$f" $$base/v1/documents >/dev/null; \
+	done; \
+	n=$$(( 2 * $$(ls frontend/e2e/fixtures/*.txt | wc -l) )); \
+	for i in $$(seq 1 90); do \
+	  : "document and version both carry the status, so n counts two per file"; \
+	  ready=$$(curl -fsS -H "Authorization: Bearer $$key" "$$base/v1/documents?limit=100" | { grep -o '"status":"enriched"' || true; } | wc -l | tr -d ' '); \
+	  [ "$$ready" -ge "$$n" ] && break; sleep 2; \
+	done; \
+	[ "$$ready" -ge "$$n" ] || { echo "ui-e2e: fixtures not enriched ($$ready/$$n)"; exit 1; }; \
+	cd frontend && { [ -d node_modules ] || npm ci --no-audit --no-fund; } && npx playwright install chromium \
+	  && UI_BASE_URL=$$base UI_API_KEY=$$key npx playwright test
+
 # --- Eval corpus (S0.18): third-party sources -> eval/sources/ (gitignored); rebuild the golden set ---
 .PHONY: eval-fetch eval-build eval-extraction c1-check
 EVAL_PY := $(UV) --group eval python
