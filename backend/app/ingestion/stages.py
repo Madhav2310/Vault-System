@@ -240,6 +240,7 @@ class ChunkStage:
 
 def default_stages() -> dict[str, Stage]:
     from app.ingestion.embed_index import EmbedStage, IndexStage
+    from app.insights.stage import BriefStage
 
     return {
         "extract": ExtractStage(),
@@ -247,4 +248,5 @@ def default_stages() -> dict[str, Stage]:
         "chunk": ChunkStage(),
         "embed": EmbedStage(),
         "index": IndexStage(),
+        "brief": BriefStage(),
     }

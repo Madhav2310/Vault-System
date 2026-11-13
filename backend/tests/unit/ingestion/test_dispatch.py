@@ -11,4 +11,4 @@ async def test_payload_only_job_id(monkeypatch) -> None:  # type: ignore[no-unty
     job_id = uuid.uuid4()
     await jobs.celery_enqueue()("embed", job_id)
     assert sent == [(("vault.ai.stage",), {"args": [str(job_id)]})]
-    assert set(jobs.STAGE_TASKS) == {"extract", "quality", "chunk", "embed", "index"}
+    assert set(jobs.STAGE_TASKS) == {"extract", "quality", "chunk", "embed", "index", "brief"}

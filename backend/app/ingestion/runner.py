@@ -31,7 +31,7 @@ from app.ingestion import status as vs
 from app.ingestion.errors import PermanentStageError, RetryableStageError, StageError
 from app.ingestion.jobs import HEARTBEAT_S, LEASE_S, ClaimedJob, Enqueue, claim, dispatch, heartbeat
 
-STAGE_ORDER: tuple[str, ...] = ("extract", "quality", "chunk", "embed", "index")
+STAGE_ORDER: tuple[str, ...] = ("extract", "quality", "chunk", "embed", "index", "brief")
 BACKOFF_BASE_S, BACKOFF_CAP_S, JITTER = 10.0, 600.0, 0.2
 _log = get_logger("vault.ingestion.runner")
 
@@ -249,7 +249,9 @@ async def _commit(
 ) -> Outcome:
     stage = job.current_stage
     idx = order.index(stage)
-    nxt = None if result.terminal_status or idx + 1 >= len(order) else order[idx + 1]
+    # `ready` is the one terminal status the pipeline continues past: enrichment stages (brief) follow it.
+    ends = result.terminal_status is not None and result.terminal_status != vs.READY
+    nxt = None if ends or idx + 1 >= len(order) else order[idx + 1]
     async with sm() as s:
         if not await _fence(s, job, worker):
             await s.rollback()
