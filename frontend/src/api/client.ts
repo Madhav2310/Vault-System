@@ -1,0 +1,136 @@
+import { SseHttpError, streamEvents, type SseFrame } from "../sse";
+import type {
+  DocumentList,
+  ErrorResponse,
+  ProcessingEvent,
+  UploadResponse,
+  VersionStatus,
+} from "./types";
+
+const KEY_STORAGE = "vault.apiKey";
+
+export function getApiKey(): string {
+  try {
+    return localStorage.getItem(KEY_STORAGE) ?? "";
+  } catch {
+    return "";
+  }
+}
+
+export function setApiKey(key: string): void {
+  try {
+    if (key) localStorage.setItem(KEY_STORAGE, key);
+    else localStorage.removeItem(KEY_STORAGE);
+  } catch {
+    /* storage unavailable: the key lasts until reload */
+  }
+}
+
+/** A mapped API failure. `retryAfterS` comes from Retry-After on 429. */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    public readonly code: string,
+    message: string,
+    public readonly retryable: boolean,
+    public readonly retryAfterS: number | null = null,
+  ) {
+    super(message);
+  }
+}
+
+export class NetworkError extends Error {}
+
+async function toError(res: Response): Promise<ApiError> {
+  let body: Partial<ErrorResponse> = {};
+  try {
+    body = (await res.json()) as Partial<ErrorResponse>;
+  } catch {
+    /* non-JSON error body */
+  }
+  const ra = Number(res.headers.get("retry-after"));
+  return new ApiError(
+    res.status,
+    body.code ?? `http_${res.status}`,
+    body.detail ?? body.title ?? res.statusText,
+    body.retryable ?? false,
+    Number.isFinite(ra) && ra > 0 ? ra : null,
+  );
+}
+
+function authHeaders(): Record<string, string> {
+  const key = getApiKey();
+  return key ? { Authorization: `Bearer ${key}` } : {};
+}
+
+async function request(path: string, init: RequestInit = {}): Promise<Response> {
+  let res: Response;
+  try {
+    res = await fetch(path, { ...init, headers: { ...authHeaders(), ...init.headers } });
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "AbortError") throw e;
+    throw new NetworkError("Network error: could not reach the server.");
+  }
+  if (!res.ok) throw await toError(res);
+  return res;
+}
+
+export interface ListParams {
+  q?: string;
+  category?: string;
+  tag?: string;
+  status?: VersionStatus;
+  cursor?: string;
+  limit?: number;
+}
+
+export const api = {
+  async listDocuments(p: ListParams = {}, signal?: AbortSignal): Promise<DocumentList> {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(p)) if (v !== undefined && v !== "") qs.set(k, String(v));
+    const init: RequestInit = signal ? { signal } : {};
+    return (await request(`/v1/documents?${qs}`, init)).json() as Promise<DocumentList>;
+  },
+
+  async upload(file: File): Promise<UploadResponse> {
+    const form = new FormData();
+    form.append("file", file);
+    const key = crypto.randomUUID();
+    return (
+      await request("/v1/documents", { method: "POST", body: form, headers: { "Idempotency-Key": key } })
+    ).json() as Promise<UploadResponse>;
+  },
+
+  async deleteDocument(id: string): Promise<void> {
+    await request(`/v1/documents/${id}`, { method: "DELETE" });
+  },
+
+  /** Probe the key without side effects. */
+  async ping(): Promise<void> {
+    await request("/v1/documents?limit=1");
+  },
+
+  processingEvents(versionId: string, signal?: AbortSignal): AsyncGenerator<ProcessingEvent> {
+    const opts: Parameters<typeof streamEvents<ProcessingEvent>>[1] = {
+      headers: authHeaders(),
+      decode: decodeProcessing,
+    };
+    if (signal) opts.signal = signal;
+    return streamEvents(`/v1/versions/${versionId}/processing/stream`, opts);
+  },
+};
+
+export function decodeProcessing(f: SseFrame): ProcessingEvent | null {
+  let d: Record<string, unknown>;
+  try {
+    d = JSON.parse(f.data) as Record<string, unknown>;
+  } catch {
+    return null;
+  }
+  if (f.event === "stage") return { type: "stage", ...d } as ProcessingEvent;
+  if (f.event === "done") return { type: "done", ...d } as ProcessingEvent;
+  if (f.event === "timeout") return { type: "timeout", ...d } as ProcessingEvent;
+  return null;
+}
+
+export { SseHttpError };

@@ -1,6 +1,15 @@
 # api / workers / beat share this image; the command differs per service.
 FROM ghcr.io/astral-sh/uv:0.10.2 AS uv
 
+# Web UI build stage (S19.01). The build context is backend/, so the frontend comes in as a named context:
+#   docker build --build-context frontend=../frontend backend   (compose: additional_contexts)
+# Without it the stage builds an empty UI and /app answers 404.
+FROM scratch AS frontend
+FROM node:22.12-slim AS ui
+WORKDIR /ui
+COPY --from=frontend . .
+RUN if [ -f package-lock.json ]; then npm ci --no-audit --no-fund && npm run build; else mkdir dist; fi
+
 FROM python:3.12.12-slim-bookworm
 COPY --from=uv /uv /usr/local/bin/uv
 ENV UV_COMPILE_BYTECODE=1 \
@@ -21,6 +30,7 @@ COPY alembic.ini ./
 COPY app ./app
 COPY prompts ./prompts
 COPY config ./config
+COPY --from=ui /ui/dist ./ui_dist
 RUN uv sync --frozen --no-dev \
  && useradd --create-home --uid 10001 vault \
  && mkdir -p /data/blobs && chown vault /data/blobs
