@@ -9,6 +9,9 @@ body {
   color: var(--body);
   font: 400 15px/1.5 var(--font-ui);
 }
+a {
+  color: var(--ink);
+}
 h1,
 h2,
 h3 {
@@ -61,6 +64,25 @@ h2 {
   padding: var(--s4) 0;
   border-bottom: 1px solid var(--line);
   margin-bottom: var(--s5);
+}
+.topnav {
+  display: flex;
+  gap: var(--s4);
+  margin-right: auto;
+  margin-left: var(--s5);
+}
+.topnav a {
+  color: var(--body);
+  text-decoration: none;
+  padding: var(--s1) 0;
+  border-bottom: 2px solid transparent;
+}
+.topnav a:hover {
+  color: var(--ink);
+}
+.topnav a[aria-current="page"] {
+  color: var(--ink);
+  border-bottom-color: var(--red);
 }
 .brand {
   font: 600 20px var(--font-head);
