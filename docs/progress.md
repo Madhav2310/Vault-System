@@ -413,3 +413,6 @@ bench_http n=20 passages x20 requests in container (cpus-capped): p50 461.9 ms, 
 ## S17.12 tests (2026-11-13)
 Added test_citation_integrity, test_budget_stop, test_call_ids_reported (3 passed). S17.12 ACs 1-5 done; AC1-3 [T] targets are measured at S17.13.
 S16.02 AC6 RCA: 2 CPUs/2 threads gave p50 462 ms; 3 CPUs/3 threads gives p50 350.8 ms (p95 578), 230 MB. Compose updated.
+
+## S17.14 turn graph merged (lane A)
+AC1-4,6-8 ticked on lane tests; AC5 (make test on merged tree) pending the next full gate. Follow-up: move summaries.retriever_select and worker task to sessionmaker for concurrent retrieval.
