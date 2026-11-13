@@ -29,7 +29,7 @@ from app.llm.types import Final, TextDelta, Usage
 STOP_REFUSAL = "STOP_REFUSAL"
 STOP_MAX_TOKENS = "STOP_MAX_TOKENS"
 GENERATION_INVALID = "GENERATION_INVALID"
-PROMPT = ("answer_rag", 1)
+PROMPT = ("answer_rag", 2)
 
 
 @dataclass(frozen=True)
@@ -40,6 +40,7 @@ class GenerateResult:
     usage: Usage
     cost_usd: Decimal
     call_ids: tuple[uuid.UUID, ...]
+    followups: tuple[str, ...] = ()  # as the model wrote them; the node cleans them (followups.py)
 
     @property
     def text(self) -> str:
@@ -148,7 +149,15 @@ async def generate(
         )
     resolution = resolve(out.segments, evidence)
     reasons += list(resolution.reasons)
-    return GenerateResult("answer", resolution, tuple(reasons), final.usage, final.cost_usd, final.call_ids)
+    return GenerateResult(
+        "answer",
+        resolution,
+        tuple(reasons),
+        final.usage,
+        final.cost_usd,
+        final.call_ids,
+        tuple(out.followups),
+    )
 
 
 def _well_formed(seg: dict[str, Any]) -> bool:

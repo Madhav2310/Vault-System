@@ -1,9 +1,12 @@
 """`generate` node: build the evidence set, call the generator, resolve citations (all in `generate`)."""
 
+import dataclasses
+
 from app.chat.citations import ResolvedSegment
 from app.chat.evidence import build_evidence
+from app.chat.followups import clean_followups
 from app.chat.graph import TURN_ERROR, TurnCtx, TurnState
-from app.chat.nodes._common import ERROR_TEXT, emit_segment, flush_segments, plain
+from app.chat.nodes._common import ERROR_TEXT, abstain_followups, emit_segment, flush_segments, plain
 from app.chat.nodes.generate import generate as generate_answer
 from app.llm.errors import LlmError
 
@@ -25,6 +28,11 @@ async def generate(state: TurnState, ctx: TurnCtx) -> TurnState:
         state.generation = plain("error", ERROR_TEXT, (TURN_ERROR, e.error_type))
         state.last_status, state.last_error = "failed", e.error_type
         return state
+    if gen.response_type == "answer":
+        questions = [state.question, state.analysis.standalone_query]
+        gen = dataclasses.replace(gen, followups=clean_followups(gen.followups, questions))
+    elif gen.response_type == "abstain":
+        gen = dataclasses.replace(gen, followups=await abstain_followups(state, ctx))
     state.generation = gen
     state.last_decision = {"response_type": gen.response_type}
     await flush_segments(state, ctx)

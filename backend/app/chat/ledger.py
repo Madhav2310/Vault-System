@@ -313,7 +313,8 @@ async def persist_turn(db: AsyncSession, owner_id: uuid.UUID, rec: TurnRecord) -
         await db.execute(
             text(
                 "INSERT INTO chat_messages (id, owner_id, session_id, role, content, response_type, "
-                "coverage_state, run_id) VALUES (:id, :o, :s, 'assistant', :c, :rt, :cs, :r)"
+                "coverage_state, run_id, followups) "
+                "VALUES (:id, :o, :s, 'assistant', :c, :rt, :cs, :r, CAST(:fu AS jsonb))"
             ),
             {
                 "id": msg_id,
@@ -323,6 +324,7 @@ async def persist_turn(db: AsyncSession, owner_id: uuid.UUID, rec: TurnRecord) -
                 "rt": rec.generation.response_type,
                 "cs": rec.coverage_state,
                 "r": rec.run_id,
+                "fu": json.dumps(list(rec.generation.followups)),
             },
         )
         segments = await _insert_segments(db, rec, msg_id)

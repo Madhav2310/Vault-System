@@ -16,7 +16,7 @@ import time
 import uuid
 
 from app.chat import sessions as svc
-from app.chat.events import NullSink, current_sink
+from app.chat.events import Followups, NullSink, current_sink
 from app.chat.graph import END, TURN_ERROR, Graph, TurnCtx, TurnDeps, TurnState, router
 from app.chat.harness import DEFAULT_LIMITS, TurnBudget
 from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_turn
@@ -115,7 +115,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         scope_version_ids=state.scope.version_ids,
         generation=gen,
         config={
-            "prompts": ["analyze_query@1", "answer_rag@1"],
+            "prompts": ["analyze_query@1", "answer_rag@2"],
             "models": _models(deps.gateway),
             "retrieval": deps.retriever.config.version,
         },
@@ -132,7 +132,9 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
     try:
         async with deps.sm() as s:
             state.persisted = await persist_turn(s, owner_id, rec)
-            return state
+        if gen.followups:  # what was stored, sent before `done`
+            await ctx.emit(Followups(run_id=str(ctx.run_id), questions=list(gen.followups)))
+        return state
     except Exception as e:
         # A ledger/DB failure must not leave the run `running` and the session leased: retry minimally.
         _log.error("persist_failed", error_type=type(e).__name__)

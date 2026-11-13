@@ -5,6 +5,7 @@ from typing import Any
 
 from app.chat.citations import Resolution, ResolvedSegment
 from app.chat.events import segment_event
+from app.chat.followups import brief_questions
 from app.chat.nodes.generate import GenerateResult
 from app.llm.types import Usage
 
@@ -15,6 +16,12 @@ TARGET_IGNORED = "TARGET_IGNORED"
 NO_DOCUMENTS_TEXT = "No ready documents are in scope. Upload a document or wait for processing to finish."
 NO_EVIDENCE_TEXT = "I could not find anything in your documents that answers this."
 ERROR_TEXT = "Something went wrong while answering. Please try again."
+
+
+async def abstain_followups(state: Any, ctx: Any) -> tuple[str, ...]:
+    """Up to three suggested questions from the briefs of the documents in scope (S18.04)."""
+    async with ctx.deps.sm() as db:
+        return await brief_questions(db, ctx.owner_id, state.scope.version_ids, [state.question])
 
 
 async def emit_segment(ctx: Any, seg: ResolvedSegment, evidence: Any) -> None:

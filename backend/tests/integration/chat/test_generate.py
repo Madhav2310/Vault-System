@@ -58,7 +58,7 @@ async def test_stop_refusal(sm: async_sessionmaker[AsyncSession], owners: Callab
     assert res.resolution.segments == ()
     rows = await _rows(sm, owner)
     assert len(rows) == 1
-    assert (rows[0].purpose, rows[0].prompt_id, rows[0].prompt_version) == ("generate", "answer_rag", 1)
+    assert (rows[0].purpose, rows[0].prompt_id, rows[0].prompt_version) == ("generate", "answer_rag", 2)
     assert (rows[0].status, rows[0].error_type, rows[0].role) == ("error", "refusal", "balanced")
 
 

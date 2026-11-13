@@ -29,7 +29,7 @@ async def list_messages(
         (
             await db.execute(
                 text(
-                    "SELECT id, role, content, response_type, coverage_state, run_id, created_at "
+                    "SELECT id, role, content, response_type, coverage_state, run_id, created_at, followups "
                     "FROM chat_messages WHERE session_id = :s AND owner_id = :o "
                     "AND (CAST(:c_at AS timestamptz) IS NULL "
                     "OR (created_at, id) < (CAST(:c_at AS timestamptz), CAST(:c_id AS uuid))) "
@@ -59,6 +59,7 @@ def _item(m: Any, segments: list[dict[str, Any]]) -> dict[str, Any]:
         "staleness": None,
         "run_id": str(m["run_id"]) if m["run_id"] else None,
         "segments": segments,
+        "followups": list(m["followups"] or []),
     }
 
 
@@ -68,7 +69,7 @@ async def get_message(db: AsyncSession, owner_id: uuid.UUID, message_id: uuid.UU
         (
             await db.execute(
                 text(
-                    "SELECT id, role, content, response_type, coverage_state, run_id, created_at "
+                    "SELECT id, role, content, response_type, coverage_state, run_id, created_at, followups "
                     "FROM chat_messages WHERE id = :i AND owner_id = :o"
                 ),
                 {"i": message_id, "o": owner_id},
