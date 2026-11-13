@@ -202,6 +202,22 @@ async def test_chunk(api: httpx.AsyncClient, owners, sm) -> None:  # type: ignor
     assert b["document_id"] == str(s.document_id)
 
 
+async def test_chunk_neighbours(api: httpx.AsyncClient, owners, sm) -> None:  # type: ignore[no-untyped-def]
+    o = await owners()
+    s = await seed_document(sm, o.id)
+    c0, c1, c2 = [await seed_chunk(sm, o.id, s, ordinal=i) for i in range(3)]
+
+    async def get(cid: uuid.UUID) -> dict[str, Any]:
+        r = await api.get(f"/v1/chunks/{cid}", headers=o.auth)
+        assert r.status_code == 200, r.text
+        return r.json()  # type: ignore[no-any-return]
+
+    first, mid, last = await get(c0), await get(c1), await get(c2)
+    assert (first["prev_chunk_id"], first["next_chunk_id"]) == (None, str(c1))
+    assert (mid["prev_chunk_id"], mid["next_chunk_id"]) == (str(c0), str(c2))
+    assert (last["prev_chunk_id"], last["next_chunk_id"]) == (str(c1), None)
+
+
 @pytest.mark.parametrize(
     "path",
     [

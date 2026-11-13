@@ -20,6 +20,8 @@ ROUTES: dict[str, str] = {
     "vault.maintenance.purge_job_events": "maintenance",
     "vault.maintenance.sweep_jobs": "maintenance",
     "vault.maintenance.purge_pending": "maintenance",
+    "vault.maintenance.backfill_tsv_ids": "maintenance",
+    "vault.maintenance.reap_chat_runs": "maintenance",
     "vault.maintenance.purge_document": "maintenance",
     "vault.ingest.stage": "ingest",
     "vault.ai.stage": "ai",
@@ -32,6 +34,7 @@ BEAT: dict[str, tuple[str, float]] = {
     "purge-job-events": ("vault.maintenance.purge_job_events", 86400.0),
     "sweep-jobs": ("vault.maintenance.sweep_jobs", 60.0),
     "purge-pending": ("vault.maintenance.purge_pending", 600.0),
+    "reap-chat-runs": ("vault.maintenance.reap_chat_runs", 60.0),
 }
 
 VISIBILITY_TIMEOUT_S = 3600  # > longest stage time (design §6.6)

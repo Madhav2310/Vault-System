@@ -15,9 +15,10 @@ import httpx
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy.engine import make_url
 
+from app.api.schemas import Liveness
 from app.core.settings import Settings, get_settings
 from app.storage.factory import get_object_store
 
@@ -35,6 +36,24 @@ class Check(BaseModel):
 class Readiness(BaseModel):
     status: Literal["ok", "degraded", "fail"]
     checks: dict[str, Check]
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "status": "degraded",
+                    "checks": {
+                        "database": {"status": "ok", "required": True, "duration_ms": 3.1, "error": None},
+                        "reranker": {
+                            "status": "fail",
+                            "required": False,
+                            "duration_ms": 2000.0,
+                            "error": "TimeoutError",
+                        },
+                    },
+                }
+            ]
+        }
+    )
 
 
 async def _database(s: Settings) -> None:
@@ -94,13 +113,20 @@ async def _run(name: str, fn: Callable[[Settings], Awaitable[None]], s: Settings
     return Check(status="fail" if error else "ok", required=name not in OPTIONAL, duration_ms=ms, error=error)
 
 
-@router.get("/healthz", include_in_schema=False)
+@router.get("/healthz", tags=["Health"], summary="Liveness", response_model=Liveness)
 async def healthz() -> dict[str, str]:
     """Process liveness only; never touches dependencies."""
     return {"status": "ok"}
 
 
-@router.get("/readyz", include_in_schema=False, response_model=Readiness)
+@router.get(
+    "/readyz",
+    tags=["Health"],
+    summary="Readiness",
+    description="Database, Redis, object store, reranker (optional) and provider configuration. 503 when a "
+    "required check fails (the body is the same `Readiness` object).",
+    response_model=Readiness,
+)
 async def readyz(settings: Annotated[Settings, Depends(get_settings)]) -> JSONResponse:
     results = await asyncio.gather(*(_run(n, fn, settings) for n, fn in CHECKS.items()))
     checks = dict(zip(CHECKS, results, strict=True))

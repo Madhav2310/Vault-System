@@ -73,6 +73,10 @@ class QueryEmbedder:
         self._prefix = key_prefix
         self._ttl = ttl_seconds
 
+    @property
+    def model(self) -> str:
+        return self._gw.settings.embedding_model
+
     async def embed(self, query: str, *, owner_id: uuid.UUID | None) -> QueryEmbedding:
         model = self._gw.settings.embedding_model
         dims = self._gw.settings.embedding_dim

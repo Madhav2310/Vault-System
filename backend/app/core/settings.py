@@ -74,9 +74,17 @@ class Settings(BaseSettings):
     rate_limit_default_per_min: int = 300
     rate_limit_window_s: int = 60  # the "min" above; tests widen it so refill cannot blur exact counts
 
+    # --- daily LLM cost quota per user, UTC day; admins are unlimited (design §13.4) ---
+    user_daily_usd: float = 1.00
+
     # --- document brief (design §9.1) ---
     brief_max_evidence_tokens: int = 12_000  # above this the brief maps over section groups, then merges
     brief_max_usd: float = 0.05  # per document; reaching it stops further map calls (BRIEF_PARTIAL_BUDGET)
+
+    # --- whole-document answering (design §8.2, S17.07) ---
+    full_context_auto: bool = False  # off until the answer A/B decides (docs/evidence/answer_ab.md)
+    full_context_max_docs: int = 3
+    full_context_max_tokens: int = 50_000
 
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"

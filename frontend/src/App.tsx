@@ -1,5 +1,8 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { api, ApiError, getApiKey, setApiKey } from "./api/client";
+import { ChatStub } from "./document/ChatStub";
+import { DocumentPage } from "./document/DocumentPage";
+import { useRoute } from "./document/nav";
 import { Library } from "./library/Library";
 
 /** Demo auth assumption (S19): the API key is typed here and kept in localStorage. */
@@ -59,6 +62,8 @@ function KeyScreen({ onSaved }: { onSaved: () => void }) {
 
 export function App() {
   const [hasKey, setHasKey] = useState(() => getApiKey() !== "");
+  const route = useRoute();
+  const onUnauth = useCallback(() => setHasKey(false), []);
 
   return (
     <>
@@ -81,7 +86,15 @@ export function App() {
           )}
         </header>
         <main id="main">
-          {hasKey ? <Library onUnauthenticated={() => setHasKey(false)} /> : <KeyScreen onSaved={() => setHasKey(true)} />}
+          {!hasKey ? (
+            <KeyScreen onSaved={() => setHasKey(true)} />
+          ) : route.name === "document" && route.id ? (
+            <DocumentPage id={route.id} onUnauthenticated={onUnauth} />
+          ) : route.name === "chat" ? (
+            <ChatStub route={route} />
+          ) : (
+            <Library onUnauthenticated={onUnauth} />
+          )}
         </main>
       </div>
     </>

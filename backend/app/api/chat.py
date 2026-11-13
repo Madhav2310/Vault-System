@@ -5,18 +5,23 @@ import dataclasses
 import uuid
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Query, Response
+from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import TurnRunner, get_db, get_turn_runner
 from app.api.errors import DomainError
+from app.api.schemas import EventSchemaOut, MessageList, PostMessageOut, SessionList, SessionOut
 from app.chat import history
 from app.chat import sessions as svc
+from app.chat import stream as stream_mod
+from app.chat.events import event_schema
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
+from app.core.quota import enforce_chat_quota
 
-router = APIRouter(prefix="/v1/chat", tags=["chat"])
+router = APIRouter(prefix="/v1/chat", tags=["Chat"])
 _TASKS: set[asyncio.Future[None]] = set()  # strong refs: running turns must outlive the request
 
 
@@ -41,7 +46,13 @@ def _json(s: svc.SessionRow) -> dict[str, Any]:
     }
 
 
-@router.post("/sessions", status_code=201)
+@router.post(
+    "/sessions",
+    status_code=201,
+    summary="Create a chat session",
+    response_model=SessionOut,
+    responses={404: {"description": "A document in `document_ids` is not yours or was deleted"}},
+)
 async def create_session(
     body: CreateSession, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict[str, Any]:
@@ -52,7 +63,12 @@ async def create_session(
         raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND) from None
 
 
-@router.get("/sessions")
+@router.get(
+    "/sessions",
+    summary="List chat sessions",
+    description="Your sessions, most recently updated first, cursor-paginated.",
+    response_model=SessionList,
+)
 async def list_sessions(
     user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -66,7 +82,13 @@ async def list_sessions(
     return {"items": [_json(s) for s in page], "next_cursor": nxt}
 
 
-@router.get("/sessions/{session_id}")
+@router.get(
+    "/sessions/{session_id}",
+    summary="Get a chat session",
+    description="One session with its document scope (`document_ids: null` means all documents).",
+    response_model=SessionOut,
+    responses={404: {"description": "Not your session"}},
+)
 async def get_session(
     session_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict[str, Any]:
@@ -76,7 +98,13 @@ async def get_session(
         raise DomainError(ErrorCode.NOT_FOUND) from None
 
 
-@router.get("/sessions/{session_id}/messages")
+@router.get(
+    "/sessions/{session_id}/messages",
+    summary="List messages",
+    response_model=MessageList,
+    response_model_exclude_unset=True,
+    responses={404: {"description": "Not your session"}},
+)
 async def list_messages(
     session_id: uuid.UUID,
     user: CurrentUser,
@@ -94,23 +122,51 @@ async def list_messages(
     return {"items": items, "next_cursor": nxt}
 
 
+@router.get(
+    "/events/schema",
+    summary="JSON Schema of the SSE turn events",
+    response_model=EventSchemaOut,
+    response_model_exclude_unset=True,
+)
+async def events_schema(user: CurrentUser) -> dict[str, Any]:
+    """JSON Schema of the SSE turn events (`TurnEvent`, discriminated on `type`), to generate client types."""
+    return event_schema()
+
+
 @router.post(
     "/sessions/{session_id}/messages",
     status_code=202,
-    responses={200: {"description": "Retried client_message_id of a finished turn: the stored result"}},
+    summary="Post a message and get a cited answer",
+    dependencies=[Depends(enforce_chat_quota)],
+    response_model=None,
+    responses={
+        202: {"model": PostMessageOut, "description": "Turn accepted (or finished): run and message ids"},
+        200: {
+            "description": "Retried client_message_id of a finished turn: the stored result. With "
+            "`Accept: text/event-stream` the response is an SSE stream of turn events (see "
+            "`GET /v1/chat/events/schema`)",
+            "content": {"text/event-stream": {"schema": {"type": "string"}}},
+        },
+        404: {"description": "Not your session"},
+        409: {"description": "Another turn is running in this session (`turn_in_progress`)"},
+        503: {"description": "Model provider or capacity unavailable"},
+    },
 )
 async def post_message(
     session_id: uuid.UUID,
     body: PostMessage,
+    request: Request,
     user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
     response: Response,
     run_turn: Annotated[TurnRunner, Depends(get_turn_runner)],
-) -> dict[str, Any]:
+) -> Any:
     """Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
     while running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion
-    before the response (non-streaming; SSE comes with S5) and returns 200 with the assistant message; it
-    keeps running and persists even if the client disconnects."""
+    before the response and returns 200 with the assistant message; it keeps running and persists even if the
+    client disconnects. With `Accept: text/event-stream` the turn streams events instead (S18.01): the
+    status codes above are decided before the stream starts and the stream itself answers 200."""
+    sse = "text/event-stream" in request.headers.get("accept", "")
     try:
         t = await svc.start_turn(db, user.id, session_id, body.content, body.client_message_id, body.mode)
     except svc.SessionNotFound:
@@ -121,6 +177,16 @@ async def post_message(
         raise DomainError(
             ErrorCode.IDEMPOTENCY_KEY_REUSED, "client_message_id was used with different content"
         ) from None
+    if sse:
+        if t.created:
+            sink, turn = stream_mod.start_sink_task(
+                lambda: run_turn(user.id, session_id, t.run_id, t.user_message_id, body.content, body.mode),
+                _TASKS,
+            )
+            frames = stream_mod.stream_new_turn(db, user.id, t.run_id, t.user_message_id, sink, turn)
+        else:
+            frames = stream_mod.stream_existing_turn(db, user.id, t.run_id, t.user_message_id)
+        return StreamingResponse(frames, media_type="text/event-stream", headers=stream_mod.SSE_HEADERS)
     if t.created:
         task: asyncio.Future[None] = asyncio.ensure_future(
             run_turn(user.id, session_id, t.run_id, t.user_message_id, body.content, body.mode)

@@ -354,6 +354,7 @@ A chunker version change triggers re-chunking of affected versions. Chunks from 
 
 ### 6.7 Deletion
 `DELETE /documents/{id}` sets `deleted_at` → excluded from retrieval immediately (every scope query filters `deleted_at IS NULL`). An async purge removes chunks, insights and layouts, decrements blob `refcount`, and deletes the blob at 0. In-flight stages check `deleted_at` between stages and abort.
+History redaction: when a cited document is soft-deleted or purged, the stored answer keeps its segment text but each evidence item returns `deleted: true`, `cited_text: null` and `document_title: null` (S17.11).
 
 ---
 

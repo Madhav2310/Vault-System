@@ -183,8 +183,8 @@ async def _insert_segments(
         sid = uuid7()
         await db.execute(
             text(
-                "INSERT INTO answer_segments (id, run_id, message_id, ordinal, text, support) "
-                "VALUES (:id, :r, :m, :ord, :t, :s)"
+                "INSERT INTO answer_segments (id, run_id, message_id, ordinal, text, support, "
+                "verification, verification_reason) VALUES (:id, :r, :m, :ord, :t, :s, :v, :vr)"
             ),
             {
                 "id": sid,
@@ -193,6 +193,8 @@ async def _insert_segments(
                 "ord": seg.ordinal,
                 "t": seg.text,
                 "s": seg.support,
+                "v": seg.verification,
+                "vr": seg.verification_reason,
             },
         )
         out.append((sid, seg))
@@ -313,7 +315,8 @@ async def persist_turn(db: AsyncSession, owner_id: uuid.UUID, rec: TurnRecord) -
         await db.execute(
             text(
                 "INSERT INTO chat_messages (id, owner_id, session_id, role, content, response_type, "
-                "coverage_state, run_id) VALUES (:id, :o, :s, 'assistant', :c, :rt, :cs, :r)"
+                "coverage_state, run_id, followups) "
+                "VALUES (:id, :o, :s, 'assistant', :c, :rt, :cs, :r, CAST(:fu AS jsonb))"
             ),
             {
                 "id": msg_id,
@@ -323,6 +326,7 @@ async def persist_turn(db: AsyncSession, owner_id: uuid.UUID, rec: TurnRecord) -
                 "rt": rec.generation.response_type,
                 "cs": rec.coverage_state,
                 "r": rec.run_id,
+                "fu": json.dumps(list(rec.generation.followups)),
             },
         )
         segments = await _insert_segments(db, rec, msg_id)

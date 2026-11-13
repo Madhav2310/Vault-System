@@ -18,7 +18,7 @@ async def load_evidence_chunks(
     rows = await session.execute(
         text(
             "SELECT c.id, c.version_id, d.title, v.version_no, c.page_start, c.page_end, c.section_path, "
-            "c.original_text, c.sentences FROM chunks c "
+            "c.original_text, c.sentences, c.document_id FROM chunks c "
             "JOIN document_versions v ON v.id = c.version_id AND v.owner_id = c.owner_id "
             "JOIN documents d ON d.id = c.document_id AND d.owner_id = c.owner_id AND d.deleted_at IS NULL "
             "WHERE c.owner_id = :o AND c.id = ANY(:ids)"
@@ -36,6 +36,7 @@ async def load_evidence_chunks(
             tuple(r[6] or ()),
             r[7],
             _sentences(r[8]),
+            r[9],
         )
         for r in rows
     }

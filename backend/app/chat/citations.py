@@ -41,6 +41,8 @@ class ResolvedSegment:
     support: str  # "cited" (has >= 1 valid reference) | "none"
     references: tuple[EvidenceReference, ...]
     dropped_handles: tuple[str, ...] = ()
+    verification: str | None = None  # support check (S17.09): supported | partial | unsupported | unchecked
+    verification_reason: str | None = None
 
 
 @dataclass(frozen=True)
@@ -60,33 +62,35 @@ def _ranges(indexes: Sequence[int]) -> list[tuple[int, int]]:
     return out
 
 
+def resolve_segment(n: int, seg: Any, evidence: EvidenceSet) -> ResolvedSegment:
+    """Resolve one segment (object or dict with `text` and `evidence` handles); no metric side effect."""
+    text = seg["text"] if isinstance(seg, dict) else seg.text
+    handles = list(seg["evidence"] if isinstance(seg, dict) else seg.evidence)
+    valid: dict[uuid.UUID, list[int]] = defaultdict(list)
+    dropped: list[str] = []
+    for h in dict.fromkeys(handles):  # a repeated handle counts once
+        entry = evidence.manifest.get(h)
+        if entry is None:
+            dropped.append(h)
+        else:
+            valid[entry.chunk_id].append(entry.sentence_index)
+    refs: list[EvidenceReference] = []
+    for chunk_id, idxs in valid.items():
+        chunk = evidence.chunks[chunk_id]
+        for a, b in _ranges(idxs):
+            start, end = chunk.sentences[a][0], chunk.sentences[b - 1][1]
+            refs.append(
+                EvidenceReference(
+                    chunk_id, chunk.version_id, a, b, start, end, chunk.original_text[start:end]
+                )
+            )
+    return ResolvedSegment(n, text, "cited" if refs else "none", tuple(refs), tuple(dropped))
+
+
 def resolve(segments: Sequence[Any], evidence: EvidenceSet) -> Resolution:
     """`segments`: objects or dicts with `.text` and `.evidence` (list of handle strings)."""
-    resolved: list[ResolvedSegment] = []
-    dropped_total = 0
-    for n, seg in enumerate(segments):
-        text = seg["text"] if isinstance(seg, dict) else seg.text
-        handles = list(seg["evidence"] if isinstance(seg, dict) else seg.evidence)
-        valid: dict[uuid.UUID, list[int]] = defaultdict(list)
-        dropped: list[str] = []
-        for h in dict.fromkeys(handles):  # a repeated handle counts once
-            entry = evidence.manifest.get(h)
-            if entry is None:
-                dropped.append(h)
-            else:
-                valid[entry.chunk_id].append(entry.sentence_index)
-        refs: list[EvidenceReference] = []
-        for chunk_id, idxs in valid.items():
-            chunk = evidence.chunks[chunk_id]
-            for a, b in _ranges(idxs):
-                start, end = chunk.sentences[a][0], chunk.sentences[b - 1][1]
-                refs.append(
-                    EvidenceReference(
-                        chunk_id, chunk.version_id, a, b, start, end, chunk.original_text[start:end]
-                    )
-                )
-        dropped_total += len(dropped)
-        resolved.append(ResolvedSegment(n, text, "cited" if refs else "none", tuple(refs), tuple(dropped)))
+    resolved = [resolve_segment(n, seg, evidence) for n, seg in enumerate(segments)]
+    dropped_total = sum(len(r.dropped_handles) for r in resolved)
     if dropped_total:
         _unresolved.add(dropped_total)
     return Resolution(tuple(resolved), (CITATION_UNRESOLVED,) if dropped_total else (), dropped_total)

@@ -7,26 +7,30 @@ cache key covers the owner, the normalized query, the sorted scope versions and 
 Redis trouble means a miss, never an error.
 """
 
+import asyncio
+import dataclasses
 import hashlib
 import json
+import time
 import uuid
-from collections.abc import Sequence
-from dataclasses import asdict, dataclass
+from collections.abc import AsyncIterator, Sequence
+from contextlib import asynccontextmanager
+from dataclasses import asdict, dataclass, field
 
 import redis.asyncio as aioredis
 from redis.exceptions import RedisError
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.logging import get_logger
 from app.retrieval.config import RetrievalConfig, get_config
 from app.retrieval.expand import expand_neighbors
 from app.retrieval.fusion import FusedCandidate, Ranked, fuse
-from app.retrieval.lexical import lexical_search
-from app.retrieval.query_embed import QueryEmbedder, normalize_query
+from app.retrieval.lexical import LexicalHit, lexical_search
+from app.retrieval.query_embed import QueryEmbedder, QueryEmbedding, normalize_query
 from app.retrieval.rerank import RerankClient, RerankPassage
 from app.retrieval.scope import Scope
-from app.retrieval.vector import vector_search
+from app.retrieval.vector import VectorHit, vector_search
 from app.retrieval.windows import focus_window
 
 _log = get_logger("vault.retrieval")
@@ -70,19 +74,52 @@ class RetrievalResult:
     degraded: tuple[str, ...]
     config_version: str
     cache_hit: bool = False
+    timings: dict[str, int] = field(
+        default_factory=dict, compare=False
+    )  # embed_ms, vector_ms, ... (not cached)
+
+
+@asynccontextmanager
+async def _use(db: AsyncSession | async_sessionmaker[AsyncSession]) -> AsyncIterator[AsyncSession]:
+    """A caller-owned session is used as is; a sessionmaker gives a fresh short session per phase."""
+    if isinstance(db, AsyncSession):
+        yield db
+    else:
+        async with db() as s:
+            yield s
+
+
+def _ms(t0: float) -> int:
+    return int((time.monotonic() - t0) * 1000)
 
 
 def result_cache_key(
-    owner_id: uuid.UUID, query: str, version_ids: Sequence[uuid.UUID], config_version: str
+    owner_id: uuid.UUID,
+    query: str,
+    version_ids: Sequence[uuid.UUID],
+    config_version: str,
+    embedding_model: str = "",
+    chunker_versions: Sequence[str] = (),
 ) -> str:
+    """Besides owner, query, scope versions and config version, the key covers what changes the stored
+    chunks or their vectors without changing a version id: the embedding model and the chunker versions."""
     payload = json.dumps(
-        [str(owner_id), normalize_query(query), sorted(str(v) for v in set(version_ids)), config_version]
+        [
+            str(owner_id),
+            normalize_query(query),
+            sorted(str(v) for v in set(version_ids)),
+            config_version,
+            embedding_model,
+            sorted(set(chunker_versions)),
+        ]
     )
     return CACHE_PREFIX + hashlib.sha256(payload.encode()).hexdigest()
 
 
 def _encode(r: RetrievalResult) -> str:
-    return json.dumps(asdict(r), default=str)
+    d = asdict(r)
+    d.pop("timings", None)
+    return json.dumps(d, default=str)
 
 
 def _decode(raw: str) -> RetrievalResult:
@@ -128,69 +165,129 @@ class Retriever:
     def config(self) -> RetrievalConfig:
         return self._cfg
 
+    async def embed(self, query: str, owner_id: uuid.UUID) -> QueryEmbedding:
+        """Embed a query through the shared cached embedder (the turn starts this while it analyzes)."""
+        return await self._embedder.embed(query, owner_id=owner_id)
+
     async def retrieve(
-        self, session: AsyncSession, owner_id: uuid.UUID, scope: Scope, query: str
+        self,
+        db: AsyncSession | async_sessionmaker[AsyncSession],
+        owner_id: uuid.UUID,
+        scope: Scope,
+        query: str,
+        *,
+        embedding: QueryEmbedding | None = None,
     ) -> RetrievalResult:
+        """With a sessionmaker, every DB phase uses its own short session (no connection is held across the
+        reranker call) and the vector and lexical searches run concurrently. With a bare session (legacy
+        callers) everything runs sequentially on it. `embedding` is a precomputed embedding of `query`."""
         cfg = self._cfg
         version_ids = [v for _, v in scope.entries]
         if not version_ids or not query.strip():
             return RetrievalResult((), (), (), cfg.version)
-        key = result_cache_key(owner_id, query, version_ids, cfg.version)
-        cached = await self._cache_get(key)
+        key = await self.cache_key(db, owner_id, query, version_ids)
+        cached = await self._cache_get(key) if key else None
         if cached is not None:
             return cached
 
+        timings: dict[str, int] = {}
         degraded: list[str] = []
-        emb = await self._embedder.embed(query, owner_id=owner_id)
-        vec_ranked: list[Ranked] = []
-        distance: dict[uuid.UUID, float] = {}
-        if emb.vector is not None:
-            hits = await vector_search(
-                session, owner_id, scope, emb.vector, k=cfg.k_vec, per_doc_quota=cfg.per_doc_quota
-            )
-            distance = {h.chunk_id: h.distance for h in hits}
-            vec_ranked = [Ranked(h.chunk_id, h.version_id, 1.0 - h.distance) for h in hits]
-        elif emb.degraded:
+        t0 = time.monotonic()
+        emb = embedding or await self._embedder.embed(query, owner_id=owner_id)
+        timings["embed_ms"] = _ms(t0)
+
+        async def vec() -> list[VectorHit]:
+            if emb.vector is None:
+                return []
+            t = time.monotonic()
+            async with _use(db) as s:
+                hits = await vector_search(
+                    s, owner_id, scope, emb.vector, k=cfg.k_vec, per_doc_quota=cfg.per_doc_quota
+                )
+            timings["vector_ms"] = _ms(t)
+            return hits
+
+        async def lex() -> list[LexicalHit]:
+            t = time.monotonic()
+            async with _use(db) as s:
+                out = await lexical_search(s, owner_id, scope, query, k=cfg.k_lex)
+            timings["lexical_ms"] = _ms(t)
+            return out
+
+        if isinstance(db, AsyncSession):  # one session cannot run concurrent statements
+            hits = await vec()
+            lex_hits = await lex()
+        else:
+            hits, lex_hits = await asyncio.gather(vec(), lex())
+        distance = {h.chunk_id: h.distance for h in hits}
+        vec_ranked = [Ranked(h.chunk_id, h.version_id, 1.0 - h.distance) for h in hits]
+        if emb.vector is None and emb.degraded:
             degraded.append(emb.degraded)
-        lex = await lexical_search(session, owner_id, scope, query, k=cfg.k_lex)
-        lex_ranked = [Ranked(h.chunk_id, h.version_id, h.score, h.id_match) for h in lex]
+        lex_ranked = [Ranked(h.chunk_id, h.version_id, h.score, h.id_match) for h in lex_hits]
 
         fused = fuse(vec_ranked, lex_ranked, k=cfg.rrf_k)
         pool = fused[: cfg.rerank.candidates]
-        texts = await self._passages(session, owner_id, [c.chunk_id for c in pool], query)
+        async with _use(db) as s:
+            texts = await self._passages(s, owner_id, [c.chunk_id for c in pool], query)
+            await s.rollback()  # end the read transaction: no connection held across the reranker call
         pool = [c for c in pool if c.chunk_id in texts]  # a chunk deleted mid-request drops out
-        await session.rollback()  # end the read transaction: no connection held across the reranker call
+        t = time.monotonic()
         rr = await self._reranker.rerank(
             query, [RerankPassage(c.chunk_id, texts[c.chunk_id]) for c in pool], cfg.rerank.top_n
         )
+        timings["rerank_ms"] = _ms(t)
         if rr.degraded and rr.degraded_reason:
             degraded.append(rr.degraded_reason)
         scores = {c.chunk_id: rr.scores[i] for i, c in enumerate(pool)} if rr.scores else {}
         top_ids = [it.chunk_id for it in rr.items]
 
+        t = time.monotonic()
         final: list[tuple[uuid.UUID, uuid.UUID | None]] = [(cid, None) for cid in top_ids]
+        by_id: dict[uuid.UUID, FusedCandidate] = {c.chunk_id: c for c in fused}
+        extra: list[tuple[uuid.UUID, uuid.UUID, uuid.UUID | None]] = []  # (chunk, version, expanded_from)
         if cfg.expansion.enabled and top_ids:
-            exp = await expand_neighbors(session, owner_id, top_ids, cfg.expansion.max_evidence_tokens)
-            final = [(e.chunk_id, e.expanded_from) for e in exp]
+            async with _use(db) as s:
+                exp = await expand_neighbors(s, owner_id, top_ids, cfg.expansion.max_evidence_tokens)
+                final = [(e.chunk_id, e.expanded_from) for e in exp]
+                new_ids = [cid for cid, _ in final if cid not in by_id]  # neighbors never retrieved
+                versions = await self._versions_of(s, owner_id, new_ids)
+                missing = {cid for cid in new_ids if cid not in versions}
+                if missing:  # deleted mid-request: drop from the evidence too, so both stay consistent
+                    _log.warning("expansion neighbor vanished", count=len(missing))
+                    final = [(cid, ef) for cid, ef in final if cid not in missing]
+                extra = [(cid, versions[cid], ef) for cid, ef in final if cid in versions]
+        timings["expand_ms"] = _ms(t)
         order = {cid: (i, ef) for i, (cid, ef) in enumerate(final)}
 
-        by_id: dict[uuid.UUID, FusedCandidate] = {c.chunk_id: c for c in fused}
-        cands: list[Candidate] = []
-        for c in fused:
-            pos = order.get(c.chunk_id)
-            cands.append(_candidate(c, distance, scores.get(c.chunk_id), pos))
-        seen = set(by_id)
-        for cid, ef in final:  # expansion neighbors that were never retrieved
-            if cid not in seen:
-                vid = await self._version_of(session, owner_id, cid)
-                if vid is not None:
-                    cands.append(
-                        Candidate(cid, vid, selected=True, expanded_from=ef, result_index=order[cid][0])
-                    )
+        cands = [_candidate(c, distance, scores.get(c.chunk_id), order.get(c.chunk_id)) for c in fused]
+        cands += [
+            Candidate(cid, vid, selected=True, expanded_from=ef, result_index=order[cid][0])
+            for cid, vid, ef in extra
+        ]
         result = RetrievalResult(tuple(cands), tuple(cid for cid, _ in final), tuple(degraded), cfg.version)
         if not degraded and emb.vector is not None and not rr.degraded:
             await self._cache_set(key, result)
-        return result
+        return dataclasses.replace(result, timings=timings)
+
+    async def cache_key(
+        self,
+        db: AsyncSession | async_sessionmaker[AsyncSession],
+        owner_id: uuid.UUID,
+        query: str,
+        version_ids: Sequence[uuid.UUID],
+    ) -> str:
+        """The result cache key; empty when caching is off (no Redis or zero TTL), which skips the lookup."""
+        if self._redis is None or self._cfg.cache_ttl_s == 0:
+            return ""
+        async with _use(db) as s:
+            rows = await s.execute(
+                text("SELECT DISTINCT chunker_version FROM document_versions WHERE id = ANY(:v)"),
+                {"v": list(version_ids)},
+            )
+            chunkers = [r[0] or "" for r in rows]
+        return result_cache_key(
+            owner_id, query, version_ids, self._cfg.version, self._embedder.model, chunkers
+        )
 
     async def _passages(
         self, session: AsyncSession, owner_id: uuid.UUID, ids: Sequence[uuid.UUID], query: str
@@ -213,16 +310,17 @@ class Retriever:
         return out
 
     @staticmethod
-    async def _version_of(
-        session: AsyncSession, owner_id: uuid.UUID, chunk_id: uuid.UUID
-    ) -> uuid.UUID | None:
-        row = (
-            await session.execute(
-                text("SELECT version_id FROM chunks WHERE owner_id = :o AND id = :c"),
-                {"o": owner_id, "c": chunk_id},
-            )
-        ).first()
-        return row[0] if row else None
+    async def _versions_of(
+        session: AsyncSession, owner_id: uuid.UUID, chunk_ids: Sequence[uuid.UUID]
+    ) -> dict[uuid.UUID, uuid.UUID]:
+        """Version of each chunk in ONE query (chunks missing from the result no longer exist)."""
+        if not chunk_ids:
+            return {}
+        rows = await session.execute(
+            text("SELECT id, version_id FROM chunks WHERE owner_id = :o AND id = ANY(:ids)"),
+            {"o": owner_id, "ids": list(chunk_ids)},
+        )
+        return {cid: vid for cid, vid in rows}
 
     async def _cache_get(self, key: str) -> RetrievalResult | None:
         if self._redis is None or self._cfg.cache_ttl_s == 0:

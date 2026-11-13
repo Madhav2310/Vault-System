@@ -83,13 +83,21 @@ class RetrievalCandidate(CreatedAt, Base):
 
 class AnswerSegment(CreatedAt, Base):
     __tablename__ = "answer_segments"
-    __table_args__ = (UniqueConstraint("run_id", "ordinal", name="uq_answer_segments_run_ordinal"),)
+    __table_args__ = (
+        UniqueConstraint("run_id", "ordinal", name="uq_answer_segments_run_ordinal"),
+        CheckConstraint(
+            "verification IS NULL OR verification IN ('supported', 'partial', 'unsupported', 'unchecked')",
+            name="ck_answer_segments_verification",
+        ),
+    )
     id: Mapped[uuid.UUID] = pk()
     run_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("rag_runs.id"))
     message_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("chat_messages.id"))
     ordinal: Mapped[int]
     text: Mapped[str]
     support: Mapped[str | None]
+    verification: Mapped[str | None]  # support check (S17.09); NULL = no check ran
+    verification_reason: Mapped[str | None]
 
 
 class SegmentEvidence(CreatedAt, Base):

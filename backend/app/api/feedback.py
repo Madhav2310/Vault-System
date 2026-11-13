@@ -9,11 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.api.errors import DomainError
+from app.api.schemas import FeedbackOut
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 from app.feedback import service
 
-router = APIRouter(prefix="/v1", tags=["feedback"])
+router = APIRouter(prefix="/v1", tags=["Chat"])
 
 
 class FeedbackIn(BaseModel):
@@ -32,7 +33,12 @@ class FeedbackIn(BaseModel):
         return self
 
 
-@router.post("/feedback")
+@router.post(
+    "/feedback",
+    summary="Rate an answer",
+    response_model=FeedbackOut,
+    responses={404: {"description": "Not your message, or not an answer"}},
+)
 async def post_feedback(
     body: FeedbackIn, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict[str, Any]:

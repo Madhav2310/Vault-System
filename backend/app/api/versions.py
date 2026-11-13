@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.api.deps import get_db, get_store
 from app.api.errors import DomainError
+from app.api.schemas import PageLayoutOut, ProcessingOut
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 from app.core.settings import get_settings
@@ -25,7 +26,7 @@ from app.documents.blobs import blob_key
 from app.ingestion.events import stream_processing
 from app.storage.base import ObjectStore
 
-router = APIRouter(prefix="/v1/versions", tags=["versions"])
+router = APIRouter(prefix="/v1/versions", tags=["Documents"])
 STREAM_CHUNK = 1024 * 1024
 
 
@@ -50,7 +51,12 @@ async def _owned_version(db: AsyncSession, owner_id: uuid.UUID, version_id: uuid
     return row
 
 
-@router.get("/{version_id}/processing")
+@router.get(
+    "/{version_id}/processing",
+    summary="Processing status of a version",
+    response_model=ProcessingOut,
+    responses={404: {"description": "Not your version"}},
+)
 async def processing(
     version_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict[str, Any]:
@@ -137,7 +143,23 @@ async def _stream(data: bytes) -> AsyncIterator[bytes]:
         yield data[i : i + STREAM_CHUNK]
 
 
-@router.get("/{version_id}/file")
+@router.get(
+    "/{version_id}/file",
+    summary="Download the original file",
+    response_class=StreamingResponse,
+    responses={
+        200: {
+            "description": "The original bytes with the stored media type",
+            "content": {
+                "application/octet-stream": {
+                    "schema": {"type": "string", "format": "binary"},
+                    "example": "%PDF-1.7 ... (the original bytes)",
+                }
+            },
+        },
+        404: {"description": "Not your version, or the file is gone"},
+    },
+)
 async def get_file(
     version_id: uuid.UUID,
     user: CurrentUser,
@@ -169,7 +191,12 @@ def _page_layout(raw: bytes, page: int) -> dict[str, Any] | None:
     return entry if isinstance(entry, dict) else None
 
 
-@router.get("/{version_id}/pages/{page}/layout")
+@router.get(
+    "/{version_id}/pages/{page}/layout",
+    summary="Page layout for highlighting",
+    response_model=PageLayoutOut,
+    responses={404: {"description": "Not your version, or no layout for that page"}},
+)
 async def page_layout(
     version_id: uuid.UUID,
     page: int,
@@ -220,8 +247,19 @@ async def get_events_redis() -> aioredis.Redis:
 @router.get(
     "/{version_id}/processing/stream",
     response_class=StreamingResponse,
+    summary="Stream processing status",
     responses={
-        200: {"content": {"text/event-stream": {}}, "description": "SSE: `stage` events, then `done`"}
+        200: {
+            "description": "SSE: `stage` events, then `done`",
+            "content": {
+                "text/event-stream": {
+                    "schema": {"type": "string"},
+                    "example": 'event: stage\ndata: {"name": "extract", "status": "done", "attempt": 1}\n\n'
+                    'event: done\ndata: {"status": "enriched", "error_code": null}\n\n',
+                }
+            },
+        },
+        404: {"description": "Not your version"},
     },
 )
 async def processing_stream(

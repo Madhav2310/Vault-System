@@ -5,8 +5,9 @@ with the same `content_hash` and model (re-uploaded versions share most chunks);
 batches of at most 128 through the gateway (lane `background`, ledger rows carry `job_id`). Every batch is
 persisted as soon as it returns, so a retry after a provider failure never pays for finished batches again.
 
-Index: the version becomes `ready`, `documents.current_version_id` moves to it, and the previously current
-version is marked `superseded`. All of it happens inside the runner's fenced commit.
+Index: identifier tokens fill `tsv_ids` (S17.04); the version becomes `ready`,
+`documents.current_version_id` moves to it, and the previously current version is marked
+`superseded`. All of it happens inside the runner's fenced commit.
 """
 
 import asyncio
@@ -18,6 +19,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ingestion import status as vs
 from app.ingestion.errors import PermanentStageError, RetryableStageError
+from app.ingestion.identifiers import fill_tsv_ids
 from app.ingestion.runner import StageContext, StageResult
 from app.ingestion.stages import document_deleted
 from app.insights.staleness import on_version_ready
@@ -190,6 +192,9 @@ class IndexStage:
                 text("UPDATE documents SET current_version_id = :v WHERE id = :d"),
                 {"v": job.version_id, "d": cur.document_id},
             )
+            await fill_tsv_ids(
+                s, job.owner_id, job.version_id
+            )  # identifier tokens for lexical search (S17.04)
             await on_version_ready(s, job.owner_id, cur.document_id, job.version_id)
 
         return StageResult(write=write, terminal_status=vs.READY, detail={"chunks": row.n})

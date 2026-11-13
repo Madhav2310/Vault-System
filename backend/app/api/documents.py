@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db, get_enqueue, get_store
 from app.api.errors import DomainError
 from app.api.idempotency import canonical_response, check_key, request_hash, run_idempotent
+from app.api.schemas import BriefOut, DocumentDetail, DocumentList, SummaryOut, UploadAccepted
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 from app.core.settings import get_settings
@@ -36,7 +37,7 @@ from app.insights.summaries import (
 from app.insights.views import load_brief, summary_snippet
 from app.storage.base import ObjectStore
 
-router = APIRouter(prefix="/v1", tags=["documents"])
+router = APIRouter(prefix="/v1", tags=["Documents"])
 
 
 def _body(document_id: Any, version_id: Any, job_id: Any, status: str, deduplicated: bool) -> dict[str, Any]:
@@ -56,7 +57,16 @@ def _body(document_id: Any, version_id: Any, job_id: Any, status: str, deduplica
 @router.post(
     "/documents",
     status_code=202,
-    responses={200: {"description": "Identical bytes already uploaded by this owner (deduplicated)"}},
+    summary="Upload a document",
+    response_model=UploadAccepted,
+    responses={
+        200: {
+            "model": UploadAccepted,
+            "description": "Identical bytes already uploaded by this owner (deduplicated)",
+        },
+        413: {"description": "File larger than the upload limit"},
+        415: {"description": "Not a PDF, DOCX, TXT or MD file"},
+    },
     openapi_extra={
         "requestBody": {
             "required": True,
@@ -162,7 +172,12 @@ _VERSION_COLS = (
 )
 
 
-@router.get("/documents")
+@router.get(
+    "/documents",
+    summary="List documents",
+    response_model=DocumentList,
+    response_model_exclude_unset=True,
+)
 async def list_documents(
     user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -218,7 +233,12 @@ async def list_documents(
     return {"items": items, "next_cursor": nxt}
 
 
-@router.delete("/documents/{document_id}", status_code=204)
+@router.delete(
+    "/documents/{document_id}",
+    status_code=204,
+    summary="Delete a document",
+    responses={404: {"description": "Not your document"}},
+)
 async def delete_document(
     document_id: uuid.UUID,
     user: CurrentUser,
@@ -233,7 +253,13 @@ async def delete_document(
     return Response(status_code=204)
 
 
-@router.get("/documents/{document_id}/brief")
+@router.get(
+    "/documents/{document_id}/brief",
+    summary="Get the document brief",
+    response_model=BriefOut,
+    response_model_exclude_unset=True,
+    responses={404: {"description": "Not your document"}},
+)
 async def get_document_brief(
     document_id: uuid.UUID,
     user: CurrentUser,
@@ -248,7 +274,14 @@ async def get_document_brief(
     return body
 
 
-@router.get("/documents/{document_id}")
+@router.get(
+    "/documents/{document_id}",
+    summary="Get a document with its versions",
+    description="The document, its current status and quality, and every version newest first.",
+    response_model=DocumentDetail,
+    response_model_exclude_unset=True,
+    responses={404: {"description": "Not your document"}},
+)
 async def get_document(
     document_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict[str, Any]:
@@ -299,7 +332,13 @@ async def get_document(
 
 @router.post(
     "/documents/{document_id}/summaries",
-    responses={202: {"description": "Queued: poll the returned URL until `status` is `ready`"}},
+    summary="Request a cited summary",
+    response_model=SummaryOut,
+    response_model_exclude_unset=True,
+    responses={
+        202: {"model": SummaryOut, "description": "Queued: poll the returned URL until `status` is `ready`"},
+        404: {"description": "Not your document"},
+    },
 )
 async def create_summary(
     document_id: uuid.UUID,
@@ -324,7 +363,13 @@ async def create_summary(
     return JSONResponse(req.body, status_code=202)
 
 
-@router.get("/documents/{document_id}/summaries/{summary_id}")
+@router.get(
+    "/documents/{document_id}/summaries/{summary_id}",
+    summary="Get a summary",
+    response_model=SummaryOut,
+    response_model_exclude_unset=True,
+    responses={404: {"description": "Not your document or summary"}},
+)
 async def get_summary(
     document_id: uuid.UUID,
     summary_id: uuid.UUID,
@@ -342,8 +387,13 @@ async def get_summary(
 @router.post(
     "/documents/{document_id}/versions",
     status_code=202,
+    summary="Upload a new version",
+    response_model=UploadAccepted,
     responses={
-        200: {"description": "Identical bytes to the document's newest version (deduplicated)"},
+        200: {
+            "model": UploadAccepted,
+            "description": "Identical bytes to the document's newest version (deduplicated)",
+        },
         404: {"description": "Not the caller's document, or deleted"},
     },
     openapi_extra={

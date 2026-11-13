@@ -284,6 +284,7 @@ async def test_empty_state(api: httpx.AsyncClient, mk_owner: Callable[..., Any])
     assert r.json() == {
         "scope": "owner",
         "window": "24h",
+        "quota": {"limit_usd": 1.0, "spent_today_usd": 0.0},
         "turns": 0,
         "outcomes": {},
         "coverage": {},
@@ -291,6 +292,7 @@ async def test_empty_state(api: httpx.AsyncClient, mk_owner: Callable[..., Any])
         "ttft_ms": {"p50": None, "p95": None},
         "cost_per_turn_usd": {"p50": None, "p95": None},
         "degraded": {},
+        "feedback": {"up": 0, "down": 0, "by_reason": {}},
         "llm": {
             "calls": 0,
             "total_cost_usd": 0.0,
