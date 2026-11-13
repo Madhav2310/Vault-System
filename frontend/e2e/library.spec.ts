@@ -51,7 +51,7 @@ test("filter and delete", async ({ page }) => {
   await signIn(page);
   const name = `del-${Date.now()}.txt`;
   await page.getByLabel("Upload documents").setInputFiles(textFile(name, `delete me ${Date.now()}\n`));
-  const row = page.locator('[data-testid="doc-row"]').filter({ hasText: name });
+  const row = page.locator('[data-testid="doc-row"]').filter({ hasText: name.replace(/\.txt$/, "") });
   await expect(row).toBeVisible();
 
   const category = page.getByLabel("Category");
@@ -62,7 +62,7 @@ test("filter and delete", async ({ page }) => {
     await category.selectOption({ index: 0 });
   }
 
-  await page.getByRole("textbox", { name: "Search titles" }).fill(name);
+  await page.getByRole("searchbox", { name: "Search titles" }).fill(name.replace(/\.txt$/, ""));
   await expect(row).toBeVisible();
   await row.getByRole("button", { name: /^Remove/ }).click();
   await page.getByRole("dialog").getByRole("button", { name: "Remove" }).click();
