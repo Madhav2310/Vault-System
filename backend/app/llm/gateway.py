@@ -765,19 +765,28 @@ def _usage_of(r: object) -> Usage:
     return usage
 
 
-@lru_cache(maxsize=1)
-def get_gateway() -> LlmGateway:
-    from app.db.session import get_sessionmaker
+def build_gateway(
+    sessionmaker: async_sessionmaker[AsyncSession], settings: Settings | None = None
+) -> LlmGateway:
+    """The production gateway over OpenAI, writing its ledger through `sessionmaker`. Celery tasks pass their
+    own per-task sessionmaker (an engine is bound to one event loop; never share the API's cached one)."""
     from app.llm.providers.openai import OpenAIEmbeddingProvider
     from app.llm.providers.openai_chat import OpenAIResponsesProvider
 
-    s = get_settings()
+    s = settings or get_settings()
     openai_key = s.openai_api_key.get_secret_value() if s.openai_api_key else None
     return LlmGateway(
         chat=OpenAIResponsesProvider(openai_key, s.llm_timeout_s),
         embeddings=OpenAIEmbeddingProvider(openai_key, s.llm_timeout_s),
         prompts=default_registry(),
         prices=price_table_from_settings(s),
-        ledger=DbLedgerWriter(get_sessionmaker()),
+        ledger=DbLedgerWriter(sessionmaker),
         settings=s,
     )
+
+
+@lru_cache(maxsize=1)
+def get_gateway() -> LlmGateway:
+    from app.db.session import get_sessionmaker
+
+    return build_gateway(get_sessionmaker())

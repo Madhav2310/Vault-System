@@ -9,6 +9,7 @@ from app.ingestion.jobs import celery_enqueue
 from app.ingestion.runner import run_job
 from app.ingestion.stages import default_stages
 from app.ingestion.sweeper import sweep
+from app.llm.gateway import build_gateway
 from app.storage.factory import get_object_store
 from app.worker.celery_app import celery_app
 from app.worker.runtime import SessionFactory, run_db
@@ -21,7 +22,11 @@ def worker_id() -> str:
 def _run_stage(job_id: str) -> str:
     async def go(sm: SessionFactory) -> str:
         settings = get_settings()
-        services = {"store": get_object_store(settings), "settings": settings}
+        services = {
+            "store": get_object_store(settings),
+            "settings": settings,
+            "gateway": build_gateway(sm, settings),
+        }
         return await run_job(
             sm, uuid.UUID(job_id), worker_id(), default_stages(), celery_enqueue(), services=services
         )

@@ -324,3 +324,11 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 
 ### Infra: repo moved off the iCloud Desktop
 - Date: 2026-11-13. Repo now at `~/dev/vault` (rsync copy, git fsck clean, same tracked files); symlink at the old Desktop path; old folder renamed `…old.nosync`. Memory copied to the new project key. Stack rebuilt from the new path: all 8 services healthy; `make ci` 143 passed (80 s vs 398 s before); `make test` 266 passed.
+
+### S1.24 — Embed stage; S1.25 — Index stage (core path C1)
+- Date: 2026-11-13 · Commit: (this commit)
+- Commands: `make ci` 143 passed; `make test-integration` 129 passed (exit 0).
+- Embed (`app/ingestion/embed_index.py`): chunks without an embedding first copy vectors from this owner's already-embedded chunks with the same `content_hash` and model (re-uploads and new versions pay nothing for unchanged chunks); the rest go through `gateway.embed` in batches of ≤ 128 (lane `background`, `purpose=embed`, ledger rows carry the job id); each batch is persisted as soon as it returns, so a failure after batch 1 keeps batch 1 and the retry only pays for the rest (test: 300 chunks, batch 2 fails → 128 kept, retry makes 2 calls of 128 and 44). Provider errors → retryable stage error; a rejected input → permanent `embedding_rejected`.
+- Index: requires ≥ 1 chunk (else permanent `no_text`) and every chunk embedded (else retryable); then, in the fenced commit, locks the version and document rows, marks the previous current version `superseded`, moves `current_version_id`, calls the staleness hook once (a redelivered stage does nothing), and the runner sets `ready` + `ready_at`. A v2 that fails leaves v1 current and `ready`.
+- Also: `build_gateway(sessionmaker)` so Celery tasks get a gateway bound to their own per-task engine (the cached API engine cannot be shared across event loops); `app/insights/staleness.py` no-op hook (S6.09); test cleanup deletes `llm_calls` before jobs.
+- [T] changes approved: none
