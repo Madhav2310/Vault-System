@@ -30,6 +30,7 @@ How AI tools were used to design and build this project, including where they we
 | 2026-11-13 | provider change | A first model list filtered out the newest family (GPT-6) because of a regex that only kept older name patterns | The models page named IDs the list lacked; re-listed without the filter | Routing is built on the GPT-6 line, which the key can call |
 | 2026-11-13 | S0.15 | Test left Celery on an in-memory broker, breaking e2e tests in a single `make test` run | Full-suite run | Fixture restores broker, AMQP and result-backend caches |
 | 2026-11-13 | S0.25 | The design treated OpenAI prompt caching as free upside (cheap reads). The spike's usage fields showed every prompt over 1,024 tokens billed as a 1.25× cache write, including RAG prompts nobody reuses | Reading `cache_write_tokens` in the spike output, then a probe on a fresh prompt | `cache_mode=explicit` support in the provider, design §4.4 rule, follow-up F-021 for the gateway default |
+| 2026-11-13 | S0.23 | `strict_schema` stripped every key named `title`/`default`, including real properties with those names; the unit test only used fields that avoided both | Post-S0 self-review (reading the code against likely S6 schemas), confirmed with a 3-field model | Keyword stripping limited to schema nodes; `properties`/`$defs` names preserved; regression test |
 | 2026-11-12 | S0.03 | Plan scripts assumed unticked boxes; ticking progress would have broken lint and been wiped by renumbering | Read before ticking | Regexes accept `[x]`; renumber preserves ticks |
 
 ## Prompt iteration log

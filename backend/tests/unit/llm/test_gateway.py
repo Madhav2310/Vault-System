@@ -260,3 +260,10 @@ async def test_unknown_model_price_fails_before_call(tmp_path: pathlib.Path) -> 
     with pytest.raises(errors.UnknownModelPriceError):
         await _schema_call(gw, model="claude-unknown-1")
     assert prov.requests == []
+
+
+async def test_no_fallback_after_deadline(tmp_path: pathlib.Path) -> None:
+    gw, prov, _, _ = make_gateway(tmp_path, [fake.overloaded(), fake.overloaded(), fake.overloaded()])
+    with pytest.raises(errors.OverloadedError):
+        await _schema_call(gw, budget=FakeBudget(deadline_s=0))  # deadline already passed: no fallback
+    assert [r.model for r in prov.requests] == ["gpt-6-luna"]  # and no retry either

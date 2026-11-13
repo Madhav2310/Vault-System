@@ -224,3 +224,8 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Live spend in S0 after the provider change: smoke ≈ $0.0001 per run, citation spike $0.054, probes < $0.01.
 - **Open at the gate (not blocking the code path):** S0.18 AC7 (user records the OpenAI project spend limit), S0.20 AC3 (GIN index use at spike scale, F-006, re-measured in S2.20), F-014 (per-worktree test DB names before any parallel agent round).
 - [T] changes approved: none
+
+### S0.18 AC7 — Provider tier and spend (user)
+- Date: 2026-11-13 · M (user decision)
+- Tier evidence: response headers on the project key, `gpt-6.1-terra` 15,000 RPM / 40M TPM, `gpt-6-luna` 30,000 RPM / 180M TPM, embeddings 10,000 RPM (`docs/evidence/spike_openai.md`).
+- Budget: **OpenAI project limit $50; convergence engine `BUDGET_USD` $30** (user, 2026-11-13; lowered from the suggested $200/$150). Spend to date ≈ $0.07. The dashboard limit itself is set by the user in the OpenAI console; the engine and spikes enforce their own caps in code.

@@ -96,6 +96,14 @@ def test_request_shape() -> None:
     assert schema["$defs"]["Inner"]["required"] == ["x"]
     assert "default" not in json.dumps(schema) and "title" not in json.dumps(schema)
     assert strict_schema({"type": "string"}) == {"type": "string"}
+
+    class Doc(BaseModel):  # fields named like schema keywords must survive
+        title: str
+        default: int = 0
+
+    doc = strict_schema(Doc.model_json_schema())
+    assert list(doc["properties"]) == ["title", "default"] and doc["required"] == ["title", "default"]
+    assert "title" not in doc and "default" not in doc["properties"]["default"]
     assert build_params(ChatRequest("m", "s", [], 5, "none", service_tier="flex"))["service_tier"] == "flex"
     cached = build_params(ChatRequest("m", "s", [], 5, "none", cache_mode="explicit"))
     assert cached["prompt_cache_options"] == {"mode": "explicit"}

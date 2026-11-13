@@ -9,6 +9,7 @@ from celery.signals import worker_process_init
 from kombu import Queue
 
 from app.core.settings import get_settings
+from app.llm.routing import ModelRouter
 
 QUEUES = ("ingest", "ai", "maintenance")
 
@@ -22,6 +23,7 @@ VISIBILITY_TIMEOUT_S = 3600  # > longest stage time (design §6.6)
 
 def make_celery() -> Celery:
     s = get_settings()
+    ModelRouter.from_settings(s)  # workers fail fast on a bad routing config too
     app = Celery("vault", broker=s.redis_url, backend=s.redis_url, include=["app.worker.tasks.ping"])
     app.conf.update(
         task_acks_late=True,

@@ -38,7 +38,14 @@ def strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
             return [walk(x) for x in node]
         if not isinstance(node, dict):
             return node
-        out = {k: walk(v) for k, v in node.items() if k not in ("default", "title")}
+        out: dict[str, Any] = {}
+        for k, v in node.items():
+            if k in ("default", "title"):  # annotation keywords of this schema node
+                continue
+            if k in ("properties", "$defs") and isinstance(v, dict):  # name → schema maps: keep every name
+                out[k] = {name: walk(sub) for name, sub in v.items()}
+            else:
+                out[k] = walk(v)
         props = out.get("properties")
         if isinstance(props, dict):
             out["additionalProperties"] = False

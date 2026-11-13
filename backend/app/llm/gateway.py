@@ -386,7 +386,12 @@ class LlmGateway:
         try:
             r = await self._run(meta, budget, lambda: self.chat.complete(req), check, acct)
         except (ProviderError, CircuitOpenError) as e:
-            fb = self.router.fallback(res) if model is None and e.retryable else None
+            expired = (
+                budget is not None
+                and budget.deadline_at is not None
+                and time.monotonic() >= budget.deadline_at
+            )
+            fb = self.router.fallback(res) if model is None and e.retryable and not expired else None
             if fb is None:
                 raise
             # One attempt on the next role up (no retries); a second failure propagates.

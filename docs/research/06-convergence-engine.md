@@ -88,8 +88,9 @@ report: baseline → winner on TEST with CIs, per-round table, failure buckets b
 **Chosen policy (user decision 2026-11-12, re-based on OpenAI 2026-11-13): Balanced.**
 - Sync calls for smoke and dev runs; the OpenAI Batch API for full train+test runs and stage E.
 - Generation runs on role `balanced` (`gpt-6.1-terra`) unless stage E picks otherwise; the judge is `deep` (`gpt-6.1-sol`); `flagship` (`gpt-6-astra`) is used only for the judge-calibration subset and compare-node candidates.
-- reps = 2. The user's OpenAI project limit is set around **$200**, and the engine's `BUDGET_USD` defaults to $150 for the whole project. Validation always uses samples first (README, cost discipline).
-- Estimated total eval spend ≈ $50–100 [U until S3.15].
+- reps = 2. **Budget (user decision 2026-11-13, lowered from $200/$150): OpenAI project limit $50; the engine's `BUDGET_USD` defaults to $30 for the whole project.** Validation always uses samples first (README, cost discipline).
+- What $30 buys: about 8 full Batch runs (≈ $3.50 each) or about 50 smoke runs (21 items). So the engine screens on the smoke split, sends at most 2 finalists per stage (and per node in stage E) to full train+test runs, and uses `flagship` only on the judge-calibration subset.
+- Earlier estimate of total eval spend (≈ $50–100 [U until S3.15]) exceeds the new budget; if S3.15 measures more than $3.50 per full Batch run, the engine drops to reps = 1 on train and keeps reps = 2 on test.
 
 ## 5. Targets, with sources (the [T] values the engine converges to)
 

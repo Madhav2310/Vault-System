@@ -116,3 +116,18 @@ def test_fallback_role() -> None:
     assert r.fallback(Resolved("balanced", TERRA, "none")) == Resolved("deep", SOL, "low")
     assert r.fallback(Resolved("deep", SOL, "low")) is None
     assert r.fallback(Resolved("flagship", "gpt-6-astra", "low")) is None
+
+
+def test_app_and_worker_validate_routes_at_startup(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.core import settings as settings_mod
+    from app.main import create_app
+    from app.worker.celery_app import make_celery
+
+    bad = _settings(model_fast=SOL)  # analyze_query pairs `fast` with effort none
+    monkeypatch.setattr(settings_mod, "get_settings", lambda: bad)
+    monkeypatch.setattr("app.main.get_settings", lambda: bad)
+    monkeypatch.setattr("app.worker.celery_app.get_settings", lambda: bad)
+    with pytest.raises(RoutingConfigError, match="analyze_query"):
+        create_app()
+    with pytest.raises(RoutingConfigError, match="analyze_query"):
+        make_celery()
