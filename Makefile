@@ -3,7 +3,7 @@ SHELL := /bin/bash
 .DEFAULT_GOAL := help
 COMPOSE := docker compose
 # Host-side tests reach compose services on their published ports (docker-compose.yml defaults).
-HOST_ENV := DATABASE_URL=postgresql+asyncpg://vault:vault@localhost:$${POSTGRES_PORT:-5442}/vault \
+HOST_ENV := TIKTOKEN_CACHE_DIR=$(HOME)/.cache/tiktoken DATABASE_URL=postgresql+asyncpg://vault:vault@localhost:$${POSTGRES_PORT:-5442}/vault \
             REDIS_URL=redis://localhost:$${REDIS_PORT:-6389}/0 \
             RERANKER_URL=http://localhost:$${RERANKER_PORT:-8180} \
             API_BASE_URL=http://localhost:$${API_PORT:-8100}

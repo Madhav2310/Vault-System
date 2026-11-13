@@ -25,6 +25,7 @@ dependencies = [
     "structlog>=24.4",
     "uvicorn[standard]>=0.32",
     "python-multipart>=0.0.20",
+    "tiktoken>=0.9",
 ]
 
 [dependency-groups]

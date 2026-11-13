@@ -10,14 +10,17 @@ import os
 import pathlib
 import sys
 import tempfile
+from dataclasses import asdict
 from typing import Any
 
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.ids import uuid7
 from app.documents.blobs import blob_key
 from app.ingestion import status as vs
 from app.ingestion.artifacts import extracted_key
+from app.ingestion.chunk import CHUNKER_VERSION, chunk_document
 from app.ingestion.errors import PermanentStageError, RetryableStageError, UnsupportedContentError
 from app.ingestion.extract.base import ExtractedDocument
 from app.ingestion.quality import assess
@@ -138,5 +141,72 @@ class QualityStage:
         )
 
 
+class ChunkStage:
+    """`chunks` rows (no embeddings yet) from the extracted document (design §6.5)."""
+
+    name = "chunk"
+
+    async def run(self, ctx: StageContext) -> StageResult:
+        doc = await load_extracted(ctx)
+        async with ctx.sm() as s:
+            title = (
+                await s.execute(
+                    text(
+                        "SELECT d.title, d.id FROM documents d "
+                        "JOIN document_versions v ON v.document_id = d.id WHERE v.id = :v"
+                    ),
+                    {"v": ctx.job.version_id},
+                )
+            ).one()
+        drafts = await asyncio.to_thread(chunk_document, doc, title.title)
+        job = ctx.job
+        rows = [
+            {
+                "id": uuid7(),
+                "owner_id": job.owner_id,
+                "document_id": title.id,
+                "version_id": job.version_id,
+                "ordinal": c.ordinal,
+                "kind": c.kind,
+                "original_text": c.original_text,
+                "structural_prefix": c.structural_prefix,
+                "embedding_text": c.embedding_text,
+                "page_start": c.page_start,
+                "page_end": c.page_end,
+                "section_path": c.section_path,
+                "sentences": json.dumps(c.sentences),
+                "spans": json.dumps([asdict(sp) for sp in c.spans]),
+                "token_count": c.token_count,
+                "content_hash": c.content_hash,
+            }
+            for c in drafts
+        ]
+        tokens = sum(c.token_count for c in drafts)
+
+        async def write(s: AsyncSession) -> None:
+            await s.execute(
+                text("DELETE FROM chunks WHERE owner_id = :o AND version_id = :v"),
+                {"o": job.owner_id, "v": job.version_id},
+            )
+            if rows:
+                await s.execute(
+                    text(
+                        "INSERT INTO chunks (id, owner_id, document_id, version_id, ordinal, kind, "
+                        "original_text, structural_prefix, embedding_text, page_start, page_end, "
+                        "section_path, sentences, spans, token_count, content_hash) VALUES (:id, "
+                        ":owner_id, :document_id, :version_id, :ordinal, :kind, :original_text, "
+                        ":structural_prefix, :embedding_text, :page_start, :page_end, :section_path, "
+                        "CAST(:sentences AS jsonb), CAST(:spans AS jsonb), :token_count, :content_hash)"
+                    ),
+                    rows,
+                )
+            await s.execute(
+                text("UPDATE document_versions SET chunker_version = :cv, token_count = :t WHERE id = :v"),
+                {"cv": CHUNKER_VERSION, "t": tokens, "v": job.version_id},
+            )
+
+        return StageResult(write=write, detail={"chunks": len(rows), "tokens": tokens})
+
+
 def default_stages() -> dict[str, Stage]:
-    return {"extract": ExtractStage(), "quality": QualityStage()}
+    return {"extract": ExtractStage(), "quality": QualityStage(), "chunk": ChunkStage()}

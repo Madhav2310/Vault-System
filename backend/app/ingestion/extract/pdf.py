@@ -36,6 +36,7 @@ _STRUCTURAL = re.compile(r"^(PART|ITEM|ARTICLE|SECTION|SCHEDULE|EXHIBIT|APPENDIX
 SHORT_LINE_CHARS = 80
 PARA_GAP_RATIO = 0.8  # vertical gap above this times the line height starts a new paragraph
 HEADER_BAND = 0.1  # running headers live in the top 10% of a page
+RUNNING_SHARE = 0.5  # a header/footer line repeated on at least half the pages (min 3) is boilerplate
 
 
 @dataclass
@@ -134,6 +135,39 @@ def _heading_levels(pages: list[_Page], body: float) -> dict[float, int]:
     return {s: i + 1 for i, s in enumerate(sizes[:3])} | {s: 3 for s in sizes[3:]}
 
 
+def _running_key(text: str) -> str:
+    return re.sub(r"\d+", "#", " ".join(text.lower().split()))
+
+
+def _drop_running_lines(pages: list[_Page]) -> None:
+    """Remove running headers/footers (e.g. "Table of Contents", "Page 12 of 40") from the element flow.
+    Their glyphs simply do not enter the page text; nothing else is rewritten."""
+    if len(pages) < 3:
+        return
+
+    def band(p: _Page) -> list[Line]:
+        return [
+            ln
+            for ln in p.lines
+            if ln.bottom < HEADER_BAND * p.height or ln.top > (1 - HEADER_BAND) * p.height
+        ]
+
+    counts: dict[str, int] = {}
+    for p in pages:
+        for key in {_running_key(ln.text) for ln in band(p)}:
+            counts[key] = counts.get(key, 0) + 1
+    need = max(3, RUNNING_SHARE * len(pages))
+    running = {k for k, n in counts.items() if n >= need}
+    if not running:
+        return
+    for p in pages:
+        edge = {id(ln) for ln in band(p)}
+        kept = [ln for ln in p.lines if not (id(ln) in edge and _running_key(ln.text) in running)]
+        if len(kept) != len(p.lines):
+            p.flags.append("running_lines_removed")
+        p.lines = kept
+
+
 def _with_tables(blocks: list[_Block], tables: list[TableBlock]) -> list[_Block]:
     """Insert each table before the first text block that starts below it."""
     out: list[_Block] = []
@@ -184,6 +218,7 @@ class PdfExtractor:
 
     def extract(self, path: str) -> ExtractedDocument:
         pages = self._read(path)
+        _drop_running_lines(pages)
         body = _body_size(pages)
         levels = _heading_levels(pages, body)
         out_pages: list[PageText] = []

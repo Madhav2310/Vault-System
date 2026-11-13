@@ -4,6 +4,7 @@ import pathlib
 
 import pytest
 
+from app.ingestion.chunk import chunk_document
 from app.ingestion.extract.base import SYNTH
 from app.ingestion.extract.pdf import PdfExtractor
 from tests.fixtures.make_fixtures import Page, pdf_bytes
@@ -75,3 +76,8 @@ def test_header_carried_across_pages(tmp_path: pathlib.Path) -> None:
     assert t1.table_header == "| Region | Q1 | Q2 |"
     assert doc.pages[t2.page_index].page_no == 2 and t2.table_header == "| Region | Q1 | Q2 |"
     assert not t2.text.startswith("| Region")  # the continuation's own text is unchanged (I1)
+    # S1.16 AC3 at chunk level: the continuation chunk on page 2 starts with the carried header row,
+    # whose span points back to page 1
+    (cont,) = [c for c in chunk_document(doc, "T") if c.kind == "table" and c.page_end == 2]
+    assert cont.original_text.startswith("| Region | Q1 | Q2 |\n| East |")
+    assert cont.spans[0].page == 1 and cont.spans[-1].page == 2

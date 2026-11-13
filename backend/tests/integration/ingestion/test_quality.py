@@ -55,10 +55,10 @@ async def test_partial_ocr_flag(api, make_owner, sm, store, enqueued) -> None:  
     pages[4] = Page(image=True)  # one image-only page out of ten
     up = await upload(api, await make_owner(), "mixed.pdf", pdf_bytes(pages))
     outcomes = await run_pipeline(sm, uuid.UUID(up["job_id"]), store, enqueued)
-    # extract and quality succeed and the job moves on to `chunk` (not terminal). Reaching `ready` is checked
-    # end to end once chunk/embed/index exist (C1 checkpoint).
-    assert outcomes[:2] == ["advanced", "advanced"]
-    assert (await job_row(sm, uuid.UUID(up["job_id"])))["current_stage"] == "chunk"
+    # extract, quality and chunk succeed and the job moves on (not terminal). Reaching `ready` is checked
+    # end to end once embed/index exist (C1 checkpoint).
+    assert outcomes[:3] == ["advanced", "advanced", "advanced"]
+    assert (await job_row(sm, uuid.UUID(up["job_id"])))["current_stage"] == "embed"
     assert (await version_status(sm, uuid.UUID(up["version_id"])))[0] == "processing"
     flagged = [p[0] for p in await _pages(sm, up["version_id"]) if "needs_ocr" in p[4]]
     assert flagged == [5]

@@ -9,10 +9,12 @@ ENV UV_COMPILE_BYTECODE=1 \
     UV_PYTHON_PREFERENCE=only-system \
     UV_PYTHON_DOWNLOADS=never \
     PATH=/opt/venv/bin:$PATH \
-    PYTHONUNBUFFERED=1
+    PYTHONUNBUFFERED=1 \
+    TIKTOKEN_CACHE_DIR=/opt/tiktoken
 WORKDIR /srv
 COPY pyproject.toml uv.lock .python-version ./
-RUN uv sync --frozen --no-dev --no-install-project
+RUN uv sync --frozen --no-dev --no-install-project \
+ && python -c "import tiktoken; tiktoken.get_encoding('cl100k_base')"  # bake the tokenizer file into the image
 COPY alembic.ini ./
 COPY app ./app
 COPY prompts ./prompts
