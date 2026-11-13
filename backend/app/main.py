@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app import __version__
-from app.api import health
+from app.api import documents, health
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.core.logging import configure_logging
@@ -32,6 +32,7 @@ def create_app(*, telemetry: bool = False) -> FastAPI:
     install_error_handlers(app)
     app.add_middleware(RequestContextMiddleware)
     app.include_router(health.router)
+    app.include_router(documents.router)
     return app
 
 

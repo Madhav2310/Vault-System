@@ -234,3 +234,12 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - After the S0 assessment the user approved building a working spine first: 51 core tasks in checkpoints C1 (ingestion), C2 (retrieval and measurement), C3 (chat and metrics = M0), with a review pass at each checkpoint. Defined in `docs/plan/README.md` → "Core path"; CLAUDE.md workflow step 8.
 - Pulled in for a strong base beyond the minimal loop: S1.10 sweeper, S1.15 reading order, S1.16 tables, S1.17 PDF failure classes, S1.19 page quality, S2.09 neighbor expansion, S2.14 engine core (spend ledger), S2.18 judges.
 - Closure: `python3 scripts/plan_core_closure.py` → `core tasks=51 unresolved={}`; `plan_lint` 0 errors.
+
+### S1.01–S1.05 — Upload path (core path C1)
+- Date: 2026-11-13 · Commit: (this commit). One commit for five tasks: they form one request path (S1.01 AC1 needs the S1.04 rows, the router needs S1.05), so separate commits would not each pass.
+- Commands: `make ci` (84 unit); `make test` (157 passed: 84 unit + 70 integration + 3 e2e).
+- Built: `POST /v1/documents` streaming multipart receiver (`app/documents/upload.py`, python-multipart's incremental parser, 413 mid-stream and on a declared oversize Content-Length, temp file always removed); magic-byte sniffing (`sniff.py`; PDF, DOCX by ZIP central directory without decompressing, UTF-8 text without NUL); content-addressed blobs with `put_file` (no full read into memory) and a single-statement refcount upsert; `create_from_upload` with a per-(owner, sha256) advisory lock for race-free dedupe; `Idempotency-Key` stored in the same transaction as the work (a concurrent duplicate blocks on the key and replays), canonical sorted-key JSON so replays are byte-identical; hourly beat purge (`vault.maintenance.purge_idempotency_keys`); `app/worker/runtime.py` runs async DB work from Celery tasks on a NullPool engine per task.
+- New dependency: `python-multipart` 0.0.33. Why: FastAPI's form parsing buffers the whole body before the handler runs, so the 25 MB cap and bounded memory need the streaming parser, which FastAPI itself uses for forms.
+- Evidence notes: streamed 25 MB upload grows the Python heap by 2.2 MB vs 25 MB buffered (probe), so the AC4 test discriminates (F-025: tracemalloc, not RSS). The first idempotency run failed on byte order of the replayed JSON (JSONB reorders keys); fixed with canonical serialization.
+- Not yet: the job stays `pending` until S1.07 dispatch lands.
+- [T] changes approved: none

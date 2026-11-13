@@ -16,6 +16,12 @@ QUEUES = ("ingest", "ai", "maintenance")
 # task name → queue. Every task registered in app.worker.tasks must appear here.
 ROUTES: dict[str, str] = {
     "vault.ping": "maintenance",
+    "vault.maintenance.purge_idempotency_keys": "maintenance",
+}
+
+# beat: name → (task, seconds). Every entry's task must be routed.
+BEAT: dict[str, tuple[str, float]] = {
+    "purge-idempotency-keys": ("vault.maintenance.purge_idempotency_keys", 3600.0),
 }
 
 VISIBILITY_TIMEOUT_S = 3600  # > longest stage time (design §6.6)
@@ -24,7 +30,12 @@ VISIBILITY_TIMEOUT_S = 3600  # > longest stage time (design §6.6)
 def make_celery() -> Celery:
     s = get_settings()
     ModelRouter.from_settings(s)  # workers fail fast on a bad routing config too
-    app = Celery("vault", broker=s.redis_url, backend=s.redis_url, include=["app.worker.tasks.ping"])
+    app = Celery(
+        "vault",
+        broker=s.redis_url,
+        backend=s.redis_url,
+        include=["app.worker.tasks.ping", "app.worker.tasks.maintenance"],
+    )
     app.conf.update(
         task_acks_late=True,
         task_reject_on_worker_lost=True,
@@ -40,6 +51,7 @@ def make_celery() -> Celery:
         result_expires=3600,
         broker_connection_retry_on_startup=True,
         worker_hijack_root_logger=False,
+        beat_schedule={name: {"task": task, "schedule": every} for name, (task, every) in BEAT.items()},
     )
     return app
 

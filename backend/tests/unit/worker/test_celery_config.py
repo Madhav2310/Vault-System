@@ -1,4 +1,4 @@
-from app.worker.celery_app import QUEUES, ROUTES, celery_app
+from app.worker.celery_app import BEAT, QUEUES, ROUTES, celery_app
 
 
 def test_reliability_settings() -> None:
@@ -18,3 +18,9 @@ def test_routes() -> None:
         assert queue in QUEUES
         route = celery_app.amqp.router.route({}, name)
         assert route["queue"].name == queue, name
+
+
+def test_beat_schedule_routed() -> None:
+    sched = celery_app.conf.beat_schedule
+    assert sched["purge-idempotency-keys"]["schedule"] == 3600.0
+    assert all(task in ROUTES for task, _ in BEAT.values())

@@ -8,6 +8,7 @@ import contextlib
 import hashlib
 import os
 import pathlib
+import shutil
 import tempfile
 
 from app.storage.base import InvalidKeyError, validate_key
@@ -48,6 +49,26 @@ class LocalObjectStore:
                 os.unlink(tmp)
             raise
 
+    async def put_file(self, key: str, path: pathlib.Path) -> None:
+        await asyncio.to_thread(self._put_file_sync, self._path(key), path)
+
+    @staticmethod
+    def _put_file_sync(dest: pathlib.Path, src: pathlib.Path) -> None:
+        if dest.exists() and dest.stat().st_size == src.stat().st_size and _sha(dest) == _sha(src):
+            return  # idempotent: identical bytes already stored
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        fd, tmp = tempfile.mkstemp(dir=dest.parent, prefix=".tmp-")
+        try:
+            with os.fdopen(fd, "wb") as out, src.open("rb") as inp:
+                shutil.copyfileobj(inp, out, 1024 * 1024)
+                out.flush()
+                os.fsync(out.fileno())
+            os.replace(tmp, dest)
+        except BaseException:
+            with contextlib.suppress(FileNotFoundError):
+                os.unlink(tmp)
+            raise
+
     async def get(self, key: str) -> bytes:
         return await asyncio.to_thread(self._path(key).read_bytes)
 
@@ -59,3 +80,11 @@ class LocalObjectStore:
 
     def url(self, key: str) -> str:
         return self._path(key).as_uri()
+
+
+def _sha(path: pathlib.Path) -> bytes:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        while chunk := f.read(1024 * 1024):
+            h.update(chunk)
+    return h.digest()
