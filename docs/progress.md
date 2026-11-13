@@ -316,3 +316,11 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Measured: AMD 10-K: 494 chunks (59 tables), max 791 tokens, median 356 on the narrative excerpt (pp. 15-45) but 166 over the whole filing (short note sections, which AC1 forbids merging); QASPER 1910.03814 median 284; CUAD distributor median 220. Spans: 0 mismatches over 581 chunks.
 - New dependency: `tiktoken` (cl100k_base, the embedding model's tokenizer) for token counts. Its vocabulary download (83 s on first use) is baked into the Docker image (`TIKTOKEN_CACHE_DIR=/opt/tiktoken`) and cached at `~/.cache/tiktoken` for host runs (Makefile `HOST_ENV`).
 - [T] changes approved: none; whole-filing median below 300 recorded as F-032 for the convergence engine (stage B).
+
+### S2.07 — Reranker service (worker lane, Sonnet; AC1–AC5; AC6 open)
+- Date: 2026-11-13 · Commit: aad325d (merged in 1b1aa51)
+- Merge gate: diff reviewed (allowlisted models with recorded licenses, semaphore admission with 800 ms queue timeout → 503 `overloaded`, inference in a bounded thread pool, slots released when the thread really finishes, request limits → 422, spans carry counts/model only); reranker tests 7 passed; stack rebuilt healthy.
+- AC6 not met *as measured*: all runs were under heavy machine load (iCloud sync, Docker VM): MiniLM p95 2.4–3.9 s, bge 20 s. Re-measure on an idle machine (F-033). License question for MiniLM (MS MARCO training data) recorded for the user.
+
+### Infra: repo moved off the iCloud Desktop
+- Date: 2026-11-13. Repo now at `~/dev/vault` (rsync copy, git fsck clean, same tracked files); symlink at the old Desktop path; old folder renamed `…old.nosync`. Memory copied to the new project key. Stack rebuilt from the new path: all 8 services healthy; `make ci` 143 passed (80 s vs 398 s before); `make test` 266 passed.
