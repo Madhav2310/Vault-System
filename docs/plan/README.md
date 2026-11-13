@@ -93,7 +93,10 @@ Balanced (user decision 2026-11-12; re-based on OpenAI 2026-11-13, research 06 �
 8. **S9.14–S9.16** (Tier B screens, S9 gate)
 9. **S10** (starts with the user's golden-set review S10.01 and the post-review re-evaluation S10.02)
 
-### Plan v2 — plan of record from 2026-11-13 (user decision)
+### Plan v3 — plan of record from 2026-11-13 (user decision, after the research in `reports/Vault rebuild strategy research.md`)
+**Read `docs/plan/v3.md` first** (execution guide: rules, commands, root-cause notes, gotchas). Order: **S16 → S17 → S18 → S19 → S20**. Unfinished tasks of S11, S13, S14 (S14.02, S14.04, S14.06 AC4-5, S14.07) and S15 are superseded by v3 tasks (each superseded AC names its replacement). S12 leftovers (live ACs) are run inside S17.
+
+### Plan v2 — superseded by v3 (kept for history) from 2026-11-13 (user decision)
 After the core spine (M0 minus S3.15), a critical reassessment (`docs/plan/v2.md`) re-prioritised the remaining work toward what the spec grades. **S11–S15 are now the plan of record, in this order: S11 ∥ S12 → S13 ∥ S14 → S15.** The tasks of S1–S10 that are not yet done are **deferred**, not deleted. A v2 task that names "Supersedes" replaces the old one. The rules of the per-slice workflow (CLAUDE.md) apply unchanged.
 
 | Slice | Theme | Gate |
@@ -164,3 +167,13 @@ Tick a box only when the task's definition of done is met.
 **S14** — [ ] S14.01 [ ] S14.02 [ ] S14.03 [ ] S14.04 [ ] S14.05 [ ] S14.06 [ ] S14.07 [ ] S14.08 (gate)
 
 **S15** — [ ] S15.01 [ ] S15.02 [ ] S15.03 [ ] S15.04 [ ] S15.05 [ ] S15.06 [ ] S15.07 [ ] S15.08 [ ] S15.09 [ ] S15.10 [ ] S15.11 [ ] S15.12
+
+**S16** — [ ] S16.01 [ ] S16.02 [ ] S16.03 [ ] S16.04 [ ] S16.05 [ ] S16.06 [ ] S16.07 (gate)
+
+**S17** — [ ] S17.01 [ ] S17.02 [ ] S17.03 [ ] S17.04 [ ] S17.05 [ ] S17.06 [ ] S17.07 [ ] S17.08 [ ] S17.09 [ ] S17.10 [ ] S17.11 [ ] S17.12 [ ] S17.13 (gate)
+
+**S18** — [ ] S18.01 [ ] S18.02 [ ] S18.03 [ ] S18.04 [ ] S18.05 [ ] S18.06 [ ] S18.07 [ ] S18.08 [ ] S18.09 [ ] S18.10 [ ] S18.11 [ ] S18.12 (gate)
+
+**S19** — [ ] S19.01 [ ] S19.02 [ ] S19.03 [ ] S19.04 [ ] S19.05 [ ] S19.06 [ ] S19.07 (gate)
+
+**S20** — [ ] S20.01 [ ] S20.02 [ ] S20.03 [ ] S20.04 [ ] S20.05 [ ] S20.06 [ ] S20.07 [ ] S20.08

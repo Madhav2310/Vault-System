@@ -1,36 +1,46 @@
-# Handoff: start of plan v2 coding (2026-11-13)
+# Handoff: start of plan v3 coding (2026-11-13)
 
-Repo `~/dev/vault` (the old Desktop path is a symlink). Read in this order:
-1. `CLAUDE.md`
-2. `docs/plan/v2.md` (why)
-3. `docs/plan/README.md`, section "Plan v2"
-4. the slice file you work on (`docs/plan/S11.md`…`S15.md`)
-5. the tail of `docs/progress.md` and `docs/followups.md` (F-040…F-047)
+**For the coding session (Sonnet):**
+1. Read `CLAUDE.md`.
+2. Read `docs/plan/v3.md`, the execution guide: rules, commands, root-cause notes, codebase map and 12 known gotchas.
+3. Read the slice file you work on: `docs/plan/S16.md` … `S20.md`.
+
+Do not read the older S0–S15 files except where a v3 task points to one.
 
 ## State
-- `main` is clean. Gate: `make ci` 257 passed, `make test` 514 passed (20 opt-in skipped). No live agents, no open worktrees.
-- Working end to end: upload → ready → ask → cited answer → history → metrics (`scripts/demo_core.sh`, live, $0.002 per ask).
-- Eval tools: `make eval-smoke`, `make eval-retrieval` (full pipeline, ~$0.70, slow; S11.01 adds the fast mode), `python -m eval.judge`, `eval/engine`.
-- Measured baselines:
-  - recall@8 0.759 (the reranker hurts; lexical search is nearly useless)
-  - citation integrity 1.00
-  - smoke abstain_precision 0.50
-  - p50 latency 5.9 s
-- Spend to date is about $2.
+- **`main`**: clean, committed. `make ci`: 316 passed.
+- **`make test` not re-run after the last merge.** Docker was stopped on purpose by the user (it crashed Chrome). That re-run is the first job of S16.01, step 5.
+- **Docker is OFF.** Keep it off unless a task needs it (v3.md §3). `make ci` needs no Docker.
+- **Spend to date:** about $3.
+- **Research:** `reports/Vault rebuild strategy research.md`.
+- **Status:** `docs/STATUS.md`.
+- **Root-cause analysis** of the reranker and extraction: v3.md §6, measured natively on this machine.
 
-## How to execute (Sonnet session)
-- **Order:** S11 ∥ S12 → S13 ∥ S14 → S15. The main session takes the critical path (S11, then S13). Worktree lanes (`isolation: "worktree"`, model sonnet) take S12, then S14, then S15.01–S15.05.
-- **Lane briefs:** use the full-context template from CLAUDE.md "Parallel work": owned files, files not to touch, the task text verbatim, ACs as the test contract, gate commands, and report format.
-- **Merge gate per lane:** read the diff, then run `make ci && make test` on the merged tree, plus `make c1-check` when ingestion is touched and `make eval-retrieval-fast` when retrieval is touched. Then tick with `scripts/plan_tick.py` and run `python3 scripts/plan_lint.py`.
-- **A [T] target that is not met:** record the measured value in `docs/progress.md` and stop for the user. Never relax an [A] criterion.
-- **Live calls:** always `--max-usd`. Keys are only in `.env`.
-- **Checkpoint rule:** at each slice gate, run an independent review agent over the slice diff, fix or file its findings, then report to the user.
+## Recommended order for S16 (least Docker first)
+1. **S16.02** reranker configuration fix. Native benchmark only; no Docker until AC6.
+2. **S16.03** focus windows. Unit tests need no Docker; AC5 needs `make up-test`.
+3. **S16.06** README skeleton and `scripts/quickstart.sh`. No Docker, except AC3.
+4. **S16.01** compose profiles and limits.
+   - Ask the user to set Docker Desktop to 6 GB and 4 CPUs (`docs/dev-environment.md`) and to start Docker.
+   - Then `make up-test` and run the merged-lanes gate (S16.01, step 5).
+5. **S16.05** extraction memory and time. Native profiling first; `make c1-check` needs `make up-test`.
+6. **S16.04** degraded guard. Then **S16.07**, the gate: report to the user and stop.
 
-## First three moves
-1. **S11.01 (main):** `eval/pipeline_retrieval.py` plus `make eval-retrieval-fast`. Everything in S11 is measured with it.
-2. **Launch the S12 lane in parallel:** S12.01 → S12.04 first. Owned files: `app/insights/**`, `backend/prompts/brief_*`, `backend/prompts/summary_custom@1.md`, `tests/**/insights/**`. Shared exception: S12.04 adds `brief` to STAGE_ORDER, and the lane must report that diff for review.
-3. **S11.02 replay, then S11.03 lexical OR, then the S11.05 bake-off.** Use the stored candidates of eval run `01a1d43d-2bfe-7691-a250-7e3cd71c1d8f` as the "before".
+## Lanes
+At most two at once. A lane gets a brief built from the task text, with:
+- its owned files and the files not to touch
+- the ACs as the test contract
+- the gate commands and the report format
+- the rule to run targeted tests and only one full gate (see CLAUDE.md "Parallel work" and "Machine hygiene")
 
-## Open decisions for the user
-- Reranker licence: resolved by the measurement in S11.05.
-- Delete the parked copies `~/Desktop/Vault Document system.old.nosync` and `.claude/stale-worktrees.nosync` when iCloud releases them.
+Good lane candidates:
+- S16.05 (alongside S16.03/S16.06)
+- S17.04, S17.11
+- S18.08–S18.11
+- S19.*
+
+## Stop points for the user
+- At every slice gate (S16.07, S17.13, S18.12, S19.07, S20.08).
+- When a [T] target misses: record the measured value and stop.
+- When a fix fails twice: write the root-cause analysis and stop.
+- Before any live spend above the caps written in the task.

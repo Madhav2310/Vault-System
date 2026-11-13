@@ -197,3 +197,6 @@ Review log at the bottom.
 
 ## Plan v2 (2026-11-13)
 S11.* retrieval quality, latency, abstention · S12.* document intelligence (spec: Smart Document Analysis, AI Insights, summary customization, categorization/tagging) · S13.* chat experience (spec: multi-turn, streaming, follow-ups, multi-document and comparative chat) · S14.* production readiness (spec: rate limiting, quotas, version tracking, real-time status) · S15.* delivery (spec: README, AI_USAGE, demo, frontend).
+
+## Plan v3 (2026-11-13)
+S16.* lean environment, reranker RCA, extraction memory, README skeleton · S17.* retrieval and answer quality (paired A/B, whole-document routing, gate, support check, answer baseline) · S18.* chat experience API (SSE, explanations, follow-ups, meta, compare, conflicts, quota, staleness, OpenAPI) · S19.* web UI · S20.* delivery (README, diagrams, evaluation, scale, AI_USAGE, demo, fresh clone).
