@@ -101,7 +101,9 @@ class ProbeProvider(FakeProvider):
 
 
 def _gateway(prov: FakeProvider, sm: SM) -> LlmGateway:
-    settings = Settings(_env_file=None, database_url="postgresql+asyncpg://x/y", redis_url="redis://x")  # type: ignore[call-arg]
+    settings = Settings(  # type: ignore[call-arg]
+        _env_file=None, database_url="postgresql+asyncpg://x/y", redis_url="redis://x", chat_fast_path=False
+    )
     return LlmGateway(
         chat=prov,
         embeddings=prov,

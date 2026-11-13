@@ -3,11 +3,13 @@ flowchart TD
     load_context["load_context"]
     route_question["route_question"]
     analyze["analyze"]
+    plan_context["plan_context"]
     retrieve["retrieve"]
     gate["gate"]
     generate["generate"]
     verify["verify"]
     clarify["clarify"]
+    meta["meta"]
     abstain_no_documents["abstain_no_documents"]
     abstain_no_evidence["abstain_no_evidence"]
     persist["persist"]
@@ -18,7 +20,12 @@ flowchart TD
     route_question__r --> analyze
     analyze --> analyze__r{after_analyze}
     analyze__r --> clarify
-    analyze__r --> retrieve
+    analyze__r --> meta
+    analyze__r --> plan_context
+    plan_context --> plan_context__r{after_plan_context}
+    plan_context__r --> retrieve
+    plan_context__r --> generate
+    plan_context__r --> abstain_no_evidence
     retrieve --> retrieve__r{after_retrieve}
     retrieve__r --> abstain_no_evidence
     retrieve__r --> gate
@@ -30,6 +37,7 @@ flowchart TD
     generate__r --> persist
     verify --> persist
     clarify --> persist
+    meta --> persist
     abstain_no_documents --> persist
     abstain_no_evidence --> persist
     persist --> end_((end))

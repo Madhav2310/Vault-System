@@ -19,6 +19,7 @@ NO_ANSWER = "No answer was produced."
 # reason code -> user-facing line. Keys are the code strings recorded in `rag_runs.reason_codes`.
 REASON_TEMPLATES: dict[str, str] = {
     "NO_EVIDENCE": "Nothing in your documents matched closely enough.",
+    "ABSTAIN_NO_EVIDENCE": "The best-matching passages were too weak to answer from, so none was written.",
     "SCOPE_EMPTY": "There are no ready documents in scope. Upload one or wait for processing to finish.",
     "FULL_CONTEXT_UNAVAILABLE": (
         "Whole-document reading was requested but is not available, so the best-matching passages were used."
@@ -44,6 +45,7 @@ REASON_TEMPLATES: dict[str, str] = {
     "META_DOCUMENTS_MENTIONING": "Searched the text of your ready documents for the word or phrase.",
     "META_LIST_KEY_DATES": "Listed dates from the verified key facts of your documents.",
     "META_DOCUMENT_INFO": "Read the document details from the document list.",
+    "FAST_PATH": "",
     "LOOP_GUARD": "",
     "BAD_ROUTE": "",
     "NODE_TIMEOUT": "The turn ran out of time before it finished.",

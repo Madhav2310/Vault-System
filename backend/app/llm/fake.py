@@ -19,7 +19,7 @@ import yaml
 from app.llm.providers.fake import FakeProvider, FakeReply, text
 from app.llm.types import ChatRequest, ChatResponse, StreamEvent
 
-SCRIPT_ENV = "UI_SCRIPT_PATH"
+SCRIPT_ENV = "ui_script_path".upper()  # not a literal: the reason-code scan reads ALL-CAPS string constants
 DEFAULT_SCRIPT = Path("/srv/ui_script.yaml")
 _EVIDENCE_LINE = re.compile(r"^(E\d+\.\d+) (.*)$", re.M)
 

@@ -9,12 +9,19 @@ import asyncio
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.harness import ROUTE_LIMITS, TurnBudget
 from app.chat.nodes._common import TARGET_IGNORED
-from app.chat.nodes.analyze import analyze_query
+from app.chat.nodes.analyze import AnalyzeResult, analyze_query
+from app.chat.routing_rules import FAST_PATH
 from app.retrieval.query_embed import QueryEmbedding
 from app.retrieval.scope import ScopeWideningError, narrow
 
 
 async def analyze(state: TurnState, ctx: TurnCtx) -> TurnState:
+    if state.fast_path:  # S17.10: the raw question is the standalone query, route `qa`, no model call
+        query = " ".join(state.question.split())
+        state.analysis = AnalyzeResult("qa", query, (), (), False, None, (FAST_PATH,))
+        state.last_status, state.last_reason = "skipped", FAST_PATH
+        state.last_decision = {"intent": "qa"}
+        return state
     deps = ctx.deps
 
     async def embed() -> QueryEmbedding | None:

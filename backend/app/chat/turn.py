@@ -67,7 +67,7 @@ def after_load_context(s: TurnState) -> str:
 
 @router("analyze")
 def after_route_question(s: TurnState) -> str:
-    return "analyze"  # S17.10 adds the fast path here
+    return "analyze"  # the fast path skips the call inside the `analyze` node (recorded as a skipped step)
 
 
 @router("clarify", "meta", "plan_context")
@@ -92,7 +92,7 @@ def after_retrieve(s: TurnState) -> str:
 
 @router("abstain_no_evidence", "generate")
 def after_gate(s: TurnState) -> str:
-    return "generate"  # S17.08 fills the floor
+    return "abstain_no_evidence" if s.gate_abstain else "generate"
 
 
 @router("verify", "persist")

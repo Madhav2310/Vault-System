@@ -86,6 +86,9 @@ class Settings(BaseSettings):
     full_context_max_docs: int = 3
     full_context_max_tokens: int = 50_000
 
+    # --- fast path (design §8.2, S17.10): false = always run analyze_query (kill switch) ---
+    chat_fast_path: bool = True
+
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"

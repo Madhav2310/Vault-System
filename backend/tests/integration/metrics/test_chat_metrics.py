@@ -291,6 +291,7 @@ async def test_empty_state(api: httpx.AsyncClient, mk_owner: Callable[..., Any])
         "latency_ms": {"p50": None, "p95": None},
         "ttft_ms": {"p50": None, "p95": None},
         "cost_per_turn_usd": {"p50": None, "p95": None},
+        "node_latency_ms": {},
         "degraded": {},
         "feedback": {"up": 0, "down": 0, "by_reason": {}},
         "llm": {
