@@ -120,6 +120,10 @@ class Retriever:
         self._redis = redis
         self._cfg = cfg or get_config()
 
+    async def warm_up(self) -> None:
+        """One tiny rerank request (never raises): the service loads/initializes lazily on first use."""
+        await self._reranker.rerank("warm up", [RerankPassage(uuid.UUID(int=0), "warm up")])
+
     @property
     def config(self) -> RetrievalConfig:
         return self._cfg

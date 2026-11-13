@@ -159,7 +159,7 @@ def make_pipeline(
             )
             for c in res.candidates
         ]
-        return ItemOutput(retrieved=rank(cands, mode))
+        return ItemOutput(retrieved=rank(cands, mode), degraded=tuple(res.degraded))
 
     return pipeline
 
@@ -190,6 +190,7 @@ async def setup(config: str) -> Harness:
     gw = get_gateway()
     rds = aioredis.from_url(settings.redis_url)
     retriever = Retriever(QueryEmbedder(gw, rds), RerankClient.from_settings(settings), None, cfg)
+    await retriever.warm_up()  # model load must not count against the first item (S16.04)
     return Harness(
         make_pipeline(sm, retriever, uid, doc_ids), chunks, EvalContext(owner_id=uid, doc_ids=doc_ids)
     )

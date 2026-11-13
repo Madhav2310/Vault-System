@@ -27,6 +27,7 @@ class ItemResult:
     error: str | None = None
     turns: list[ItemResult] = field(default_factory=list)  # multi-turn: one per turn, ids `<id>#t<n>`
     quote_hits: list[bool] | None = None  # per mapped gold quote: hit in the top 8 (paired tests)
+    degraded: tuple[str, ...] = ()
 
 
 @dataclass
@@ -44,6 +45,17 @@ class RunResult:
     @property
     def n_errors(self) -> int:
         return sum(1 for i in self.items if i.error or any(t.error for t in i.turns))
+
+    def degraded_rate(self) -> float:
+        """Share of items whose result was degraded (no_rerank, lexical_only...)."""
+        return sum(1 for i in self.items if i.degraded) / len(self.items) if self.items else 0.0
+
+    def degraded_by_kind(self) -> dict[str, int]:
+        out: dict[str, int] = defaultdict(int)
+        for i in self.items:
+            for k in set(i.degraded):
+                out[k] += 1
+        return dict(sorted(out.items()))
 
     def metric_names(self) -> list[str]:
         return sorted({m for i in self.items for m in i.metrics})

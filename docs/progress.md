@@ -399,3 +399,6 @@ Before/after (AMD 10-K, native, same 420251 chars): 37 s / 720 MB -> 11.3 s / 19
 - Docker Desktop at 4 CPUs / 6 GB. Backend image build stalled twice on uv downloads (Docker VM network), fixed by UV_HTTP_TIMEOUT/UV_CONCURRENT_DOWNLOADS and a retry.
 - `make up`: readyz `degraded` (reranker absent, by design); idle memory ~690 MB total for 6 containers. `make test`: 669 passed, 1 failed (F-048 flaky trace test). `make c1-check`: 19 passed in 36 s (was 113 s before S16.05).
 - Ticked the merged-lane ACs (S12.06/07/08, S14.01/03/05/06 AC1-3) on this evidence, plus S16.01 AC3/AC4/AC6, S16.03 AC5, S16.05 AC6.
+
+## S16.04 degraded-run guard
+- `eval.run` retrieval suite prints `degraded_rate` and aborts (exit 3, no freeze) above `--max-degraded-rate` (0.05); `ItemOutput.degraded`, `Retriever.warm_up()` once per run. 3 tests in tests/integration/eval/test_degraded_guard.py.

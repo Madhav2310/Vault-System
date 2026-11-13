@@ -218,6 +218,7 @@ class ItemOutput:
     conflict_flagged: bool | None = None
     latency_ms: float | None = None
     cost_usd: float | None = None
+    degraded: tuple[str, ...] = ()  # e.g. no_rerank, lexical_only: the run measured a degraded configuration
 
     @property
     def answer_text(self) -> str:

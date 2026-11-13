@@ -74,6 +74,14 @@ class Harness:
     new_session: NewSession | None = None
 
 
+def degraded_abort(run: RunResult, max_rate: float) -> str | None:
+    """The ABORT line when too many items ran in a degraded configuration, else None."""
+    rate = run.degraded_rate()
+    if rate > max_rate:
+        return f"ABORT: degraded_rate {rate:.3f} > {max_rate:.3f} ({run.degraded_by_kind()}); results are invalid"
+    return None
+
+
 def _git_sha() -> str:
     try:
         r = subprocess.run(
@@ -114,7 +122,9 @@ async def _run_item(
         out, err = ItemOutput(), f"{type(e).__name__}: {e}"
     targets = [x for x in map_item(item, h.chunks_by_doc) if x.mapped]
     hits = [bool(x.chunk_ids & set(out.retrieved[:8])) for x in targets] or None
-    return ItemResult(item.id, item.category, split, score(item, out), err, quote_hits=hits)
+    return ItemResult(
+        item.id, item.category, split, score(item, out), err, quote_hits=hits, degraded=out.degraded
+    )
 
 
 async def run_suite(
@@ -195,6 +205,10 @@ async def _main(a: argparse.Namespace) -> int:
         items, harness, name=a.config, suite=a.suite, split=split, split_of=ds.split_of, sm=sm
     )
     print(f"wall_s {time.monotonic() - t_wall:.1f}")
+    print(f"degraded_rate {run.degraded_rate():.3f} {run.degraded_by_kind()}")
+    if a.suite == "retrieval" and (abort := degraded_abort(run, a.max_degraded_rate)):
+        print(abort)
+        return 3  # no baseline is frozen from an invalid run
     print(f"run {run.run_id}: {len(run.items)} items, {run.n_errors} errored; report {path}")
     for m, (mean, n) in run.totals().items():
         print(f"  {m:24s} n={n:<4d} mean={mean:.4f}")
@@ -221,6 +235,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--compare", metavar="NAME", help="exit 1 if a metric regressed vs eval/baselines/NAME.json"
     )
     p.add_argument("--tolerance", type=float, default=bl.DEFAULT_TOLERANCE)
+    p.add_argument(
+        "--max-degraded-rate",
+        type=float,
+        default=0.05,
+        help="retrieval suite: abort (exit 3, no freeze) above this share of degraded items",
+    )
     p.add_argument("--no-db", action="store_true", help="skip eval_runs/eval_results rows")
     return asyncio.run(_main(p.parse_args(argv)))
 
