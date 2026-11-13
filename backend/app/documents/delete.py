@@ -164,7 +164,8 @@ async def purge_pending(sm: SessionFactory, store: ObjectStore, grace_s: int = P
                 await s.execute(
                     text(
                         "SELECT DISTINCT d.id FROM documents d "
-                        "JOIN document_versions v ON v.document_id = d.id WHERE d.deleted_at < now() - make_interval(secs => :g) AND v.purged_at IS NULL "
+                        "JOIN document_versions v ON v.document_id = d.id "
+                        "WHERE d.deleted_at < now() - make_interval(secs => :g) AND v.purged_at IS NULL "
                         "LIMIT 200"
                     ),
                     {"g": grace_s},
