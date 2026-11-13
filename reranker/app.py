@@ -4,6 +4,7 @@ POST /rerank {query, passages[]} -> {scores[], model}. Design §4.3, §7.3, §13
 """
 
 import asyncio
+import math
 import os
 from collections.abc import AsyncIterator, Callable
 from concurrent.futures import ThreadPoolExecutor
@@ -21,12 +22,40 @@ Scorer = Callable[[str, list[str]], list[float]]
 tracer = trace.get_tracer("vault.reranker")
 
 
+MAX_DEFAULT_THREADS = 4  # M-series: 4 performance cores; more threads were slower (docs/plan/v3.md §6)
+
+
+def cpu_quota(path: str = "/sys/fs/cgroup/cpu.max") -> int:
+    """CPUs this process may use: the cgroup v2 quota when set, else min(4, cpu_count).
+
+    `os.cpu_count()` inside a container reports the VM's CPUs, not the quota, which oversubscribes the
+    container and makes ONNX Runtime threads fight the CFS throttle."""
+    fallback = min(MAX_DEFAULT_THREADS, os.cpu_count() or 1)
+    try:
+        quota, period = open(path).read().split()[:2]  # noqa: SIM115 - tiny file
+        if quota == "max":
+            return fallback
+        return max(1, math.ceil(int(quota) / int(period)))
+    except (OSError, ValueError):
+        return fallback
+
+
+def truncate_words(text: str, max_chars: int) -> str:
+    """Cut at a word boundary at or before `max_chars` (the service's safety net; clients send windows)."""
+    if len(text) <= max_chars:
+        return text
+    cut = text.rfind(" ", 0, max_chars)
+    return text[: cut if cut > 0 else max_chars]
+
+
 @dataclass(frozen=True)
 class Config:
     model: str = field(default_factory=lambda: os.environ.get("RERANKER_MODEL", DEFAULT_MODEL))
-    max_in_flight: int = field(
-        default_factory=lambda: int(os.environ.get("RERANKER_MAX_IN_FLIGHT", os.cpu_count() or 1))
+    threads: int = field(
+        default_factory=lambda: int(os.environ.get("RERANKER_THREADS", min(cpu_quota(), MAX_DEFAULT_THREADS)))
     )
+    batch_size: int = field(default_factory=lambda: int(os.environ.get("RERANKER_BATCH_SIZE", "8")))
+    max_in_flight: int = field(default_factory=lambda: int(os.environ.get("RERANKER_MAX_IN_FLIGHT", "1")))
     queue_timeout_ms: int = field(
         default_factory=lambda: int(os.environ.get("RERANKER_QUEUE_TIMEOUT_MS", "800"))
     )
@@ -34,7 +63,7 @@ class Config:
         default_factory=lambda: int(os.environ.get("RERANKER_MAX_PASSAGES", "100"))
     )
     max_passage_chars: int = field(
-        default_factory=lambda: int(os.environ.get("RERANKER_MAX_PASSAGE_CHARS", "8000"))
+        default_factory=lambda: int(os.environ.get("RERANKER_MAX_PASSAGE_CHARS", "1200"))
     )
     max_query_chars: int = field(
         default_factory=lambda: int(os.environ.get("RERANKER_MAX_QUERY_CHARS", "2000"))
@@ -52,11 +81,11 @@ def load_scorer(spec: ModelSpec, cfg: Config) -> Scorer:
 
     # One shared session; ONNX Runtime run() and the Rust tokenizer are thread-safe.
     encoder = TextCrossEncoder(
-        model_name=spec.hf_id, cache_dir=cfg.cache_dir, threads=cfg.max_in_flight
+        model_name=spec.hf_id, cache_dir=cfg.cache_dir, threads=cfg.threads
     )
 
     def score(query: str, passages: list[str]) -> list[float]:
-        return [float(s) for s in encoder.rerank(query, passages)]
+        return [float(s) for s in encoder.rerank(query, passages, batch_size=cfg.batch_size)]
 
     return score
 
@@ -84,15 +113,12 @@ def create_app(config: Config | None = None, scorer: Scorer | None = None) -> Fa
     app = FastAPI(title="vault-reranker", version="0.2.0", lifespan=lifespan)
 
     @app.get("/healthz")
-    def healthz() -> dict[str, str]:
-        return {"status": "ok", "model": spec.hf_id}
+    def healthz() -> dict[str, str | int]:
+        return {"status": "ok", "model": spec.hf_id, "threads": cfg.threads, "batch_size": cfg.batch_size}
 
     @app.post("/rerank", response_model=None)
     async def rerank(req: RerankRequest, request: Request) -> RerankResponse | JSONResponse:
-        if any(len(p) > cfg.max_passage_chars for p in req.passages):
-            return JSONResponse(
-                status_code=422, content={"code": "passage_too_long", "retryable": False}
-            )
+        passages = [truncate_words(p, cfg.max_passage_chars) for p in req.passages]
         with tracer.start_as_current_span("rerank") as span:
             span.set_attribute("rerank.model", spec.hf_id)
             span.set_attribute("rerank.passages", len(req.passages))
@@ -111,7 +137,7 @@ def create_app(config: Config | None = None, scorer: Scorer | None = None) -> Fa
             # so in-flight inference never exceeds max_in_flight.
             try:
                 cf = request.app.state.executor.submit(
-                    request.app.state.scorer, req.query, req.passages
+                    request.app.state.scorer, req.query, passages
                 )
             except BaseException:
                 sem.release()

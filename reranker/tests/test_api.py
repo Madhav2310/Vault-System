@@ -80,7 +80,6 @@ def test_backpressure_503() -> None:
 def test_request_limits_422() -> None:
     with fake_client(lambda q, ps: [0.0] * len(ps), max_passages=3, max_passage_chars=10) as c:
         assert c.post("/rerank", json={"query": "q", "passages": ["a"] * 4}).status_code == 422
-        assert c.post("/rerank", json={"query": "q", "passages": ["x" * 11]}).status_code == 422
         assert c.post("/rerank", json={"query": "", "passages": ["a"]}).status_code == 422
         assert c.post("/rerank", json={"query": "q", "passages": ["a"] * 3}).status_code == 200
 

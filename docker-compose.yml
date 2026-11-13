@@ -46,6 +46,8 @@ services:
     build: ./reranker
     image: vault-reranker:0.1.0
     cpus: 2
+    environment:
+      RERANKER_THREADS: "2"  # = cpus; S16.02 (os.cpu_count() inside a container reports the VM)
     ports: ["127.0.0.1:${RERANKER_PORT:-8180}:8080"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=3)"]
