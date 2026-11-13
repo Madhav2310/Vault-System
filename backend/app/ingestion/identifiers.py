@@ -52,7 +52,7 @@ async def backfill_tsv_ids(
 ) -> int:
     """Fill `tsv_ids` for existing chunks that have identifiers and no `tsv_ids` yet; returns rows updated.
 
-    Chunks without identifiers stay NULL, so a second run updates 0 rows. `owner_id` limits it to one owner."""
+    Chunks without identifiers stay NULL, so a second run updates 0 rows. `owner_id`: one owner only."""
     updated = 0
     after: uuid.UUID | None = None
     while True:
