@@ -29,6 +29,7 @@ NODE_STAGE: dict[str, Stage] = {
     "route_question": "analyzing",
     "analyze": "analyzing",
     "retrieve": "retrieving",
+    "compare_retrieve": "retrieving",
     "gate": "checking_evidence",
     "generate": "writing",
     "clarify": "writing",

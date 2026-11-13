@@ -86,6 +86,7 @@ async def generate(
     question: str,
     route: str,
     mode: Mode = "rag",
+    prompt: tuple[str, int] = PROMPT,
     memory: Memory | None = None,
     coverage: str | None = None,
     conflicts: str | None = None,
@@ -106,7 +107,7 @@ async def generate(
         async for ev in gateway.stream(
             purpose="generate",
             lane="interactive",
-            prompt=PROMPT,
+            prompt=prompt,
             owner_id=owner_id,
             schema=schema,
             route=route,

@@ -6,6 +6,7 @@ The embedding is speculative: `retrieve` reuses it when the standalone query equ
 
 import asyncio
 
+from app.chat.compare import limit_compare
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.harness import ROUTE_LIMITS, TurnBudget
 from app.chat.nodes._common import TARGET_IGNORED
@@ -52,11 +53,12 @@ async def analyze(state: TurnState, ctx: TurnCtx) -> TurnState:
     state.analysis = analysis
     state.degraded += analysis.degraded
     state.call_ids += analysis.call_ids
-    state.route = analysis.intent if analysis.intent in ROUTE_LIMITS else "qa"
-    ctx.budget = TurnBudget(ROUTE_LIMITS[state.route], ctx.budget.deadline_at, ctx.budget.calls_used)
     try:
         state.scope = narrow(state.scope, analysis.target_document_ids)
     except ScopeWideningError:  # never widen; keep the wider scope but leave a trace
         state.reasons.append(TARGET_IGNORED)
-    state.last_decision = {"intent": analysis.intent}
+    limit_compare(state)  # S18.06: compare needs 2-5 documents in scope, else it is a plain question
+    state.route = state.analysis.intent if state.analysis.intent in ROUTE_LIMITS else "qa"
+    ctx.budget = TurnBudget(ROUTE_LIMITS[state.route], ctx.budget.deadline_at, ctx.budget.calls_used)
+    state.last_decision = {"intent": state.analysis.intent}
     return state

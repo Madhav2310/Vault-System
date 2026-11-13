@@ -45,6 +45,8 @@ REASON_TEMPLATES: dict[str, str] = {
     "META_DOCUMENTS_MENTIONING": "Searched the text of your ready documents for the word or phrase.",
     "META_LIST_KEY_DATES": "Listed dates from the verified key facts of your documents.",
     "META_DOCUMENT_INFO": "Read the document details from the document list.",
+    "COMPARE_TOO_MANY": "Too many documents to compare (limit 5), so this was answered as one question.",
+    "COMPARE_SIDE_MISSING": "A document had nothing relevant to the comparison, and the answer says so.",
     "FAST_PATH": "",
     "LOOP_GUARD": "",
     "BAD_ROUTE": "",
