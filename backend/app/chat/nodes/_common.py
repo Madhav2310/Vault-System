@@ -11,7 +11,6 @@ from app.llm.types import Usage
 
 NO_DOCUMENTS = "SCOPE_EMPTY"
 NO_EVIDENCE = "NO_EVIDENCE"
-FULL_CONTEXT_UNAVAILABLE = "FULL_CONTEXT_UNAVAILABLE"
 TARGET_IGNORED = "TARGET_IGNORED"
 NO_DOCUMENTS_TEXT = "No ready documents are in scope. Upload a document or wait for processing to finish."
 NO_EVIDENCE_TEXT = "I could not find anything in your documents that answers this."

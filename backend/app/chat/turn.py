@@ -6,8 +6,8 @@ an LLM call or a retrieval call: each phase opens its own short session. Whateve
 and the session lease released in one `persist_turn` transaction (a failed node becomes an `error` response,
 never a stuck run: the graph jumps to `persist`).
 
-M0 scope: no evidence floor, no full-context route, no conflict detection (later slices); `mode=full_context`
-is recorded but answered through RAG with reason code `FULL_CONTEXT_UNAVAILABLE`.
+`plan_context` (S17.07) picks RAG or the full-context route; the run records `mode=full_context` only when
+the whole scoped documents were sent. M0 scope: no evidence floor, no conflict detection (later slices).
 """
 
 import asyncio
@@ -20,16 +20,10 @@ from app.chat.events import Followups, NullSink, current_sink
 from app.chat.graph import END, TURN_ERROR, Graph, TurnCtx, TurnDeps, TurnState, router
 from app.chat.harness import DEFAULT_LIMITS, TurnBudget
 from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_turn
-from app.chat.nodes._common import (
-    ERROR_TEXT,
-    FULL_CONTEXT_UNAVAILABLE,
-    NO_DOCUMENTS,
-    NO_EVIDENCE,
-    flush_segments,
-    plain,
-)
+from app.chat.nodes._common import ERROR_TEXT, NO_DOCUMENTS, NO_EVIDENCE, flush_segments, plain
 from app.chat.nodes.gate import gate
 from app.chat.nodes.load_context import load_context
+from app.chat.nodes.plan_context import plan_context
 from app.chat.nodes.retrieve import retrieve
 from app.chat.nodes.route_question import route_question
 from app.chat.nodes.run_analyze import analyze
@@ -43,7 +37,7 @@ from app.retrieval.retrieve import RetrievalResult
 _log = get_logger("vault.chat.turn")
 
 HEARTBEAT_S = 30.0
-__all__ = ["FULL_CONTEXT_UNAVAILABLE", "NO_DOCUMENTS", "NO_EVIDENCE", "TURN_ERROR", "TurnDeps", "run_turn"]
+__all__ = ["NO_DOCUMENTS", "NO_EVIDENCE", "TURN_ERROR", "TurnDeps", "run_turn"]
 
 
 def _candidates(r: RetrievalResult) -> tuple[CandidateRecord, ...]:
@@ -75,10 +69,17 @@ def after_route_question(s: TurnState) -> str:
     return "analyze"  # S17.10 adds the fast path here
 
 
-@router("clarify", "retrieve")
+@router("clarify", "plan_context")
 def after_analyze(s: TurnState) -> str:
     # S18.05 adds the `meta` branch
-    return "clarify" if s.analysis is not None and s.analysis.clarification is not None else "retrieve"
+    return "clarify" if s.analysis is not None and s.analysis.clarification is not None else "plan_context"
+
+
+@router("retrieve", "generate", "abstain_no_evidence")
+def after_plan_context(s: TurnState) -> str:
+    if s.mode != "full_context":
+        return "retrieve"
+    return "generate" if s.chunks else "abstain_no_evidence"  # full context always generates (no gate)
 
 
 @router("abstain_no_evidence", "gate")
@@ -163,13 +164,15 @@ def build_graph() -> Graph:
     return Graph(
         nodes={
             "load_context": load_context, "route_question": route_question, "analyze": analyze,
-            "retrieve": retrieve, "gate": gate, "generate": generate, "verify": verify,
+            "plan_context": plan_context, "retrieve": retrieve, "gate": gate, "generate": generate,
+            "verify": verify,
             "clarify": clarify, "abstain_no_documents": abstain_no_documents,
             "abstain_no_evidence": abstain_no_evidence, "persist": persist,
         },
         edges={
             "load_context": after_load_context, "route_question": after_route_question,
-            "analyze": after_analyze, "retrieve": after_retrieve, "gate": after_gate,
+            "analyze": after_analyze, "plan_context": after_plan_context, "retrieve": after_retrieve,
+            "gate": after_gate,
             "generate": after_generate, "verify": "persist", "clarify": "persist",
             "abstain_no_documents": "persist", "abstain_no_evidence": "persist", "persist": END,
         },
