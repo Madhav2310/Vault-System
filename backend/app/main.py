@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse
 
 from app import __version__
-from app.api import chat, chunks, documents, feedback, health, metrics, versions
+from app.api import chat, chunks, documents, feedback, health, metrics, runs, versions
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.api.openapi import install_openapi
@@ -66,6 +66,7 @@ def create_app(*, telemetry: bool = False, ui_dist: Path | None = None) -> FastA
     app.include_router(versions.router, dependencies=limited)
     app.include_router(chunks.router, dependencies=limited)
     app.include_router(chat.router, dependencies=limited)
+    app.include_router(runs.router, dependencies=limited)
     app.include_router(metrics.router, dependencies=limited)
     app.include_router(feedback.router, dependencies=limited)
     _mount_ui(app, ui_dist)

@@ -16,10 +16,18 @@ import time
 import uuid
 
 from app.chat import sessions as svc
+from app.chat.events import Followups, NullSink, current_sink
 from app.chat.graph import END, TURN_ERROR, Graph, TurnCtx, TurnDeps, TurnState, router
 from app.chat.harness import DEFAULT_LIMITS, TurnBudget
 from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_turn
-from app.chat.nodes._common import ERROR_TEXT, FULL_CONTEXT_UNAVAILABLE, NO_DOCUMENTS, NO_EVIDENCE, plain
+from app.chat.nodes._common import (
+    ERROR_TEXT,
+    FULL_CONTEXT_UNAVAILABLE,
+    NO_DOCUMENTS,
+    NO_EVIDENCE,
+    flush_segments,
+    plain,
+)
 from app.chat.nodes.gate import gate
 from app.chat.nodes.load_context import load_context
 from app.chat.nodes.retrieve import retrieve
@@ -96,6 +104,8 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
     gen = state.generation
     if state.failure or gen is None:
         gen = plain("error", ERROR_TEXT, state.failure or (TURN_ERROR,))
+        state.generation = gen
+    await flush_segments(state, ctx)  # whatever the stream has not shown yet (the error response, ...)
     retrieval, analysis = state.retrieval, state.analysis
     rec = TurnRecord(
         run_id=ctx.run_id,
@@ -105,7 +115,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         scope_version_ids=state.scope.version_ids,
         generation=gen,
         config={
-            "prompts": ["analyze_query@1", "answer_rag@1"],
+            "prompts": ["analyze_query@1", "answer_rag@2"],
             "models": _models(deps.gateway),
             "retrieval": deps.retriever.config.version,
         },
@@ -118,11 +128,14 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         degraded=tuple(dict.fromkeys(state.degraded)),
         limits={"max_llm_calls": ctx.budget.limits.max_llm_calls, "deadline_s": ctx.budget.limits.deadline_s},
         latency_ms=int((time.monotonic() - ctx.t_start) * 1000),
+        ttft_ms=None if state.failure else ctx.ttft_ms,
     )
     try:
         async with deps.sm() as s:
             state.persisted = await persist_turn(s, owner_id, rec)
-            return state
+        if gen.followups:  # what was stored, sent before `done`
+            await ctx.emit(Followups(run_id=str(ctx.run_id), questions=list(gen.followups)))
+        return state
     except Exception as e:
         # A ledger/DB failure must not leave the run `running` and the session leased: retry minimally.
         _log.error("persist_failed", error_type=type(e).__name__)
@@ -178,7 +191,10 @@ async def _run_turn(
     mode: str = "auto",
 ) -> PersistedTurn:
     """Run one turn to completion and persist it. Idempotent per run (a finished run is returned as is)."""
-    ctx = TurnCtx(deps, owner_id, session_id, run_id, user_message_id, TurnBudget(DEFAULT_LIMITS))
+    ctx = TurnCtx(
+        deps, owner_id, session_id, run_id, user_message_id, TurnBudget(DEFAULT_LIMITS),
+        sink=current_sink.get() or NullSink(),
+    )  # fmt: skip
     state = await GRAPH.run(TurnState(question=question, mode=mode), ctx)
     assert state.persisted is not None
     result: PersistedTurn = state.persisted

@@ -252,7 +252,8 @@ async def _existing(
             (
                 await db.execute(
                     text(
-                        "SELECT id, content, response_type, coverage_state, created_at FROM chat_messages "
+                        "SELECT id, content, response_type, coverage_state, created_at, followups "
+                        "FROM chat_messages "
                         "WHERE id = :a AND owner_id = :o"
                     ),
                     {"a": run["assistant_message_id"], "o": owner_id},
@@ -268,6 +269,7 @@ async def _existing(
             "response_type": a["response_type"],
             "coverage_state": a["coverage_state"],
             "created_at": a["created_at"].isoformat(),
+            "followups": list(a["followups"] or []),
         }
     return TurnState(False, m["id"], run["id"], run["status"], answer)
 

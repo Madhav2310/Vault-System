@@ -10,17 +10,18 @@ its citations are resolved by code (`citations.resolve`): the model never suppli
 
 import json
 import uuid
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
 from pydantic import ValidationError
 
-from app.chat.citations import Resolution, resolve
+from app.chat.citations import Resolution, ResolvedSegment, resolve, resolve_segment
 from app.chat.evidence import EvidenceSet, Mode, answer_schema, cache_mode_for
 from app.chat.memory import Memory
 from app.chat.nodes_common import defuse
-from app.chat.segments_reader import salvage
+from app.chat.segments_reader import SegmentReader, salvage
 from app.llm.errors import LlmError, RefusalError, TruncatedError
 from app.llm.gateway import Budget, LlmGateway
 from app.llm.types import Final, TextDelta, Usage
@@ -28,7 +29,7 @@ from app.llm.types import Final, TextDelta, Usage
 STOP_REFUSAL = "STOP_REFUSAL"
 STOP_MAX_TOKENS = "STOP_MAX_TOKENS"
 GENERATION_INVALID = "GENERATION_INVALID"
-PROMPT = ("answer_rag", 1)
+PROMPT = ("answer_rag", 2)
 
 
 @dataclass(frozen=True)
@@ -39,6 +40,7 @@ class GenerateResult:
     usage: Usage
     cost_usd: Decimal
     call_ids: tuple[uuid.UUID, ...]
+    followups: tuple[str, ...] = ()  # as the model wrote them; the node cleans them (followups.py)
 
     @property
     def text(self) -> str:
@@ -89,12 +91,17 @@ async def generate(
     conflicts: str | None = None,
     run_id: uuid.UUID | None = None,
     budget: Budget | None = None,
+    on_segment: Callable[[ResolvedSegment], Awaitable[None]] | None = None,
 ) -> GenerateResult:
+    """`on_segment` receives each segment (citations resolved by code) as soon as its JSON object closes in
+    the stream, before the whole answer has arrived. The final result is resolved from the complete, validated
+    answer and is what gets persisted."""
     schema = answer_schema(evidence, mode)
     message = compose_user_message(evidence, question, route, memory, coverage, conflicts)
     chunks: list[str] = []
     final: Final | None = None
     reasons: list[str] = []
+    reader, streamed = SegmentReader(), 0
     try:
         async for ev in gateway.stream(
             purpose="generate",
@@ -111,6 +118,11 @@ async def generate(
         ):
             if isinstance(ev, TextDelta):
                 chunks.append(ev.text)
+                if on_segment is not None:
+                    for done_seg in reader.feed(ev.text):
+                        if reader.status == "answer" and _well_formed(done_seg):
+                            await on_segment(resolve_segment(streamed, done_seg, evidence))
+                            streamed += 1
             elif isinstance(ev, Final):
                 final = ev
     except RefusalError as e:
@@ -142,7 +154,15 @@ async def generate(
         )
     resolution = resolve(out.segments, evidence)
     reasons += list(resolution.reasons)
-    return GenerateResult("answer", resolution, tuple(reasons), final.usage, final.cost_usd, final.call_ids)
+    return GenerateResult(
+        "answer",
+        resolution,
+        tuple(reasons),
+        final.usage,
+        final.cost_usd,
+        final.call_ids,
+        tuple(out.followups),
+    )
 
 
 def _well_formed(seg: dict[str, Any]) -> bool:

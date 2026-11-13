@@ -13,7 +13,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, create_model
+from pydantic import BaseModel, ConfigDict, Field, create_model
 
 from app.chat.nodes_common import defuse
 
@@ -36,6 +36,7 @@ class EvidenceChunk:
     section_path: tuple[str, ...]
     original_text: str
     sentences: tuple[tuple[int, int], ...]  # half-open offsets into original_text
+    document_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -104,7 +105,15 @@ def answer_schema(evidence: EvidenceSet | None, mode: Mode = "rag") -> type[Base
         item = Literal[evidence.handles]
     status: Any = Literal["answer", "abstain"]
     segment: Any = create_model("Segment", __config__=cfg, text=(str, ...), evidence=(list[item], ...))
-    return create_model("Answer", __config__=cfg, status=(status, ...), segments=(list[segment], ...))
+    # `followups` comes last (the model writes segments first, so streaming is not delayed) and defaults to
+    # empty for replies without it; on the wire the strict schema still requires it. Limits are code.
+    return create_model(
+        "Answer",
+        __config__=cfg,
+        status=(status, ...),
+        segments=(list[segment], ...),
+        followups=(list[str], Field(default_factory=list)),
+    )
 
 
 def cache_mode_for(mode: Mode) -> Literal["implicit", "explicit"] | None:

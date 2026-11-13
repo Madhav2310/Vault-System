@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any
 from opentelemetry import trace
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.chat.events import NODE_STAGE, EventSink, NullSink, Status, TurnEvent
 from app.chat.harness import TurnBudget
 from app.chat.ledger import StepRecord
 from app.core.logging import get_logger
@@ -58,6 +59,28 @@ class TurnCtx:
     user_message_id: uuid.UUID
     budget: TurnBudget
     t_start: float = field(default_factory=time.monotonic)
+    sink: EventSink = field(default_factory=NullSink)
+    stage: str | None = None  # last `status` stage emitted
+    segments_emitted: int = 0  # `segment` events sent so far (the index of the next one)
+    ttft_ms: int | None = None  # turn start to the first model-written segment (S18.02); None without one
+
+    def mark_first_segment(self) -> None:
+        if self.ttft_ms is None:
+            self.ttft_ms = max(1, int((time.monotonic() - self.t_start) * 1000))
+
+    async def emit(self, event: TurnEvent) -> None:
+        """Send an event to the sink; a sink failure never fails the turn."""
+        try:
+            await self.sink.emit(event)
+        except Exception as e:
+            _log.warning("event_emit_failed", error_type=type(e).__name__)
+
+    async def enter(self, node: str) -> None:
+        """Emit `status` when `node` moves the turn to a new user-visible stage."""
+        stage = NODE_STAGE.get(node)
+        if stage is not None and stage != self.stage:
+            self.stage = stage
+            await self.emit(Status(run_id=str(self.run_id), stage=stage))
 
 
 @dataclass
@@ -139,6 +162,7 @@ class Graph:
         state.last_decision, state.last_status, state.last_error = None, "ok", None
         t0, at = time.monotonic(), datetime.now(UTC)
         status, error_code = "ok", None
+        await ctx.enter(name)
         with _tracer.start_as_current_span(f"vault.node.{name}"):
             try:
                 if name == self.on_error:  # persist must always run, whatever is left of the deadline

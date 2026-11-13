@@ -630,3 +630,47 @@ class ChatMetrics(Model):
 class Liveness(BaseModel):
     status: str = Field(examples=["ok"])
     model_config = ConfigDict(json_schema_extra={"examples": [{"status": "ok"}]})
+
+
+class RunViewOut(Model):
+    run_id: uuid.UUID
+    status: str = Field(description="`running` or a terminal status")
+    mode: str | None = Field(default=None, description="`rag`, `full_context`, `meta`, ...")
+    route: str | None = None
+    response_type: str | None = None
+    reason_codes: list[str] = Field(default_factory=list)
+    explanation: list[str] = Field(description="Template-rendered sentences, never model-written")
+    sources: list[dict[str, Any]] = Field(default_factory=list)
+    steps: list[dict[str, Any]] = Field(default_factory=list)
+    usage: dict[str, Any] = Field(default_factory=dict)
+    message: dict[str, Any] | None = Field(default=None, description="The stored assistant message when done")
+    model_config = ConfigDict(
+        extra="allow",
+        json_schema_extra={
+            "examples": [
+                {
+                    "run_id": RUN_ID,
+                    "status": "done",
+                    "mode": "rag",
+                    "route": "rag",
+                    "response_type": "answer",
+                    "reason_codes": [],
+                    "explanation": ["Searched 1 document and used 3 passages."],
+                    "sources": [
+                        {"document_title": "MSA.pdf", "version_no": 1, "pages": [2, 3], "chunks_used": 3}
+                    ],
+                    "steps": [{"node": "retrieve", "status": "ok", "duration_ms": 420}],
+                    "usage": {"calls": 2, "input_tokens": 3100, "output_tokens": 240, "cost_usd": 0.004},
+                    "message": None,
+                }
+            ]
+        },
+    )
+
+
+class EventSchemaOut(Model):
+    title: str | None = None
+    model_config = ConfigDict(
+        extra="allow",
+        json_schema_extra={"examples": [{"title": "TurnEvent", "discriminator": {"propertyName": "type"}}]},
+    )
