@@ -86,6 +86,18 @@ class ScriptedProvider(FakeProvider):
     def _reply(self, req: ChatRequest) -> FakeReply:
         props = _props(req)
         user = _user_text(req)
+        if "verdicts" in props:  # support check: every segment is supported
+            m = re.search(r"<inputs>(.*)</inputs>", user, re.S)
+            segs = json.loads(m.group(1)).get("segments", []) if m else []
+            return text(
+                json.dumps(
+                    {
+                        "verdicts": [
+                            {"index": g["index"], "verdict": "supported", "reason": "scripted"} for g in segs
+                        ]
+                    }
+                )
+            )
         if "standalone_query" in props:
             return text(json.dumps(self._analyze(user)))
         if "segments" in props:
@@ -122,13 +134,13 @@ class ScriptedProvider(FakeProvider):
             }
         entry = self.entries.get(_norm(m.group(1)))
         if entry is None or entry.status == "abstain":
-            return {"status": "abstain", "segments": []}
+            return {"status": "abstain", "segments": [], "followups": []}
         segments = []
         for seg in entry.segments:
             needles = [n.lower() for n in seg.get("cite", [])]
             handles = [h for n in needles for h, line in lines if n in line.lower()][:2]
             segments.append({"text": seg["text"], "evidence": handles})
-        return {"status": "answer", "segments": segments}
+        return {"status": "answer", "segments": segments, "followups": ["What is the monthly fee?"]}
 
     def _brief(self, req: ChatRequest, user: str, *, facts: bool) -> dict[str, Any]:
         categories = _enum(req, "category")

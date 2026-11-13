@@ -99,7 +99,7 @@ ui-check:
 UI_E2E_ENV := COMPOSE_PROJECT_NAME=vault-uitest COMPOSE_FILE=docker-compose.yml:docker-compose.ui-test.yml \
               API_PORT=8190 POSTGRES_PORT=5542 REDIS_PORT=6489 RERANKER_PORT=8280
 ui-e2e:
-	@set -euxo pipefail; export $(UI_E2E_ENV); base=http://localhost:8190; \
+	@set -euo pipefail; export $(UI_E2E_ENV); base=http://localhost:8190; \
 	trap 'docker compose --profile "*" down -v' EXIT; \
 	docker compose --profile "*" down -v >/dev/null 2>&1 || true; \
 	GIT_SHA=$$(git rev-parse --short HEAD) docker compose build api; \
