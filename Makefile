@@ -53,9 +53,9 @@ seed-users:
 eval:
 	$(call not_implemented,S2.14)
 eval-retrieval:
-	$(call not_implemented,S2.17)
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config retrieval --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 eval-smoke:
-	$(call not_implemented,S7.10)
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite smoke --config smoke --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 loadtest:
 	$(call not_implemented,S5.12)
 
