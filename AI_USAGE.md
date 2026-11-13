@@ -37,3 +37,5 @@ How AI tools were used to design and build this project, including where they we
 ## Prompt iteration log
 | Date | Prompt id@version | Change | Eval result | Kept? |
 |---|---|---|---|---|
+| 2026-11-13 | analyze_query@1 | Initial: untrusted-data section, 4 few-shot examples (follow-up, compare, clarify, injection), refs instead of ids | 8/8 representative questions correct live ($0.0007); full eval delta pending S3.15 | yes |
+| 2026-11-13 | answer_rag@1 | Initial: 7-part skeleton (ground rules, citation rule, route format, coverage, conflicts, length, history), handles only, abstain rule | not evaluated yet (S3.15 baseline) | yes |
