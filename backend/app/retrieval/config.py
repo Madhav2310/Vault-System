@@ -2,7 +2,7 @@
 
 import pathlib
 from functools import lru_cache
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
@@ -15,6 +15,7 @@ ID_BOOST = 2.0  # the identifier weight hard-coded in fusion.py (see its docstri
 
 class RerankCfg(BaseModel):
     model_config = ConfigDict(extra="forbid")
+    kind: Literal["none", "cross_encoder", "llm"] = "cross_encoder"
     model: str
     candidates: int = Field(ge=1, le=100)
     top_n: int = Field(ge=1, le=100)
@@ -36,7 +37,7 @@ class GateCfg(BaseModel):
 
 class RetrievalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    version: str = Field(pattern=r"^retrieval@[1-9][0-9]*$")
+    version: str = Field(pattern=r"^retrieval@[1-9][0-9]*(-[a-z0-9]+)?$")
     k_vec: int = Field(ge=1, le=500)
     k_lex: int = Field(ge=1, le=500)
     per_doc_quota: int | None = Field(ge=1)

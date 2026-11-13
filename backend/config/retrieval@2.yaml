@@ -7,8 +7,10 @@ per_doc_quota: 12        # no document contributes more than this many vector ca
 rrf_k: 60                # reciprocal rank fusion constant
 id_boost: 2              # weight of identifier matches (must equal fusion.ID_BOOST)
 rerank:
+  kind: cross_encoder
+  window_words: 180
   model: Xenova/ms-marco-MiniLM-L-6-v2
-  candidates: 40         # fused candidates sent to the reranker
+  candidates: 20         # fused candidates sent to the reranker
   top_n: 8               # chunks kept after reranking
 expansion:
   enabled: true

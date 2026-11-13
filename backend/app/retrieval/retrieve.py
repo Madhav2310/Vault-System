@@ -28,7 +28,7 @@ from app.retrieval.expand import expand_neighbors
 from app.retrieval.fusion import FusedCandidate, Ranked, fuse
 from app.retrieval.lexical import LexicalHit, lexical_search
 from app.retrieval.query_embed import QueryEmbedder, QueryEmbedding, normalize_query
-from app.retrieval.rerank import RerankClient, RerankPassage
+from app.retrieval.rerank import RerankClient, RerankedItem, RerankPassage, RerankResult
 from app.retrieval.scope import Scope
 from app.retrieval.vector import VectorHit, vector_search
 from app.retrieval.windows import focus_window
@@ -232,9 +232,15 @@ class Retriever:
             await s.rollback()  # end the read transaction: no connection held across the reranker call
         pool = [c for c in pool if c.chunk_id in texts]  # a chunk deleted mid-request drops out
         t = time.monotonic()
-        rr = await self._reranker.rerank(
-            query, [RerankPassage(c.chunk_id, texts[c.chunk_id]) for c in pool], cfg.rerank.top_n
-        )
+        if cfg.rerank.kind == "none":  # a deliberate no-rerank config (fusion order), not a degraded run
+            rr = RerankResult(
+                [RerankedItem(c.chunk_id, i, None) for i, c in enumerate(pool[: cfg.rerank.top_n])],
+                [], False, None, None, None,
+            )  # fmt: skip
+        else:
+            rr = await self._reranker.rerank(
+                query, [RerankPassage(c.chunk_id, texts[c.chunk_id]) for c in pool], cfg.rerank.top_n
+            )
         timings["rerank_ms"] = _ms(t)
         if rr.degraded and rr.degraded_reason:
             degraded.append(rr.degraded_reason)
