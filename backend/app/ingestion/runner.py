@@ -27,8 +27,10 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.logging import get_logger
+from app.core.settings import get_settings
 from app.ingestion import status as vs
 from app.ingestion.errors import PermanentStageError, RetryableStageError, StageError
+from app.ingestion.events import publish_wake
 from app.ingestion.jobs import HEARTBEAT_S, LEASE_S, ClaimedJob, Enqueue, claim, dispatch, heartbeat
 
 STAGE_ORDER: tuple[str, ...] = ("extract", "quality", "chunk", "embed", "index", "brief")
@@ -291,6 +293,7 @@ async def _commit(
             )
         await _event(s, job, stage, "succeeded", job.attempt_count + 1, ms, result.detail)
         await s.commit()
+    await publish_wake(get_settings().redis_url, job.version_id)  # live status (S14.05); never raises
     if nxt is None:
         return "finished"
     async with sm() as s:
@@ -337,6 +340,7 @@ async def _fail(
             )
         await _event(s, job, job.current_stage, "error", attempt, ms, detail)
         await s.commit()
+    await publish_wake(get_settings().redis_url, job.version_id)  # live status (S14.05); never raises
     _log.info(
         "stage_failed",
         job_id=str(job.id),

@@ -62,6 +62,12 @@ class Settings(BaseSettings):
     parse_timeout_s: int = 120
     parse_memory_mb: int = 2048  # address-space cap of the extraction subprocess (Linux only)
 
+    # --- per-user rate limits: requests per window, Redis token bucket per (user, bucket) (design §13.4) ---
+    rate_limit_chat_post_per_min: int = 20
+    rate_limit_upload_per_min: int = 30
+    rate_limit_default_per_min: int = 300
+    rate_limit_window_s: int = 60  # the "min" above; tests widen it so refill cannot blur exact counts
+
     # --- document brief (design §9.1) ---
     brief_max_evidence_tokens: int = 12_000  # above this the brief maps over section groups, then merges
     brief_max_usd: float = 0.05  # per document; reaching it stops further map calls (BRIEF_PARTIAL_BUDGET)

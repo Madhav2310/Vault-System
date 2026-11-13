@@ -1,5 +1,5 @@
-"""Lexical search (design 7.2, 7.3): an OR tsquery of the query's English lexemes on `tsv_en` ranked by `ts_rank_cd`,
-plus a `simple` query over the identifier-like tokens of the query on `tsv_ids` (`id_match=true`).
+"""Lexical search (design 7.2, 7.3): an OR tsquery of the query's English lexemes on `tsv_en`, ranked by
+`ts_rank_cd`, plus a `simple` query over the query's identifier-like tokens on `tsv_ids` (`id_match`).
 
 Every statement is filtered by `owner_id` (partition pruning) and the allowed version ids. No LLM, no
 document text in logs.
@@ -45,14 +45,15 @@ def lexical_statement(
 
     OR semantics (S11.03): the query's stemmed, stopword-free lexemes (`to_tsvector('english')`) are joined
     with `|` as quoted literals, so no user text is ever parsed as tsquery syntax. A chunk matches when it
-    has at least one lexeme (two when the query has `MIN_MATCH_FROM`+), ranked by `ts_rank_cd` (OR score + 2x the AND score, which
-    rewards proximity). Identifier tokens keep their own `simple` match on `tsv_ids` and bypass the minimum."""
+    has at least one lexeme (two when the query has `MIN_MATCH_FROM`+), ranked by `ts_rank_cd`: OR score plus
+    2x the AND score, which rewards proximity. Identifier tokens keep their own `simple` match on `tsv_ids`
+    and bypass the minimum."""
     ids = identifier_query(query)
     params: dict[str, Any] = {"o": owner_id, "vs": list(version_ids), "q": query, "k": k}
     if '"' in query:  # an explicit quoted phrase keeps websearch semantics (phrase / AND / -exclusion)
         return _websearch_statement(ids, params)
     ctes = (
-        "WITH ql AS (SELECT tsvector_to_array(to_tsvector('english', :q)) AS lex), "
+        "WITH ql AS (SELECT tsvector_to_array(to_tsvector('english', :q)) AS lex), "  # noqa: S608 (only the MIN_MATCH_FROM constant is interpolated)
         "qq AS (SELECT lex, CASE WHEN cardinality(lex) = 0 THEN NULL ELSE "
         "(SELECT string_agg(quote_literal(l), ' | ') FROM unnest(lex) AS l)::tsquery END AS q, "
         "CASE WHEN cardinality(lex) = 0 THEN NULL ELSE "

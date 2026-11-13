@@ -60,11 +60,25 @@ async def create_from_upload(
     doc = Document(
         id=uuid7(), owner_id=owner_id, title=(f.title or default_title(f.filename))[:MAX_TITLE_CHARS]
     )
+    session.add(doc)
+    await session.flush()  # documents before versions (FK)
+    return await _add_version(session, owner_id, doc.id, 1, f, mime)
+
+
+async def _add_version(
+    session: AsyncSession,
+    owner_id: uuid.UUID,
+    document_id: uuid.UUID,
+    version_no: int,
+    f: ReceivedFile,
+    mime: str,
+) -> UploadOutcome:
+    """The version row (status `uploaded`) and its pending job; the blob reference is already taken."""
     ver = DocumentVersion(
         id=uuid7(),
-        document_id=doc.id,
+        document_id=document_id,
         owner_id=owner_id,
-        version_no=1,
+        version_no=version_no,
         filename=f.filename,
         mime=mime,
         size_bytes=f.size,
@@ -74,10 +88,55 @@ async def create_from_upload(
     job = ProcessingJob(
         id=uuid7(), version_id=ver.id, owner_id=owner_id, current_stage=FIRST_STAGE, status="pending"
     )
-    session.add(doc)
-    await session.flush()  # documents before versions (FK); versions before jobs
     session.add(ver)
-    await session.flush()
+    await session.flush()  # versions before jobs (FK)
     session.add(job)
     await session.flush()
-    return UploadOutcome(doc.id, ver.id, job.id, ver.status, deduplicated=False)
+    return UploadOutcome(document_id, ver.id, job.id, ver.status, deduplicated=False)
+
+
+async def owns_live_document(session: AsyncSession, owner_id: uuid.UUID, document_id: uuid.UUID) -> bool:
+    return (
+        await session.execute(
+            select(Document.id).where(
+                Document.id == document_id, Document.owner_id == owner_id, Document.deleted_at.is_(None)
+            )
+        )
+    ).first() is not None
+
+
+async def create_new_version(
+    session: AsyncSession, owner_id: uuid.UUID, document_id: uuid.UUID, f: ReceivedFile, mime: str
+) -> UploadOutcome | None:
+    """Add version `max + 1` to the owner's live document (None when it is not theirs or is deleted).
+
+    Same bytes as the document's newest version -> that version, `deduplicated=True`, nothing created. (The
+    newest, not only the current one: a client retry while the new version is still processing must not stack
+    versions. Bytes of an older version are a revert and become a new version.) The document row lock
+    serializes concurrent uploads, so `max + 1` cannot collide.
+    """
+    locked = (
+        await session.execute(
+            select(Document.id)
+            .where(Document.id == document_id, Document.owner_id == owner_id, Document.deleted_at.is_(None))
+            .with_for_update()
+        )
+    ).first()
+    if locked is None:
+        return None
+    newest = (
+        await session.execute(
+            select(
+                DocumentVersion.id, DocumentVersion.version_no, DocumentVersion.sha256, DocumentVersion.status
+            )
+            .where(DocumentVersion.document_id == document_id, DocumentVersion.owner_id == owner_id)
+            .order_by(DocumentVersion.version_no.desc())
+            .limit(1)
+        )
+    ).first()
+    if newest is not None and newest.sha256 == f.sha256:
+        return UploadOutcome(document_id, newest.id, None, newest.status, deduplicated=True)
+    await add_blob_ref(session, f.sha256, f.size, mime)
+    return await _add_version(
+        session, owner_id, document_id, (newest.version_no if newest else 0) + 1, f, mime
+    )

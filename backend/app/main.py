@@ -3,13 +3,14 @@
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 
 from app import __version__
-from app.api import chat, chunks, documents, health, metrics, versions
+from app.api import chat, chunks, documents, feedback, health, metrics, versions
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.core.logging import configure_logging
+from app.core.ratelimit import RateLimitHeadersMiddleware, enforce_rate_limit
 from app.core.settings import get_settings
 from app.llm.routing import ModelRouter
 from app.observability.otel import instrument_fastapi, setup_telemetry
@@ -30,13 +31,16 @@ def create_app(*, telemetry: bool = False) -> FastAPI:
 
     app = FastAPI(title="Vault", version=__version__, lifespan=lifespan)
     install_error_handlers(app)
+    app.add_middleware(RateLimitHeadersMiddleware)
     app.add_middleware(RequestContextMiddleware)
+    limited = [Depends(enforce_rate_limit)]  # per-user token bucket on every authenticated router (S14.01)
     app.include_router(health.router)
-    app.include_router(documents.router)
-    app.include_router(versions.router)
-    app.include_router(chunks.router)
-    app.include_router(chat.router)
-    app.include_router(metrics.router)
+    app.include_router(documents.router, dependencies=limited)
+    app.include_router(versions.router, dependencies=limited)
+    app.include_router(chunks.router, dependencies=limited)
+    app.include_router(chat.router, dependencies=limited)
+    app.include_router(metrics.router, dependencies=limited)
+    app.include_router(feedback.router, dependencies=limited)
     return app
 
 

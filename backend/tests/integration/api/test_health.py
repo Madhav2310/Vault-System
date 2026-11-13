@@ -52,7 +52,8 @@ async def test_readyz_ok(make_client: Callable[..., AsyncIterator[httpx.AsyncCli
         r = await c.get("/readyz")
         assert r.status_code == 200, r.json()
         body = r.json()
-        assert body["status"] == "ok"
+        assert body["status"] in ("ok", "degraded")  # degraded only when the optional reranker is down
+        assert all(v["status"] == "ok" for v in body["checks"].values() if v["required"])
         assert set(body["checks"]) == {"database", "redis", "object_store", "reranker", "providers"}
 
 
@@ -60,7 +61,7 @@ async def test_readyz_redis_down(make_client: Callable[..., AsyncIterator[httpx.
     async for c in make_client(redis_url=f"redis://127.0.0.1:{_closed_port()}/0"):
         r = await c.get("/readyz")
         assert r.status_code == 503
-        failed = {k for k, v in r.json()["checks"].items() if v["status"] == "fail"}
+        failed = {k for k, v in r.json()["checks"].items() if v["status"] == "fail" and v["required"]}
         assert failed == {"redis"}
 
 
@@ -69,6 +70,24 @@ async def test_readyz_db_down(make_client: Callable[..., AsyncIterator[httpx.Asy
     async for c in make_client(database_url=url):
         r = await c.get("/readyz")
         assert r.status_code == 503
-        failed = {k for k, v in r.json()["checks"].items() if v["status"] == "fail"}
+        failed = {k for k, v in r.json()["checks"].items() if v["status"] == "fail" and v["required"]}
         assert failed == {"database"}
         assert "secretpw" not in r.text
+
+
+async def test_readyz_reranker_down_degraded(
+    make_client: Callable[..., AsyncIterator[httpx.AsyncClient]],
+) -> None:
+    async for c in make_client(reranker_url=f"http://127.0.0.1:{_closed_port()}"):
+        r = await c.get("/readyz")
+        assert r.status_code == 200 and r.json()["status"] == "degraded"
+        rr = r.json()["checks"]["reranker"]
+        assert rr["status"] == "fail" and rr["required"] is False
+
+
+async def test_readyz_openai_key_only(make_client: Callable[..., AsyncIterator[httpx.AsyncClient]]) -> None:
+    async for c in make_client(anthropic_api_key=None):  # the dormant adapter's key is not required
+        assert (await c.get("/readyz")).json()["checks"]["providers"]["status"] == "ok"
+    async for c in make_client(openai_api_key=None):
+        r = await c.get("/readyz")
+        assert r.status_code == 503 and r.json()["checks"]["providers"]["status"] == "fail"
