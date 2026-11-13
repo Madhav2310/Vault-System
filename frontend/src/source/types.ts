@@ -25,7 +25,7 @@ export interface ChunkView {
   section_path: string[];
   token_count: number;
   version: { id: string; version_no: number; filename: string };
-  /** Not in the API today; used when the backend adds neighbour ids. */
+  /** Neighbours by ordinal within the same version; null at the ends. */
   prev_chunk_id?: string | null;
   next_chunk_id?: string | null;
 }

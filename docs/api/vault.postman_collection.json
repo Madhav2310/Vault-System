@@ -459,7 +459,7 @@
                 }
               ]
             },
-            "description": "`text` is `chunks.original_text` (the only citable text); prefixes are never returned."
+            "description": "`text` is `chunks.original_text` (the only citable text); prefixes are never returned.\n\n`prev_chunk_id` / `next_chunk_id` are the neighbours by ordinal within the same document version\n(`null` at the ends)."
           },
           "response": []
         }

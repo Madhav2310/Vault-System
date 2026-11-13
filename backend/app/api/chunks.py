@@ -25,14 +25,25 @@ router = APIRouter(prefix="/v1/chunks", tags=["Documents"])
 async def get_chunk(
     chunk_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict[str, Any]:
-    """`text` is `chunks.original_text` (the only citable text); prefixes are never returned."""
+    """`text` is `chunks.original_text` (the only citable text); prefixes are never returned.
+
+    `prev_chunk_id` / `next_chunk_id` are the neighbours by ordinal within the same document version
+    (`null` at the ends).
+    """
     row = (
         (
             await db.execute(
                 text(
                     "SELECT c.id, c.document_id, c.ordinal, c.kind, c.original_text, c.sentences, "
                     "c.page_start, c.page_end, c.section_path, c.token_count, v.id AS vid, v.version_no, "
-                    "v.filename FROM chunks c "
+                    "v.filename, "
+                    "(SELECT p.id FROM chunks p WHERE p.owner_id = c.owner_id "
+                    "AND p.version_id = c.version_id AND p.ordinal < c.ordinal "
+                    "ORDER BY p.ordinal DESC LIMIT 1) AS prev_id, "
+                    "(SELECT n.id FROM chunks n WHERE n.owner_id = c.owner_id "
+                    "AND n.version_id = c.version_id AND n.ordinal > c.ordinal "
+                    "ORDER BY n.ordinal ASC LIMIT 1) AS next_id "
+                    "FROM chunks c "
                     "JOIN document_versions v ON v.id = c.version_id AND v.owner_id = c.owner_id "
                     "JOIN documents d ON d.id = c.document_id AND d.owner_id = c.owner_id "
                     "WHERE c.owner_id = :o AND c.id = :c AND d.deleted_at IS NULL"
@@ -56,5 +67,7 @@ async def get_chunk(
         "page_end": row["page_end"],
         "section_path": row["section_path"],
         "token_count": row["token_count"],
+        "prev_chunk_id": str(row["prev_id"]) if row["prev_id"] else None,
+        "next_chunk_id": str(row["next_id"]) if row["next_id"] else None,
         "version": {"id": str(row["vid"]), "version_no": row["version_no"], "filename": row["filename"]},
     }

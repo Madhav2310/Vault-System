@@ -330,6 +330,12 @@ class ChunkOut(Model):
     page_end: int
     section_path: list[str]
     token_count: int
+    prev_chunk_id: uuid.UUID | None = Field(
+        default=None, description="Previous chunk by ordinal in the same version; `null` for the first"
+    )
+    next_chunk_id: uuid.UUID | None = Field(
+        default=None, description="Next chunk by ordinal in the same version; `null` for the last"
+    )
     version: ChunkVersion
     model_config = ConfigDict(
         extra="allow",
@@ -346,6 +352,8 @@ class ChunkOut(Model):
                     "page_end": 3,
                     "section_path": ["8", "Termination"],
                     "token_count": 17,
+                    "prev_chunk_id": "0192f3a4-0000-7000-8000-0000000000c3",
+                    "next_chunk_id": None,
                     "version": {
                         "id": VERSION_ID,
                         "version_no": 1,
