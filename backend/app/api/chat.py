@@ -11,12 +11,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import TurnRunner, get_db, get_turn_runner
 from app.api.errors import DomainError
+from app.api.schemas import MessageList, PostMessageOut, SessionList, SessionOut
 from app.chat import history
 from app.chat import sessions as svc
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 
-router = APIRouter(prefix="/v1/chat", tags=["chat"])
+router = APIRouter(prefix="/v1/chat", tags=["Chat"])
 _TASKS: set[asyncio.Future[None]] = set()  # strong refs: running turns must outlive the request
 
 
@@ -41,7 +42,13 @@ def _json(s: svc.SessionRow) -> dict[str, Any]:
     }
 
 
-@router.post("/sessions", status_code=201)
+@router.post(
+    "/sessions",
+    status_code=201,
+    summary="Create a chat session",
+    response_model=SessionOut,
+    responses={404: {"description": "A document in `document_ids` is not yours or was deleted"}},
+)
 async def create_session(
     body: CreateSession, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict[str, Any]:
@@ -52,7 +59,12 @@ async def create_session(
         raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND) from None
 
 
-@router.get("/sessions")
+@router.get(
+    "/sessions",
+    summary="List chat sessions",
+    description="Your sessions, most recently updated first, cursor-paginated.",
+    response_model=SessionList,
+)
 async def list_sessions(
     user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
@@ -66,7 +78,13 @@ async def list_sessions(
     return {"items": [_json(s) for s in page], "next_cursor": nxt}
 
 
-@router.get("/sessions/{session_id}")
+@router.get(
+    "/sessions/{session_id}",
+    summary="Get a chat session",
+    description="One session with its document scope (`document_ids: null` means all documents).",
+    response_model=SessionOut,
+    responses={404: {"description": "Not your session"}},
+)
 async def get_session(
     session_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict[str, Any]:
@@ -76,7 +94,13 @@ async def get_session(
         raise DomainError(ErrorCode.NOT_FOUND) from None
 
 
-@router.get("/sessions/{session_id}/messages")
+@router.get(
+    "/sessions/{session_id}/messages",
+    summary="List messages",
+    response_model=MessageList,
+    response_model_exclude_unset=True,
+    responses={404: {"description": "Not your session"}},
+)
 async def list_messages(
     session_id: uuid.UUID,
     user: CurrentUser,
@@ -97,7 +121,18 @@ async def list_messages(
 @router.post(
     "/sessions/{session_id}/messages",
     status_code=202,
-    responses={200: {"description": "Retried client_message_id of a finished turn: the stored result"}},
+    summary="Post a message and get a cited answer",
+    response_model=PostMessageOut,
+    response_model_exclude_unset=True,
+    responses={
+        200: {
+            "model": PostMessageOut,
+            "description": "Retried client_message_id of a finished turn: the stored result",
+        },
+        404: {"description": "Not your session"},
+        409: {"description": "Another turn is running in this session (`turn_in_progress`)"},
+        503: {"description": "Model provider or capacity unavailable"},
+    },
 )
 async def post_message(
     session_id: uuid.UUID,

@@ -9,13 +9,19 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.api.errors import DomainError
+from app.api.schemas import ChunkOut
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 
-router = APIRouter(prefix="/v1/chunks", tags=["chunks"])
+router = APIRouter(prefix="/v1/chunks", tags=["Documents"])
 
 
-@router.get("/{chunk_id}")
+@router.get(
+    "/{chunk_id}",
+    summary="Inspect a source chunk",
+    response_model=ChunkOut,
+    responses={404: {"description": "Not your chunk"}},
+)
 async def get_chunk(
     chunk_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
 ) -> dict[str, Any]:
