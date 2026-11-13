@@ -15,7 +15,7 @@ from pydantic import BaseModel
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "eval" / "reports"
 # Metrics where lower is better; everything else is higher-is-better.
-LOWER_IS_BETTER = frozenset({"latency_ms", "cost_usd", "gold_unmapped"})
+LOWER_IS_BETTER = frozenset({"latency_ms", "ttft_ms", "cost_usd", "gold_unmapped"})
 
 
 @dataclass

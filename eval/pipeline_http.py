@@ -28,12 +28,13 @@ from eval.loader import load_dataset
 from eval.mapping import ChunkInfo, chunks_from_rows
 from eval.run import Harness
 from eval.schema import AnswerSegment, CitedRange, EvalContext, ItemOutput, Query
+from eval.sse import read_turn_stream
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 READY = {"ready", "enriched"}
 
 
-async def setup(config: str, *, with_judges: bool | None = None) -> Harness:
+async def setup(config: str, *, with_judges: bool | None = None, stream: bool = False) -> Harness:
     import os
 
     base = os.environ.get("API_BASE_URL", "http://localhost:8100")
@@ -89,16 +90,28 @@ async def setup(config: str, *, with_judges: bool | None = None) -> Harness:
     async def pipeline(q: Query, ctx: EvalContext) -> ItemOutput:
         sid = ctx.session_id or await new_session(q, ctx)
         t0 = time.monotonic()
-        r = await http.post(
-            f"/v1/chat/sessions/{sid}/messages",
-            json={
-                "content": q.question,
-                "client_message_id": f"{q.item_id}:{q.turn_index}:{uuid.uuid4().hex[:8]}",
-            },
-        )
-        r.raise_for_status()
-        ms = (time.monotonic() - t0) * 1000
-        msg_id = r.json()["message"]["id"]
+        body = {
+            "content": q.question,
+            "client_message_id": f"{q.item_id}:{q.turn_index}:{uuid.uuid4().hex[:8]}",
+        }
+        ttft: float | None = None
+        if stream:
+            async with http.stream(
+                "POST",
+                f"/v1/chat/sessions/{sid}/messages",
+                json=body,
+                headers={"Accept": "text/event-stream"},
+            ) as r:
+                r.raise_for_status()
+                res = await read_turn_stream(r.aiter_lines(), t0)
+            if res.error or res.message_id is None:
+                raise RuntimeError(f"stream ended without done: {res.error or res.events}")
+            ms, ttft, msg_id = res.latency_ms or 0.0, res.ttft_ms, res.message_id
+        else:
+            r = await http.post(f"/v1/chat/sessions/{sid}/messages", json=body)
+            r.raise_for_status()
+            ms = (time.monotonic() - t0) * 1000
+            msg_id = r.json()["message"]["id"]
         msg = await _find_message(http, sid, msg_id)
         segs = [
             AnswerSegment(
@@ -142,6 +155,7 @@ async def setup(config: str, *, with_judges: bool | None = None) -> Harness:
             segments=[] if abstained and not segs else segs,
             abstained=abstained,
             latency_ms=ms,
+            ttft_ms=ttft,
             cost_usd=float(run[1] or 0),
             call_ids=tuple(str(c) for c in call_ids),
             verdicts=tuple(
