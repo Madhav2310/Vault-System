@@ -33,3 +33,6 @@ eval/sources/
 
 # Generated test fixtures too large to commit (backend/tests/fixtures/make_fixtures.py)
 backend/tests/fixtures/files/oversize.pdf
+
+eval/runs/
+eval/.cache/
