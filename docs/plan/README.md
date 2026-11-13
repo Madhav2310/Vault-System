@@ -93,6 +93,19 @@ Balanced (user decision 2026-11-12; re-based on OpenAI 2026-11-13, research 06 �
 8. **S9.14–S9.16** (Tier B screens, S9 gate)
 9. **S10** (starts with the user's golden-set review S10.01 and the post-review re-evaluation S10.02)
 
+### Plan v2 — plan of record from 2026-11-13 (user decision)
+After the core spine (M0 minus S3.15), a critical reassessment (`docs/plan/v2.md`) re-prioritised the remaining work toward what the spec grades. **S11–S15 are now the plan of record, in this order: S11 ∥ S12 → S13 ∥ S14 → S15.** The tasks of S1–S10 that are not yet done are **deferred**, not deleted. A v2 task that names "Supersedes" replaces the old one. The rules of the per-slice workflow (CLAUDE.md) apply unchanged.
+
+| Slice | Theme | Gate |
+|---|---|---|
+| S11 | Retrieval quality, latency, abstention | S11.16 |
+| S12 | Document intelligence (cited brief, summaries) | S12.09 |
+| S13 | Chat experience (SSE, follow-ups, meta, compare, grounding baseline) | S13.11 |
+| S14 | Production readiness (limits, quotas, versions, live status, feedback, OpenAPI) | S14.08 |
+| S15 | Delivery (UI, README, AI_USAGE, demo, fresh clone) | S15.12 |
+
+Parallel lanes: S11 (main session) ∥ S12 (lane); after S11.09 merges: S13 (main) ∥ S14 (lane); S15.01–S15.05 (lane) start when S13.01 and S12.05 merge; S15.06–S15.12 last.
+
 ### Core path and Milestone M0 — working spine (user decision 2026-11-13)
 Why: after S0 nothing the spec asks for existed yet, and the spec prefers "a fully functional subset over partially implemented features". The core path builds the whole spec loop first, on a strong base (failure handling, recovery, measurement), and defers depth (geometry highlight, scale, tuning stages, streaming, load) to after M0. Nothing is deleted; deferred tasks run afterwards in plan order.
 
@@ -141,3 +154,13 @@ Tick a box only when the task's definition of done is met.
 **S9** — [ ] S9.01 [ ] S9.02 [ ] S9.03 [ ] S9.04 [ ] S9.05 [ ] S9.06 [ ] S9.07 [ ] S9.08 [ ] S9.09 [ ] S9.10 [ ] S9.11 [ ] S9.12 [ ] S9.13 [ ] S9.14 [ ] S9.15 [ ] S9.16 (gate)
 
 **S10** — [ ] S10.01 [ ] S10.02 [ ] S10.03 [ ] S10.04 [ ] S10.05 [ ] S10.06 [ ] S10.07 [ ] S10.08 [ ] S10.09 [ ] S10.10 [ ] S10.11 (gate)
+
+**S11** — [ ] S11.01 [ ] S11.02 [ ] S11.03 [ ] S11.04 [ ] S11.05 [ ] S11.06 [ ] S11.07 [ ] S11.08 [ ] S11.09 [ ] S11.10 [ ] S11.11 [ ] S11.12 [ ] S11.13 [ ] S11.14 [ ] S11.15 [ ] S11.16 (gate)
+
+**S12** — [ ] S12.01 [ ] S12.02 [ ] S12.03 [ ] S12.04 [ ] S12.05 [ ] S12.06 [ ] S12.07 [ ] S12.08 [ ] S12.09 (gate)
+
+**S13** — [ ] S13.01 [ ] S13.02 [ ] S13.03 [ ] S13.04 [ ] S13.05 [ ] S13.06 [ ] S13.07 [ ] S13.08 [ ] S13.09 [ ] S13.10 [ ] S13.11 (gate)
+
+**S14** — [ ] S14.01 [ ] S14.02 [ ] S14.03 [ ] S14.04 [ ] S14.05 [ ] S14.06 [ ] S14.07 [ ] S14.08 (gate)
+
+**S15** — [ ] S15.01 [ ] S15.02 [ ] S15.03 [ ] S15.04 [ ] S15.05 [ ] S15.06 [ ] S15.07 [ ] S15.08 [ ] S15.09 [ ] S15.10 [ ] S15.11 [ ] S15.12
