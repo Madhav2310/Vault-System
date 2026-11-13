@@ -46,7 +46,8 @@ async def set_version_status(
         await session.execute(
             text(
                 "UPDATE document_versions SET status = :to, error_code = :ec, error_detail = :ed, "
-                "ready_at = CASE WHEN :to = 'ready' THEN now() ELSE ready_at END "
+                "ready_at = CASE WHEN :to = 'ready' THEN now() ELSE ready_at END, "
+                "enriched_at = CASE WHEN :to = 'enriched' THEN now() ELSE enriched_at END "
                 "WHERE id = :v AND status = ANY(:src) RETURNING id"
             ),
             {"to": to, "ec": error_code, "ed": error_detail, "v": version_id, "src": sources},

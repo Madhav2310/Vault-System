@@ -23,6 +23,8 @@ from app.documents.service import create_from_upload
 from app.documents.sniff import sniff
 from app.documents.upload import receive_upload
 from app.ingestion.jobs import Enqueue, dispatch
+from app.insights.brief import EMPTY_PARAMS_HASH, KIND, PROMPT_VERSION
+from app.insights.views import load_brief, summary_snippet
 from app.storage.base import ObjectStore
 
 router = APIRouter(prefix="/v1", tags=["documents"])
@@ -180,8 +182,12 @@ async def list_documents(
     if cursor:
         params["c_at"], params["c_id"] = _decode_cursor(cursor)
         where.append("(d.created_at, d.id) < (:c_at, :c_id)")
+    params.update(bh=EMPTY_PARAMS_HASH, bk=KIND, bpv=PROMPT_VERSION)
     sql = (
-        f"SELECT d.id, d.title, d.category, d.tags, d.created_at, d.current_version_id, {_VERSION_COLS} "
+        f"SELECT d.id, d.title, d.category, d.tags, d.created_at, d.current_version_id, {_VERSION_COLS}, "  # noqa: S608 (constants and bound parameters only)
+        "(SELECT i.content->>'summary' FROM document_insights i WHERE i.owner_id = d.owner_id "
+        "AND i.version_id = v.id AND i.kind = :bk AND i.params_hash = :bh AND i.prompt_version = :bpv "
+        "AND i.status = 'done') AS brief_summary "
         f"{_DOC_VERSION} WHERE {' AND '.join(where)} ORDER BY d.created_at DESC, d.id DESC LIMIT :lim"
     )
     rows = (await db.execute(text(sql), params)).mappings().all()
@@ -193,6 +199,7 @@ async def list_documents(
             "status": r["status"],
             "category": r["category"],
             "tags": r["tags"],
+            "summary_snippet": summary_snippet(r["brief_summary"]),
             "created_at": _iso(r["created_at"]),
             "version": _version_json(r),
         }
@@ -215,6 +222,21 @@ async def delete_document(
         raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND)
     await enqueue_purge(document_id)
     return Response(status_code=204)
+
+
+@router.get("/documents/{document_id}/brief")
+async def get_document_brief(
+    document_id: uuid.UUID,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    include_unverified: bool = True,
+) -> dict[str, Any]:
+    """The cited brief of the document's current version. `status: pending` (200) until it exists;
+    `include_unverified=false` drops facts the application could not verify against their citations."""
+    body = await load_brief(db, user.id, document_id, include_unverified=include_unverified)
+    if body is None:
+        raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND)
+    return body
 
 
 @router.get("/documents/{document_id}")
