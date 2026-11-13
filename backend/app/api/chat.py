@@ -16,6 +16,7 @@ from app.chat import history
 from app.chat import sessions as svc
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
+from app.core.quota import enforce_chat_quota
 
 router = APIRouter(prefix="/v1/chat", tags=["Chat"])
 _TASKS: set[asyncio.Future[None]] = set()  # strong refs: running turns must outlive the request
@@ -122,6 +123,7 @@ async def list_messages(
     "/sessions/{session_id}/messages",
     status_code=202,
     summary="Post a message and get a cited answer",
+    dependencies=[Depends(enforce_chat_quota)],
     response_model=PostMessageOut,
     response_model_exclude_unset=True,
     responses={

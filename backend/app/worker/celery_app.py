@@ -20,6 +20,7 @@ ROUTES: dict[str, str] = {
     "vault.maintenance.purge_job_events": "maintenance",
     "vault.maintenance.sweep_jobs": "maintenance",
     "vault.maintenance.purge_pending": "maintenance",
+    "vault.maintenance.backfill_tsv_ids": "maintenance",
     "vault.maintenance.purge_document": "maintenance",
     "vault.ingest.stage": "ingest",
     "vault.ai.stage": "ai",
