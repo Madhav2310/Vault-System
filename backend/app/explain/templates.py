@@ -34,6 +34,7 @@ REASON_TEMPLATES: dict[str, str] = {
     "STOP_MAX_TOKENS": "The answer reached its length limit, so only the complete sentences are shown.",
     "GENERATION_INVALID": "The answer came back in an unusable form, so no answer is shown.",
     "TURN_ERROR": "Something went wrong while answering, so no answer was produced.",
+    "TURN_ABANDONED": "This turn stopped unexpectedly before it finished, so no answer was produced. Ask again.",
     "LOOP_GUARD": "",
     "BAD_ROUTE": "",
     "NODE_TIMEOUT": "The turn ran out of time before it finished.",

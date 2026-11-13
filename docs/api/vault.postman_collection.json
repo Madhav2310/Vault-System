@@ -630,7 +630,7 @@
                 }
               ]
             },
-            "description": "Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202\nwhile running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion\nbefore the response (non-streaming; SSE comes with S5) and returns 200 with the assistant message; it\nkeeps running and persists even if the client disconnects.",
+            "description": "Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202\nwhile running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion\nbefore the response and returns 200 with the assistant message; it keeps running and persists even if the\nclient disconnects. With `Accept: text/event-stream` the turn streams events instead (S18.01): the\nstatus codes above are decided before the stream starts and the stream itself answers 200.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"content\": \"string\",\n  \"client_message_id\": \"string\",\n  \"mode\": \"auto\"\n}",
@@ -640,6 +640,27 @@
                 }
               }
             }
+          },
+          "response": []
+        },
+        {
+          "name": "JSON Schema of the SSE turn events (GET /v1/chat/events/schema)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/chat/events/schema",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "chat",
+                "events",
+                "schema"
+              ]
+            },
+            "description": "JSON Schema of the SSE turn events (`TurnEvent`, discriminated on `type`), to generate client types."
           },
           "response": []
         },
@@ -673,6 +694,37 @@
                 }
               }
             }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Runs",
+      "item": [
+        {
+          "name": "Why this answer (GET /v1/runs/{run_id})",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/runs/:run_id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "runs",
+                ":run_id"
+              ],
+              "variable": [
+                {
+                  "key": "run_id",
+                  "value": "00000000-0000-0000-0000-000000000000"
+                }
+              ]
+            },
+            "description": "Why this answer: status, route, reason codes, a template-rendered explanation, the sources used, the\nnode steps, usage and (when finished) the stored message. `status: running` means the turn is still\nworking (a client that lost its stream polls this). Another owner's run is 404."
           },
           "response": []
         }
