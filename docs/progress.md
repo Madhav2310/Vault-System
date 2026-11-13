@@ -342,3 +342,9 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - S2.05 AC2 stays open: `tsv_ids` is populated by S1.23 (deferred); the lane's test used a stand-in.
 ### C1 checkpoint run (`make c1-check`)
 - All 15 corpus documents (CUAD ×6, QASPER ×3, FinanceBench ×3, authored ×3) upload → extract → quality → chunk → embed (FakeProvider) → index and reach `ready`: chunk counts 1 to 429; all chunks embedded; no text chunk over 800 tokens. The 4 failure fixtures end as `unsupported/encrypted`, `failed/corrupt_file`, `needs_ocr`, `failed/unsafe_archive`, and no text reaches the embedding provider. 19 passed in 226 s.
+
+### S3.06 — Evidence set, handles, answer schema, manifest; S3.09 — Citation resolver
+- Date: 2026-11-13 · Commit: (this commit) · `pytest tests/unit/chat` 15 passed (7 + 5 named ACs plus extras); mypy strict and ruff clean.
+- Built: `app/chat/evidence.py` (handles `E<k>.<i>`, header `[E<k>] {title} v{n} · p.{a}-{b} · {section}`, DOCX chunks without a page part, no prefixes in the evidence text, manifest handle → chunk/sentence, strict answer schema with a handle enum in RAG mode and plain strings when handles exceed 1000, `cache_mode_for`: RAG `explicit`, FULL_CONTEXT default) and `app/chat/citations.py` (handles resolved through the manifest, adjacent sentences of one chunk merged into half-open ranges, `cited_text` cut by code from stored `original_text`, unknown handles dropped with `CITATION_UNRESOLVED` and counter `vault.citations.unresolved`, segments without a valid handle kept as `support=none`).
+- Verified through the real strict-schema transform (`strict_schema`): the RAG enum equals the handles present; FULL_CONTEXT items are plain strings; exactly 1000 handles still use an enum and 1001 fall back.
+- S3.09 is pure; it was built ahead of S3.08 (generate node) because it has no dependency on it.
