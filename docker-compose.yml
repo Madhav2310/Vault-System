@@ -62,7 +62,7 @@ services:
     healthcheck:
       <<: *celery-health
       test: ["CMD-SHELL", "celery -A app.worker.celery_app inspect ping -d ingest@$$HOSTNAME --timeout 10"]
-    mem_limit: 1g
+    mem_limit: 2g
 
   worker-ai:
     <<: *app

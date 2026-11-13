@@ -46,6 +46,7 @@ import math
 import pathlib
 import subprocess
 import sys
+import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
 
@@ -184,11 +185,13 @@ async def _main(a: argparse.Namespace) -> int:
     ds = load_dataset()
     split = "smoke" if a.suite == "smoke" else a.split
     items = ds.select(split)
+    t_wall = time.monotonic()
     harness = await _load_setup(a.pipeline)(a.config)
     sm = None if a.no_db else get_sessionmaker()
     run, path = await run_suite(
         items, harness, name=a.config, suite=a.suite, split=split, split_of=ds.split_of, sm=sm
     )
+    print(f"wall_s {time.monotonic() - t_wall:.1f}")
     print(f"run {run.run_id}: {len(run.items)} items, {run.n_errors} errored; report {path}")
     for m, (mean, n) in run.totals().items():
         print(f"  {m:24s} n={n:<4d} mean={mean:.4f}")
