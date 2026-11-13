@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 import { api, ApiError, getApiKey, setApiKey } from "./api/client";
-import { ChatStub } from "./document/ChatStub";
+import { ChatPage } from "./chat/ChatPage";
 import { DocumentPage } from "./document/DocumentPage";
 import { useRoute } from "./document/nav";
 import { Library } from "./library/Library";
@@ -91,7 +91,7 @@ export function App() {
           ) : route.name === "document" && route.id ? (
             <DocumentPage id={route.id} onUnauthenticated={onUnauth} />
           ) : route.name === "chat" ? (
-            <ChatStub route={route} />
+            <ChatPage route={route} onUnauthenticated={onUnauth} />
           ) : (
             <Library onUnauthenticated={onUnauth} />
           )}
