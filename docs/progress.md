@@ -287,3 +287,9 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Merge gate (main session): diff reviewed; `make ci` 123 passed; `make test` 216 passed on the merged tree.
 - Built: `app/ingestion/extract/docx.py`: zip metadata check (100 MB total, 100:1 per member, reads no member data) before python-docx; body walked in order (paragraphs and tables); `Heading N` → section stack like text.py; tables as pipe rows from the real `w:tc` elements (merged cells not duplicated); corrupt archives → permanent `corrupt_file`. AC3 runs the zip bomb through the real runner (dead, version `failed/unsafe_archive`, < 2 s).
 - Known limits (lane report): nested tables, text boxes, footnotes and `w:sdt` content ignored; only `Heading N` style names recognised (localized/`Title` styles become paragraphs); size caps trust zip headers.
+
+### S1.21 — Sentence segmenter (worker lane, Sonnet)
+- Date: 2026-11-13 · Commit: f67b626 (merged in d15e2c1)
+- Merge gate: diff and fixture reviewed (50 cases: 15 legal, 15 financial, 10 academic, 10 edge; written before the code, not tailored); `make ci` 131 passed on the merged tree.
+- Result: AC1 49/50 [T ≥ 48]; the miss is the deliberately ambiguous "…in the U.S. Europe was flat." (soft abbreviation followed by a non-opener). AC2 partition and AC3 clause numbers pass.
+- Design: hard abbreviations never split (Mr, No., Sec., Fig., months, e.g./i.e.); soft ones (Inc., Corp., U.S., etc., initials) split only before a typical sentence opener or an enumerator; clause labels ("Section 3.1.", "4.2(b).") stay with their sentence; blank line always splits, single newline never; `kind="table"`: one sentence per row.
