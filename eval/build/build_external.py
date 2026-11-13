@@ -6,6 +6,7 @@ so the dataset doubles as an extraction check: an unlocatable expert span is rep
 Run: make eval-build   (or: cd backend && uv run --frozen --group eval python ../eval/build/build_external.py)   (after eval/build/fetch_sources.sh)
 Output: eval/datasets/vault_eval_v1/external.yaml, eval/datasets/vault_eval_v1/documents.yaml
 """
+
 from __future__ import annotations
 
 import hashlib
@@ -69,8 +70,16 @@ CUAD_NEG = {
 }
 CUAD_POS_N, CUAD_NEG_N = 7, 2
 
-QASPER_DOCS = {"qasper_factweet": "1910.06592", "qasper_hatespeech": "1910.03814", "qasper_kurdish": "1911.13087"}
-FB_DOCS = {"fb_ulta_q4": "ULTABEAUTY_2023Q4_EARNINGS", "fb_3m_10q": "3M_2023Q2_10Q", "fb_amd_10k": "AMD_2022_10K"}
+QASPER_DOCS = {
+    "qasper_factweet": "1910.06592",
+    "qasper_hatespeech": "1910.03814",
+    "qasper_kurdish": "1911.13087",
+}
+FB_DOCS = {
+    "fb_ulta_q4": "ULTABEAUTY_2023Q4_EARNINGS",
+    "fb_3m_10q": "3M_2023Q2_10Q",
+    "fb_amd_10k": "AMD_2022_10K",
+}
 
 
 def norm(s: str) -> str:
@@ -123,10 +132,19 @@ def build_cuad(docs: dict, items: list) -> None:
     for doc_id, title in CUAD_DOCS.items():
         pdf = find_pdf(title)
         pages = page_texts(pdf)
-        docs[doc_id] = {"source": "CUAD v1", "license": "CC BY 4.0", "file": str(pdf.relative_to(ROOT)),
-                        "sha256": sha256(pdf), "pages": len(pages), "type": "contract", "title": title}
-        qas = {re.search(r'related to "([^"]+)"', q["question"]).group(1): q
-               for q in data[title]["paragraphs"][0]["qas"]}
+        docs[doc_id] = {
+            "source": "CUAD v1",
+            "license": "CC BY 4.0",
+            "file": str(pdf.relative_to(ROOT)),
+            "sha256": sha256(pdf),
+            "pages": len(pages),
+            "type": "contract",
+            "title": title,
+        }
+        qas = {
+            re.search(r'related to "([^"]+)"', q["question"]).group(1): q
+            for q in data[title]["paragraphs"][0]["qas"]
+        }
         pos = neg = 0
         for cat, question in CUAD_POS.items():
             if pos >= CUAD_POS_N or cat not in qas or not qas[cat]["answers"]:
@@ -136,22 +154,42 @@ def build_cuad(docs: dict, items: list) -> None:
             if not any(g["page"] for g in gold):
                 items.append({"id": f"{doc_id}:{cat}", "_rejected": "gold_not_located", "gold": gold})
                 continue
-            items.append({
-                "id": f"{doc_id}:{cat.lower().replace(' ', '_').replace('/', '_')}", "source": "CUAD",
-                "category": "lookup", "doc_ids": [doc_id], "question": question,
-                "expected_answer": " | ".join(spans), "answer_type": "extractive",
-                "gold": [g for g in gold if g["page"]], "expected_coverage": "supported",
-                "grading": "judge", "cuad_category": cat, "status": "draft"})
+            items.append(
+                {
+                    "id": f"{doc_id}:{cat.lower().replace(' ', '_').replace('/', '_')}",
+                    "source": "CUAD",
+                    "category": "lookup",
+                    "doc_ids": [doc_id],
+                    "question": question,
+                    "expected_answer": " | ".join(spans),
+                    "answer_type": "extractive",
+                    "gold": [g for g in gold if g["page"]],
+                    "expected_coverage": "supported",
+                    "grading": "judge",
+                    "cuad_category": cat,
+                    "status": "draft",
+                }
+            )
             pos += 1
         for cat, question in CUAD_NEG.items():
             if neg >= CUAD_NEG_N or cat not in qas or qas[cat]["answers"]:
                 continue
-            items.append({
-                "id": f"{doc_id}:no_{cat.lower().replace(' ', '_').replace('/', '_')}", "source": "CUAD",
-                "category": "unanswerable", "doc_ids": [doc_id], "question": question,
-                "expected_answer": "Not addressed in the document (CUAD expert label: no such clause).",
-                "answer_type": "unanswerable", "gold": [], "expected_coverage": "insufficient",
-                "grading": "abstention", "cuad_category": cat, "status": "draft"})
+            items.append(
+                {
+                    "id": f"{doc_id}:no_{cat.lower().replace(' ', '_').replace('/', '_')}",
+                    "source": "CUAD",
+                    "category": "unanswerable",
+                    "doc_ids": [doc_id],
+                    "question": question,
+                    "expected_answer": "Not addressed in the document (CUAD expert label: no such clause).",
+                    "answer_type": "unanswerable",
+                    "gold": [],
+                    "expected_coverage": "insufficient",
+                    "grading": "abstention",
+                    "cuad_category": cat,
+                    "status": "draft",
+                }
+            )
             neg += 1
 
 
@@ -161,36 +199,67 @@ def build_qasper(docs: dict, items: list) -> None:
         pdf = SRC / "qasper_pdfs" / f"{pid}.pdf"
         pages = page_texts(pdf)
         p = q[pid]
-        docs[doc_id] = {"source": "QASPER v0.3 (arXiv " + pid + ")", "license": "QASPER annotations CC BY 4.0; paper per arXiv license",
-                        "file": str(pdf.relative_to(ROOT)), "sha256": sha256(pdf), "pages": len(pages),
-                        "type": "paper", "title": p["title"]}
+        docs[doc_id] = {
+            "source": "QASPER v0.3 (arXiv " + pid + ")",
+            "license": "QASPER annotations CC BY 4.0; paper per arXiv license",
+            "file": str(pdf.relative_to(ROOT)),
+            "sha256": sha256(pdf),
+            "pages": len(pages),
+            "type": "paper",
+            "title": p["title"],
+        }
         n_ans = n_un = 0
         for k, qa in enumerate(p["qas"]):
             a = qa["answers"][0]["answer"]
             if a["unanswerable"] and n_un < 1:
-                items.append({"id": f"{doc_id}:q{k}", "source": "QASPER", "category": "unanswerable",
-                              "doc_ids": [doc_id], "question": qa["question"],
-                              "expected_answer": "Not answerable from the paper (QASPER annotator label).",
-                              "answer_type": "unanswerable", "gold": [], "expected_coverage": "insufficient",
-                              "grading": "abstention", "status": "draft"})
+                items.append(
+                    {
+                        "id": f"{doc_id}:q{k}",
+                        "source": "QASPER",
+                        "category": "unanswerable",
+                        "doc_ids": [doc_id],
+                        "question": qa["question"],
+                        "expected_answer": "Not answerable from the paper (QASPER annotator label).",
+                        "answer_type": "unanswerable",
+                        "gold": [],
+                        "expected_coverage": "insufficient",
+                        "grading": "abstention",
+                        "status": "draft",
+                    }
+                )
                 n_un += 1
                 continue
             if a["unanswerable"] or n_ans >= 5:
                 continue
-            ans = a["free_form_answer"] or ("yes" if a["yes_no"] else "no" if a["yes_no"] is False else "") \
+            ans = (
+                a["free_form_answer"]
+                or ("yes" if a["yes_no"] else "no" if a["yes_no"] is False else "")
                 or "; ".join(a["extractive_spans"] or [])
-            ev = [e for e in (a.get("highlighted_evidence") or a["evidence"]) if e and "FLOAT SELECTED" not in e]
+            )
+            ev = [
+                e for e in (a.get("highlighted_evidence") or a["evidence"]) if e and "FLOAT SELECTED" not in e
+            ]
             if not ans or REF.search(ans) or not ev:
                 continue
             gold = [{"quote": REF.sub("", e).strip(), **locate(e, pages)} for e in ev[:2]]
             if not any(g["page"] for g in gold):
                 items.append({"id": f"{doc_id}:q{k}", "_rejected": "gold_not_located", "gold": gold})
                 continue
-            items.append({"id": f"{doc_id}:q{k}", "source": "QASPER", "category": "lookup",
-                          "doc_ids": [doc_id], "question": qa["question"], "expected_answer": ans,
-                          "answer_type": "yes_no" if a["yes_no"] is not None else "free",
-                          "gold": [g for g in gold if g["page"]], "expected_coverage": "supported",
-                          "grading": "judge", "status": "draft"})
+            items.append(
+                {
+                    "id": f"{doc_id}:q{k}",
+                    "source": "QASPER",
+                    "category": "lookup",
+                    "doc_ids": [doc_id],
+                    "question": qa["question"],
+                    "expected_answer": ans,
+                    "answer_type": "yes_no" if a["yes_no"] is not None else "free",
+                    "gold": [g for g in gold if g["page"]],
+                    "expected_coverage": "supported",
+                    "grading": "judge",
+                    "status": "draft",
+                }
+            )
             n_ans += 1
 
 
@@ -199,23 +268,40 @@ def build_fb(docs: dict, items: list) -> None:
     for doc_id, name in FB_DOCS.items():
         pdf = SRC / "fb_pdfs" / f"{name}.pdf"
         pages = page_texts(pdf)
-        docs[doc_id] = {"source": "FinanceBench open sample", "license": "CC BY-NC 4.0 (non-commercial; assignment use)",
-                        "file": str(pdf.relative_to(ROOT)), "sha256": sha256(pdf), "pages": len(pages),
-                        "type": "financial_filing", "title": name}
+        docs[doc_id] = {
+            "source": "FinanceBench open sample",
+            "license": "CC BY-NC 4.0 (non-commercial; assignment use)",
+            "file": str(pdf.relative_to(ROOT)),
+            "sha256": sha256(pdf),
+            "pages": len(pages),
+            "type": "financial_filing",
+            "title": name,
+        }
         for r in (r for r in rows if r["doc_name"] == name):
             gold = []
             for e in r["evidence"]:
                 loc = locate(e["evidence_text"], pages)
-                gold.append({"quote": e["evidence_text"][:600], "labelled_page": e["evidence_page_num"] + 1, **loc})
+                gold.append(
+                    {"quote": e["evidence_text"][:600], "labelled_page": e["evidence_page_num"] + 1, **loc}
+                )
             numeric = bool(re.search(r"\d", r["answer"])) and len(r["answer"]) < 40
-            items.append({"id": f"{doc_id}:{r['financebench_id']}", "source": "FinanceBench",
-                          "category": "table" if numeric else "lookup", "doc_ids": [doc_id],
-                          "question": r["question"], "expected_answer": r["answer"],
-                          "answer_type": "numeric" if numeric else "free",
-                          "gold": gold, "expected_coverage": "supported",
-                          "grading": "numeric_tolerance" if numeric else "judge",
-                          "fb_question_type": r["question_type"], "fb_reasoning": r.get("question_reasoning"),
-                          "status": "draft"})
+            items.append(
+                {
+                    "id": f"{doc_id}:{r['financebench_id']}",
+                    "source": "FinanceBench",
+                    "category": "table" if numeric else "lookup",
+                    "doc_ids": [doc_id],
+                    "question": r["question"],
+                    "expected_answer": r["answer"],
+                    "answer_type": "numeric" if numeric else "free",
+                    "gold": gold,
+                    "expected_coverage": "supported",
+                    "grading": "numeric_tolerance" if numeric else "judge",
+                    "fb_question_type": r["question_type"],
+                    "fb_reasoning": r.get("question_reasoning"),
+                    "status": "draft",
+                }
+            )
 
 
 def main() -> None:
@@ -227,16 +313,30 @@ def main() -> None:
     build_fb(docs, items)
     kept = [i for i in items if "_rejected" not in i]
     rejected = [i for i in items if "_rejected" in i]
-    yaml.safe_dump({"documents": docs}, open(OUT / "documents.yaml", "w"), sort_keys=False, allow_unicode=True, width=120)
-    yaml.safe_dump({"items": kept}, open(OUT / "external.yaml", "w"), sort_keys=False, allow_unicode=True, width=120)
-    yaml.safe_dump({"rejected": rejected}, open(OUT / "external_rejected.yaml", "w"), sort_keys=False, allow_unicode=True, width=120)
+    yaml.safe_dump(
+        {"documents": docs}, open(OUT / "documents.yaml", "w"), sort_keys=False, allow_unicode=True, width=120
+    )
+    yaml.safe_dump(
+        {"items": kept}, open(OUT / "external.yaml", "w"), sort_keys=False, allow_unicode=True, width=120
+    )
+    yaml.safe_dump(
+        {"rejected": rejected},
+        open(OUT / "external_rejected.yaml", "w"),
+        sort_keys=False,
+        allow_unicode=True,
+        width=120,
+    )
     locs = [g for i in kept for g in i["gold"]]
-    print(f"docs={len(docs)} items={len(kept)} rejected={len(rejected)} "
-          f"gold_exact={sum(g['match']=='exact' for g in locs)} gold_fuzzy={sum(g['match']=='fuzzy' for g in locs)} "
-          f"gold_not_found={sum(g['match']=='not_found' for g in locs)}")
+    print(
+        f"docs={len(docs)} items={len(kept)} rejected={len(rejected)} "
+        f"gold_exact={sum(g['match'] == 'exact' for g in locs)} gold_fuzzy={sum(g['match'] == 'fuzzy' for g in locs)} "
+        f"gold_not_found={sum(g['match'] == 'not_found' for g in locs)}"
+    )
     fbpg = [g for i in kept if i["source"] == "FinanceBench" for g in i["gold"]]
-    print(f"financebench page agreement (located page == labelled page): "
-          f"{sum(g['page'] == g['labelled_page'] for g in fbpg)}/{len(fbpg)}")
+    print(
+        f"financebench page agreement (located page == labelled page): "
+        f"{sum(g['page'] == g['labelled_page'] for g in fbpg)}/{len(fbpg)}"
+    )
 
 
 if __name__ == "__main__":

@@ -30,6 +30,7 @@ x-celery-health: &celery-health
 services:
   api:
     <<: *app
+    cpus: 1.5
     environment:
       <<: *app-env
       OTEL_SERVICE_NAME: vault-api
@@ -44,6 +45,7 @@ services:
   reranker:
     build: ./reranker
     image: vault-reranker:0.1.0
+    cpus: 2
     ports: ["127.0.0.1:${RERANKER_PORT:-8180}:8080"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=3)"]
@@ -55,6 +57,7 @@ services:
 
   worker-ingest:
     <<: *app
+    cpus: 2
     environment:
       <<: *app-env
       OTEL_SERVICE_NAME: vault-worker-ingest
@@ -66,6 +69,7 @@ services:
 
   worker-ai:
     <<: *app
+    cpus: 1.5
     environment:
       <<: *app-env
       OTEL_SERVICE_NAME: vault-worker-ai
@@ -94,6 +98,10 @@ services:
       POSTGRES_USER: ${POSTGRES_USER:-vault}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-vault}
       POSTGRES_DB: ${POSTGRES_DB:-vault}
+    # Dev/test only: durability off (fsync, full_page_writes, synchronous_commit) and JIT off make test suites
+    # markedly cheaper in CPU and I/O; a crash can lose recent data, which is fine for rebuildable dev data.
+    command: ["postgres", "-c", "fsync=off", "-c", "full_page_writes=off", "-c", "synchronous_commit=off", "-c", "jit=off"]
+    cpus: 3
     ports: ["127.0.0.1:${POSTGRES_PORT:-5442}:5432"]
     volumes:
       - pgdata:/var/lib/postgresql/data

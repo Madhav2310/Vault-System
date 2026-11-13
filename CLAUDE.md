@@ -51,3 +51,10 @@ Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector �
 
 ## Model IDs
 Roles → defaults (no date suffixes, change via `MODEL_*` settings): `fast` = `gpt-6-luna`, `balanced` = `gpt-6.1-terra`, `deep` = `gpt-6.1-sol`, `flagship` = `gpt-6-astra` (judge calibration and stage E only); embeddings `text-embedding-3-small`. Routing table: design §4.2. Check SDK usage against current docs before writing — don't guess API shapes (use the Responses API).
+
+## Machine hygiene (user instruction 2026-11-13: laptop overheated)
+- Never run more than one eval/ingestion-heavy command at a time; no loops of full evals. Prefer replay (`eval.replay`), retrieval-only (`make eval-retrieval-fast`) and a train/smoke split over full runs.
+- Develop with targeted tests (`pytest path::test`); run the full gates (`make ci`, `make test`) once per merge, not per edit. Lanes do the same, and at most two lanes run at once.
+- Containers have CPU caps in `docker-compose.yml`; Postgres runs with fsync off (dev/test only). `otel-lgtm` and `reranker` are stopped when not needed (`docker compose stop otel-lgtm reranker`; the reranker is needed only for rerank measurements; retrieval degrades to fusion order without it).
+- Check `uptime` (load average) before starting heavy work; wait if it is above ~8.
+

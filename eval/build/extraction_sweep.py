@@ -5,6 +5,7 @@ upstream text quality is tuned first, because retrieval and citations can't reco
 
 Run: make eval-build   (or: cd backend && uv run --frozen --group eval python ../eval/build/extraction_sweep.py)
 """
+
 from __future__ import annotations
 
 import json
@@ -58,11 +59,14 @@ def main() -> None:
         for d, v in per_doc.items():
             by_type.setdefault(docs[d]["type"], []).extend(v)
         summary[name] = {
-            "located": sum(s >= FUZZ_MIN for s in allsc), "total": len(allsc),
+            "located": sum(s >= FUZZ_MIN for s in allsc),
+            "total": len(allsc),
             "exactish_ge97": sum(s >= 97 for s in allsc),
             "by_type": {t: f"{sum(s >= FUZZ_MIN for s in v)}/{len(v)}" for t, v in by_type.items()},
         }
-        print(f"{name:20s} located {summary[name]['located']}/{len(allsc)}  >=97: {summary[name]['exactish_ge97']}  {summary[name]['by_type']}")
+        print(
+            f"{name:20s} located {summary[name]['located']}/{len(allsc)}  >=97: {summary[name]['exactish_ge97']}  {summary[name]['by_type']}"
+        )
     json.dump(summary, open(DS / "extraction_sweep.json", "w"), indent=2)
 
 

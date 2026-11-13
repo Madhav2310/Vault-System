@@ -43,7 +43,10 @@ def main() -> int:
             continue
         t0 = time.time()
         # Table cell separators (` | `) are synthetic formatting, not document text: compare without them.
-        texts = [norm(p.text.replace(" | ", " ").replace("| ", " ").replace(" |", " ")) for p in PdfExtractor().extract(str(path)).pages]
+        texts = [
+            norm(p.text.replace(" | ", " ").replace("| ", " ").replace(" |", " "))
+            for p in PdfExtractor().extract(str(path)).pages
+        ]
         hit = 0
         for q in qs:
             nq = norm(REF.sub("", q))[:300]
@@ -54,7 +57,11 @@ def main() -> int:
         located, total = located + hit, total + len(qs)
         per_doc[doc_id] = f"{hit}/{len(qs)} ({time.time() - t0:.1f}s)"
     pct = 100.0 * located / total if total else 0.0
-    print(json.dumps({"located": located, "total": total, "located_pct": round(pct, 1), "per_doc": per_doc}, indent=1))
+    print(
+        json.dumps(
+            {"located": located, "total": total, "located_pct": round(pct, 1), "per_doc": per_doc}, indent=1
+        )
+    )
     for d, q in misses:
         print(f"miss {d}: {q!r}")
     print(f"located_pct {pct:.1f}")

@@ -86,7 +86,10 @@ async def setup(config: str) -> Harness:
         t0 = time.monotonic()
         r = await http.post(
             f"/v1/chat/sessions/{sid}/messages",
-            json={"content": q.question, "client_message_id": f"{q.item_id}:{q.turn_index}:{uuid.uuid4().hex[:8]}"},
+            json={
+                "content": q.question,
+                "client_message_id": f"{q.item_id}:{q.turn_index}:{uuid.uuid4().hex[:8]}",
+            },
         )
         r.raise_for_status()
         ms = (time.monotonic() - t0) * 1000
@@ -96,26 +99,34 @@ async def setup(config: str) -> Harness:
         segs = [
             AnswerSegment(
                 s["text"],
-                tuple(CitedRange(e["chunk_id"], e["sentence_start"], e["sentence_end"]) for e in s["evidence"]),
+                tuple(
+                    CitedRange(e["chunk_id"], e["sentence_start"], e["sentence_end"]) for e in s["evidence"]
+                ),
             )
             for s in msg["segments"]
         ]
         async with sm() as s:
             run = (
                 await s.execute(
-                    text("SELECT id, cost_usd FROM rag_runs WHERE assistant_message_id = :m AND owner_id = :o"),
+                    text(
+                        "SELECT id, cost_usd FROM rag_runs WHERE assistant_message_id = :m AND owner_id = :o"
+                    ),
                     {"m": msg_id, "o": uid},
                 )
             ).one()
             cands = (
-                await s.execute(
-                    text(
-                        "SELECT chunk_id FROM retrieval_candidates WHERE run_id = :r ORDER BY "
-                        "rerank_score DESC NULLS LAST, rrf_score DESC NULLS LAST"
-                    ),
-                    {"r": run[0]},
+                (
+                    await s.execute(
+                        text(
+                            "SELECT chunk_id FROM retrieval_candidates WHERE run_id = :r ORDER BY "
+                            "rerank_score DESC NULLS LAST, rrf_score DESC NULLS LAST"
+                        ),
+                        {"r": run[0]},
+                    )
                 )
-            ).scalars().all()
+                .scalars()
+                .all()
+            )
         abstained = msg["response_type"] in {"abstain", "clarify"}
         return ItemOutput(
             retrieved=[str(c) for c in cands],

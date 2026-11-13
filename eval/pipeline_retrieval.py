@@ -4,7 +4,8 @@
 answers each item by calling `Retriever.retrieve` in process against the dev database, for a stable eval user
 (`eval-retrieval@vault.local`). The 15 Vault-Eval documents are uploaded once (through the running stack's
 HTTP API) and reused by sha256 afterwards. Only `embed_query` rows reach `llm_calls` (about $0.00001 each).
-`--config` names a retrieval config file (`backend/config/<name>.yaml`).
+`--config` names a retrieval config file (`backend/config/<name>.yaml`). `EVAL_RANK` (rrf, vector, lexical,
+rerank, final; default final) picks which stored ranking is scored, for ablations.
 """
 
 from __future__ import annotations
@@ -35,6 +36,7 @@ from app.retrieval.scope import compute_scope
 from eval.loader import load_dataset
 from eval.mapping import ChunkInfo, chunks_from_rows
 from eval.multiturn import Pipeline
+from eval.replay import Cand, rank
 from eval.run import Harness
 from eval.schema import EvalContext, ItemOutput, Query
 
@@ -144,15 +146,20 @@ def make_pipeline(
         async with sm() as s:
             scope = await compute_scope(s, owner_id, scope_ids)
             res = await retriever.retrieve(s, owner_id, scope, q.question)
-        selected = sorted((c for c in res.candidates if c.selected), key=lambda c: c.result_index or 0)
-        rest = sorted(
-            (c for c in res.candidates if not c.selected),
-            key=lambda c: (
-                -(c.rerank_score if c.rerank_score is not None else float("-inf")),
-                -(c.rrf_score or 0),
-            ),
-        )
-        return ItemOutput(retrieved=[str(c.chunk_id) for c in [*selected, *rest]])
+        mode = os.environ.get("EVAL_RANK", "final")
+        cands = [
+            Cand(
+                str(c.chunk_id),
+                c.rrf_score,
+                c.rerank_score,
+                c.vector_rank,
+                c.lexical_rank,
+                c.selected,
+                c.result_index,
+            )
+            for c in res.candidates
+        ]
+        return ItemOutput(retrieved=rank(cands, mode))
 
     return pipeline
 
