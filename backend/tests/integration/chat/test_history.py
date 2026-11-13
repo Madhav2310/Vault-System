@@ -55,6 +55,7 @@ async def test_history_shape(
             "sentence_start": 0,
             "sentence_end": 1,
             "cited_text": "Alpha beta.",
+            "deleted": False,
         }
     ]
 
