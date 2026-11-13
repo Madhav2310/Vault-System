@@ -41,8 +41,8 @@ async def test_injection_rule_present() -> None:
     ev = build_evidence([c])
     assert "</evidence>" not in ev.text[: -len("</evidence>")], "delimiter tags in the document are defused"
 
-    # FakeProvider replay: the category code keeps is the model's schema-validated one, never text found in the
-    # document; the injected sentence reaches the model only as data inside the evidence block.
+    # FakeProvider replay: the category code keeps is the model's schema-validated one, never text found
+    # in the document; the injected sentence reaches the model only as data inside the evidence block.
     gw, prov, _ = brief_gateway([brief_reply(category="contract")])
     res = await gw.call(
         purpose="brief_extract",

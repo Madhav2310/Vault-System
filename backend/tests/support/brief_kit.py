@@ -15,7 +15,8 @@ from app.llm.providers import fake
 from tests.support.llm import SleepRecorder
 
 CONTRACT_TEXT = (
-    "This Services Agreement is made on June 1, 2020 between Medalist Diversified REIT, Inc. and Acme Consulting LLC. "
+    "This Services Agreement is made on June 1, 2020 between Medalist Diversified REIT, Inc. "
+    "and Acme Consulting LLC. "
     "The Consultant shall provide the Services for twelve months. "
     "The fee is $1,250,000 payable in four installments."
 )
