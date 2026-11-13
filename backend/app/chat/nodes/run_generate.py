@@ -1,8 +1,10 @@
 """`generate` node: build the evidence set, call the generator, resolve citations (all in `generate`)."""
 
 import dataclasses
+from typing import Any
 
 from app.chat.citations import ResolvedSegment
+from app.chat.compare import compare_call, missing_titles, name_missing_sides
 from app.chat.evidence import build_evidence
 from app.chat.followups import clean_followups
 from app.chat.graph import TURN_ERROR, TurnCtx, TurnState
@@ -21,9 +23,11 @@ async def generate(state: TurnState, ctx: TurnCtx) -> TurnState:
         await emit_segment(ctx, seg, state.evidence)
 
     try:
+        call: dict[str, Any] = {"route": state.analysis.intent if full else "qa"}
+        call.update(compare_call(state) if state.compare else {})  # S18.06: route, prompt, coverage
         gen = await generate_answer(
             ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
-            question=state.analysis.standalone_query, route=state.analysis.intent if full else "qa",
+            question=state.analysis.standalone_query, **call,
             mode="full_context" if full else "rag", memory=state.memory,
             run_id=ctx.run_id, budget=ctx.budget, on_segment=on_segment,
         )  # fmt: skip
@@ -36,6 +40,8 @@ async def generate(state: TurnState, ctx: TurnCtx) -> TurnState:
         gen = dataclasses.replace(gen, followups=clean_followups(gen.followups, questions))
     elif gen.response_type == "abstain":
         gen = dataclasses.replace(gen, followups=await abstain_followups(state, ctx))
+    if state.compare:
+        gen = name_missing_sides(gen, missing_titles(state))
     state.generation = gen
     if gen.response_type == "answer" and gen.resolution.segments:
         ctx.mark_first_segment()  # a truncated answer is salvaged after the stream: no earlier segment

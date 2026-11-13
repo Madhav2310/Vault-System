@@ -59,11 +59,11 @@ def rerank_client() -> RerankClient:
 
 
 async def seed_chunk(
-    sm: async_sessionmaker[AsyncSession], owner_id: uuid.UUID, title: str = "Doc"
+    sm: async_sessionmaker[AsyncSession], owner_id: uuid.UUID, title: str = "Doc", body: str = BODY
 ) -> uuid.UUID:
     doc = await seed_document(sm, owner_id, title=title)
     cid = uuid7()
-    sents = [list(se) for se in split_sentences(BODY)]
+    sents = [list(se) for se in split_sentences(body)]
     async with sm() as s:
         await s.execute(
             text(
@@ -72,7 +72,7 @@ async def seed_chunk(
                 "content_hash) VALUES (:id, :o, :d, :v, 0, 'text', :t, :t, 3, 3, '{Term}', "
                 "CAST(:sent AS jsonb), CAST('[]' AS jsonb), 20, 'h')"
             ),
-            {"id": cid, "o": owner_id, "d": doc.document_id, "v": doc.version_id, "t": BODY,
+            {"id": cid, "o": owner_id, "d": doc.document_id, "v": doc.version_id, "t": body,
              "sent": json.dumps(sents)},
         )  # fmt: skip
         await s.commit()

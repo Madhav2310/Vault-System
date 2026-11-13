@@ -11,6 +11,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.chat.conflicts import load_conflicts
 from app.core.ids import uuid7
 
 LEASE_SECONDS = 120
@@ -262,6 +263,7 @@ async def _existing(
             .mappings()
             .one()
         )
+        found = await load_conflicts(db, owner_id, [run["id"]])
         answer = {
             "id": str(a["id"]),
             "role": "assistant",
@@ -270,6 +272,7 @@ async def _existing(
             "coverage_state": a["coverage_state"],
             "created_at": a["created_at"].isoformat(),
             "followups": list(a["followups"] or []),
+            "conflicts": [c.model_dump() for c in found.get(run["id"], [])],
         }
     return TurnState(False, m["id"], run["id"], run["status"], answer)
 

@@ -7,6 +7,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.chat.conflicts import ConflictView, load_conflicts
 from app.chat.sessions import DEFAULT_LIMIT, decode_cursor, encode_cursor, get_session
 
 
@@ -47,10 +48,20 @@ async def list_messages(
     page.reverse()
     segments = await _segments(db, owner_id, [m["id"] for m in page if m["role"] == "assistant"])
     stale = await _staleness(db, owner_id, page)
-    return [_item(m, segments.get(m["id"], []), stale.get(m["id"])) for m in page], nxt
+    conflicts = await load_conflicts(
+        db, owner_id, [m["run_id"] for m in page if m["run_id"] and m["role"] == "assistant"]
+    )
+    return [
+        _item(m, segments.get(m["id"], []), stale.get(m["id"]), conflicts.get(m["run_id"])) for m in page
+    ], nxt
 
 
-def _item(m: Any, segments: list[dict[str, Any]], staleness: dict[str, Any] | None = None) -> dict[str, Any]:
+def _item(
+    m: Any,
+    segments: list[dict[str, Any]],
+    staleness: dict[str, Any] | None = None,
+    conflicts: list[ConflictView] | None = None,
+) -> dict[str, Any]:
     return {
         "id": str(m["id"]),
         "role": m["role"],
@@ -62,6 +73,7 @@ def _item(m: Any, segments: list[dict[str, Any]], staleness: dict[str, Any] | No
         "run_id": str(m["run_id"]) if m["run_id"] else None,
         "segments": segments,
         "followups": list(m["followups"] or []),
+        "conflicts": [c.model_dump() for c in conflicts or []] if m["role"] == "assistant" else [],
     }
 
 
@@ -85,7 +97,10 @@ async def get_message(db: AsyncSession, owner_id: uuid.UUID, message_id: uuid.UU
         return None
     segments = await _segments(db, owner_id, [m["id"]]) if m["role"] == "assistant" else {}
     stale = await _staleness(db, owner_id, [m])
-    return _item(m, segments.get(m["id"], []), stale.get(m["id"]))
+    conflicts = await load_conflicts(
+        db, owner_id, [m["run_id"]] if m["run_id"] and m["role"] == "assistant" else []
+    )
+    return _item(m, segments.get(m["id"], []), stale.get(m["id"]), conflicts.get(m["run_id"]))
 
 
 async def _staleness(

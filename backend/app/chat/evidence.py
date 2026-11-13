@@ -23,6 +23,15 @@ HEADER_SEP = " · "  # middle dot, as in the design's header format
 Mode = Literal["rag", "full_context"]
 
 
+class ConflictItem(BaseModel):
+    """One conflict as the model writes it (part of the strict answer schema; see `conflicts.py`)."""
+
+    model_config = ConfigDict(extra="forbid")
+    topic: str
+    handles_a: list[str]
+    handles_b: list[str]
+
+
 @dataclass(frozen=True)
 class EvidenceChunk:
     """A retrieved chunk as stored (what retrieval returns; text is never altered)."""
@@ -113,6 +122,9 @@ def answer_schema(evidence: EvidenceSet | None, mode: Mode = "rag") -> type[Base
         status=(status, ...),
         segments=(list[segment], ...),
         followups=(list[str], Field(default_factory=list)),
+        # S18.07: handles are plain strings (an enum here would triple the schema's enum-value count);
+        # `conflicts.resolve_conflicts` validates them against the manifest.
+        conflicts=(list[ConflictItem], Field(default_factory=list)),
     )
 
 

@@ -16,11 +16,13 @@ import time
 import uuid
 
 from app.chat import sessions as svc
+from app.chat.conflicts import conflicts_record
 from app.chat.events import Followups, NullSink, current_sink
 from app.chat.graph import END, TURN_ERROR, Graph, TurnCtx, TurnDeps, TurnState, router
 from app.chat.harness import DEFAULT_LIMITS, TurnBudget
 from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_turn
 from app.chat.nodes._common import ERROR_TEXT, NO_DOCUMENTS, NO_EVIDENCE, flush_segments, plain
+from app.chat.nodes.compare_retrieve import compare_retrieve
 from app.chat.nodes.gate import gate
 from app.chat.nodes.load_context import load_context
 from app.chat.nodes.meta import meta
@@ -78,10 +80,10 @@ def after_analyze(s: TurnState) -> str:
     return "meta" if a is not None and a.intent == "meta" and a.meta_op is not None else "plan_context"
 
 
-@router("retrieve", "generate", "abstain_no_evidence")
+@router("retrieve", "compare_retrieve", "generate", "abstain_no_evidence")
 def after_plan_context(s: TurnState) -> str:
     if s.mode != "full_context":
-        return "retrieve"
+        return "compare_retrieve" if s.compare else "retrieve"
     return "generate" if s.chunks else "abstain_no_evidence"  # full context always generates (no gate)
 
 
@@ -119,7 +121,11 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         scope_version_ids=state.scope.version_ids,
         generation=gen,
         config={
-            "prompts": ["analyze_query@2", "answer_rag@2", "support_check@1"],
+            "prompts": [
+                "analyze_query@2",
+                "answer_compare@1" if state.compare else "answer_rag@3",
+                "support_check@1",
+            ],
             "models": _models(deps.gateway),
             "retrieval": deps.retriever.config.version,
         },
@@ -128,6 +134,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         call_ids=tuple(dict.fromkeys([*state.call_ids, *gen.call_ids])),
         standalone_query=analysis.standalone_query if analysis else None,
         analysis={"intent": analysis.intent, "dimensions": list(analysis.dimensions)} if analysis else None,
+        conflicts=conflicts_record(gen.conflicts),
         reason_codes=(*gen.reasons, *state.reasons),
         degraded=tuple(dict.fromkeys(state.degraded)),
         limits={"max_llm_calls": ctx.budget.limits.max_llm_calls, "deadline_s": ctx.budget.limits.deadline_s},
@@ -167,7 +174,8 @@ def build_graph() -> Graph:
     return Graph(
         nodes={
             "load_context": load_context, "route_question": route_question, "analyze": analyze,
-            "plan_context": plan_context, "retrieve": retrieve, "gate": gate, "generate": generate,
+            "plan_context": plan_context, "retrieve": retrieve, "compare_retrieve": compare_retrieve,
+            "gate": gate, "generate": generate,
             "verify": verify,
             "clarify": clarify, "meta": meta, "abstain_no_documents": abstain_no_documents,
             "abstain_no_evidence": abstain_no_evidence, "persist": persist,
@@ -175,6 +183,7 @@ def build_graph() -> Graph:
         edges={
             "load_context": after_load_context, "route_question": after_route_question,
             "analyze": after_analyze, "plan_context": after_plan_context, "retrieve": after_retrieve,
+            "compare_retrieve": after_retrieve,
             "gate": after_gate,
             "generate": after_generate, "verify": "persist", "clarify": "persist", "meta": "persist",
             "abstain_no_documents": "persist", "abstain_no_evidence": "persist", "persist": END,

@@ -18,6 +18,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.chat.citations import Resolution, ResolvedSegment, resolve, resolve_segment
+from app.chat.conflicts import CONFLICT_DETECTED, ResolvedConflict, resolve_conflicts
 from app.chat.evidence import EvidenceSet, Mode, answer_schema, cache_mode_for
 from app.chat.memory import Memory
 from app.chat.nodes_common import defuse
@@ -29,7 +30,7 @@ from app.llm.types import Final, TextDelta, Usage
 STOP_REFUSAL = "STOP_REFUSAL"
 STOP_MAX_TOKENS = "STOP_MAX_TOKENS"
 GENERATION_INVALID = "GENERATION_INVALID"
-PROMPT = ("answer_rag", 2)
+PROMPT = ("answer_rag", 3)
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,7 @@ class GenerateResult:
     cost_usd: Decimal
     call_ids: tuple[uuid.UUID, ...]
     followups: tuple[str, ...] = ()  # as the model wrote them; the node cleans them (followups.py)
+    conflicts: tuple[ResolvedConflict, ...] = ()  # validated by code (conflicts.py)
 
     @property
     def text(self) -> str:
@@ -86,6 +88,7 @@ async def generate(
     question: str,
     route: str,
     mode: Mode = "rag",
+    prompt: tuple[str, int] = PROMPT,
     memory: Memory | None = None,
     coverage: str | None = None,
     conflicts: str | None = None,
@@ -106,7 +109,7 @@ async def generate(
         async for ev in gateway.stream(
             purpose="generate",
             lane="interactive",
-            prompt=PROMPT,
+            prompt=prompt,
             owner_id=owner_id,
             schema=schema,
             route=route,
@@ -154,6 +157,9 @@ async def generate(
         )
     resolution = resolve(out.segments, evidence)
     reasons += list(resolution.reasons)
+    flagged = resolve_conflicts(out.conflicts, evidence)
+    if flagged:
+        reasons.append(CONFLICT_DETECTED)
     return GenerateResult(
         "answer",
         resolution,
@@ -162,6 +168,7 @@ async def generate(
         final.cost_usd,
         final.call_ids,
         tuple(out.followups),
+        flagged,
     )
 
 
