@@ -10,6 +10,7 @@ from app.api.deps import get_db
 from app.api.errors import DomainError
 from app.core.auth import AuthUser, CurrentUser
 from app.core.error_codes import ErrorCode
+from app.metrics.chat import chat_metrics
 from app.metrics.documents import document_metrics
 from app.metrics.processing import processing_metrics
 
@@ -39,3 +40,10 @@ async def processing_metrics_endpoint(
     user: CurrentUser, db: Db, scope: Scope = "owner", window: Window = "24h"
 ) -> dict[str, Any]:
     return await processing_metrics(db, _owner(user, scope), window)
+
+
+@router.get("/chat")
+async def chat_metrics_endpoint(
+    user: CurrentUser, db: Db, scope: Scope = "owner", window: Window = "24h"
+) -> dict[str, Any]:
+    return await chat_metrics(db, _owner(user, scope), window)
