@@ -15,6 +15,8 @@ from typing import TYPE_CHECKING, Annotated, Any, Literal, Protocol
 
 from pydantic import BaseModel, Field, TypeAdapter
 
+from app.chat.conflicts import ConflictView
+
 if TYPE_CHECKING:
     from app.chat.citations import ResolvedSegment
     from app.chat.evidence import EvidenceSet
@@ -104,6 +106,10 @@ class Done(_Event):
     usage: UsageOut
     latency_ms: int | None
     ttft_ms: int | None
+    conflicts: list[ConflictView] = Field(
+        default_factory=list,
+        description="Sources that disagree, each with the cited evidence of both sides (empty when none).",
+    )
 
 
 class Error(_Event):

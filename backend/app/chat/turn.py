@@ -16,6 +16,7 @@ import time
 import uuid
 
 from app.chat import sessions as svc
+from app.chat.conflicts import conflicts_record
 from app.chat.events import Followups, NullSink, current_sink
 from app.chat.graph import END, TURN_ERROR, Graph, TurnCtx, TurnDeps, TurnState, router
 from app.chat.harness import DEFAULT_LIMITS, TurnBudget
@@ -122,7 +123,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         config={
             "prompts": [
                 "analyze_query@2",
-                "answer_compare@1" if state.compare else "answer_rag@2",
+                "answer_compare@1" if state.compare else "answer_rag@3",
                 "support_check@1",
             ],
             "models": _models(deps.gateway),
@@ -133,6 +134,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         call_ids=tuple(dict.fromkeys([*state.call_ids, *gen.call_ids])),
         standalone_query=analysis.standalone_query if analysis else None,
         analysis={"intent": analysis.intent, "dimensions": list(analysis.dimensions)} if analysis else None,
+        conflicts=conflicts_record(gen.conflicts),
         reason_codes=(*gen.reasons, *state.reasons),
         degraded=tuple(dict.fromkeys(state.degraded)),
         limits={"max_llm_calls": ctx.budget.limits.max_llm_calls, "deadline_s": ctx.budget.limits.deadline_s},

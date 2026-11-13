@@ -14,6 +14,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.chat.conflicts import load_conflicts
 from app.chat.events import Done, Error, QueueSink, RunStarted, UsageOut, current_sink, to_sse
 
 HEARTBEAT_S = 15.0
@@ -32,6 +33,7 @@ _DONE = text(
 async def load_done(db: AsyncSession, owner_id: uuid.UUID, run_id: uuid.UUID) -> Done | None:
     """The `done` event of a finished run from its stored rows; None while it has no assistant message."""
     row = (await db.execute(_DONE, {"r": run_id, "o": owner_id})).mappings().first()
+    conflicts = await load_conflicts(db, owner_id, [run_id]) if row is not None else {}
     await db.rollback()  # end the read transaction: no connection is held while the stream waits
     if row is None:
         return None
@@ -48,6 +50,7 @@ async def load_done(db: AsyncSession, owner_id: uuid.UUID, run_id: uuid.UUID) ->
         ),
         latency_ms=row["latency_ms"],
         ttft_ms=row["ttft_ms"],
+        conflicts=conflicts.get(run_id, []),
     )
 
 
