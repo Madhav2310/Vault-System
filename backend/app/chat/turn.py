@@ -1,10 +1,12 @@
-"""Turn orchestrator (design §8): analyze -> scope -> retrieve -> evidence -> generate -> resolve -> persist.
+"""Turn orchestrator (design §8): the explicit graph in `app.chat.graph` over the nodes in `app.chat.nodes`.
 
-The orchestrator, not a node, picks the next node. No DB connection is held across an LLM call or a
-retrieval call: each phase opens its own short session. Whatever happens, the run is finished and the session
-lease released in one `persist_turn` transaction (failures become an `error` response, never a stuck run).
+load_context -> route_question -> analyze (embeds the question meanwhile) -> retrieve -> gate -> generate ->
+verify -> persist. The routers below, not the nodes, pick the next node. No DB connection is held across
+an LLM call or a retrieval call: each phase opens its own short session. Whatever happens, the run is finished
+and the session lease released in one `persist_turn` transaction (a failed node becomes an `error` response,
+never a stuck run: the graph jumps to `persist`).
 
-M0 scope: no evidence gate, no full-context route, no conflict detection (later slices); `mode=full_context`
+M0 scope: no evidence floor, no full-context route, no conflict detection (later slices); `mode=full_context`
 is recorded but answered through RAG with reason code `FULL_CONTEXT_UNAVAILABLE`.
 """
 
@@ -12,67 +14,28 @@ import asyncio
 import dataclasses
 import time
 import uuid
-from dataclasses import dataclass
-from datetime import UTC, datetime
-from decimal import Decimal
-from typing import Any
-
-from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.chat import sessions as svc
-from app.chat.citations import Resolution, ResolvedSegment
-from app.chat.evidence import build_evidence
-from app.chat.harness import DEFAULT_LIMITS, ROUTE_LIMITS, TurnBudget
-from app.chat.ledger import CandidateRecord, PersistedTurn, StepRecord, TurnRecord, persist_turn
-from app.chat.memory import load_memory
-from app.chat.nodes.analyze import AnalyzeResult, ScopeDoc, analyze_query
-from app.chat.nodes.generate import GenerateResult, generate
+from app.chat.graph import END, TURN_ERROR, Graph, TurnCtx, TurnDeps, TurnState, router
+from app.chat.harness import DEFAULT_LIMITS, TurnBudget
+from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_turn
+from app.chat.nodes._common import ERROR_TEXT, FULL_CONTEXT_UNAVAILABLE, NO_DOCUMENTS, NO_EVIDENCE, plain
+from app.chat.nodes.gate import gate
+from app.chat.nodes.load_context import load_context
+from app.chat.nodes.retrieve import retrieve
+from app.chat.nodes.route_question import route_question
+from app.chat.nodes.run_analyze import analyze
+from app.chat.nodes.run_generate import generate
+from app.chat.nodes.terminal import abstain_no_documents, abstain_no_evidence, clarify
+from app.chat.nodes.verify import verify
 from app.core.logging import get_logger
-from app.llm.errors import LlmError
 from app.llm.gateway import LlmGateway
-from app.llm.types import Usage
-from app.retrieval.load import load_evidence_chunks
-from app.retrieval.retrieve import RetrievalResult, Retriever
-from app.retrieval.scope import Scope, ScopeWideningError, compute_scope, narrow
+from app.retrieval.retrieve import RetrievalResult
 
 _log = get_logger("vault.chat.turn")
-SessionMaker = async_sessionmaker[AsyncSession]
 
-NO_DOCUMENTS = "SCOPE_EMPTY"
-NO_EVIDENCE = "NO_EVIDENCE"
-TURN_ERROR = "TURN_ERROR"
-FULL_CONTEXT_UNAVAILABLE = "FULL_CONTEXT_UNAVAILABLE"
-TARGET_IGNORED = "TARGET_IGNORED"
 HEARTBEAT_S = 30.0
-NO_DOCUMENTS_TEXT = "No ready documents are in scope. Upload a document or wait for processing to finish."
-NO_EVIDENCE_TEXT = "I could not find anything in your documents that answers this."
-ERROR_TEXT = "Something went wrong while answering. Please try again."
-
-
-@dataclass(frozen=True)
-class TurnDeps:
-    sm: SessionMaker
-    gateway: LlmGateway
-    retriever: Retriever
-
-
-def _plain(response_type: str, text_: str, reasons: tuple[str, ...], res: Any = None) -> GenerateResult:
-    """A response written by code (no model call, no citations)."""
-    seg = ResolvedSegment(0, text_, "none", ())
-    return GenerateResult(
-        response_type, Resolution((seg,)), reasons, Usage(), Decimal(0), tuple(getattr(res, "call_ids", ()))
-    )
-
-
-class _Steps:
-    def __init__(self) -> None:
-        self.items: list[StepRecord] = []
-
-    def add(self, node: str, status: str, started: datetime, t0: float, **kw: Any) -> None:
-        self.items.append(
-            StepRecord(len(self.items) + 1, node, status, started, int((time.monotonic() - t0) * 1000), **kw)
-        )
+__all__ = ["FULL_CONTEXT_UNAVAILABLE", "NO_DOCUMENTS", "NO_EVIDENCE", "TURN_ERROR", "TurnDeps", "run_turn"]
 
 
 def _candidates(r: RetrievalResult) -> tuple[CandidateRecord, ...]:
@@ -94,13 +57,115 @@ def _candidates(r: RetrievalResult) -> tuple[CandidateRecord, ...]:
     )
 
 
-async def _scope_docs(s: AsyncSession, owner_id: uuid.UUID, scope: Scope) -> list[ScopeDoc]:
-    rows = await s.execute(
-        text("SELECT id, title FROM documents WHERE owner_id = :o AND id = ANY(:ids) AND deleted_at IS NULL"),
-        {"o": owner_id, "ids": list(scope.document_ids)},
+@router("abstain_no_documents", "route_question")
+def after_load_context(s: TurnState) -> str:
+    return "route_question" if s.scope.entries else "abstain_no_documents"
+
+
+@router("analyze")
+def after_route_question(s: TurnState) -> str:
+    return "analyze"  # S17.10 adds the fast path here
+
+
+@router("clarify", "retrieve")
+def after_analyze(s: TurnState) -> str:
+    # S18.05 adds the `meta` branch
+    return "clarify" if s.analysis is not None and s.analysis.clarification is not None else "retrieve"
+
+
+@router("abstain_no_evidence", "gate")
+def after_retrieve(s: TurnState) -> str:
+    return "gate" if s.chunks else "abstain_no_evidence"
+
+
+@router("abstain_no_evidence", "generate")
+def after_gate(s: TurnState) -> str:
+    return "generate"  # S17.08 fills the floor
+
+
+@router("verify", "persist")
+def after_generate(s: TurnState) -> str:
+    g = s.generation
+    cited = g is not None and any(seg.support == "cited" for seg in g.resolution.segments)
+    return "verify" if cited else "persist"
+
+
+async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
+    """Write the turn's ledger record in one transaction; a failure retries a minimal error record."""
+    deps, owner_id = ctx.deps, ctx.owner_id
+    gen = state.generation
+    if state.failure or gen is None:
+        gen = plain("error", ERROR_TEXT, state.failure or (TURN_ERROR,))
+    retrieval, analysis = state.retrieval, state.analysis
+    rec = TurnRecord(
+        run_id=ctx.run_id,
+        route=state.route,
+        mode="full_context" if state.mode == "full_context" else "rag",
+        status=state.status,
+        scope_version_ids=state.scope.version_ids,
+        generation=gen,
+        config={
+            "prompts": ["analyze_query@1", "answer_rag@1"],
+            "models": _models(deps.gateway),
+            "retrieval": deps.retriever.config.version,
+        },
+        candidates=_candidates(retrieval) if retrieval else (),
+        steps=tuple(state.steps),
+        call_ids=tuple(dict.fromkeys([*state.call_ids, *gen.call_ids])),
+        standalone_query=analysis.standalone_query if analysis else None,
+        analysis={"intent": analysis.intent, "dimensions": list(analysis.dimensions)} if analysis else None,
+        reason_codes=(*gen.reasons, *state.reasons),
+        degraded=tuple(dict.fromkeys(state.degraded)),
+        limits={"max_llm_calls": ctx.budget.limits.max_llm_calls, "deadline_s": ctx.budget.limits.deadline_s},
+        latency_ms=int((time.monotonic() - ctx.t_start) * 1000),
     )
-    titles = {r[0]: r[1] for r in rows}
-    return [ScopeDoc(d, titles[d]) for d in scope.document_ids if d in titles]
+    try:
+        async with deps.sm() as s:
+            state.persisted = await persist_turn(s, owner_id, rec)
+            return state
+    except Exception as e:
+        # A ledger/DB failure must not leave the run `running` and the session leased: retry minimally.
+        _log.error("persist_failed", error_type=type(e).__name__)
+        minimal = dataclasses.replace(
+            rec,
+            status="failed",
+            generation=plain("error", ERROR_TEXT, (TURN_ERROR, "PERSIST_FAILED")),
+            candidates=(),
+            steps=(),
+            call_ids=(),
+            reason_codes=(TURN_ERROR, "PERSIST_FAILED"),
+        )
+        try:
+            async with deps.sm() as s:
+                state.persisted = await persist_turn(s, owner_id, minimal)
+                return state
+        except Exception as e2:
+            _log.error("persist_fallback_failed", error_type=type(e2).__name__)
+            async with deps.sm() as s:
+                await svc.release_turn(s, ctx.session_id, owner_id, ctx.run_id)
+            raise
+
+
+def build_graph() -> Graph:
+    return Graph(
+        nodes={
+            "load_context": load_context, "route_question": route_question, "analyze": analyze,
+            "retrieve": retrieve, "gate": gate, "generate": generate, "verify": verify,
+            "clarify": clarify, "abstain_no_documents": abstain_no_documents,
+            "abstain_no_evidence": abstain_no_evidence, "persist": persist,
+        },
+        edges={
+            "load_context": after_load_context, "route_question": after_route_question,
+            "analyze": after_analyze, "retrieve": after_retrieve, "gate": after_gate,
+            "generate": after_generate, "verify": "persist", "clarify": "persist",
+            "abstain_no_documents": "persist", "abstain_no_evidence": "persist", "persist": END,
+        },
+        start="load_context",
+        on_error="persist",
+    )  # fmt: skip
+
+
+GRAPH = build_graph()
 
 
 async def _run_turn(
@@ -113,100 +178,11 @@ async def _run_turn(
     mode: str = "auto",
 ) -> PersistedTurn:
     """Run one turn to completion and persist it. Idempotent per run (a finished run is returned as is)."""
-    t_start = time.monotonic()
-    steps = _Steps()
-    budget = TurnBudget(DEFAULT_LIMITS)
-    route, status = "qa", "completed"
-    scope = Scope.empty
-    analysis: AnalyzeResult | None = None
-    retrieval: RetrievalResult | None = None
-    gen: GenerateResult
-    degraded: list[str] = []
-    extra_reasons: list[str] = []
-    call_ids: list[uuid.UUID] = []
-    try:
-        async with deps.sm() as s:
-            sess = await svc.get_session(s, owner_id, session_id)
-            scope = await compute_scope(s, owner_id, sess.document_ids)
-            memory = await load_memory(s, owner_id, session_id, exclude_message_id=user_message_id)
-            docs = await _scope_docs(s, owner_id, scope)
-        if mode == "full_context":
-            extra_reasons.append(FULL_CONTEXT_UNAVAILABLE)
-        if not scope.entries:
-            route = "meta"
-            gen = _plain("abstain", NO_DOCUMENTS_TEXT, (NO_DOCUMENTS,))
-        else:
-            t0, at = time.monotonic(), datetime.now(UTC)
-            analysis = await analyze_query(
-                deps.gateway, question=question, memory=memory, documents=docs, owner_id=owner_id,
-                run_id=run_id, budget=budget,
-            )  # fmt: skip
-            steps.add("analyze", "ok", at, t0, decision={"intent": analysis.intent})
-            degraded += analysis.degraded
-            call_ids += analysis.call_ids
-            route = analysis.intent if analysis.intent in ROUTE_LIMITS else "qa"
-            budget = TurnBudget(ROUTE_LIMITS[route], budget.deadline_at, budget.calls_used)
-            if analysis.clarification is not None:
-                c = analysis.clarification
-                body = c.question + (" " + " / ".join(c.options) if c.options else "")
-                gen = _plain("clarify", body, analysis.reason_codes)
-            else:
-                try:
-                    scope = narrow(scope, analysis.target_document_ids)
-                except ScopeWideningError:  # never widen; keep the wider scope but leave a trace
-                    extra_reasons.append(TARGET_IGNORED)
-                gen, retrieval = await _answer(deps, owner_id, run_id, analysis, scope, memory, budget, steps)
-                degraded += retrieval.degraded if retrieval else []
-    except Exception as e:  # the turn must always finish; log type only
-        _log.error("turn_failed", error_type=type(e).__name__, code=getattr(e, "error_type", None))
-        status = "failed"
-        code = getattr(e, "error_type", None)
-        gen = _plain("error", ERROR_TEXT, (TURN_ERROR, code) if isinstance(code, str) else (TURN_ERROR,))
-    rec = TurnRecord(
-        run_id=run_id,
-        route=route,
-        mode="full_context" if mode == "full_context" else "rag",
-        status=status,
-        scope_version_ids=scope.version_ids,
-        generation=gen,
-        config={
-            "prompts": ["analyze_query@1", "answer_rag@1"],
-            "models": _models(deps.gateway),
-            "retrieval": deps.retriever.config.version,
-        },
-        candidates=_candidates(retrieval) if retrieval else (),
-        steps=tuple(steps.items),
-        call_ids=tuple(dict.fromkeys([*call_ids, *gen.call_ids])),
-        standalone_query=analysis.standalone_query if analysis else None,
-        analysis={"intent": analysis.intent, "dimensions": list(analysis.dimensions)} if analysis else None,
-        reason_codes=(*gen.reasons, *extra_reasons),
-        degraded=tuple(dict.fromkeys(degraded)),
-        limits={"max_llm_calls": budget.limits.max_llm_calls, "deadline_s": budget.limits.deadline_s},
-        latency_ms=int((time.monotonic() - t_start) * 1000),
-    )
-    try:
-        async with deps.sm() as s:
-            return await persist_turn(s, owner_id, rec)
-    except Exception as e:
-        # A ledger/DB failure must not leave the run `running` and the session leased: retry minimally.
-        _log.error("persist_failed", error_type=type(e).__name__)
-        minimal = dataclasses.replace(
-            rec,
-            status="failed",
-            generation=_plain("error", ERROR_TEXT, (TURN_ERROR, "PERSIST_FAILED")),
-            candidates=(),
-            steps=(),
-            call_ids=(),
-            reason_codes=(TURN_ERROR, "PERSIST_FAILED"),
-        )
-        try:
-            async with deps.sm() as s:
-                return await persist_turn(s, owner_id, minimal)
-        except Exception as e2:
-            _log.error("persist_fallback_failed", error_type=type(e2).__name__)
-            async with deps.sm() as s:
-                await svc.release_turn(s, session_id, owner_id, run_id)
-            raise
+    ctx = TurnCtx(deps, owner_id, session_id, run_id, user_message_id, TurnBudget(DEFAULT_LIMITS))
+    state = await GRAPH.run(TurnState(question=question, mode=mode), ctx)
+    assert state.persisted is not None
+    result: PersistedTurn = state.persisted
+    return result
 
 
 async def run_turn(
@@ -232,39 +208,6 @@ async def run_turn(
         return await _run_turn(deps, owner_id, session_id, run_id, user_message_id, question, mode)
     finally:
         hb.cancel()
-
-
-async def _answer(
-    deps: TurnDeps,
-    owner_id: uuid.UUID,
-    run_id: uuid.UUID,
-    analysis: AnalyzeResult,
-    scope: Scope,
-    memory: Any,
-    budget: TurnBudget,
-    steps: _Steps,
-) -> tuple[GenerateResult, RetrievalResult | None]:
-    t0, at = time.monotonic(), datetime.now(UTC)
-    async with deps.sm() as s:
-        retrieval = await deps.retriever.retrieve(s, owner_id, scope, analysis.standalone_query)
-        chunks = await load_evidence_chunks(s, owner_id, list(retrieval.selected))
-    steps.add(
-        "retrieve", "ok", at, t0, decision={"selected": len(chunks), "degraded": list(retrieval.degraded)}
-    )
-    if not chunks:
-        return _plain("abstain", NO_EVIDENCE_TEXT, (NO_EVIDENCE,)), retrieval
-    evidence = build_evidence(chunks)
-    t0, at = time.monotonic(), datetime.now(UTC)
-    try:
-        gen = await generate(
-            deps.gateway, owner_id=owner_id, evidence=evidence, question=analysis.standalone_query,
-            route="qa", memory=memory, run_id=run_id, budget=budget,
-        )  # fmt: skip
-    except LlmError as e:
-        steps.add("generate", "failed", at, t0, error_code=e.error_type)
-        return _plain("error", ERROR_TEXT, (TURN_ERROR, e.error_type)), retrieval
-    steps.add("generate", "ok", at, t0, decision={"response_type": gen.response_type})
-    return gen, retrieval
 
 
 def _models(gw: LlmGateway) -> dict[str, str]:
