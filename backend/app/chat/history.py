@@ -45,21 +45,42 @@ async def list_messages(
     nxt = encode_cursor(page[-1]["created_at"], page[-1]["id"]) if len(rows) > limit else None
     page.reverse()
     segments = await _segments(db, owner_id, [m["id"] for m in page if m["role"] == "assistant"])
-    items = [
-        {
-            "id": str(m["id"]),
-            "role": m["role"],
-            "content": m["content"],
-            "created_at": m["created_at"].isoformat(),
-            "response_type": m["response_type"],
-            "coverage_state": m["coverage_state"],
-            "staleness": None,
-            "run_id": str(m["run_id"]) if m["run_id"] else None,
-            "segments": segments.get(m["id"], []),
-        }
-        for m in page
-    ]
-    return items, nxt
+    return [_item(m, segments.get(m["id"], [])) for m in page], nxt
+
+
+def _item(m: Any, segments: list[dict[str, Any]]) -> dict[str, Any]:
+    return {
+        "id": str(m["id"]),
+        "role": m["role"],
+        "content": m["content"],
+        "created_at": m["created_at"].isoformat(),
+        "response_type": m["response_type"],
+        "coverage_state": m["coverage_state"],
+        "staleness": None,
+        "run_id": str(m["run_id"]) if m["run_id"] else None,
+        "segments": segments,
+    }
+
+
+async def get_message(db: AsyncSession, owner_id: uuid.UUID, message_id: uuid.UUID) -> dict[str, Any] | None:
+    """One message in the history item shape (assistant messages with segments), owner-scoped."""
+    m = (
+        (
+            await db.execute(
+                text(
+                    "SELECT id, role, content, response_type, coverage_state, run_id, created_at "
+                    "FROM chat_messages WHERE id = :i AND owner_id = :o"
+                ),
+                {"i": message_id, "o": owner_id},
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if m is None:
+        return None
+    segments = await _segments(db, owner_id, [m["id"]]) if m["role"] == "assistant" else {}
+    return _item(m, segments.get(m["id"], []))
 
 
 async def _segments(
