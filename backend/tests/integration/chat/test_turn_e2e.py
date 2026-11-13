@@ -95,6 +95,7 @@ async def test_cited_answer_end_to_end(
             _analysis(q),
             EMBED_SLOT,
             structured({"status": "answer", "segments": [{"text": "Twelve months.", "evidence": ["E1.0"]}]}),
+            structured({"verdicts": [{"index": 0, "verdict": "supported", "reason": "same fact"}]}),
         ],
         ledger=DbLedgerWriter(sm),
     )
@@ -127,7 +128,7 @@ async def test_cited_answer_end_to_end(
                 {"o": o.id},
             )
         ).one()
-        assert run[0] == "completed" and run[1] == "qa" and run[2] == 2
+        assert run[0] == "completed" and run[1] == "qa" and run[2] == 3
         assert run[3]["retrieval"] == "retrieval@1" and "answer_rag@1" in run[3]["prompts"]
         n = (
             await s.execute(
@@ -145,7 +146,7 @@ async def test_cited_answer_end_to_end(
         assert lease is None  # released
     # a retried client_message_id returns the stored answer and does not run again
     r2 = await _post(api, o, sid, q, "m1")
-    assert r2.status_code == 200 and r2.json()["deduplicated"] and len(prov.requests) == 2
+    assert r2.status_code == 200 and r2.json()["deduplicated"] and len(prov.requests) == 3
 
 
 async def test_no_documents_abstains_without_model_call(

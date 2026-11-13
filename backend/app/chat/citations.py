@@ -41,6 +41,8 @@ class ResolvedSegment:
     support: str  # "cited" (has >= 1 valid reference) | "none"
     references: tuple[EvidenceReference, ...]
     dropped_handles: tuple[str, ...] = ()
+    verification: str | None = None  # support check (S17.09): supported | partial | unsupported | unchecked
+    verification_reason: str | None = None
 
 
 @dataclass(frozen=True)

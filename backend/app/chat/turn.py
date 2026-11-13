@@ -105,7 +105,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         scope_version_ids=state.scope.version_ids,
         generation=gen,
         config={
-            "prompts": ["analyze_query@1", "answer_rag@1"],
+            "prompts": ["analyze_query@1", "answer_rag@1", "support_check@1"],
             "models": _models(deps.gateway),
             "retrieval": deps.retriever.config.version,
         },
