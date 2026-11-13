@@ -8,6 +8,7 @@ import uuid
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -24,6 +25,14 @@ from app.documents.sniff import sniff
 from app.documents.upload import receive_upload
 from app.ingestion.jobs import Enqueue, dispatch
 from app.insights.brief import EMPTY_PARAMS_HASH, KIND, PROMPT_VERSION
+from app.insights.summaries import (
+    SummaryEnqueue,
+    SummaryRequest,
+    get_summary_enqueue,
+    load_summary,
+    mark_enqueue_failed,
+    request_summary,
+)
 from app.insights.views import load_brief, summary_snippet
 from app.storage.base import ObjectStore
 
@@ -286,3 +295,44 @@ async def get_document(
         "quality": current["quality"] if current else None,
         "versions": versions,
     }
+
+
+@router.post(
+    "/documents/{document_id}/summaries",
+    responses={202: {"description": "Queued: poll the returned URL until `status` is `ready`"}},
+)
+async def create_summary(
+    document_id: uuid.UUID,
+    body: SummaryRequest,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    enqueue: Annotated[SummaryEnqueue, Depends(get_summary_enqueue)],
+) -> JSONResponse:
+    """A cited summary of the document's current version (`length`, optional `focus` and `tone`). 200 with
+    the summary when the same parameters were already produced, else 202 with a poll URL."""
+    req = await request_summary(db, user.id, document_id, body)
+    if req is None:
+        raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND)
+    if req.ready:
+        return JSONResponse(req.body)
+    if req.enqueue:
+        try:
+            await enqueue(req.summary_id)
+        except Exception as e:
+            await mark_enqueue_failed(db, user.id, req.summary_id)
+            raise DomainError(ErrorCode.DEPENDENCY_UNAVAILABLE) from e
+    return JSONResponse(req.body, status_code=202)
+
+
+@router.get("/documents/{document_id}/summaries/{summary_id}")
+async def get_summary(
+    document_id: uuid.UUID,
+    summary_id: uuid.UUID,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+) -> dict[str, Any]:
+    """The summary: `status` is `pending`, `ready` (segments with citations) or `failed`."""
+    body = await load_summary(db, user.id, document_id, summary_id)
+    if body is None:
+        raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND)
+    return body
