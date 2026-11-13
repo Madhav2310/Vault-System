@@ -5,19 +5,24 @@ import gzip
 import json
 import urllib.parse
 import uuid
+import weakref
 from collections.abc import AsyncIterator
 from typing import Annotated, Any
 
+import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.api.deps import get_db, get_store
 from app.api.errors import DomainError
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
+from app.core.settings import get_settings
+from app.db.session import get_sessionmaker
 from app.documents.blobs import blob_key
+from app.ingestion.events import stream_processing
 from app.storage.base import ObjectStore
 
 router = APIRouter(prefix="/v1/versions", tags=["versions"])
@@ -189,3 +194,50 @@ async def page_layout(
         "height": entry["h"],
         "glyphs": entry["glyphs"],
     }
+
+
+# --- live processing status (S14.05) ----------------------------------------------------------------
+_event_clients: "weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, aioredis.Redis]" = (
+    weakref.WeakKeyDictionary()
+)
+
+
+def get_stream_sessionmaker() -> async_sessionmaker[AsyncSession]:
+    """The stream reads with short sessions of its own (the request session is not held while waiting)."""
+    return get_sessionmaker()
+
+
+async def get_events_redis() -> aioredis.Redis:
+    """Redis for the stream's pub/sub: one client per event loop; no read timeout (pub/sub waits)."""
+    loop = asyncio.get_running_loop()
+    client = _event_clients.get(loop)
+    if client is None:
+        client = aioredis.from_url(get_settings().redis_url, socket_connect_timeout=0.5)
+        _event_clients[loop] = client
+    return client
+
+
+@router.get(
+    "/{version_id}/processing/stream",
+    response_class=StreamingResponse,
+    responses={
+        200: {"content": {"text/event-stream": {}}, "description": "SSE: `stage` events, then `done`"}
+    },
+)
+async def processing_stream(
+    version_id: uuid.UUID,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    sm: Annotated[async_sessionmaker[AsyncSession], Depends(get_stream_sessionmaker)],
+    redis: Annotated[aioredis.Redis, Depends(get_events_redis)],
+) -> StreamingResponse:
+    """Server-sent events: one `stage{name, status, attempt, at, error_code?}` per `job_events` row (the past
+    first, then live as stages commit), then a terminal `done{status, error_code}`. `: heartbeat` comments
+    every 15 s; closes at a terminal status or after 10 minutes (`timeout`: reconnect to resume)."""
+    await _owned_version(db, user.id, version_id)
+    await db.rollback()  # no connection is held while streaming
+    return StreamingResponse(
+        stream_processing(sm, redis, user.id, version_id),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
