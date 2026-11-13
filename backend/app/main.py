@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 
 from app import __version__
-from app.api import chat, chunks, documents, health, metrics, versions
+from app.api import chat, chunks, documents, feedback, health, metrics, versions
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.core.logging import configure_logging
@@ -40,6 +40,7 @@ def create_app(*, telemetry: bool = False) -> FastAPI:
     app.include_router(chunks.router, dependencies=limited)
     app.include_router(chat.router, dependencies=limited)
     app.include_router(metrics.router, dependencies=limited)
+    app.include_router(feedback.router, dependencies=limited)
     return app
 
 
