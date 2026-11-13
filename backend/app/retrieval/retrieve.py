@@ -94,10 +94,24 @@ def _ms(t0: float) -> int:
 
 
 def result_cache_key(
-    owner_id: uuid.UUID, query: str, version_ids: Sequence[uuid.UUID], config_version: str
+    owner_id: uuid.UUID,
+    query: str,
+    version_ids: Sequence[uuid.UUID],
+    config_version: str,
+    embedding_model: str = "",
+    chunker_versions: Sequence[str] = (),
 ) -> str:
+    """Besides owner, query, scope versions and config version, the key covers what changes the stored
+    chunks or their vectors without changing a version id: the embedding model and the chunker versions."""
     payload = json.dumps(
-        [str(owner_id), normalize_query(query), sorted(str(v) for v in set(version_ids)), config_version]
+        [
+            str(owner_id),
+            normalize_query(query),
+            sorted(str(v) for v in set(version_ids)),
+            config_version,
+            embedding_model,
+            sorted(set(chunker_versions)),
+        ]
     )
     return CACHE_PREFIX + hashlib.sha256(payload.encode()).hexdigest()
 
@@ -171,8 +185,8 @@ class Retriever:
         version_ids = [v for _, v in scope.entries]
         if not version_ids or not query.strip():
             return RetrievalResult((), (), (), cfg.version)
-        key = result_cache_key(owner_id, query, version_ids, cfg.version)
-        cached = await self._cache_get(key)
+        key = await self.cache_key(db, owner_id, query, version_ids)
+        cached = await self._cache_get(key) if key else None
         if cached is not None:
             return cached
 
@@ -235,11 +249,13 @@ class Retriever:
             async with _use(db) as s:
                 exp = await expand_neighbors(s, owner_id, top_ids, cfg.expansion.max_evidence_tokens)
                 final = [(e.chunk_id, e.expanded_from) for e in exp]
-                for cid, ef in final:  # expansion neighbors that were never retrieved
-                    if cid not in by_id:
-                        vid = await self._version_of(s, owner_id, cid)
-                        if vid is not None:
-                            extra.append((cid, vid, ef))
+                new_ids = [cid for cid, _ in final if cid not in by_id]  # neighbors never retrieved
+                versions = await self._versions_of(s, owner_id, new_ids)
+                missing = {cid for cid in new_ids if cid not in versions}
+                if missing:  # deleted mid-request: drop from the evidence too, so both stay consistent
+                    _log.warning("expansion neighbor vanished", count=len(missing))
+                    final = [(cid, ef) for cid, ef in final if cid not in missing]
+                extra = [(cid, versions[cid], ef) for cid, ef in final if cid in versions]
         timings["expand_ms"] = _ms(t)
         order = {cid: (i, ef) for i, (cid, ef) in enumerate(final)}
 
@@ -252,6 +268,26 @@ class Retriever:
         if not degraded and emb.vector is not None and not rr.degraded:
             await self._cache_set(key, result)
         return dataclasses.replace(result, timings=timings)
+
+    async def cache_key(
+        self,
+        db: AsyncSession | async_sessionmaker[AsyncSession],
+        owner_id: uuid.UUID,
+        query: str,
+        version_ids: Sequence[uuid.UUID],
+    ) -> str:
+        """The result cache key; empty when caching is off (no Redis or zero TTL), which skips the lookup."""
+        if self._redis is None or self._cfg.cache_ttl_s == 0:
+            return ""
+        async with _use(db) as s:
+            rows = await s.execute(
+                text("SELECT DISTINCT chunker_version FROM document_versions WHERE id = ANY(:v)"),
+                {"v": list(version_ids)},
+            )
+            chunkers = [r[0] or "" for r in rows]
+        return result_cache_key(
+            owner_id, query, version_ids, self._cfg.version, self._embedder.model, chunkers
+        )
 
     async def _passages(
         self, session: AsyncSession, owner_id: uuid.UUID, ids: Sequence[uuid.UUID], query: str
@@ -274,16 +310,17 @@ class Retriever:
         return out
 
     @staticmethod
-    async def _version_of(
-        session: AsyncSession, owner_id: uuid.UUID, chunk_id: uuid.UUID
-    ) -> uuid.UUID | None:
-        row = (
-            await session.execute(
-                text("SELECT version_id FROM chunks WHERE owner_id = :o AND id = :c"),
-                {"o": owner_id, "c": chunk_id},
-            )
-        ).first()
-        return row[0] if row else None
+    async def _versions_of(
+        session: AsyncSession, owner_id: uuid.UUID, chunk_ids: Sequence[uuid.UUID]
+    ) -> dict[uuid.UUID, uuid.UUID]:
+        """Version of each chunk in ONE query (chunks missing from the result no longer exist)."""
+        if not chunk_ids:
+            return {}
+        rows = await session.execute(
+            text("SELECT id, version_id FROM chunks WHERE owner_id = :o AND id = ANY(:ids)"),
+            {"o": owner_id, "ids": list(chunk_ids)},
+        )
+        return {cid: vid for cid, vid in rows}
 
     async def _cache_get(self, key: str) -> RetrievalResult | None:
         if self._redis is None or self._cfg.cache_ttl_s == 0:

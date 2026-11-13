@@ -30,9 +30,7 @@ async def _run(sm: async_sessionmaker[AsyncSession], w: World) -> Any:
         return (
             (
                 await s.execute(
-                    text(
-                        "SELECT status, reason_codes, assistant_message_id FROM rag_runs WHERE id = :r"
-                    ),
+                    text("SELECT status, reason_codes, assistant_message_id FROM rag_runs WHERE id = :r"),
                     {"r": w.run_id},
                 )
             )
@@ -66,7 +64,9 @@ async def test_abandoned_finished(
             )
         ).scalar_one()
         lease = (
-            await s.execute(text("SELECT active_run_id FROM chat_sessions WHERE id = :s"), {"s": dead.session_id})
+            await s.execute(
+                text("SELECT active_run_id FROM chat_sessions WHERE id = :s"), {"s": dead.session_id}
+            )
         ).scalar_one()
     assert n == 1, "two concurrent reapers finish the run exactly once"
     assert lease is None, "lease released"

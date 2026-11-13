@@ -19,3 +19,10 @@ def test_version_change_misses() -> None:
 
 def test_config_version_misses() -> None:
     assert result_cache_key(OWN, "q", [V1], "retrieval@1") != result_cache_key(OWN, "q", [V1], "retrieval@2")
+
+
+def test_embedding_model_misses() -> None:
+    base = result_cache_key(OWN, "q", [V1], "retrieval@1", "text-embedding-3-small", ["chunker@1"])
+    assert result_cache_key(OWN, "q", [V1], "retrieval@1", "text-embedding-3-small", ["chunker@1"]) == base
+    assert result_cache_key(OWN, "q", [V1], "retrieval@1", "text-embedding-3-large", ["chunker@1"]) != base
+    assert result_cache_key(OWN, "q", [V1], "retrieval@1", "text-embedding-3-small", ["chunker@2"]) != base

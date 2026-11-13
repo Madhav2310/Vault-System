@@ -29,7 +29,9 @@ async def test_redacted(
     assert live["document_title"] == "Master Agreement"
 
     async with sm() as s:
-        await s.execute(text("UPDATE documents SET deleted_at = now() WHERE id = :d"), {"d": w.doc.document_id})
+        await s.execute(
+            text("UPDATE documents SET deleted_at = now() WHERE id = :d"), {"d": w.doc.document_id}
+        )
         await s.commit()
     body = (await api.get(url, headers=w.owner.auth)).json()
     ev = evidence(body)

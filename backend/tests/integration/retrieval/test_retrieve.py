@@ -16,7 +16,7 @@ from app.retrieval.config import get_config
 from app.retrieval.load import load_evidence_chunks
 from app.retrieval.query_embed import QueryEmbedder
 from app.retrieval.rerank import RerankClient
-from app.retrieval.retrieve import Retriever, result_cache_key
+from app.retrieval.retrieve import Retriever
 from app.retrieval.scope import compute_scope
 from tests.support.docs import seed_document
 from tests.support.llm import make_gateway
@@ -100,9 +100,9 @@ async def test_cache_hit_and_degraded_not_cached(
         down = Retriever(QueryEmbedder(gw, None), _reranker(fail=True), rds)
         first = await down.retrieve(s, o.id, scope, q)
         assert first.degraded == ("no_rerank",) and first.selected
-        key = result_cache_key(o.id, q, [v for _, v in scope.entries], get_config().version)
-        assert await rds.get(key) is None  # degraded: not cached
         up = Retriever(QueryEmbedder(gw, None), _reranker(), rds)
+        key = await up.cache_key(s, o.id, q, [v for _, v in scope.entries])
+        assert key and await rds.get(key) is None  # degraded: not cached
         a = await up.retrieve(s, o.id, scope, q)
         b = await up.retrieve(s, o.id, scope, q.upper())  # normalization: same key
         assert not a.cache_hit and b.cache_hit and b.selected == a.selected and b.candidates == a.candidates
@@ -134,3 +134,51 @@ async def test_rerank_passages_windowed(
         scope = await compute_scope(s, o.id, None)
         await r.retrieve(s, o.id, scope, "thirty days written notice terminate")
     assert sent and max(sent) <= 1200
+
+
+async def test_neighbor_versions_one_query(tmp_path: Any, sm: SM, make_owner: Callable[[], Any]) -> None:
+    """S17.11 AC5 (F-044): neighbors never retrieved get their versions in one query."""
+    from sqlalchemy import event
+
+    o = await make_owner()
+    doc = await seed_document(sm, o.id)
+    ids = [
+        await seed_text_chunk(
+            sm,
+            o.id,
+            doc,
+            ("Clause covers fees and payment terms." if i in (3, 8) else f"Boilerplate recital number {i}."),
+            ordinal=i,
+        )
+        for i in range(12)
+    ]
+    gw, _p, _l, _s = make_gateway(tmp_path)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        passages = json.loads(request.content)["passages"]
+        return httpx.Response(200, json={"scores": [1.0] * len(passages), "model": "m"})
+
+    rr = RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
+    r = Retriever(QueryEmbedder(gw, None), rr, None)
+    seen: list[str] = []
+    engine = sm.kw["bind"].sync_engine
+
+    def count(conn: Any, cursor: Any, statement: str, *a: Any) -> None:
+        if "SELECT id, version_id FROM chunks" in statement:
+            seen.append(statement)
+
+    scope = await compute_scope_for(sm, o.id)
+    event.listen(engine, "before_cursor_execute", count)
+    try:
+        res = await r.retrieve(sm, o.id, scope, "fees payment terms")
+    finally:
+        event.remove(engine, "before_cursor_execute", count)
+    assert {c.chunk_id for c in res.candidates} <= set(ids)
+    expanded = [c for c in res.candidates if c.expanded_from is not None]
+    assert len(expanded) >= 2
+    assert len(seen) == 1
+
+
+async def compute_scope_for(sm: SM, owner_id: uuid.UUID) -> Any:
+    async with sm() as s:
+        return await compute_scope(s, owner_id, None)
