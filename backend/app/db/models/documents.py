@@ -62,6 +62,7 @@ class DocumentVersion(CreatedAt, Base):
     ready_at: Mapped[dt.datetime | None]
     enriched_at: Mapped[dt.datetime | None]
     superseded_at: Mapped[dt.datetime | None]
+    purged_at: Mapped[dt.datetime | None]  # set when purged but kept for the ledger (design §6.7)
 
 
 class Page(CreatedAt, Base):

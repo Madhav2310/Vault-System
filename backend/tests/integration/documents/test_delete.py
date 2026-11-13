@@ -242,3 +242,25 @@ async def test_cross_owner_404(api: httpx.AsyncClient, owners, sm, purges) -> No
     assert r.status_code == 404
     assert await _one(sm, "SELECT deleted_at FROM documents WHERE id = :d", d=s.document_id) is None
     assert purges.calls == []
+
+
+async def test_lost_purge_recovered(owners, sm, store) -> None:  # type: ignore[no-untyped-def]
+    """The purge enqueue after DELETE is not transactional; the beat sweep purges what it missed."""
+    from app.documents.delete import purge_pending
+
+    o = await owners()
+    doc, _ = await _full_doc(sm, store, o.id)
+    await _mark_deleted(sm, doc.document_id)  # deleted, but no purge ever ran
+    assert await purge_pending(sm, store) == 0  # inside the grace period: the normal purge may still come
+    async with sm() as s:
+        await s.execute(
+            text("UPDATE documents SET deleted_at = now() - interval '1 hour' WHERE id = :d"),
+            {"d": doc.document_id},
+        )
+        await s.commit()
+    assert await purge_pending(sm, store) >= 1
+    assert await _one(sm, "SELECT count(*) FROM chunks WHERE version_id = :v", v=doc.version_id) == 0
+    left = await _one(
+        sm, "SELECT count(*) FROM document_versions WHERE id = :v AND purged_at IS NULL", v=doc.version_id
+    )
+    assert left == 0

@@ -5,12 +5,11 @@ purge. The purge works per version and is idempotent: derived rows and objects a
 refcount is decremented exactly once, and the blob goes when its refcount reaches 0.
 
 Idempotency of the decrement: a purged version either has its row deleted, or, when the permanent ledger
-still references it (`run_versions`, `matrix_cells`), keeps its row with `quality = {"purged": true}` and is
-skipped from then on. The marker and the decrement commit in the same transaction.
+still references it (`run_versions`, `matrix_cells`), keeps its row with `purged_at` set and is skipped
+from then on. The marker and the decrement commit in the same transaction.
 """
 
 import asyncio
-import json
 import uuid
 from collections.abc import Awaitable, Callable
 
@@ -25,7 +24,6 @@ SessionFactory = async_sessionmaker[AsyncSession]
 
 PURGE_TASK = "vault.maintenance.purge_document"
 PurgeEnqueue = Callable[[uuid.UUID], Awaitable[None]]
-_PURGED = json.dumps({"purged": True})
 _log = get_logger("vault.documents.delete")
 
 
@@ -71,7 +69,7 @@ async def purge_document(sm: SessionFactory, store: ObjectStore, document_id: uu
                 await s.execute(
                     text(
                         "SELECT id FROM document_versions WHERE document_id = :d AND owner_id = :o "
-                        "AND COALESCE(quality->>'purged', '') <> 'true' ORDER BY version_no"
+                        "AND purged_at IS NULL ORDER BY version_no"
                     ),
                     {"d": document_id, "o": owner_id},
                 )
@@ -99,7 +97,7 @@ async def _purge_version(
             await s.execute(
                 text(
                     "SELECT sha256 FROM document_versions WHERE id = :v AND owner_id = :o "
-                    "AND COALESCE(quality->>'purged', '') <> 'true' FOR UPDATE"
+                    "AND purged_at IS NULL FOR UPDATE"
                 ),
                 p,
             )
@@ -128,8 +126,8 @@ async def _purge_version(
             )
         ).scalar_one_or_none()
         await s.execute(
-            text("UPDATE document_versions SET quality = CAST(:m AS jsonb) WHERE id = :v"),
-            {"m": _PURGED, "v": version_id},
+            text("UPDATE document_versions SET purged_at = now() WHERE id = :v"),
+            {"v": version_id},
         )
         # The permanent ledger (runs, matrix cells) may still point at the version: then the row stays.
         await s.execute(
@@ -152,3 +150,29 @@ async def _purge_version(
     if refcount == 0:
         await store.delete(blob_key(sha))
     return True
+
+
+PENDING_GRACE_S = 600
+
+
+async def purge_pending(sm: SessionFactory, store: ObjectStore, grace_s: int = PENDING_GRACE_S) -> int:
+    """Beat safety net: purge documents deleted more than `grace_s` ago that still have unpurged versions
+    (the purge enqueue after a DELETE is not transactional and may have been lost)."""
+    async with sm() as s:
+        ids = (
+            (
+                await s.execute(
+                    text(
+                        "SELECT DISTINCT d.id FROM documents d "
+                        "JOIN document_versions v ON v.document_id = d.id WHERE d.deleted_at < now() - make_interval(secs => :g) AND v.purged_at IS NULL "
+                        "LIMIT 200"
+                    ),
+                    {"g": grace_s},
+                )
+            )
+            .scalars()
+            .all()
+        )
+    for doc_id in ids:
+        await purge_document(sm, store, doc_id)
+    return len(ids)
