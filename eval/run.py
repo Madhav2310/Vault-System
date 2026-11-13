@@ -56,7 +56,7 @@ from app.core.ids import uuid7
 from app.db.models.eval import EvalResult, EvalRun
 from eval import baseline as bl
 from eval.graders import grade_item
-from eval.mapping import ChunkInfo, map_item
+from eval.mapping import ChunkInfo, GoldTarget, map_item
 from eval.multiturn import NewSession, Pipeline, run_multiturn
 from eval.report import REPORTS_DIR, ItemResult, RunResult, write_report, write_sidecar
 from eval.schema import EvalContext, GoldenItem, ItemOutput, Query
@@ -66,19 +66,40 @@ SUITES = ("retrieval", "full", "smoke")
 __all__ = ["Harness", "ItemOutput", "Pipeline", "Query", "main", "run_suite"]
 
 
+ExtraScorer = Callable[
+    [GoldenItem, ItemOutput, Sequence[GoldTarget], Mapping[str, ChunkInfo]], Awaitable[dict[str, float]]
+]
+
+
 @dataclass
 class Harness:
     pipeline: Pipeline
     chunks_by_doc: Mapping[str, Sequence[ChunkInfo]]  # eval document key -> the ingested chunks
     ctx: EvalContext = field(default_factory=EvalContext)
     new_session: NewSession | None = None
+    # extra per-item metrics (answer judges): async (item, output, targets, chunks) -> metrics
+    extra_scorer: ExtraScorer | None = None
+    # total spend so far (USD) for `--max-usd`: pipeline answering + judges
+    spent: Callable[[], Awaitable[float]] | None = None
+    close: Callable[[], Awaitable[None]] | None = None  # release clients (HTTP) when the run ends
+
+
+def select_filter(items: Sequence[GoldenItem], spec: str | None) -> list[GoldenItem]:
+    """`--filter scope_docs=N`: keep items whose scope names exactly N documents."""
+    if not spec:
+        return list(items)
+    key, _, val = spec.partition("=")
+    if key != "scope_docs" or not val.isdigit():
+        raise SystemExit(f"unsupported --filter {spec!r} (use scope_docs=N)")
+    return [i for i in items if len(i.doc_ids or ()) == int(val)]
 
 
 def degraded_abort(run: RunResult, max_rate: float) -> str | None:
     """The ABORT line when too many items ran in a degraded configuration, else None."""
     rate = run.degraded_rate()
     if rate > max_rate:
-        return f"ABORT: degraded_rate {rate:.3f} > {max_rate:.3f} ({run.degraded_by_kind()}); results are invalid"
+        kinds = run.degraded_by_kind()
+        return f"ABORT: degraded_rate {rate:.3f} > {max_rate:.3f} ({kinds}); results are invalid"
     return None
 
 
@@ -122,9 +143,10 @@ async def _run_item(
         out, err = ItemOutput(), f"{type(e).__name__}: {e}"
     targets = [x for x in map_item(item, h.chunks_by_doc) if x.mapped]
     hits = [bool(x.chunk_ids & set(out.retrieved[:8])) for x in targets] or None
-    return ItemResult(
-        item.id, item.category, split, score(item, out), err, quote_hits=hits, degraded=out.degraded
-    )
+    metrics = score(item, out)
+    if h.extra_scorer is not None and err is None:
+        metrics.update(await h.extra_scorer(item, out, map_item(item, h.chunks_by_doc), chunks))
+    return ItemResult(item.id, item.category, split, metrics, err, quote_hits=hits, degraded=out.degraded)
 
 
 async def run_suite(
@@ -138,6 +160,7 @@ async def run_suite(
     sm: async_sessionmaker[AsyncSession] | None = None,
     report_dir: pathlib.Path = REPORTS_DIR,
     git_sha: str | None = None,
+    max_usd: float | None = None,
 ) -> tuple[RunResult, pathlib.Path]:
     """Run `items` sequentially (deterministic order). Returns the result and the report path."""
     if suite not in SUITES:
@@ -157,6 +180,9 @@ async def run_suite(
             await s.commit()
     chunks = {c.id: c for cs in harness.chunks_by_doc.values() for c in cs}
     for item in items:
+        if max_usd is not None and harness.spent is not None and await harness.spent() >= max_usd:
+            run.config["stopped"] = "budget"
+            break
         run.items.append(
             await _run_item(item, harness, chunks, split_of(item.id), answers=suite != "retrieval")
         )
@@ -197,15 +223,33 @@ async def _main(a: argparse.Namespace) -> int:
 
     ds = load_dataset()
     split = "smoke" if a.suite == "smoke" else a.split
-    items = ds.select(split)
+    items = select_filter(ds.select(split), a.filter)
     t_wall = time.monotonic()
     harness = await _load_setup(a.pipeline)(a.config)
     sm = None if a.no_db else get_sessionmaker()
-    run, path = await run_suite(
-        items, harness, name=a.config, suite=a.suite, split=split, split_of=ds.split_of, sm=sm
-    )
+    try:
+        run, path = await run_suite(
+            items,
+            harness,
+            name=a.config,
+            suite=a.suite,
+            split=split,
+            split_of=ds.split_of,
+            sm=sm,
+            max_usd=a.max_usd,
+        )
+    finally:
+        if harness.close is not None:
+            await harness.close()
     print(f"wall_s {time.monotonic() - t_wall:.1f}")
     print(f"degraded_rate {run.degraded_rate():.3f} {run.degraded_by_kind()}")
+    if run.config.get("stopped") == "budget":
+        print(f"stopped: budget (cap ${a.max_usd}); partial run, nothing frozen")
+        return 3
+    if a.suite != "retrieval":
+        from eval.metrics.answer import render_ci
+
+        print(render_ci(run))
     if a.suite == "retrieval" and (abort := degraded_abort(run, a.max_degraded_rate)):
         print(abort)
         return 3  # no baseline is frozen from an invalid run
@@ -241,6 +285,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         default=0.05,
         help="retrieval suite: abort (exit 3, no freeze) above this share of degraded items",
     )
+    p.add_argument("--max-usd", type=float, default=None, help="stop before an item once spend reaches this")
+    p.add_argument("--filter", default=None, help="only items matching, e.g. scope_docs=1")
     p.add_argument("--no-db", action="store_true", help="skip eval_runs/eval_results rows")
     return asyncio.run(_main(p.parse_args(argv)))
 

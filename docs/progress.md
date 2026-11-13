@@ -402,3 +402,7 @@ Before/after (AMD 10-K, native, same 420251 chars): 37 s / 720 MB -> 11.3 s / 19
 
 ## S16.04 degraded-run guard
 - `eval.run` retrieval suite prints `degraded_rate` and aborts (exit 3, no freeze) above `--max-degraded-rate` (0.05); `ItemOutput.degraded`, `Retriever.warm_up()` once per run. 3 tests in tests/integration/eval/test_degraded_guard.py.
+
+## 2026-11-13 — S17.12 answer eval harness (partial)
+- `eval/metrics/answer.py` (binary judge mapping, support rate, bootstrap CIs, `render_ci`), `eval.run --max-usd/--filter scope_docs=N` (+ exit 3 `stopped: budget`), `Harness.extra_scorer/spent/close`, `ItemOutput.call_ids/verdicts`, `make eval-answers`, `eval/pipeline_http.py` (call ids, message lookup by paging history, judge scorer with its own cap `EVAL_JUDGE_MAX_USD`, client closed). Tests: `unit/eval/test_answer_metrics.py` (2). `make ci` 330 passed; eval tests 116 passed.
+- Open ACs: AC1 integrity-on-FakeProvider test, AC3 `test_call_ids_reported`, AC5 `test_budget_stop`. Not run live.

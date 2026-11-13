@@ -218,6 +218,8 @@ class ItemOutput:
     conflict_flagged: bool | None = None
     latency_ms: float | None = None
     cost_usd: float | None = None
+    call_ids: tuple[str, ...] = ()  # llm_calls ids of the run: the engine/ledger sees the answering spend
+    verdicts: tuple[str, ...] = ()  # support-check verdicts per cited segment (supported|partial|unsupported)
     degraded: tuple[str, ...] = ()  # e.g. no_rerank, lexical_only: the run measured a degraded configuration
 
     @property

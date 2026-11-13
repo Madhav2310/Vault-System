@@ -10,9 +10,12 @@ the stack's, so a run costs real money: use the `smoke` suite or `--split` sampl
 from __future__ import annotations
 
 import asyncio
+import datetime as dt
+import os
 import pathlib
 import time
 import uuid
+from typing import Any
 
 import httpx
 from sqlalchemy import text
@@ -30,11 +33,12 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 READY = {"ready", "enriched"}
 
 
-async def setup(config: str) -> Harness:
+async def setup(config: str, *, with_judges: bool | None = None) -> Harness:
     import os
 
     base = os.environ.get("API_BASE_URL", "http://localhost:8100")
     ds = load_dataset()
+    with_judges = config.startswith("answers") if with_judges is None else with_judges
     sm = get_sessionmaker()
     key, uid = new_api_key(), uuid.uuid4()
     async with sm() as s:
@@ -62,7 +66,8 @@ async def setup(config: str) -> Harness:
             (
                 await s.execute(
                     text(
-                        "SELECT id, document_id, ordinal, original_text, sentences, page_start, page_end, kind "
+                        "SELECT id, document_id, ordinal, original_text, sentences, page_start, "
+                        "page_end, kind "
                         "FROM chunks WHERE owner_id = :o ORDER BY document_id, ordinal"
                     ),
                     {"o": uid},
@@ -72,7 +77,7 @@ async def setup(config: str) -> Harness:
             .all()
         )
     chunks: dict[str, list[ChunkInfo]] = {k: [] for k in doc_ids}
-    for c in chunks_from_rows(rows, by_id):
+    for c in chunks_from_rows([dict(r) for r in rows], by_id):
         chunks[c.doc_id].append(c)
 
     async def new_session(q: Query, ctx: EvalContext) -> uuid.UUID:
@@ -94,8 +99,7 @@ async def setup(config: str) -> Harness:
         r.raise_for_status()
         ms = (time.monotonic() - t0) * 1000
         msg_id = r.json()["message"]["id"]
-        hist = (await http.get(f"/v1/chat/sessions/{sid}/messages", params={"limit": 4})).json()["items"]
-        msg = next(m for m in hist if m["id"] == msg_id)
+        msg = await _find_message(http, sid, msg_id)
         segs = [
             AnswerSegment(
                 s["text"],
@@ -114,6 +118,11 @@ async def setup(config: str) -> Harness:
                     {"m": msg_id, "o": uid},
                 )
             ).one()
+            call_ids = (
+                (await s.execute(text("SELECT id FROM llm_calls WHERE run_id = :r"), {"r": run[0]}))
+                .scalars()
+                .all()
+            )
             cands = (
                 (
                     await s.execute(
@@ -134,7 +143,84 @@ async def setup(config: str) -> Harness:
             abstained=abstained,
             latency_ms=ms,
             cost_usd=float(run[1] or 0),
+            call_ids=tuple(str(c) for c in call_ids),
+            verdicts=tuple(
+                seg["verification"] for seg in msg["segments"] if seg.get("verification") in _VERDICTS
+            ),
         )
 
     get_settings()  # fail early on a bad environment
-    return Harness(pipeline, chunks, EvalContext(owner_id=uid, doc_ids=doc_ids), new_session)
+    started = dt.datetime.now(dt.UTC)
+
+    async def spent() -> float:
+        """Answering spend of this eval user since setup, plus the judges' (their own in-memory ledger)."""
+        async with sm() as s:
+            v = (
+                await s.execute(
+                    text(
+                        "SELECT COALESCE(sum(cost_usd), 0) FROM llm_calls "
+                        "WHERE owner_id = :o AND created_at >= :t"
+                    ),
+                    {"o": uid, "t": started},
+                )
+            ).scalar_one()
+        return float(v) + float(judges.spent if judges else 0)
+
+    judges = _JudgeScorer() if with_judges else None
+    return Harness(
+        pipeline,
+        chunks,
+        EvalContext(owner_id=uid, doc_ids=doc_ids),
+        new_session,
+        extra_scorer=judges.score if judges else None,
+        spent=spent,
+        close=http.aclose,
+    )
+
+
+_VERDICTS = {"supported", "partial", "unsupported"}
+
+
+async def _find_message(http: httpx.AsyncClient, sid: uuid.UUID, msg_id: str) -> dict[str, Any]:
+    """The assistant message by id: page back through history (never assume it is among the last few)."""
+    cursor: str | None = None
+    for _ in range(10):
+        params: dict[str, Any] = {"limit": 100}
+        if cursor:
+            params["cursor"] = cursor
+        body = (await http.get(f"/v1/chat/sessions/{sid}/messages", params=params)).json()
+        for m in body["items"]:
+            if m["id"] == msg_id:
+                return dict(m)
+        cursor = body.get("next_cursor")
+        if not cursor:
+            break
+    raise LookupError(f"message {msg_id} not found in session history")
+
+
+class _JudgeScorer:
+    """Binary faithfulness + completeness judges (deterministic first), capped by their own ledger."""
+
+    def __init__(self) -> None:
+        from decimal import Decimal
+
+        from app.llm.gateway import MemoryLedger
+        from eval.judge import SpendGuard, _live_gateway
+
+        self.ledger = MemoryLedger()
+        self.gw = _live_gateway(self.ledger)
+        self.guard = SpendGuard(self.ledger, Decimal(os.environ.get("EVAL_JUDGE_MAX_USD", "1.0")))
+
+    @property
+    def spent(self) -> float:
+        return float(self.guard.spent)
+
+    async def score(self, item: Any, out: ItemOutput, targets: Any, chunks: Any) -> dict[str, float]:
+        from eval.judge import judge_item
+        from eval.metrics.answer import judge_metrics, support_metrics
+
+        js = {
+            jt: await judge_item(self.gw, item, out, targets, chunks, jt, secondary=False, guard=self.guard)
+            for jt in ("faithfulness", "completeness")
+        }
+        return {**judge_metrics(js), **support_metrics(out)}

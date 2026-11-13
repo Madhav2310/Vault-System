@@ -14,7 +14,7 @@ define not_implemented
 endef
 
 .PHONY: help up down logs test test-unit test-integration test-e2e lint fmt typecheck migrate seed \
-        seed-users up-test up-rerank up-full eval eval-retrieval eval-retrieval-fast eval-smoke loadtest ci
+        seed-users up-test up-rerank up-full eval eval-retrieval eval-retrieval-fast eval-answers eval-smoke loadtest ci
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | tr '\n' ' '; echo
@@ -65,6 +65,8 @@ eval-retrieval:
 	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config retrieval --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 eval-retrieval-fast:
 	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config $(or $(RETR_CONFIG),retrieval@1) --split $(or $(SPLIT),all) --pipeline eval.pipeline_retrieval:setup $(EVAL_ARGS)
+eval-answers:  ## full answers with judges: make eval-answers SPLIT=train MAX_USD=3 [FILTER=scope_docs=1]
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite full --config answers --split $(or $(SPLIT),train) --max-usd $(or $(MAX_USD),3) $(if $(FILTER),--filter $(FILTER)) --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 eval-smoke:
 	$(UV) env PYTHONPATH=.. python -m eval.run --suite smoke --config smoke --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 loadtest:

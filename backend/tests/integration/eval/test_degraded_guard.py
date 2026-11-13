@@ -63,7 +63,7 @@ async def test_abort_on_degraded(sm: SM, tracker: Tracker, tmp_path: pathlib.Pat
     monkeypatch.setattr(er, "REPORTS_DIR", tmp_path)
     args = argparse.Namespace(
         suite="retrieval", split="all", config="x", pipeline="m:s", no_db=True, freeze="retrieval",
-        compare=None, tolerance=0.02, max_degraded_rate=0.05,
+        compare=None, tolerance=0.02, max_degraded_rate=0.05, max_usd=None, filter=None,
     )  # fmt: skip
     monkeypatch.setattr("eval.loader.load_dataset", lambda: _FakeDs())
     assert await er._main(args) == 3 and froze == []
