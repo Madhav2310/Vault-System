@@ -107,3 +107,30 @@ async def test_cache_hit_and_degraded_not_cached(
         b = await up.retrieve(s, o.id, scope, q.upper())  # normalization: same key
         assert not a.cache_hit and b.cache_hit and b.selected == a.selected and b.candidates == a.candidates
         await rds.delete(key)
+
+
+async def test_rerank_passages_windowed(
+    tmp_path: Any, sm: SM, make_owner: Callable[[], Any], rds: aioredis.Redis
+) -> None:
+    """S16.03 AC5: passages sent to the reranker are focus windows (<= 1,200 chars) of a long chunk."""
+    import json as _json
+
+    o = await make_owner()
+    doc = await seed_document(sm, o.id)
+    filler = "Standard operational matters apply across regions and periods. " * 60
+    body = filler + "Either party may terminate on thirty days written notice. " + filler
+    await seed_text_chunk(sm, o.id, doc, body, ordinal=0)
+    sent: list[int] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        passages = _json.loads(request.content)["passages"]
+        sent.extend(len(p) for p in passages)
+        return httpx.Response(200, json={"scores": [1.0] * len(passages), "model": "m"})
+
+    gw, _p, _l, _s = make_gateway(tmp_path)
+    rr = RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
+    r = Retriever(QueryEmbedder(gw, None), rr, None)
+    async with sm() as s:
+        scope = await compute_scope(s, o.id, None)
+        await r.retrieve(s, o.id, scope, "thirty days written notice terminate")
+    assert sent and max(sent) <= 1200

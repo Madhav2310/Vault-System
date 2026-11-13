@@ -27,9 +27,22 @@ from app.retrieval.query_embed import QueryEmbedder, normalize_query
 from app.retrieval.rerank import RerankClient, RerankPassage
 from app.retrieval.scope import Scope
 from app.retrieval.vector import vector_search
+from app.retrieval.windows import focus_window
 
 _log = get_logger("vault.retrieval")
 CACHE_PREFIX = "vault:retr:"
+
+
+def _sentence_spans(raw: Sequence[object]) -> list[tuple[int, int]]:
+    """Stored as [start, end] pairs; tolerate {"start","end"} objects (some test seeds)."""
+    out: list[tuple[int, int]] = []
+    for item in raw:
+        if isinstance(item, dict):
+            out.append((int(item["start"]), int(item["end"])))
+        else:
+            pair: Sequence[int] = item  # type: ignore[assignment]
+            out.append((int(pair[0]), int(pair[1])))
+    return out
 
 
 @dataclass(frozen=True)
@@ -140,7 +153,7 @@ class Retriever:
 
         fused = fuse(vec_ranked, lex_ranked, k=cfg.rrf_k)
         pool = fused[: cfg.rerank.candidates]
-        texts = await self._passages(session, owner_id, [c.chunk_id for c in pool])
+        texts = await self._passages(session, owner_id, [c.chunk_id for c in pool], query)
         pool = [c for c in pool if c.chunk_id in texts]  # a chunk deleted mid-request drops out
         await session.rollback()  # end the read transaction: no connection held across the reranker call
         rr = await self._reranker.rerank(
@@ -176,15 +189,24 @@ class Retriever:
         return result
 
     async def _passages(
-        self, session: AsyncSession, owner_id: uuid.UUID, ids: Sequence[uuid.UUID]
+        self, session: AsyncSession, owner_id: uuid.UUID, ids: Sequence[uuid.UUID], query: str
     ) -> dict[uuid.UUID, str]:
         if not ids:
             return {}
         rows = await session.execute(
-            text("SELECT id, embedding_text FROM chunks WHERE owner_id = :o AND id = ANY(:ids)"),
+            text(
+                "SELECT c.id, c.original_text, c.sentences, d.title, c.section_path FROM chunks c "
+                "JOIN documents d ON d.id = c.document_id AND d.owner_id = c.owner_id "
+                "WHERE c.owner_id = :o AND c.id = ANY(:ids)"
+            ),
             {"o": owner_id, "ids": list(ids)},
         )
-        return {r[0]: r[1] for r in rows}
+        out: dict[uuid.UUID, str] = {}
+        for cid, original, sents, title, section in rows:
+            window = focus_window(original, _sentence_spans(sents), query, self._cfg.rerank.window_words)
+            head = f"{title} | {section[-1]}" if section else title
+            out[cid] = f"{head[:120]}\n{window}"
+        return out
 
     @staticmethod
     async def _version_of(

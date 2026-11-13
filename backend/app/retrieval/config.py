@@ -18,6 +18,7 @@ class RerankCfg(BaseModel):
     model: str
     candidates: int = Field(ge=1, le=100)
     top_n: int = Field(ge=1, le=100)
+    window_words: int = Field(default=180, ge=50, le=400)
 
 
 class ExpansionCfg(BaseModel):

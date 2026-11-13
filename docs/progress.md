@@ -371,3 +371,7 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Service now: threads from cgroup quota (cap 4), batch 8, max_in_flight 1, passages truncated to 1200 chars at a word boundary (no 422), `/healthz` reports threads and batch. Tests: reranker `pytest tests` 11 passed (`test_cpu_quota`, `test_defaults`, `test_long_passage_truncated`, `test_overloaded_503`).
 - Native bench (idle, load 3.4): `python bench.py --threads 4 --batch 8 --words 180 --n 40` -> p50 260 ms, p95 264 ms, peak RSS 354 MB (targets 350 ms / 450 MB met). Old config: 1031 ms, 1.5 GB.
 - AC6 (container bench via `make up-rerank`) pending: Docker is off by design.
+
+## 2026-11-13 — S16.03 query-focused rerank windows
+- `app/retrieval/windows.py::focus_window` (whole-sentence window <= 180 words maximizing distinct query stems; FirstP fallback; over-long sentence cut) and `Retriever._passages` now sends `title | section` + window (<= ~1.2k chars) to the reranker; `rerank.window_words` in config (default 180).
+- Evidence: `make ci` 320 passed (4 new unit tests in test_windows.py). AC5 (`test_rerank_passages_windowed`, integration) written but NOT run: Docker is off; run it at S16.01 with `make up-test`.
