@@ -19,6 +19,7 @@ ROUTES: dict[str, str] = {
     "vault.maintenance.purge_idempotency_keys": "maintenance",
     "vault.maintenance.purge_job_events": "maintenance",
     "vault.maintenance.sweep_jobs": "maintenance",
+    "vault.maintenance.purge_document": "maintenance",
     "vault.ingest.stage": "ingest",
     "vault.ai.stage": "ai",
 }
@@ -40,7 +41,12 @@ def make_celery() -> Celery:
         "vault",
         broker=s.redis_url,
         backend=s.redis_url,
-        include=["app.worker.tasks.ping", "app.worker.tasks.maintenance", "app.worker.tasks.ingest"],
+        include=[
+            "app.worker.tasks.ping",
+            "app.worker.tasks.maintenance",
+            "app.worker.tasks.ingest",
+            "app.worker.tasks.purge",
+        ],
     )
     app.conf.update(
         task_acks_late=True,

@@ -165,6 +165,14 @@ async def put_gz_json(store: ObjectStore, key: str, obj: object) -> None:
 async def clear_owner_rows(sm: async_sessionmaker[AsyncSession], owner_ids: list[uuid.UUID]) -> None:
     """Delete derived rows that `make_owner`'s teardown does not know about (run before it)."""
     async with sm() as s:
+        await s.execute(
+            text(
+                "DELETE FROM run_versions WHERE version_id IN "
+                "(SELECT id FROM document_versions WHERE owner_id = ANY(:ids))"
+            ),
+            {"ids": owner_ids},
+        )
+        await s.execute(text("DELETE FROM rag_runs WHERE owner_id = ANY(:ids)"), {"ids": owner_ids})
         for tbl in ("chunks", "document_insights"):
             await s.execute(text(f"DELETE FROM {tbl} WHERE owner_id = ANY(:ids)"), {"ids": owner_ids})
         await s.execute(

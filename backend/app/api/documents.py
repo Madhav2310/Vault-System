@@ -18,6 +18,7 @@ from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 from app.core.settings import get_settings
 from app.documents.blobs import store_blob
+from app.documents.delete import PurgeEnqueue, get_purge_enqueue, soft_delete
 from app.documents.service import create_from_upload
 from app.documents.sniff import sniff
 from app.documents.upload import receive_upload
@@ -195,6 +196,21 @@ async def list_documents(
     ]
     nxt = _encode_cursor(page[-1]["created_at"], page[-1]["id"]) if more else None
     return {"items": items, "next_cursor": nxt}
+
+
+@router.delete("/documents/{document_id}", status_code=204)
+async def delete_document(
+    document_id: uuid.UUID,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    enqueue_purge: Annotated[PurgeEnqueue, Depends(get_purge_enqueue)],
+) -> Response:
+    """Soft delete: hidden from every read immediately; chunks, insights, layouts and the blob go in an
+    async purge."""
+    if not await soft_delete(db, user.id, document_id):
+        raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND)
+    await enqueue_purge(document_id)
+    return Response(status_code=204)
 
 
 @router.get("/documents/{document_id}")
