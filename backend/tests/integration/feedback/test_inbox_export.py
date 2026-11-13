@@ -7,10 +7,9 @@ from typing import Any
 
 import httpx
 import yaml
-from eval.inbox import export
-from eval.schema import GoldenItem
 from sqlalchemy import text
 
+import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path so `import eval` works)
 from app.chat.ledger import persist_turn
 from tests.support.ledger_env import make_world, record
 
@@ -18,6 +17,9 @@ from tests.support.ledger_env import make_world, record
 async def test_yaml_valid(
     api: httpx.AsyncClient, sm: Any, fb_owners: Callable[[], Any], tmp_path: pathlib.Path
 ) -> None:
+    from eval.inbox import export
+    from eval.schema import GoldenItem
+
     o = await fb_owners()
     w = await make_world(sm, o)
     async with sm() as s:
