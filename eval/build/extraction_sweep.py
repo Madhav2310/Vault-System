@@ -17,7 +17,7 @@ import yaml
 from rapidfuzz import fuzz
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from build_external import FUZZ_MIN, REF, ROOT, norm  # noqa: E402
+from build_external import FUZZ_MIN, REF, ROOT, norm
 
 DS = ROOT / "eval" / "datasets" / "vault_eval_v1"
 CONFIGS = {

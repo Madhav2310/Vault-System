@@ -119,3 +119,20 @@ async def test_pipeline_error_is_scored_not_dropped(
             )
         ).scalar_one()
     assert n == len(bad.metrics) > 0
+
+
+async def test_json_sidecar(
+    sm: async_sessionmaker[AsyncSession], tracker: Tracker, tmp_path: pathlib.Path
+) -> None:
+    """S17.01 AC5: run_suite writes <run_id>.json next to the report; it validates and mirrors the metrics."""
+    from eval.report import Sidecar
+
+    run, _path, _ = await _run(sm, tracker, tmp_path, suite="retrieval")
+    side = tmp_path / f"{run.run_id}.json"
+    assert side.is_file()
+    data = Sidecar.model_validate_json(side.read_text())
+    assert data.run_id == str(run.run_id) and [i.item_id for i in data.items] == [
+        i.item_id for i in run.items
+    ]
+    assert all(i.metrics == r.metrics for i, r in zip(data.items, run.items, strict=True))
+    assert any(i.quote_hits for i in data.items)  # per-quote hits recorded for items with mapped gold

@@ -10,7 +10,6 @@ Output: eval/datasets/vault_eval_v1/{docs/*, authored.yaml, golden.yaml, splits.
 
 from __future__ import annotations
 
-import hashlib
 import io
 import json
 import pathlib
@@ -24,7 +23,7 @@ import yaml
 from docx import Document
 
 sys.path.insert(0, str(pathlib.Path(__file__).parent))
-from build_external import EXTRACT_CFG, ROOT, SRC, locate, norm, sha256  # noqa: E402
+from build_external import EXTRACT_CFG, ROOT, SRC, locate, norm, sha256
 
 DS = ROOT / "eval" / "datasets" / "vault_eval_v1"
 DOCS = DS / "docs"

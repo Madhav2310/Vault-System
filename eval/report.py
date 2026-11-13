@@ -10,6 +10,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
+from pydantic import BaseModel
+
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 REPORTS_DIR = ROOT / "eval" / "reports"
 # Metrics where lower is better; everything else is higher-is-better.
@@ -23,6 +25,9 @@ class ItemResult:
     split: str
     metrics: dict[str, float]
     error: str | None = None
+    quote_hits: list[bool] | None = (
+        None  # per mapped gold quote: acceptable chunk in the top 8 (paired tests)
+    )
     turns: list[ItemResult] = field(default_factory=list)  # multi-turn: one per turn, ids `<id>#t<n>`
 
 
@@ -53,6 +58,56 @@ class RunResult:
                 for k, v in i.metrics.items():
                     vals[k].append(v)
         return {k: (sum(v) / len(v), len(v)) for k, v in sorted(vals.items())}
+
+
+class SidecarItem(BaseModel):
+    item_id: str
+    category: str
+    split: str
+    metrics: dict[str, float]
+    quote_hits: list[bool] | None = None
+    error: str | None = None
+
+
+class Sidecar(BaseModel):
+    """`eval/reports/<run_id>.json`: machine-readable twin of the Markdown report (input of `eval.paired`)."""
+
+    run_id: str
+    name: str
+    suite: str
+    split: str
+    git_sha: str
+    config: dict[str, Any]
+    items: list[SidecarItem]
+
+
+def sidecar(run: RunResult) -> Sidecar:
+    return Sidecar(
+        run_id=str(run.run_id),
+        name=run.name,
+        suite=run.suite,
+        split=run.split,
+        git_sha=run.git_sha,
+        config=run.config,
+        items=[
+            SidecarItem(
+                item_id=i.item_id,
+                category=i.category,
+                split=i.split,
+                metrics=i.metrics,
+                quote_hits=i.quote_hits,
+                error=i.error,
+            )
+            for i in run.items
+        ],
+    )
+
+
+def write_sidecar(run: RunResult, directory: pathlib.Path = REPORTS_DIR) -> pathlib.Path:
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / f"{run.run_id}.json"
+    path.write_text(sidecar(run).model_dump_json(indent=1))
+    return path
 
 
 def _f(v: float | None) -> str:

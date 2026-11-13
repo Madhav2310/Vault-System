@@ -58,7 +58,7 @@ from eval import baseline as bl
 from eval.graders import grade_item
 from eval.mapping import ChunkInfo, map_item
 from eval.multiturn import NewSession, Pipeline, run_multiturn
-from eval.report import REPORTS_DIR, ItemResult, RunResult, write_report
+from eval.report import REPORTS_DIR, ItemResult, RunResult, write_report, write_sidecar
 from eval.schema import EvalContext, GoldenItem, ItemOutput, Query
 
 SUITES = ("retrieval", "full", "smoke")
@@ -112,7 +112,9 @@ async def _run_item(
         out = await h.pipeline(q, dataclasses.replace(h.ctx, history=[]))
     except Exception as e:  # scored as an empty output; the error stays visible in the report
         out, err = ItemOutput(), f"{type(e).__name__}: {e}"
-    return ItemResult(item.id, item.category, split, score(item, out), err)
+    targets = [x for x in map_item(item, h.chunks_by_doc) if x.mapped]
+    hits = [bool(x.chunk_ids & set(out.retrieved[:8])) for x in targets] or None
+    return ItemResult(item.id, item.category, split, score(item, out), err, quote_hits=hits)
 
 
 async def run_suite(
@@ -151,6 +153,7 @@ async def run_suite(
     run.finished_at = dt.datetime.now(dt.UTC)
     if sm is not None:
         await _persist(sm, run)
+    write_sidecar(run, report_dir)
     return run, write_report(run, report_dir)
 
 

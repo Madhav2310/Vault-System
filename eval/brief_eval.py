@@ -214,7 +214,7 @@ def sample_facts(doc_key: str, brief: Brief, k: int) -> list[int]:
         return idx
     key = lambda i: hashlib.sha256(
         f"{doc_key}:{i}:{brief.facts[i].field}:{brief.facts[i].value}".encode()
-    ).digest()  # noqa: E731
+    ).digest()
     return sorted(sorted(idx, key=key)[:k])
 
 
