@@ -598,6 +598,14 @@ class ChatMetrics(Model):
     latency_ms: Percentiles
     ttft_ms: Percentiles
     cost_per_turn_usd: Percentiles
+    node_latency_ms: dict[str, Percentiles] = Field(
+        default_factory=dict,
+        description=(
+            "Per-node step duration percentiles over the same turns, keyed by node name (`analyze`, "
+            "`retrieve`, `gate`, `generate`, `verify`, `persist`, ...). Steps skipped by the fast path "
+            "are not counted; a node that did not run in the window is absent."
+        ),
+    )
     degraded: dict[str, int]
     feedback: FeedbackSummary
     llm: LlmMetrics
@@ -614,6 +622,10 @@ class ChatMetrics(Model):
                     "latency_ms": {"p50": 5200.0, "p95": 9100.0},
                     "ttft_ms": {"p50": 1400.0, "p95": 2600.0},
                     "cost_per_turn_usd": {"p50": 0.004, "p95": 0.009},
+                    "node_latency_ms": {
+                        "retrieve": {"p50": 310.0, "p95": 620.0},
+                        "generate": {"p50": 2100.0, "p95": 3900.0},
+                    },
                     "degraded": {},
                     "feedback": {"up": 3, "down": 1, "by_reason": {"unsupported": 1}},
                     "llm": {

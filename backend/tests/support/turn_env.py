@@ -83,9 +83,10 @@ def install_runner(
     sm: async_sessionmaker[AsyncSession],
     script: list[Step],
     before: Callable[[], Awaitable[None]] | None = None,
+    fast_path: bool = False,
 ) -> FakeProvider:
     """Override the turn runner with a real `run_turn` over a scripted fake provider (`before` runs first)."""
-    gw, prov = fake_gateway(script, ledger=DbLedgerWriter(sm))
+    gw, prov = fake_gateway(script, ledger=DbLedgerWriter(sm), fast_path=fast_path)
     deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), rerank_client(), None))
 
     async def runner(*a: Any) -> None:

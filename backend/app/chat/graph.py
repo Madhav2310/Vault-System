@@ -108,6 +108,8 @@ class TurnState:
     last_decision: dict[str, Any] | None = None  # set by a node; copied into its step
     last_status: str = "ok"  # a node may report "failed" for a handled failure
     last_error: str | None = None
+    last_reason: str | None = None  # a node may set a reason code for its step (e.g. FAST_PATH)
+    fast_path: bool = False  # set by `route_question`: `analyze` is skipped (S17.10)
 
     def fail(self, *codes: str | None) -> None:
         self.status = "failed"
@@ -159,7 +161,7 @@ class Graph:
         return state
 
     async def _step(self, name: str, state: TurnState, ctx: TurnCtx) -> None:
-        state.last_decision, state.last_status, state.last_error = None, "ok", None
+        state.last_decision, state.last_status, state.last_error, state.last_reason = None, "ok", None, None
         t0, at = time.monotonic(), datetime.now(UTC)
         status, error_code = "ok", None
         await ctx.enter(name)
@@ -185,7 +187,7 @@ class Graph:
         state.steps.append(
             StepRecord(
                 len(state.steps) + 1, name, status, at, int((time.monotonic() - t0) * 1000),
-                decision=state.last_decision, error_code=error_code,
+                decision=state.last_decision, reason_code=state.last_reason, error_code=error_code,
             )
         )  # fmt: skip
 

@@ -29,10 +29,16 @@ def evidence() -> EvidenceSet:
 
 
 def fake_gateway(
-    script: list[Step] | None = None, ledger: LedgerWriter | None = None
+    script: list[Step] | None = None, ledger: LedgerWriter | None = None, fast_path: bool = False
 ) -> tuple[LlmGateway, FakeProvider]:
+    """`fast_path=False` keeps the scripted analysis call of every turn; S17.10 tests pass True."""
     fake = FakeProvider(script=script or [])
-    settings = Settings(_env_file=None, database_url="postgresql+asyncpg://x/y", redis_url="redis://x")  # type: ignore[call-arg]
+    settings = Settings(  # type: ignore[call-arg]
+        _env_file=None,
+        database_url="postgresql+asyncpg://x/y",
+        redis_url="redis://x",
+        chat_fast_path=fast_path,
+    )
     gw = LlmGateway(
         chat=fake,
         embeddings=fake,

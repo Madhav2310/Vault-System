@@ -38,6 +38,7 @@ REASON_TEMPLATES: dict[str, str] = {
     "SUPPORT_CHECK_FAILED": "Citations could not be double-checked this time.",
     "UNSUPPORTED_CLAIM": "A claim is not supported by its cited source.",
     "TURN_ABANDONED": "This turn stopped unexpectedly, so no answer was produced. Ask again.",
+    "FAST_PATH": "",
     "LOOP_GUARD": "",
     "BAD_ROUTE": "",
     "NODE_TIMEOUT": "The turn ran out of time before it finished.",

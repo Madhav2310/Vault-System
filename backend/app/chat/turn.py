@@ -66,7 +66,7 @@ def after_load_context(s: TurnState) -> str:
 
 @router("analyze")
 def after_route_question(s: TurnState) -> str:
-    return "analyze"  # S17.10 adds the fast path here
+    return "analyze"  # the fast path skips the call inside the `analyze` node (recorded as a skipped step)
 
 
 @router("clarify", "plan_context")

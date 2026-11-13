@@ -56,6 +56,20 @@ async def chat_metrics(db: AsyncSession, owner_id: uuid.UUID | None, window: str
         .one()
     )
 
+    node_rows = await db.execute(
+        text(
+            "SELECT st.node, "
+            + _pct("st.duration_ms", "p")
+            + " FROM run_steps st JOIN rag_runs r ON r.id = st.run_id "
+            "WHERE r.created_at >= now() - make_interval(secs => :w) "
+            "AND r.matrix_cell_id IS NULL AND r.replay_of_run_id IS NULL "
+            f"{scope_sql(owner_id, 'r.owner_id')} "
+            "AND st.duration_ms IS NOT NULL AND st.status <> 'skipped' GROUP BY st.node ORDER BY st.node"
+        ),
+        p,
+    )
+    node_latency = {n: {"p50": num(p50), "p95": num(p95)} for n, p50, p95 in node_rows}
+
     async def grouped(sql: str) -> dict[str, int]:
         return {k: n for k, n in await db.execute(text(sql), p)}
 
@@ -116,6 +130,7 @@ async def chat_metrics(db: AsyncSession, owner_id: uuid.UUID | None, window: str
         "latency_ms": {"p50": num(r["p50"]), "p95": num(r["p95"])},
         "ttft_ms": {"p50": num(r["t50"]), "p95": num(r["t95"])},
         "cost_per_turn_usd": {"p50": num(r["c50"], 6), "p95": num(r["c95"], 6)},
+        "node_latency_ms": node_latency,
         "degraded": degraded,
         "feedback": await feedback_summary(db, owner_id, WINDOWS_S[window]),
         "llm": {
