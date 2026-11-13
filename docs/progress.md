@@ -375,3 +375,6 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 ## 2026-11-13 — S16.03 query-focused rerank windows
 - `app/retrieval/windows.py::focus_window` (whole-sentence window <= 180 words maximizing distinct query stems; FirstP fallback; over-long sentence cut) and `Retriever._passages` now sends `title | section` + window (<= ~1.2k chars) to the reranker; `rerank.window_words` in config (default 180).
 - Evidence: `make ci` 320 passed (4 new unit tests in test_windows.py). AC5 (`test_rerank_passages_windowed`, integration) written but NOT run: Docker is off; run it at S16.01 with `make up-test`.
+
+## 2026-11-13 — S16.06 README skeleton and quickstart
+- `README.md` rewritten (honest "What works today"), `scripts/quickstart.sh` (Docker check, .env, `make up`, migrate, demo user). Tests: `backend/tests/unit/docs/test_readme_skeleton.py` 2 passed. AC3 (real quickstart run) pending Docker.
