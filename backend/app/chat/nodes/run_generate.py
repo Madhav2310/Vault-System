@@ -16,6 +16,7 @@ async def generate(state: TurnState, ctx: TurnCtx) -> TurnState:
     state.evidence = build_evidence(state.chunks)
 
     async def on_segment(seg: ResolvedSegment) -> None:
+        ctx.mark_first_segment()
         await emit_segment(ctx, seg, state.evidence)
 
     try:
@@ -34,6 +35,8 @@ async def generate(state: TurnState, ctx: TurnCtx) -> TurnState:
     elif gen.response_type == "abstain":
         gen = dataclasses.replace(gen, followups=await abstain_followups(state, ctx))
     state.generation = gen
+    if gen.response_type == "answer" and gen.resolution.segments:
+        ctx.mark_first_segment()  # a truncated answer is salvaged after the stream: no earlier segment
     state.last_decision = {"response_type": gen.response_type}
     await flush_segments(state, ctx)
     return state

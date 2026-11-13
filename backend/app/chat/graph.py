@@ -62,6 +62,11 @@ class TurnCtx:
     sink: EventSink = field(default_factory=NullSink)
     stage: str | None = None  # last `status` stage emitted
     segments_emitted: int = 0  # `segment` events sent so far (the index of the next one)
+    ttft_ms: int | None = None  # turn start to the first model-written segment (S18.02); None without one
+
+    def mark_first_segment(self) -> None:
+        if self.ttft_ms is None:
+            self.ttft_ms = max(1, int((time.monotonic() - self.t_start) * 1000))
 
     async def emit(self, event: TurnEvent) -> None:
         """Send an event to the sink; a sink failure never fails the turn."""

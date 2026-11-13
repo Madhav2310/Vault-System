@@ -128,6 +128,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         degraded=tuple(dict.fromkeys(state.degraded)),
         limits={"max_llm_calls": ctx.budget.limits.max_llm_calls, "deadline_s": ctx.budget.limits.deadline_s},
         latency_ms=int((time.monotonic() - ctx.t_start) * 1000),
+        ttft_ms=None if state.failure else ctx.ttft_ms,
     )
     try:
         async with deps.sm() as s:
