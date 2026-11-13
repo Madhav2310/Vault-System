@@ -1,0 +1,88 @@
+{
+  "$defs": {
+    "FactOut": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "enum": [
+            "party",
+            "effective_date",
+            "expiry_date",
+            "deadline",
+            "amount",
+            "obligation",
+            "termination",
+            "governing_law",
+            "key_point",
+            "risk",
+            "other"
+          ],
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        },
+        "evidence": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "field",
+        "value",
+        "evidence"
+      ],
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "description": "What the extract call returns. Strict-mode compatible (see module docstring).",
+  "properties": {
+    "document_type": {
+      "type": "string"
+    },
+    "summary": {
+      "type": "string"
+    },
+    "category": {
+      "enum": [
+        "contract",
+        "financial_report",
+        "research_paper",
+        "policy",
+        "correspondence",
+        "other"
+      ],
+      "type": "string"
+    },
+    "tags": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "suggested_questions": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "facts": {
+      "items": {
+        "$ref": "#/$defs/FactOut"
+      },
+      "type": "array"
+    }
+  },
+  "required": [
+    "document_type",
+    "summary",
+    "category",
+    "tags",
+    "suggested_questions",
+    "facts"
+  ],
+  "type": "object"
+}

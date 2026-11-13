@@ -1,0 +1,1545 @@
+{
+  "cuad_consulting": {
+    "cost_usd": "0.015790",
+    "model": "gpt-6.1-terra",
+    "document_type": "consulting agreement",
+    "category": "contract",
+    "tags": [
+      "consulting agreement",
+      "independent contractor",
+      "compensation",
+      "termination",
+      "confidentiality",
+      "intellectual property",
+      "restrictive covenants",
+      "change of control"
+    ],
+    "summary": "Gunston Consulting, LLC provides independent consulting services to Medalist Diversified REIT, Inc., including managing the company\u2019s affairs, under an agreement effective 2020-03-01. The initial term is 12 months and automatically renews for another 12 months unless terminated. Compensation is $200,000 annually plus stock grants awarded by the compensation committee. Either party may terminate on 90 days\u2019 written notice; a qualifying termination after a change of control triggers a fee equal to 12 months\u2019 compensation. Confidentiality, work product ownership and restrictive covenants apply, and Virginia law governs.",
+    "suggested_questions": [
+      "What services will Gunston Consulting provide to Medalist Diversified REIT?",
+      "How much will Gunston receive in fees and stock compensation?",
+      "Under what conditions can either party terminate the agreement?",
+      "How is the change of control termination fee calculated?",
+      "What confidentiality and work product obligations apply to Gunston?",
+      "Which restrictive covenants continue after Gunston\u2019s consultancy ends?"
+    ],
+    "facts": [
+      {
+        "field": "party",
+        "value": "Gunston Consulting, LLC is the consultant; Medalist Diversified REIT, Inc. is the company.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "3f5f8e84-a98b-449e-b30d-85949b89e9ed",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              1
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 14,
+            "char_end": 341,
+            "cited_text": "CONSULTING AGREEMENT\nThis CONSULTING AGREEMENT (\u201cAgreement\u201d) effective as of this 1st day of March 2020 is hereby entered into between Gunston Consulting,\nLLC (\u201cCONSULTANT\u201d), a Virginia limited liability company, and Medalist Diversified REIT, Inc. (\u201cREIT\u201d or the \u201cCompany\u201d), a Maryland\ncorporation, collectively the \u201cParties.\u201d"
+          }
+        ]
+      },
+      {
+        "field": "effective_date",
+        "value": "2020-03-01",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "3f5f8e84-a98b-449e-b30d-85949b89e9ed",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              1
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 14,
+            "char_end": 341,
+            "cited_text": "CONSULTING AGREEMENT\nThis CONSULTING AGREEMENT (\u201cAgreement\u201d) effective as of this 1st day of March 2020 is hereby entered into between Gunston Consulting,\nLLC (\u201cCONSULTANT\u201d), a Virginia limited liability company, and Medalist Diversified REIT, Inc. (\u201cREIT\u201d or the \u201cCompany\u201d), a Maryland\ncorporation, collectively the \u201cParties.\u201d"
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "The initial term is 12 months, automatically renewing for an additional 12 months unless terminated.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "25f7cd23-3ecd-479b-9bb6-6c6fb81f9f2a",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              8
+            ],
+            "section_path": [
+              "STATEMENT OF WORK"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 848,
+            "char_end": 1076,
+            "cited_text": "Term: twelve (12) months from the date of the Agreement which term shall automatically renew for an additional twelve (12) months on such date if\nthe Agreement is not otherwise terminated according to Section 8 of the Agreement."
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "Gunston serves as an independent contractor, not an employee.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "3f5f8e84-a98b-449e-b30d-85949b89e9ed",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              1
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 4,
+            "sentence_end": 5,
+            "char_start": 501,
+            "char_end": 627,
+            "cited_text": "REIT hereby retains CONSULTANT and CONSULTANT hereby accepts appointment to serve as an independent\ncontractor to the Company."
+          },
+          {
+            "chunk_id": "1c216616-5cd6-45e5-9535-83a6e45e5de4",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              1,
+              2
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 27,
+            "char_end": 152,
+            "cited_text": "The Parties expressly intend and agree that CONSULTANT is acting as an independent contractor and not as an\nemployee of REIT."
+          }
+        ]
+      },
+      {
+        "field": "obligation",
+        "value": "Gunston\u2019s services include managing the company\u2019s affairs and other consistent duties designated by the CEO or board.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "25f7cd23-3ecd-479b-9bb6-6c6fb81f9f2a",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              8
+            ],
+            "section_path": [
+              "STATEMENT OF WORK"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 19,
+            "char_end": 847,
+            "cited_text": "Nature of Services:\nCONSULTANT shall have the duties, authorities and responsibilities as are required by CONSULTANT\u2019s position commensurate with the duties,\nauthorities and responsibilities of persons in similar capacities in similarly sized companies, and such other duties, authorities and responsibilities\nas may reasonably be assigned to CONSULTANT as the Chief Executive Officer or the Board of Directors of the REIT (the \u201cBoard of Directors\u201d or\nthe \u201cBoard\u201d) shall designate from time to time that are not inconsistent with CONSULTANT\u2019s position and that are consistent with the bylaws of\nthe REIT and/or the limited partnership agreement of the REIT\u2019s operating partnership, Medalist Diversified Holdings, L.P., each as may be amended\nfrom time to time, including, but not limited to, managing the affairs of the Company."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "$200,000 annual fee, payable in 12 monthly or 24 semi-monthly installments at Gunston\u2019s election.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "25f7cd23-3ecd-479b-9bb6-6c6fb81f9f2a",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              8
+            ],
+            "section_path": [
+              "STATEMENT OF WORK"
+            ],
+            "sentence_start": 4,
+            "sentence_end": 5,
+            "char_start": 1194,
+            "char_end": 1319,
+            "cited_text": "$200,000 annual fee payable in 12 equal monthly installments or 24 equal semi-monthly installments, at CONSULTANT\u2019s election."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Annual stock grants are awarded by the board\u2019s compensation committee.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "25f7cd23-3ecd-479b-9bb6-6c6fb81f9f2a",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              8
+            ],
+            "section_path": [
+              "STATEMENT OF WORK"
+            ],
+            "sentence_start": 6,
+            "sentence_end": 7,
+            "char_start": 1324,
+            "char_end": 1421,
+            "cited_text": "Annual stock grants as awarded by the Compensation Committee of the Company\u2019s Board of Directors."
+          }
+        ]
+      },
+      {
+        "field": "obligation",
+        "value": "Gunston bears expenses except limited authorized expenditures; approved expense invoices must be itemized and supported by receipts.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "25f7cd23-3ecd-479b-9bb6-6c6fb81f9f2a",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              8
+            ],
+            "section_path": [
+              "STATEMENT OF WORK"
+            ],
+            "sentence_start": 8,
+            "sentence_end": 9,
+            "char_start": 1426,
+            "char_end": 1676,
+            "cited_text": "Except for limited authorized expenditures expressly agreed to and authorized by REIT, such as pre-approved, reasonable travel expenses,\nCONSULTANT shall be responsible for paying all expenses incurred by him/her in the performance of this Agreement."
+          },
+          {
+            "chunk_id": "25f7cd23-3ecd-479b-9bb6-6c6fb81f9f2a",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              8
+            ],
+            "section_path": [
+              "STATEMENT OF WORK"
+            ],
+            "sentence_start": 10,
+            "sentence_end": 11,
+            "char_start": 1785,
+            "char_end": 1902,
+            "cited_text": "Moreover, invoices for approved expenses\nmust be itemized and substantiated by appropriate receipts prior to payment."
+          }
+        ]
+      },
+      {
+        "field": "risk",
+        "value": "The company determines work product completeness in its sole discretion, and Gunston must make requested revisions.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "1c216616-5cd6-45e5-9535-83a6e45e5de4",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              1,
+              2
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 6,
+            "sentence_end": 7,
+            "char_start": 626,
+            "char_end": 816,
+            "cited_text": "Completeness of work product shall be determined by REIT in its sole discretion, and CONSULTANT agrees to make all revisions,\nadditions, deletions or alterations as requested by the Company."
+          }
+        ]
+      },
+      {
+        "field": "obligation",
+        "value": "Gunston may not assign statement of work responsibilities without the CEO\u2019s express written agreement.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "3f5f8e84-a98b-449e-b30d-85949b89e9ed",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              1
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 6,
+            "sentence_end": 7,
+            "char_start": 841,
+            "char_end": 1093,
+            "cited_text": "CONSULTANT further agrees that it will\nnot assign the responsibilities set forth in the attached Statement of Work to any other CONSULTANT, subcontactor or other individual without\nthe express written agreement of the Company\u2019s Chief Executive Officer."
+          }
+        ]
+      },
+      {
+        "field": "obligation",
+        "value": "Gunston must keep proprietary information confidential during and after the consultancy, subject to the stated service-use exception.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "5732452e-7e7b-4773-920d-4354dbe40e18",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 172,
+            "char_end": 523,
+            "cited_text": "CONSULTANT agrees that at all times during or subsequent to the performance of the consulting services under\nthis Agreement, CONSULTANT will keep confidential and will not divulge, communicate, or use Proprietary Information, except for\nCONSULTANT\u2019s own use during the Term of this Agreement to the extent necessary to perform the consulting services."
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "Work product related to the company\u2019s actual or anticipated business and developed while under contract belongs to the company.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "cbbd8865-11dc-46af-8d5d-c3ec0446c273",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 3,
+            "sentence_end": 4,
+            "char_start": 189,
+            "char_end": 1043,
+            "cited_text": "CONSULTANT acknowledges that CONSULTANT\u2019s rights in all discoveries, concepts, ideas,\ninventions, innovations, improvements, developments, methods, designs, analyses, drawings, reports, patent applications, copyrightable work and\nmask work (whether or not including any Proprietary Information) and all registrations or applications related thereto, all other proprietary\ninformation and all similar or related information (whether or not patentable) which relate to the Company\u2019s actual or anticipated business, research\nand development or existing or future products or services and which were or are conceived, developed, contributed to or made or reduced to\npractice by CONSULTANT (whether alone or jointly with others) while under contract with the Company, whether before or after the date of this\nAgreement (\u201cWork Product\u201d), belong to the Company."
+          }
+        ]
+      },
+      {
+        "field": "risk",
+        "value": "Gunston is restricted from soliciting company personnel and hiring certain current or recent personnel during the consultancy and for 12 months afterward.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "1ad7a80e-f6db-41a0-9cfd-e6ec97f44da5",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              2,
+              3
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 6,
+            "sentence_end": 7,
+            "char_start": 941,
+            "char_end": 1751,
+            "cited_text": "CONSULTANT agrees that during its consultancy for REIT and for a period of twelve (12) months immediately\nfollowing the termination of its consultancy with the Company for any reason, whether with or without cause, it will not, for itself or any other\nperson or entity:\n(a) solicit, induce, recruit or encourage any of the Company\u2019s employees, contractors, independent contractors or any person who\nprovides services to the Company to terminate or reduce their employment or other relationship with the Company;\n(b) hire any individual who is (or was within the six (6) months immediately preceding such hiring, unless such employee was terminated\nfrom such employment by Company) an employee, exclusive contractor, or exclusive independent contractor of the Company; or\n(c) attempt to do any of the foregoing."
+          }
+        ]
+      },
+      {
+        "field": "risk",
+        "value": "Gunston may not disparage the company or specified associated persons, but may provide truthful information to authorities or in response to legal process.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "e1eb6ce9-c91a-4300-b7c1-cdc599b7d37d",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              4,
+              5
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 3,
+            "sentence_end": 5,
+            "char_start": 291,
+            "char_end": 751,
+            "cited_text": "CONSULTANT further agrees that it will not directly or indirectly defame, disparage, or publicly criticize the services,\nbusiness, integrity, veracity or reputation of the Company or its owners, officers, directors, or employees in any forum or through any medium of\ncommunication. Nothing in this Agreement will preclude CONSULTANT from supplying truthful information to any governmental authority or in\nresponse to any lawful subpoena or other legal process."
+          }
+        ]
+      },
+      {
+        "field": "termination",
+        "value": "The company may terminate for any or no reason on 90 days\u2019 written notice; Gunston may terminate on 90 days\u2019 written notice.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "e1eb6ce9-c91a-4300-b7c1-cdc599b7d37d",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              4,
+              5
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 6,
+            "sentence_end": 7,
+            "char_start": 768,
+            "char_end": 1265,
+            "cited_text": "This Agreement shall terminate immediately upon the occurrence of any of the following events: (a) upon the death or bankruptcy\nof CONSULTANT; or (b) upon the close of business on the date the Company gives CONSULTANT written notice of Termination for Cause (as\ndefined below); (c) ninety (90) days following the date the Company gives CONSULTANT written notice of termination for any or no reason; or (d)\nCONSULTANT may terminate this Agreement by giving ninety (90) days\u2019 written notice to REIT."
+          }
+        ]
+      },
+      {
+        "field": "termination",
+        "value": "The agreement terminates upon Gunston\u2019s death or bankruptcy or at close of business on the date of the company\u2019s written notice of termination for cause.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "e1eb6ce9-c91a-4300-b7c1-cdc599b7d37d",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              4,
+              5
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 6,
+            "sentence_end": 7,
+            "char_start": 768,
+            "char_end": 1265,
+            "cited_text": "This Agreement shall terminate immediately upon the occurrence of any of the following events: (a) upon the death or bankruptcy\nof CONSULTANT; or (b) upon the close of business on the date the Company gives CONSULTANT written notice of Termination for Cause (as\ndefined below); (c) ninety (90) days following the date the Company gives CONSULTANT written notice of termination for any or no reason; or (d)\nCONSULTANT may terminate this Agreement by giving ninety (90) days\u2019 written notice to REIT."
+          }
+        ]
+      },
+      {
+        "field": "termination",
+        "value": "Cause includes fraud, dishonesty, neglect of services, or breach or prospective breach of the agreement.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "e1eb6ce9-c91a-4300-b7c1-cdc599b7d37d",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              4,
+              5
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 8,
+            "sentence_end": 9,
+            "char_start": 1270,
+            "char_end": 1691,
+            "cited_text": "For purposes of this Agreement, \u201cTermination for Cause\u201d shall mean termination of this Agreement by the Company as the result of: (i) any act of\nfraud, dishonesty or neglect of services by CONSULTANT in connection with the services to be provided under this Agreement or against any\nCompany customer, vendor or affiliated company; or (ii) the breach or prospective breach of any provision of this Agreement by CONSULTANT."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "If services are terminated without cause within 12 months after a change of control, Gunston receives 12 months\u2019 compensation at the current monthly rate, including stock compensation.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "f2c39048-699d-46eb-95d7-43fa38682a09",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              5
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 6,
+            "sentence_end": 7,
+            "char_start": 953,
+            "char_end": 1303,
+            "cited_text": "In the event of a \u2018Change of Control\u2019 of Company, then if CONSULTANT\u2019s services are terminated without cause at any time\nwithin a twelve (12) month period following such Change of Control, CONSULTANT shall receive a termination fee equal to twelve (12) months\ncompensation hereunder at the then current monthly rate, including any stock compensation."
+          }
+        ]
+      },
+      {
+        "field": "obligation",
+        "value": "Gunston must promptly return company materials and proprietary information upon termination.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "f2c39048-699d-46eb-95d7-43fa38682a09",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              5
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 40,
+            "char_end": 611,
+            "cited_text": "In the event of any termination of CONSULTANT's appointment, with or without cause, CONSULTANT shall\npromptly deliver to REIT any and all materials, property, documents, data, and all other information belonging to REIT or pertaining to Proprietary\nInformation, whether prepared by REIT or CONSULTANT, in CONSULTANT\u2019s possession or control, and regardless of how stored or maintained,\nincluding all originals, copies, and compilations, and all information stored or maintained on computer, PDAs, electronic or other devices, tapes,\ndiscs, or any other form of technology."
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "Independent contractor, confidentiality, intellectual property and restrictive covenant obligations survive termination.",
+        "status": "unverified",
+        "reason": "VALUE_NOT_IN_CITATION",
+        "evidence": [
+          {
+            "chunk_id": "f2c39048-699d-46eb-95d7-43fa38682a09",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              5
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 4,
+            "sentence_end": 5,
+            "char_start": 839,
+            "char_end": 929,
+            "cited_text": "The obligations of Sections 3, 5, 6 and 7 shall survive any termination of this Agreement."
+          }
+        ]
+      },
+      {
+        "field": "obligation",
+        "value": "Gunston is responsible for applicable taxes and must indemnify the company for losses arising from breach of the tax section.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "2785c06b-21f1-40f2-920c-26fe06ff0c9e",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              5,
+              6
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 8,
+            "sentence_end": 10,
+            "char_start": 1152,
+            "char_end": 1654,
+            "cited_text": "CONSULTANT also acknowledges and agrees that the Company\nwill issue a Form 1099 for all compensation paid to CONSULTANT, and it is CONSULTANT\u2019s obligation to report and pay all federal, state and local\nincome, payroll, self-employment and other taxes due for her on all compensation from the Company as may be required by law. CONSULTANT\nagrees to indemnify REIT for any claims, losses, costs, fees, liabilities, damages, or injuries suffered by REIT arising out of CONSULTANT\u2019s breach\nof this section."
+          }
+        ]
+      },
+      {
+        "field": "obligation",
+        "value": "The company must indemnify Gunston for specified claims to the extent not covered by applicable insurance, and include Gunston as an additional insured under applicable coverage.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "864b8340-b520-41eb-8e32-cd36caad0099",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              6,
+              7
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 6,
+            "sentence_end": 8,
+            "char_start": 703,
+            "char_end": 1410,
+            "cited_text": "The Company hereby agrees to indemnify and hold harmless Consultant against any and all losses, claims,\ndamages, liabilities and expenses (including reasonable costs of investigation and legal counsel fees) to the extent not funded by\napplicable insurance, in addition to any liability the Company may otherwise have, arising out of, related to or based upon (i) any violation\nof law, rule or regulation by the Company or the Company's agents, employees, representatives or affiliates or (ii) any third party action or\nclaim against the Company in which Consultant is alleged to be additionally liable. In this regard CONSULTANT shall be an additional\ninsured under Company\u2019s applicable insurance coverages."
+          }
+        ]
+      },
+      {
+        "field": "risk",
+        "value": "Indemnity obligations survive termination for three years, excluding indemnification for the indemnified party\u2019s gross negligence or willful misconduct.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "b3197666-0c75-4636-959d-3a5409f7bfc3",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              7
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 5,
+            "sentence_end": 7,
+            "char_start": 1321,
+            "char_end": 1664,
+            "cited_text": "(d) This Section shall survive any termination of this Agreement for a period of three (3) years from the date of termination of this Agreement.\nNotwithstanding anything herein to the contrary, no Indemnifying Party will be responsible for any indemnification obligation for the\ngross negligence or willful misconduct of the Indemnified Party."
+          }
+        ]
+      },
+      {
+        "field": "governing_law",
+        "value": "Commonwealth of Virginia law governs.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "2785c06b-21f1-40f2-920c-26fe06ff0c9e",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              5,
+              6
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 11,
+            "sentence_end": 12,
+            "char_start": 1688,
+            "char_end": 1871,
+            "cited_text": "This Agreement shall be interpreted, construed, governed, and enforced according to the laws of the\nCommonwealth of Virginia, without giving effect to its conflict of laws principles."
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "Actions under the agreement have jurisdiction and venue in the United States District Court for the Eastern District of Virginia or the Circuit Court for Chesterfield County.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "864b8340-b520-41eb-8e32-cd36caad0099",
+            "version_id": "8082e57d-1505-4208-a4f7-da1942d2770e",
+            "version_no": 1,
+            "pages": [
+              6,
+              7
+            ],
+            "section_path": [
+              "Exhibit 10.1"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 217,
+            "char_end": 478,
+            "cited_text": "The Parties hereby agree and consent that any and all causes of\naction arising under this Agreement shall only have jurisdiction and venue in the United States District Court for the Eastern District of Virginia\nand/or the Circuit Court for Chesterfield County."
+          }
+        ]
+      }
+    ],
+    "reasons": [],
+    "partial": false
+  },
+  "fb_ulta_q4": {
+    "cost_usd": "0.024223",
+    "model": "gpt-6.1-terra",
+    "document_type": "earnings release",
+    "category": "financial_report",
+    "tags": [
+      "earnings release",
+      "ulta beauty",
+      "fiscal 2022",
+      "sales growth",
+      "share repurchases",
+      "fiscal 2023 outlook"
+    ],
+    "summary": "Ulta Beauty reported fourth-quarter and fiscal 2022 results for the periods ended January 28, 2023. Fourth-quarter net sales rose 18.2% to $3.2 billion, and net income rose 17.8% to $340.8 million, or $6.68 per diluted share. Full-year sales rose 18.3% to $10.2 billion, with net income of $1.2 billion. For fiscal 2023, the company projected sales of $10.95 billion to $11.05 billion and diluted earnings per share of $24.70 to $25.40.",
+    "suggested_questions": [
+      "How did Ulta Beauty\u2019s fourth-quarter sales and earnings compare with fiscal 2021?",
+      "What drove Ulta Beauty\u2019s comparable sales growth in fiscal 2022?",
+      "How many stores did Ulta Beauty open during fiscal 2022?",
+      "How much did Ulta Beauty spend on share repurchases in fiscal 2022?",
+      "What sales and earnings guidance did Ulta Beauty provide for fiscal 2023?",
+      "Which risks could affect Ulta Beauty\u2019s forward-looking outlook?"
+    ],
+    "facts": [
+      {
+        "field": "party",
+        "value": "Ulta Beauty, Inc.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "5c17b44a-d719-47a4-a885-74eff02a6a9f",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              1
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "Net Income of $340.8 Million or $6.68 Per Diluted Share"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 57,
+            "char_end": 326,
+            "cited_text": "BOLINGBROOK, Ill.--(BUSINESS WIRE)-- Ulta Beauty, Inc. (NASDAQ: ULTA) today\nannounced financial results for the thirteen-week period (\u201cfourth quarter\u201d) and fifty-two-week\nperiod (\u201cfiscal year\u201d) ended January 28, 2023 compared to the same periods ended January\n29, 2022."
+          }
+        ]
+      },
+      {
+        "field": "expiry_date",
+        "value": "Fiscal 2022 and fourth quarter ended 2023-01-28",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "5c17b44a-d719-47a4-a885-74eff02a6a9f",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              1
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "Net Income of $340.8 Million or $6.68 Per Diluted Share"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 57,
+            "char_end": 326,
+            "cited_text": "BOLINGBROOK, Ill.--(BUSINESS WIRE)-- Ulta Beauty, Inc. (NASDAQ: ULTA) today\nannounced financial results for the thirteen-week period (\u201cfourth quarter\u201d) and fifty-two-week\nperiod (\u201cfiscal year\u201d) ended January 28, 2023 compared to the same periods ended January\n29, 2022."
+          }
+        ]
+      },
+      {
+        "field": "other",
+        "value": "Earnings release dated 2023-03-09",
+        "status": "unverified",
+        "reason": "VALUE_NOT_IN_CITATION",
+        "evidence": [
+          {
+            "chunk_id": "303680e1-1b06-4cfb-84ce-6bfbdb9bc628",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              1
+            ],
+            "section_path": [],
+            "sentence_start": 0,
+            "sentence_end": 1,
+            "char_start": 0,
+            "char_end": 13,
+            "cited_text": "March 9, 2023"
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fourth-quarter net sales increased 18.2% to $3.2 billion",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "a94ac43a-a93e-497b-acd3-011ecf4ba9cc",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              1,
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Fourth Quarter of Fiscal 2022"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 39,
+            "char_end": 357,
+            "cited_text": "Net sales increased 18.2% to $3.2 billion compared to $2.7 billion in the fourth quarter\nof fiscal 2021 primarily due to the favorable impact from the continued resilience of the\nbeauty category, retail price increases, and the impact of new brands and product\ninnovation compared to the fourth quarter of fiscal 2021."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fourth-quarter comparable sales increased 15.6%",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "a94ac43a-a93e-497b-acd3-011ecf4ba9cc",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              1,
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Fourth Quarter of Fiscal 2022"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 359,
+            "char_end": 608,
+            "cited_text": "Comparable sales (sales for stores open at least 14 months and e-commerce sales)\nincreased 15.6% compared to an increase of 21.4% in the fourth quarter of fiscal 2021,\ndriven by a 13.6% increase in transactions and a 1.8% increase in average ticket."
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "Fourth-quarter comparable sales growth reflected 13.6% more transactions and a 1.8% higher average ticket",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "a94ac43a-a93e-497b-acd3-011ecf4ba9cc",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              1,
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Fourth Quarter of Fiscal 2022"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 359,
+            "char_end": 608,
+            "cited_text": "Comparable sales (sales for stores open at least 14 months and e-commerce sales)\nincreased 15.6% compared to an increase of 21.4% in the fourth quarter of fiscal 2021,\ndriven by a 13.6% increase in transactions and a 1.8% increase in average ticket."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fourth-quarter operating income increased 19.2% to $447.6 million",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "8c924ba8-d22a-4c99-b39d-758d4177f2f0",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Fourth Quarter of Fiscal 2022"
+            ],
+            "sentence_start": 0,
+            "sentence_end": 1,
+            "char_start": 0,
+            "char_end": 163,
+            "cited_text": "Operating income increased 19.2% to $447.6 million, or 13.9% of net sales, compared\nto $375.6 million, or 13.8% of net sales, in the fourth quarter of fiscal 2021."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fourth-quarter net income increased 17.8% to $340.8 million",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "8c924ba8-d22a-4c99-b39d-758d4177f2f0",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Fourth Quarter of Fiscal 2022"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 252,
+            "char_end": 361,
+            "cited_text": "Net income increased 17.8% to $340.8 million compared to $289.4 million in the fourth\nquarter of fiscal 2021."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fourth-quarter diluted earnings per share increased 23.5% to $6.68",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "8c924ba8-d22a-4c99-b39d-758d4177f2f0",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Fourth Quarter of Fiscal 2022"
+            ],
+            "sentence_start": 3,
+            "sentence_end": 4,
+            "char_start": 362,
+            "char_end": 640,
+            "cited_text": "Diluted earnings per share increased 23.5% to $6.68, including a $0.02 benefit due to\nincome tax accounting for stock-based compensation, compared to $5.41 including a\n$0.05 benefit due to income tax accounting for stock-based compensation, in the fourth\nquarter of fiscal 2021."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2022 net sales increased 18.3% to $10.2 billion",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "cfdb4b15-99d9-488c-a5ca-96d809cdb224",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Full Year of Fiscal 2022"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 34,
+            "char_end": 366,
+            "cited_text": "Net sales increased 18.3% to $10.2 billion compared to $8.6 billion in fiscal 2021,\nprimarily due to the favorable impact from the continued resilience of the beauty\ncategory, retail price increases, the impact of new brands and product innovation,\nincreased social occasions, and fewer COVID-19 limitations compared to fiscal 2021."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2022 comparable sales increased 15.6%",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "cfdb4b15-99d9-488c-a5ca-96d809cdb224",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Full Year of Fiscal 2022"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 367,
+            "char_end": 530,
+            "cited_text": "Comparable sales increased 15.6% compared to an increase of 37.9% in fiscal 2021,\ndriven by a 10.8% increase in transactions and a 4.3% increase in average ticket."
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "Fiscal 2022 comparable sales growth reflected 10.8% more transactions and a 4.3% higher average ticket",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "cfdb4b15-99d9-488c-a5ca-96d809cdb224",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Full Year of Fiscal 2022"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 367,
+            "char_end": 530,
+            "cited_text": "Comparable sales increased 15.6% compared to an increase of 37.9% in fiscal 2021,\ndriven by a 10.8% increase in transactions and a 4.3% increase in average ticket."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2022 gross profit margin rose to 39.6% from 39.0%",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "cfdb4b15-99d9-488c-a5ca-96d809cdb224",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Full Year of Fiscal 2022"
+            ],
+            "sentence_start": 4,
+            "sentence_end": 5,
+            "char_start": 617,
+            "char_end": 894,
+            "cited_text": "As\na percentage of net sales, gross profit increased to 39.6% compared to 39.0% in fiscal\n2021, primarily due to leverage of fixed costs, strong growth in other revenue, and\nfavorable channel mix shifts, partially offset by higher inventory shrink and lower\nmerchandise margin."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2022 operating income increased 26.3% to $1.6 billion",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "cfdb4b15-99d9-488c-a5ca-96d809cdb224",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Full Year of Fiscal 2022"
+            ],
+            "sentence_start": 7,
+            "sentence_end": 8,
+            "char_start": 1333,
+            "char_end": 1470,
+            "cited_text": "Operating income increased 26.3% to $1.6 billion, or 16.1% of net sales, compared to\n$1.3 billion, or 15.0% of net sales, in fiscal 2021."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2022 net income increased 26.0% to $1.2 billion",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "ea28e2a2-a802-4dc8-b8ca-4d2731e0dbac",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2,
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Full Year of Fiscal 2022"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 204,
+            "char_end": 289,
+            "cited_text": "Net income increased 26.0% to $1.2 billion compared to $985.8 million in fiscal 2021."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2022 diluted earnings per share increased 33.5% to $24.01",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "ea28e2a2-a802-4dc8-b8ca-4d2731e0dbac",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              2,
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "For the Full Year of Fiscal 2022"
+            ],
+            "sentence_start": 3,
+            "sentence_end": 4,
+            "char_start": 291,
+            "char_end": 549,
+            "cited_text": "Diluted earnings per share increased 33.5% to $24.01, including a $0.07 benefit due to\nincome tax accounting for stock-based compensation, compared to $17.98 including a\n$0.13 benefit due to income tax accounting for stock-based compensation, in fiscal\n2021."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Year-end cash and cash equivalents were $737.9 million",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "911fc6e8-9cbc-418a-879b-96fbc0dda270",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "Balance Sheet"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 15,
+            "char_end": 109,
+            "cited_text": "Cash and cash equivalents at the end of the fourth quarter of fiscal 2022 were $737.9\nmillion."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Year-end merchandise inventories were $1.6 billion",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "911fc6e8-9cbc-418a-879b-96fbc0dda270",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "Balance Sheet"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 111,
+            "char_end": 282,
+            "cited_text": "Merchandise inventories, net at the end of the fourth quarter of fiscal 2022 totaled $1.6\nbillion compared to $1.5 billion at the end of the fourth quarter of fiscal 2021."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2022 share repurchases totaled 2.2 million shares at a cost of $900.0 million",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "24275bda-64c7-4336-a2c9-7bf4e39bc190",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "Share Repurchase Program"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 156,
+            "char_end": 267,
+            "cited_text": "During fiscal 2022, the Company repurchased 2.2\nmillion shares of its common stock at a cost of $900.0 million."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "$1.1 billion remained available under the $2.0 billion share repurchase program as of 2023-01-28",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "24275bda-64c7-4336-a2c9-7bf4e39bc190",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "Share Repurchase Program"
+            ],
+            "sentence_start": 3,
+            "sentence_end": 4,
+            "char_start": 268,
+            "char_end": 396,
+            "cited_text": "As of January 28, 2023, $1.1\nbillion remained available under the $2.0 billion share repurchase program announced in\nMarch 2022."
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "Ulta Beauty opened 47 stores, relocated 12 and remodeled 20 in fiscal 2022",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "65ab3651-9198-409f-827d-009772e2230d",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "Store Update"
+            ],
+            "sentence_start": 3,
+            "sentence_end": 4,
+            "char_start": 365,
+            "char_end": 464,
+            "cited_text": "During fiscal 2022, the Company opened 47 new stores, relocated 12 stores, and remodeled\n20 stores."
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "Ulta Beauty operated 1,355 stores at fiscal 2022 year-end",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "65ab3651-9198-409f-827d-009772e2230d",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "Store Update"
+            ],
+            "sentence_start": 4,
+            "sentence_end": 5,
+            "char_start": 466,
+            "char_end": 583,
+            "cited_text": "At the end of the fourth quarter of fiscal 2022, the Company operated 1,355 stores totaling\n14.2 million square feet."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2023 net sales outlook: $10.95 billion to $11.05 billion",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "f72cc521-1bf5-448c-9e86-98ad144881fc",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "FY23 Outlook"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 14,
+            "char_end": 56,
+            "cited_text": "Net sales\n$10.95 billion to $11.05 billion"
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2023 comparable sales growth outlook: 4% to 5%",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "9d7a2d62-6236-4675-bdf9-6dbdf1ef3383",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "FY23 Outlook"
+            ],
+            "sentence_start": 0,
+            "sentence_end": 1,
+            "char_start": 0,
+            "char_end": 25,
+            "cited_text": "Comparable sales 4% to 5%"
+          }
+        ]
+      },
+      {
+        "field": "key_point",
+        "value": "Fiscal 2023 outlook includes 25 to 30 net new stores",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "c45b327e-b88b-46f1-b1ab-daae436aff50",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "FY23 Outlook"
+            ],
+            "sentence_start": 0,
+            "sentence_end": 1,
+            "char_start": 0,
+            "char_end": 21,
+            "cited_text": "New stores, net 25-30"
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2023 operating margin outlook: 14.7% to 15.0%",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "3dec9125-b76a-4209-9e06-14ee092ee11a",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "FY23 Outlook"
+            ],
+            "sentence_start": 0,
+            "sentence_end": 1,
+            "char_start": 0,
+            "char_end": 31,
+            "cited_text": "Operating margin 14.7% to 15.0%"
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2023 diluted earnings per share outlook: $24.70 to $25.40",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "65d0db4e-c420-48eb-ac30-e1cccf51b2da",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "FY23 Outlook"
+            ],
+            "sentence_start": 0,
+            "sentence_end": 1,
+            "char_start": 0,
+            "char_end": 43,
+            "cited_text": "Diluted earnings per share $24.70 to $25.40"
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2023 planned share repurchases: approximately $900 million",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "7d3b1cbb-3496-44ad-879a-40de3652a7fa",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "FY23 Outlook"
+            ],
+            "sentence_start": 0,
+            "sentence_end": 1,
+            "char_start": 0,
+            "char_end": 44,
+            "cited_text": "Share repurchases approximately $900 million"
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "Fiscal 2023 capital expenditure outlook: $400 million to $475 million",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "feef016e-d540-4227-96e7-ee9887b8d47d",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              3
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "FY23 Outlook"
+            ],
+            "sentence_start": 0,
+            "sentence_end": 1,
+            "char_start": 0,
+            "char_end": 49,
+            "cited_text": "Capital expenditures $400 million to $475 million"
+          }
+        ]
+      },
+      {
+        "field": "risk",
+        "value": "Forward-looking projections are subject to risks including consumer spending volatility, inflationary costs and competitive pressures",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "fb6476bf-de20-422c-88f5-6a772a59273d",
+            "version_id": "a81f682d-520d-4586-a83a-2e0a821aff60",
+            "version_no": 1,
+            "pages": [
+              4
+            ],
+            "section_path": [
+              "Ulta Beauty Announces Fourth Quarter Fiscal 2022 Results",
+              "Forward\u2010Looking Statements"
+            ],
+            "sentence_start": 5,
+            "sentence_end": 7,
+            "char_start": 972,
+            "char_end": 1956,
+            "cited_text": "Such forward-looking\nstatements are subject to various risks and uncertainties, which include, without limitation:\n\nchanges in the overall level of consumer spending and volatility in the economy,\nincluding as a result of the COVID-19 pandemic and geo-political events;\nthe impact of current inflationary cost pressures on payroll, benefits, supply chain, and\nother operating costs;\nour ability to sustain our growth plans and successfully implement our long-range\nstrategic and financial plan;\nthe ability to execute our operational excellence priorities, including continuous\nimprovement, Project SOAR (our replacement enterprise resource planning platform),\nand supply chain optimization;\nepidemics, pandemics or natural disasters that have and could continue to negatively\nimpact sales;\nour ability to gauge beauty trends and react to changing consumer preferences in a\ntimely manner;\nthe possibility that we may be unable to compete effectively in our highly competitive\nmarkets;"
+          }
+        ]
+      }
+    ],
+    "reasons": [],
+    "partial": false
+  },
+  "auth_travel_policy": {
+    "cost_usd": "0.003013",
+    "model": "gpt-6.1-terra",
+    "document_type": "travel and expense policy",
+    "category": "policy",
+    "tags": [
+      "travel policy",
+      "expenses",
+      "flight class",
+      "meal per diem",
+      "approvals"
+    ],
+    "summary": "The travel and expense policy requires economy class for flights under six hours, caps the daily meal per diem at $75 per traveler, and requires written department head approval for expenses above $500.",
+    "suggested_questions": [
+      "Which flight class is required for trips under six hours?",
+      "How much is the daily meal per diem per traveler?",
+      "What expenses require written department head approval?"
+    ],
+    "facts": [
+      {
+        "field": "obligation",
+        "value": "Economy class is required for flights under six hours.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "b8f00d77-d10a-40cc-aa01-c08ee79d4186",
+            "version_id": "0a99cc8f-a1bf-4a0f-a305-a645baa079b0",
+            "version_no": 1,
+            "pages": [],
+            "section_path": [
+              "Travel and Expense Policy",
+              "Section 3. Travel"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 18,
+            "char_end": 85,
+            "cited_text": "Section 3.1. Economy class is required for flights under six hours."
+          }
+        ]
+      },
+      {
+        "field": "amount",
+        "value": "The daily meal per diem is limited to $75 per traveler.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "b8f00d77-d10a-40cc-aa01-c08ee79d4186",
+            "version_id": "0a99cc8f-a1bf-4a0f-a305-a645baa079b0",
+            "version_no": 1,
+            "pages": [],
+            "section_path": [
+              "Travel and Expense Policy",
+              "Section 3. Travel"
+            ],
+            "sentence_start": 2,
+            "sentence_end": 3,
+            "char_start": 86,
+            "char_end": 149,
+            "cited_text": "Section 3.2. The daily meal per-diem limit is $75 per traveler."
+          }
+        ]
+      },
+      {
+        "field": "obligation",
+        "value": "Expenses above $500 require written approval from a department head.",
+        "status": "verified",
+        "reason": null,
+        "evidence": [
+          {
+            "chunk_id": "917137f1-8ac8-4b27-ac79-d58000d4b641",
+            "version_id": "0a99cc8f-a1bf-4a0f-a305-a645baa079b0",
+            "version_no": 1,
+            "pages": [],
+            "section_path": [
+              "Travel and Expense Policy",
+              "Section 4. Approvals"
+            ],
+            "sentence_start": 1,
+            "sentence_end": 2,
+            "char_start": 21,
+            "char_end": 102,
+            "cited_text": "Section 4.1. Expenses above $500 require written approval from a department head."
+          }
+        ]
+      }
+    ],
+    "reasons": [],
+    "partial": false
+  }
+}

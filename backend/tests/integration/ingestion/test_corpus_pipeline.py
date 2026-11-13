@@ -45,7 +45,7 @@ async def test_corpus_document_reaches_ready(doc_id, api, make_owner, sm, store,
     up = await upload(api, o, path.name, path.read_bytes())
     gw, prov = db_gateway(tmp_path, sm)
     outcomes = await _run_all(sm, store, enqueued, gw, uuid.UUID(up["job_id"]))
-    assert outcomes == ["advanced"] * 4 + ["finished"], (doc_id, outcomes)
+    assert outcomes == ["advanced"] * 5 + ["finished"], (doc_id, outcomes)
     status, err = await version_status(sm, uuid.UUID(up["version_id"]))
     assert (status, err) == ("ready", None), (doc_id, status, err)
     async with sm() as s:
