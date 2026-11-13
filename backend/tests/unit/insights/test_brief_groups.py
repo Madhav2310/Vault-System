@@ -1,7 +1,8 @@
 import uuid
 
 from app.ingestion import status as vs
-from app.insights.stage import EMPTY_PARAMS_HASH, ChunkRef, params_hash, plan_groups
+from app.insights.brief import EMPTY_PARAMS_HASH, params_hash
+from app.insights.stage import ChunkRef, plan_groups
 
 
 def refs(*spec: tuple[str, int]) -> list[ChunkRef]:

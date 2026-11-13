@@ -15,7 +15,6 @@
 """
 
 import asyncio
-import hashlib
 import json
 import uuid
 from collections import Counter
@@ -37,7 +36,10 @@ from app.insights.brief import (
     BRIEF_FACTS_CAPPED,
     BRIEF_MERGE_FALLBACK,
     BRIEF_PARTIAL_BUDGET,
+    EMPTY_PARAMS_HASH,
+    KIND,
     MAX_FACTS,
+    PROMPT_VERSION,
     Brief,
     BriefOut,
     MergeOut,
@@ -54,21 +56,12 @@ from app.llm.errors import LlmError
 from app.llm.gateway import LlmGateway
 from app.retrieval.load import load_evidence_chunks
 
-KIND = "brief"
-PROMPT_VERSION = 1
 EXTRACT_PROMPT: tuple[str, int] = ("brief_extract", PROMPT_VERSION)
 MERGE_PROMPT: tuple[str, int] = ("brief_merge", 1)
 MAX_MERGE_FACTS_PER_PART = 60
 MAX_MERGE_VALUE_CHARS = 200
 
 _log = get_logger("vault.insights.brief")
-
-
-def params_hash(params: Mapping[str, Any]) -> str:
-    return hashlib.sha256(json.dumps(params, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
-
-
-EMPTY_PARAMS_HASH = params_hash({})
 
 
 # --- grouping ---------------------------------------------------------------------------------------------

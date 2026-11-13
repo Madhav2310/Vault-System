@@ -7,9 +7,11 @@ resolver (so `cited_text` always comes from stored sentences, never from the mod
 the free-text fields, and verifies each fact (`verify.py`). The stored `Brief` is what the API serves.
 """
 
+import hashlib
+import json
 import re
 import uuid
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
@@ -43,6 +45,17 @@ MAX_QUESTION_CHARS = 200
 MAX_DOCUMENT_TYPE_CHARS = 80
 MAX_FACT_VALUE_CHARS = 400
 MAX_FACT_EVIDENCE = 4  # references kept per fact (after a merge of duplicates)
+
+KIND = "brief"  # document_insights.kind
+PROMPT_VERSION = 1  # brief_extract@1; part of the insight key
+
+
+def params_hash(params: Mapping[str, Any]) -> str:
+    """Stable digest of an insight's parameters (the brief has none: `{}`)."""
+    return hashlib.sha256(json.dumps(params, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
+
+
+EMPTY_PARAMS_HASH = params_hash({})
 
 BRIEF_FACTS_CAPPED = "BRIEF_FACTS_CAPPED"
 BRIEF_PARTIAL_BUDGET = "BRIEF_PARTIAL_BUDGET"
