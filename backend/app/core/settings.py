@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     parse_timeout_s: int = 120
     parse_memory_mb: int = 2048  # address-space cap of the extraction subprocess (Linux only)
 
+    # --- document brief (design §9.1) ---
+    brief_max_evidence_tokens: int = 12_000  # above this the brief maps over section groups, then merges
+    brief_max_usd: float = 0.05  # per document; reaching it stops further map calls (BRIEF_PARTIAL_BUDGET)
+
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"
