@@ -252,3 +252,8 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Status machine: the table is checked against an independently written §6.2 edge list plus 2,000 random walks (seeded; no new dependency).
 - Not yet: no stage is implemented, so a real upload sits at `extract` failing retryably with `stage_unavailable` until C1c lands.
 - [T] changes approved: none
+
+### S1.12 — Extractor protocol and TXT/MD extractor
+- Date: 2026-11-13 · Commit: (this commit) · Command: `pytest tests/unit/extract/test_text.py` (3 passed); `make ci` green.
+- Built: `app/ingestion/extract/base.py` (`ExtractedDocument`/`PageText`/`Element`, gzip-JSON handoff, `check_offsets` invariant: every element is an exact slice of its page text), `text.py` (headings → `section_path` stack, blank-line paragraphs, list items, pipe tables, code fences kept whole; UTF-8 with U+FFFD fallback counted).
+- [T] changes approved: none
