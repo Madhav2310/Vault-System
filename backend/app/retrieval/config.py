@@ -31,6 +31,7 @@ class GateCfg(BaseModel):
     model_config = ConfigDict(extra="forbid")
     high: float
     floor: float
+    enabled: bool = False  # the no-LLM evidence floor (S17.08) applies only when a config turns it on
 
 
 class RetrievalConfig(BaseModel):

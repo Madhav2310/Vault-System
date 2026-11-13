@@ -16,6 +16,7 @@ from app.core.ids import uuid7
 from app.ingestion.sentences import split_sentences
 from app.llm.gateway import DbLedgerWriter
 from app.llm.providers.fake import FakeProvider, Step, structured
+from app.retrieval.config import RetrievalConfig
 from app.retrieval.query_embed import QueryEmbedder
 from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import Retriever
@@ -84,10 +85,11 @@ def install_runner(
     script: list[Step],
     before: Callable[[], Awaitable[None]] | None = None,
     fast_path: bool = False,
+    cfg: RetrievalConfig | None = None,
 ) -> FakeProvider:
     """Override the turn runner with a real `run_turn` over a scripted fake provider (`before` runs first)."""
     gw, prov = fake_gateway(script, ledger=DbLedgerWriter(sm), fast_path=fast_path)
-    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), rerank_client(), None))
+    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), rerank_client(), None, cfg))
 
     async def runner(*a: Any) -> None:
         if before is not None:

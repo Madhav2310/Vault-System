@@ -89,7 +89,7 @@ def after_retrieve(s: TurnState) -> str:
 
 @router("abstain_no_evidence", "generate")
 def after_gate(s: TurnState) -> str:
-    return "generate"  # S17.08 fills the floor
+    return "abstain_no_evidence" if s.gate_abstain else "generate"
 
 
 @router("verify", "persist")

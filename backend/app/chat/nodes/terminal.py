@@ -2,6 +2,7 @@
 
 import dataclasses
 
+from app.chat.gate import ABSTAIN_NO_EVIDENCE, abstain_text
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.nodes._common import (
     NO_DOCUMENTS,
@@ -22,9 +23,11 @@ async def abstain_no_documents(state: TurnState, ctx: TurnCtx) -> TurnState:
 
 
 async def abstain_no_evidence(state: TurnState, ctx: TurnCtx) -> TurnState:
-    state.generation = dataclasses.replace(
-        plain("abstain", NO_EVIDENCE_TEXT, (NO_EVIDENCE,)), followups=await abstain_followups(state, ctx)
-    )
+    if state.gate_abstain:  # below the evidence floor (S17.08): a template naming the documents in scope
+        base = plain("abstain", abstain_text(len(state.scope.entries)), (ABSTAIN_NO_EVIDENCE,))
+    else:
+        base = plain("abstain", NO_EVIDENCE_TEXT, (NO_EVIDENCE,))
+    state.generation = dataclasses.replace(base, followups=await abstain_followups(state, ctx))
     await flush_segments(state, ctx)
     return state
 

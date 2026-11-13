@@ -110,6 +110,7 @@ class TurnState:
     last_error: str | None = None
     last_reason: str | None = None  # a node may set a reason code for its step (e.g. FAST_PATH)
     fast_path: bool = False  # set by `route_question`: `analyze` is skipped (S17.10)
+    gate_abstain: bool = False  # set by `gate`: the evidence is below the floor (S17.08)
 
     def fail(self, *codes: str | None) -> None:
         self.status = "failed"

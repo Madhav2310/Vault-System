@@ -192,5 +192,7 @@ async def setup(config: str) -> Harness:
     retriever = Retriever(QueryEmbedder(gw, rds), RerankClient.from_settings(settings), None, cfg)
     await retriever.warm_up()  # model load must not count against the first item (S16.04)
     return Harness(
-        make_pipeline(sm, retriever, uid, doc_ids), chunks, EvalContext(owner_id=uid, doc_ids=doc_ids)
+        make_pipeline(sm, retriever, uid, doc_ids),
+        chunks,
+        EvalContext(owner_id=uid, doc_ids=doc_ids, services={"sm": sm, "retriever": retriever}),
     )
