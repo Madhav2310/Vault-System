@@ -63,13 +63,16 @@ loadtest:
 ci: lint typecheck test-unit
 
 # --- Eval corpus (S0.18): third-party sources -> eval/sources/ (gitignored); rebuild the golden set ---
-.PHONY: eval-fetch eval-build eval-extraction
+.PHONY: eval-fetch eval-build eval-extraction c1-check
 EVAL_PY := $(UV) --group eval python
 eval-fetch:
 	eval/build/fetch_sources.sh
 eval-build:
 	$(EVAL_PY) ../eval/build/build_external.py
 	$(EVAL_PY) ../eval/build/build_authored.py
+# C1 checkpoint: every corpus document through the real stages (FakeProvider embeddings, no API cost)
+c1-check:
+	export VAULT_CORPUS=1; $(UV) pytest tests/integration/ingestion/test_corpus_pipeline.py -s -q
 # S1.13 AC8: gold-quote locatability with the production PDF extractor (no LLM calls)
 eval-extraction:
 	$(EVAL_PY) ../eval/extraction_check.py
