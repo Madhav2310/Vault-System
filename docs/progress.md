@@ -406,3 +406,9 @@ Before/after (AMD 10-K, native, same 420251 chars): 37 s / 720 MB -> 11.3 s / 19
 ## 2026-11-13 — S17.12 answer eval harness (partial)
 - `eval/metrics/answer.py` (binary judge mapping, support rate, bootstrap CIs, `render_ci`), `eval.run --max-usd/--filter scope_docs=N` (+ exit 3 `stopped: budget`), `Harness.extra_scorer/spent/close`, `ItemOutput.call_ids/verdicts`, `make eval-answers`, `eval/pipeline_http.py` (call ids, message lookup by paging history, judge scorer with its own cap `EVAL_JUDGE_MAX_USD`, client closed). Tests: `unit/eval/test_answer_metrics.py` (2). `make ci` 330 passed; eval tests 116 passed.
 - Open ACs: AC1 integrity-on-FakeProvider test, AC3 `test_call_ids_reported`, AC5 `test_budget_stop`. Not run live.
+
+## S16.02 AC6 container bench (2026-11-13)
+bench_http n=20 passages x20 requests in container (cpus-capped): p50 461.9 ms, p95 494.1 ms, mem 246 MB (limit 768). Memory target met; p50 target (<=400 ms) MISSED by 62 ms (native bench: 288 ms). Likely the compose cpu cap; not yet RCA-d. Left unticked for user decision.
+
+## S17.12 tests (2026-11-13)
+Added test_citation_integrity, test_budget_stop, test_call_ids_reported (3 passed). S17.12 ACs 1-5 done; AC1-3 [T] targets are measured at S17.13.
