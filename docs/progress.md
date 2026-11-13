@@ -257,3 +257,12 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Date: 2026-11-13 · Commit: (this commit) · Command: `pytest tests/unit/extract/test_text.py` (3 passed); `make ci` green.
 - Built: `app/ingestion/extract/base.py` (`ExtractedDocument`/`PageText`/`Element`, gzip-JSON handoff, `check_offsets` invariant: every element is an exact slice of its page text), `text.py` (headings → `section_path` stack, blank-line paragraphs, list items, pipe tables, code fences kept whole; UTF-8 with U+FFFD fallback counted).
 - [T] changes approved: none
+
+### S1.13 — PDF glyph stream and words (invariant I1)
+- Date: 2026-11-13 · Commit: (this commit)
+- Commands: `pytest tests/unit/extract` (26 passed, incl. the 9-file geometry zoo); `make eval-extraction` → `located_pct 100.0` (94/94 gold quotes over 12 corpus PDFs; the S0 sweep baseline was 99/100 on an earlier quote set).
+- Built: `app/ingestion/extract/glyphs.py` (transforms and normalization ported from the S0.21 spike: CropBox offset, /Rotate via the upright text frame, NFKC per glyph with every expanded char mapped to the same glyph) and `pdf.py` (lines → headings/paragraphs; page text assembled from glyph-mapped lines with synthetic `\n`/` ` only; glyph boxes normalized to the rendered page). The coordinate normalization of S1.14 is included because the spike had validated it; S1.14's own ACs stay open (deferred task).
+- Heading levels: font-size rank, with structural/all-caps headings (`ITEM 1A.`, `ARTICLE 5`, `SECTION 2.1`) one level above mixed-case headings of the same size. Without that, AMD's "Risk Factors Summary" did not nest under "ITEM 1A. RISK FACTORS".
+- AC4 note: the phrase is on PDF page 3 (index 2), not page 2 as the AC says; the test cites page 3.
+- Measured cost: AMD 10-K (121 pages) and 3M 10-Q extract in ≈ 38–41 s each, within the 120 s parse timeout but the slowest step; recorded as F-026.
+- [T] changes approved: none

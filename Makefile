@@ -63,13 +63,16 @@ loadtest:
 ci: lint typecheck test-unit
 
 # --- Eval corpus (S0.18): third-party sources -> eval/sources/ (gitignored); rebuild the golden set ---
-.PHONY: eval-fetch eval-build
+.PHONY: eval-fetch eval-build eval-extraction
 EVAL_PY := $(UV) --group eval python
 eval-fetch:
 	eval/build/fetch_sources.sh
 eval-build:
 	$(EVAL_PY) ../eval/build/build_external.py
 	$(EVAL_PY) ../eval/build/build_authored.py
+# S1.13 AC8: gold-quote locatability with the production PDF extractor (no LLM calls)
+eval-extraction:
+	$(EVAL_PY) ../eval/extraction_check.py
 
 # --- OpenTelemetry collector (S0.15 / S0.22) ---
 CONFIG ?= ops/otel/collector.yaml
