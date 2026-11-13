@@ -29,6 +29,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.chat.evidence import EvidenceChunk, build_evidence
 from app.core.ids import uuid7
 from app.core.logging import get_logger
+from app.core.quota import over_quota
 from app.ingestion import status as vs
 from app.ingestion.runner import StageContext, StageResult
 from app.ingestion.stages import document_deleted
@@ -396,6 +397,11 @@ class BriefStage:
             ).all()
         if existing == "done":
             return StageResult(detail={"skipped": "exists"})
+        async with ctx.sm() as s:
+            deferred = await over_quota(s, job.owner_id)
+        if deferred:  # over the daily quota: defer, never fail; the version stays as it is
+            _log.info("brief_quota_deferred", job_id=str(job.id))
+            return StageResult(write=self._deferred_writer(ctx), detail={"brief": "quota_deferred"})
         refs = [ChunkRef(r.id, int(r.token_count or 0), tuple(r.section_path or ())) for r in rows]
         groups = plan_groups(refs, settings.brief_max_evidence_tokens)
         try:
@@ -431,6 +437,16 @@ class BriefStage:
                 "cost_usd": str(gen.cost_usd),
             },
         )
+
+    @staticmethod
+    def _deferred_writer(ctx: StageContext) -> Any:
+        job = ctx.job
+
+        async def write(s: AsyncSession) -> None:
+            content = {"reason": "quota_exceeded"}
+            await _upsert(s, job.owner_id, job.version_id, content, "quota_deferred", None)
+
+        return write
 
     @staticmethod
     def _failed_writer(ctx: StageContext, code: str) -> Any:

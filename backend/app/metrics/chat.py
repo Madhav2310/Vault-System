@@ -13,6 +13,8 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.quota import is_admin, spent_today
+from app.core.settings import get_settings
 from app.metrics import WINDOWS_S, num, scope_params, scope_sql
 
 
@@ -98,9 +100,15 @@ async def chat_metrics(db: AsyncSession, owner_id: uuid.UUID | None, window: str
         e = by_purpose.setdefault(g["purpose"], {"calls": 0, "cost": 0})
         e["calls"] += g["calls"]
         e["cost"] += g["cost"]
+    unlimited = owner_id is None or await is_admin(db, owner_id)
+    spent = await spent_today(db, owner_id)
     return {
         "scope": "owner" if owner_id is not None else "global",
         "window": window,
+        "quota": {  # UTC day, independent of `window`; limit_usd null = unlimited (admins, global scope)
+            "limit_usd": None if unlimited else get_settings().user_daily_usd,
+            "spent_today_usd": num(spent, 6),
+        },
         "turns": r["turns"],
         "outcomes": outcomes,
         "coverage": coverage,

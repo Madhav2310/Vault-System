@@ -284,6 +284,7 @@ async def test_empty_state(api: httpx.AsyncClient, mk_owner: Callable[..., Any])
     assert r.json() == {
         "scope": "owner",
         "window": "24h",
+        "quota": {"limit_usd": 1.0, "spent_today_usd": 0.0},
         "turns": 0,
         "outcomes": {},
         "coverage": {},

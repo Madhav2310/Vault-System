@@ -15,6 +15,7 @@ from app.chat import history
 from app.chat import sessions as svc
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
+from app.core.quota import enforce_chat_quota
 
 router = APIRouter(prefix="/v1/chat", tags=["chat"])
 _TASKS: set[asyncio.Future[None]] = set()  # strong refs: running turns must outlive the request
@@ -97,6 +98,7 @@ async def list_messages(
 @router.post(
     "/sessions/{session_id}/messages",
     status_code=202,
+    dependencies=[Depends(enforce_chat_quota)],
     responses={200: {"description": "Retried client_message_id of a finished turn: the stored result"}},
 )
 async def post_message(
