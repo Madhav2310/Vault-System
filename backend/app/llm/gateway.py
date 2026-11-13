@@ -46,7 +46,7 @@ from app.llm.errors import (
     TruncatedError,
 )
 from app.llm.pricing import PriceTable, price_table_from_settings
-from app.llm.prompts import Prompt, PromptRegistry, default_registry
+from app.llm.prompts import STRUCTURED_OUTPUTS, Prompt, PromptRegistry, default_registry
 from app.llm.providers import ChatProvider, EmbeddingProvider
 from app.llm.routing import DEGRADED_MODEL_FALLBACK, ModelRouter, Resolved, Route
 from app.llm.types import (
@@ -566,7 +566,7 @@ class LlmGateway:
         p = self.prompts.get(*prompt)
         if schema is not None and search_results:
             raise RequestConflictError("citations and output_config.format cannot be combined in one request")
-        if (p.output == "schema") != (schema is not None):
+        if (p.output in STRUCTURED_OUTPUTS) != (schema is not None):
             raise RequestConflictError(f"{p.id}@{p.version} has output={p.output}; schema mismatch")
         if search_results and p.output != "citations":
             raise RequestConflictError(

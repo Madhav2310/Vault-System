@@ -5,7 +5,7 @@
     version: 1
     purpose: analyze_query
     role: fast                # fast | balanced | deep | flagship; the router maps it to a model
-    output: schema            # schema | citations | text
+    output: schema            # schema | segments | citations | text
     effort: low               # none | low | medium | high | xhigh | max (per-model support: routing.py)
     max_tokens: 2048
     ---
@@ -27,7 +27,8 @@ from app.llm.types import Effort
 
 PROMPTS_DIR = pathlib.Path(__file__).resolve().parents[2] / "prompts"
 
-Output = Literal["schema", "citations", "text"]
+Output = Literal["schema", "segments", "citations", "text"]
+STRUCTURED_OUTPUTS = frozenset({"schema", "segments"})  # the call carries a strict JSON schema
 REQUIRED_FIELDS = ("id", "version", "purpose", "role", "output", "effort", "max_tokens")
 _FILENAME = re.compile(r"^(?P<id>[a-z_][a-z0-9_]*)@(?P<version>[1-9][0-9]*)\.md$")
 _FRONT = re.compile(r"\A---\n(?P<head>.*?)\n---\n(?P<body>.*)\Z", re.S)

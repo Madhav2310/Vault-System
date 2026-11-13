@@ -14,8 +14,10 @@ CPU-heavy stage code must run in a thread (`asyncio.to_thread`) so the heartbeat
 
 import asyncio
 import contextlib
+import pathlib
 import random
 import time
+import traceback
 import uuid
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -26,7 +28,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.logging import get_logger
 from app.ingestion import status as vs
-from app.ingestion.errors import RetryableStageError, StageError
+from app.ingestion.errors import PermanentStageError, RetryableStageError, StageError
 from app.ingestion.jobs import HEARTBEAT_S, LEASE_S, ClaimedJob, Enqueue, claim, dispatch, heartbeat
 
 STAGE_ORDER: tuple[str, ...] = ("extract", "quality", "chunk", "embed", "index")
@@ -75,14 +77,14 @@ async def _fence(s: AsyncSession, job: ClaimedJob, worker: str) -> bool:
     return row is not None
 
 
-async def _document_deleted(s: AsyncSession, version_id: uuid.UUID) -> bool:
+async def _document_deleted(s: AsyncSession, version_id: uuid.UUID, owner_id: uuid.UUID) -> bool:
     row = (
         await s.execute(
             text(
                 "SELECT 1 FROM document_versions v JOIN documents d ON d.id = v.document_id "
-                "WHERE v.id = :v AND d.deleted_at IS NOT NULL"
+                "WHERE v.id = :v AND v.owner_id = :o AND d.deleted_at IS NOT NULL"
             ),
-            {"v": version_id},
+            {"v": version_id, "o": owner_id},
         )
     ).first()
     return row is not None
@@ -111,14 +113,34 @@ async def _event(
 
 
 async def _heartbeat_loop(
-    sm: async_sessionmaker[AsyncSession], job: ClaimedJob, worker: str, every_s: float, lease_s: int
+    sm: async_sessionmaker[AsyncSession],
+    job: ClaimedJob,
+    worker: str,
+    every_s: float,
+    lease_s: int,
+    on_lost: Callable[[], None],
 ) -> None:
+    """Extend the lease until cancelled. Never raises: a transient DB error skips one beat (the lease has
+    minutes of slack), and a lease that is genuinely no longer ours cancels the stage so it stops spending."""
     while True:
         await asyncio.sleep(every_s)
-        async with sm() as s:
-            if not await heartbeat(s, job.id, worker, lease_s):
-                _log.warning("lease_lost", job_id=str(job.id), stage=job.current_stage)
-                return
+        try:
+            async with sm() as s:
+                ok = await heartbeat(s, job.id, worker, lease_s)
+        except Exception as e:
+            _log.warning("heartbeat_error", job_id=str(job.id), error_type=type(e).__name__)
+            continue
+        if not ok:
+            _log.warning("lease_lost", job_id=str(job.id), stage=job.current_stage)
+            on_lost()
+            return
+
+
+def _where(e: BaseException) -> str:
+    """Where an exception was raised, without its message: SQL errors embed parameter values, and those can
+    be document text, which never goes into logs (CLAUDE.md)."""
+    tb = traceback.extract_tb(e.__traceback__)
+    return f"{pathlib.PurePath(tb[-1].filename).name}:{tb[-1].lineno}" if tb else "?"
 
 
 async def run_job(
@@ -145,31 +167,75 @@ async def run_job(
         if current in (vs.UPLOADED, vs.FAILED):
             await vs.set_version_status(s, job.version_id, vs.PROCESSING)
             await s.commit()
+    if job.attempt_count >= job.max_attempts:
+        # `claim` counts a takeover of an expired lease as an attempt: a stage that keeps killing its worker
+        # (out of memory, crash) must end in `dead`, not loop forever behind the sweeper.
+        lost_worker = PermanentStageError(
+            "worker_lost", "the worker died repeatedly while running this stage"
+        )
+        return await _fail(sm, job, worker, lost_worker, 0, rng)
 
     stage_name = job.current_stage
     t0 = time.monotonic()
-    hb = asyncio.create_task(_heartbeat_loop(sm, job, worker, heartbeat_s, lease_s))
     err: StageError | None = None
     result: StageResult | None = None
-    try:
-        stage = stages.get(stage_name)
+    stage = stages.get(stage_name)
+    lost = False
+
+    async def run_stage() -> StageResult:
         if stage is None:
             raise RetryableStageError("stage_unavailable", f"no implementation for stage {stage_name}")
-        result = await stage.run(StageContext(job, sm, services or {}))
+        return await stage.run(StageContext(job, sm, services or {}))
+
+    stage_task = asyncio.ensure_future(run_stage())
+
+    def on_lost() -> None:
+        nonlocal lost
+        lost = True
+        stage_task.cancel()
+
+    hb = asyncio.create_task(_heartbeat_loop(sm, job, worker, heartbeat_s, lease_s, on_lost))
+    try:
+        result = await stage_task
+    except asyncio.CancelledError:
+        if not lost:
+            raise  # the delivery itself was cancelled (shutdown/revoke): let it propagate
     except StageError as e:
         err = e
     except Exception as e:  # unexpected bug or dependency failure: retry, then dead
-        _log.exception("stage_crashed", job_id=str(job.id), stage=stage_name)
+        _log.error(
+            "stage_crashed",
+            job_id=str(job.id),
+            stage=stage_name,
+            error_type=type(e).__name__,
+            where=_where(e),
+        )
         err = RetryableStageError("internal", type(e).__name__)
     finally:
         hb.cancel()
-        with contextlib.suppress(asyncio.CancelledError):
+        with contextlib.suppress(asyncio.CancelledError, Exception):
             await hb
+    if lost:
+        return "lost_lease"
     ms = int((time.monotonic() - t0) * 1000)
     if err is not None:
         return await _fail(sm, job, worker, err, ms, rng)
     assert result is not None
-    return await _commit(sm, job, worker, result, ms, order, enqueue)
+    try:
+        return await _commit(sm, job, worker, result, ms, order, enqueue)
+    except Exception as e:
+        # A failing `write` (bad data, an illegal transition, a deadlock) must be counted like any stage
+        # failure; otherwise the job stays `running`, the sweeper redelivers it and it fails the same way
+        # forever. The transaction was rolled back when `_commit` unwound.
+        _log.error(
+            "commit_failed",
+            job_id=str(job.id),
+            stage=stage_name,
+            error_type=type(e).__name__,
+            where=_where(e),
+        )
+        failure = RetryableStageError("commit_failed", type(e).__name__)
+        return await _fail(sm, job, worker, failure, ms, rng)
 
 
 async def _commit(
@@ -188,7 +254,9 @@ async def _commit(
         if not await _fence(s, job, worker):
             await s.rollback()
             return "lost_lease"
-        if await _document_deleted(s, job.version_id):  # DELETE arrived mid-stage: write nothing (§6.7)
+        if await _document_deleted(
+            s, job.version_id, job.owner_id
+        ):  # DELETE arrived mid-stage: write nothing (§6.7)
             await s.execute(
                 text(
                     "UPDATE processing_jobs SET status = 'dead', lease_owner = NULL, "

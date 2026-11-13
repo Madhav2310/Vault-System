@@ -228,6 +228,7 @@ class PdfExtractor:
         for idx, p in enumerate(pages):
             text: list[str] = []
             src: list[int] = []
+            pos = 0  # running length of the page text (a sum per block made dense pages quadratic)
             blocks = _with_tables(_blocks(p.lines, body, p.width, levels), p.tables)
             _carry_header(blocks, prev_tail, p.height)
             prev_tail = blocks[-1] if blocks else None
@@ -236,15 +237,18 @@ class PdfExtractor:
                 if text:
                     text.append("\n\n")
                     src.extend([SYNTH, SYNTH])
-                start = sum(len(t) for t in text)
+                    pos += 2
+                start = pos
                 for i, ln in enumerate(block.lines):
                     if i:
                         text.append("\n")
                         src.append(SYNTH)
+                        pos += 1
                     text.append(ln.text)
                     src.extend(ln.src)
-                end = sum(len(t) for t in text)
-                body_text = "".join(text)[start:end]
+                    pos += len(ln.text)
+                end = pos
+                body_text = "\n".join(ln.text for ln in block.lines)
                 if block.kind == "heading":
                     level = block.level or 1
                     while sections and sections[-1][0] >= level:

@@ -93,6 +93,11 @@ async def _purge_version(
     await store.delete(f"extracted/{version_id}.json.gz")
     p = {"v": version_id, "o": owner_id, "d": document_id}
     async with sm() as s:
+        # Lock order matches the runner's commit (job row, then version, then document): the opposite order
+        # between a purge and a stage commit could deadlock.
+        await s.execute(
+            text("SELECT id FROM processing_jobs WHERE version_id = :v AND owner_id = :o FOR UPDATE"), p
+        )
         row = (
             await s.execute(
                 text(

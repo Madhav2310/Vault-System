@@ -73,6 +73,7 @@ async def claim(
         await session.execute(
             text(
                 "UPDATE processing_jobs SET status = 'running', lease_owner = :w, "
+                "attempt_count = attempt_count + CASE WHEN status = 'running' THEN 1 ELSE 0 END, "
                 "lease_expires_at = now() + make_interval(secs => :l) "
                 "WHERE id = :id AND status IN ('pending', 'dispatched', 'running') "
                 "AND (lease_expires_at IS NULL OR lease_expires_at < now()) "

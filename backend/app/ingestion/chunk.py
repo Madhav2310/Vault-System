@@ -90,24 +90,29 @@ def _units(doc: ExtractedDocument, el: Element) -> list[Unit]:
 
 
 def _hard_split(doc: ExtractedDocument, page_index: int, a: int, b: int) -> Iterator[Unit]:
-    """Split an over-long sentence at whitespace into pieces of at most TARGET_TOKENS."""
+    """Split an over-long sentence into pieces of at most TARGET_TOKENS: at whitespace when there is some in
+    the last fifth of the window, otherwise at the token boundary itself (CJK text has no spaces)."""
     text = doc.pages[page_index].text
     start = a
     while start < b:
-        end = start
-        last_ws = None
-        while end < b and count_tokens(text[start:end]) < TARGET_TOKENS:
-            nxt = text.find(" ", end + 1, b)
-            nl = text.find("\n", end + 1, b)
-            cands = [x for x in (nxt, nl) if x != -1]
-            if not cands:
-                end = b
-                break
-            last_ws, end = end, min(cands)
-        if end < b and last_ws is not None and last_ws > start:
-            end = last_ws
-        while start < end and text[start].isspace():
+        while start < b and text[start].isspace():
             start += 1
+        if start >= b:
+            return
+        if count_tokens(text[start:b]) <= TARGET_TOKENS:
+            end = b
+        else:
+            lo, hi = start + 1, b  # largest end with count_tokens(text[start:end]) <= TARGET_TOKENS
+            while lo < hi:
+                mid = (lo + hi + 1) // 2
+                if count_tokens(text[start:mid]) <= TARGET_TOKENS:
+                    lo = mid
+                else:
+                    hi = mid - 1
+            end = lo
+            cut = max(text.rfind(" ", start, end), text.rfind("\n", start, end))
+            if cut > start + (end - start) * 4 // 5:
+                end = cut
         piece_end = end
         while piece_end > start and text[piece_end - 1].isspace():
             piece_end -= 1

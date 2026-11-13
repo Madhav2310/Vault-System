@@ -15,6 +15,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict, create_model
 
+from app.chat.nodes_common import defuse
+
 MAX_ENUM_HANDLES = 1000
 HEADER_SEP = " · "  # middle dot, as in the design's header format
 
@@ -59,18 +61,19 @@ class EvidenceSet:
 
 
 def header(k: int, c: EvidenceChunk) -> str:
-    parts = [f"[E{k}] {c.doc_title} v{c.version_no}"]
+    parts = [f"[E{k}] {defuse(c.doc_title)} v{c.version_no}"]
     if c.page_start:
         pages = f"p.{c.page_start}" + (f"-{c.page_end}" if c.page_end != c.page_start else "")
         parts.append(pages)
-    section = " > ".join(" ".join(p.split()) for p in c.section_path)
+    section = defuse(" > ".join(" ".join(p.split()) for p in c.section_path))
     if section:
         parts.append(section)
     return HEADER_SEP.join(parts)
 
 
 def _line(text: str) -> str:
-    return " ".join(text.split())  # one line per sentence: display only, `cited_text` is copied from storage
+    """One line per sentence, delimiter-like tags defused. Display only: `cited_text` comes from storage."""
+    return defuse(" ".join(text.split()))
 
 
 def build_evidence(chunks: Sequence[EvidenceChunk]) -> EvidenceSet:

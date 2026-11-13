@@ -18,6 +18,7 @@ from typing import IO
 
 from fastapi import Request
 from python_multipart import MultipartParser
+from python_multipart.exceptions import MultipartParseError
 from python_multipart.multipart import parse_options_header
 
 from app.api.errors import DomainError
@@ -34,6 +35,11 @@ class ReceivedFile:
     size: int
     filename: str
     title: str | None
+
+
+def _clean(s: str) -> str:
+    """Drop control characters (NUL makes Postgres reject the row) and trim."""
+    return "".join(ch for ch in s if ch >= " " and ch != "\x7f").strip()
 
 
 def _too_large(max_bytes: int) -> DomainError:
@@ -78,7 +84,7 @@ class _Receiver:
             if self.files_seen > 1:
                 raise _invalid("exactly one `file` part is allowed")
             raw = opts.get(b"filename", b"").decode("utf-8", "replace")
-            self.filename = pathlib.PurePath(raw.replace("\\", "/")).name or "upload"
+            self.filename = _clean(pathlib.PurePath(raw.replace("\\", "/")).name) or "upload"
             self._part = "file"
         elif name == "title":
             self._part = "title"
@@ -131,14 +137,24 @@ async def receive_upload(
                     "on_part_end": rx.on_part_end,
                 },
             )
+            total = 0
             async for chunk in request.stream():
-                parser.write(chunk)
-            parser.finalize()
+                total += len(chunk)
+                if total > max_bytes + MULTIPART_OVERHEAD:  # also when Content-Length is absent (chunked)
+                    raise _too_large(max_bytes)
+                try:
+                    parser.write(chunk)
+                except MultipartParseError:
+                    raise _invalid("malformed multipart body") from None
+            try:
+                parser.finalize()
+            except MultipartParseError:
+                raise _invalid("malformed multipart body") from None
         if rx.filename is None:
             raise _invalid("missing `file` part")
         if rx.size == 0:
             raise _invalid("the file is empty")
-        title = rx.title.decode("utf-8", "replace").strip() or None
+        title = _clean(rx.title.decode("utf-8", "replace")) or None
         yield ReceivedFile(path, rx.hasher.hexdigest(), rx.size, rx.filename, title)
     finally:
         await asyncio.to_thread(path.unlink, missing_ok=True)

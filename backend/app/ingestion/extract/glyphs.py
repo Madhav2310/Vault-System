@@ -144,6 +144,7 @@ def _expand(word: dict[str, Any]) -> tuple[str, list[int]]:
     src: list[int] = []
     for ch in word["chars"]:
         exp = unicodedata.normalize("NFKC", ch["text"])  # ligatures / multi-char glyphs (F7, F8)
+        exp = exp.replace("\x00", "")  # Postgres text cannot hold NUL; such glyphs carry no text anyway
         text.extend(exp)
         src.extend([ch["_g"]] * len(exp))
     return "".join(text), src

@@ -102,3 +102,26 @@ def test_role_frontmatter(tmp_path: pathlib.Path) -> None:
     write_prompt(d, "analyze_query@1.md", **{**{k: v for k, v in GOOD.items() if k != "role"}, "model": "x"})
     with pytest.raises(PromptRegistryError, match=r"missing front-matter fields \['role'\]"):
         PromptRegistry.load(d)
+
+
+def test_answer_rag_sections() -> None:
+    p = default_registry().get("answer_rag", 1)
+    headings = [ln for ln in p.body.splitlines() if ln.startswith("## ")]
+    assert [h.split(".")[0] for h in headings] == [f"## {i}" for i in range(1, 8)]
+    expected = [
+        "Role and ground rules",
+        "Citation rule",
+        "Format rule by route",
+        "Coverage",
+        "Conflicts",
+        "Length and style",
+        "History",
+    ]
+    assert [h.split(". ", 1)[1] for h in headings] == expected
+    assert "untrusted" in p.body and "abstain" in p.body and "never write a markdown table" in p.body.lower()
+
+
+def test_answer_rag_frontmatter() -> None:
+    p = default_registry().get("answer_rag", 1)
+    assert (p.output, p.role, p.effort, p.purpose) == ("segments", "balanced", "none", "generate")
+    assert p.max_tokens >= 1000

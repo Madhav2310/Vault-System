@@ -31,7 +31,10 @@ _STARTERS = _words(
 )
 
 # Typographic quotes by code point (keeps the source ASCII).
-_TERM = re.compile("[.!?" + chr(0x2026) + "]+")
+# Full-width and non-Latin sentence terminators end a sentence without needing a following space or capital.
+_UNICODE_TERM = "".join(chr(c) for c in (0x3002, 0xFF01, 0xFF1F, 0x0964, 0x061F, 0x06D4))
+_TERM = re.compile("[.!?" + chr(0x2026) + _UNICODE_TERM + "]+")
+_WORD_WINDOW = 48  # how far back to look for the word before a period (and the longest clause label)
 _CLOSERS = frozenset("\"')]}*") | {chr(c) for c in (0x201D, 0x2019, 0xBB)}
 _OPENERS = frozenset("\"'([{") | {chr(c) for c in (0x201C, 0x2018, 0xAB)}
 _ENUM = re.compile(r"\((?:[a-z]|[ivx]{1,4}|\d{1,2})\)")
@@ -61,14 +64,18 @@ def _is_break(text: str, start: int, m: re.Match[str], after_ws: int, content: i
     `content` the index after any opening quote/bracket."""
     nxt = text[content]
     enum = _ENUM.match(text, after_ws) is not None
+    if m.group()[-1] in _UNICODE_TERM:
+        return True
     if not (nxt.isupper() or nxt.isdigit() or nxt in "$" + chr(0xA7) or enum):
         return False
     run = m.group()
     if run != ".":
         return True  # "?", "!", ellipsis
-    prior = text[start : m.start()].strip()
-    if _LABEL.fullmatch(prior):
+    # Only a bounded window is inspected: copying `text[start:m.start()]` for every period made long runs
+    # of "Dr." / "No." quadratic (a 224 KB paragraph took over a minute).
+    if m.start() - start <= _WORD_WINDOW and _LABEL.fullmatch(text[start : m.start()].strip()):
         return False
+    prior = text[max(start, m.start() - _WORD_WINDOW) : m.start()].strip()
     found = _WORD_BEFORE.search(prior)
     word = found.group() if found else ""
     if word in _HARD:
@@ -88,6 +95,12 @@ def _split_paragraph(text: str, lo: int, hi: int) -> list[tuple[int, int]]:
             end += 1
         if end >= hi:
             break
+        if m.group()[-1] in _UNICODE_TERM and not text[end].isspace():
+            # CJK and similar scripts do not put a space after the terminator: it ends the sentence
+            if end > start:
+                spans.append((start, end))
+                start = end
+            continue
         if not text[end].isspace():
             continue
         after_ws = end

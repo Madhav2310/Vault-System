@@ -73,7 +73,7 @@ class TextExtractor:
                         "heading", 0, t0, t0 + len(title), title, path(), level=level, para_index=len(out)
                     )
                 )
-                sections.append((level, title))
+                sections.append((level, " ".join(title.split())))
                 continue
             if not stripped:
                 close(start)

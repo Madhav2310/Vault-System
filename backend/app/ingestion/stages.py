@@ -33,9 +33,30 @@ async def _version(ctx: StageContext) -> Any:
     async with ctx.sm() as s:
         return (
             await s.execute(
-                text("SELECT sha256, mime FROM document_versions WHERE id = :v"), {"v": ctx.job.version_id}
+                text("SELECT sha256, mime FROM document_versions WHERE id = :v AND owner_id = :o"),
+                {"v": ctx.job.version_id, "o": ctx.job.owner_id},
             )
         ).one()
+
+
+async def document_deleted(ctx: StageContext) -> bool:
+    async with ctx.sm() as s:
+        return bool(
+            (
+                await s.execute(
+                    text(
+                        "SELECT d.deleted_at IS NOT NULL FROM documents d "
+                        "JOIN document_versions v ON v.document_id = d.id "
+                        "WHERE v.id = :v AND v.owner_id = :o"
+                    ),
+                    {"v": ctx.job.version_id, "o": ctx.job.owner_id},
+                )
+            ).scalar_one_or_none()
+        )
+
+
+# Environment of the parser subprocess: it reads untrusted files, so it gets no API keys or DB credentials.
+_PARSER_ENV_KEYS = ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "PYTHONHASHSEED")
 
 
 async def load_extracted(ctx: StageContext) -> ExtractedDocument:
@@ -56,6 +77,8 @@ class ExtractStage:
             data = await store.get(blob_key(v.sha256))
             await asyncio.to_thread(src.write_bytes, data)
             del data
+            env = {k: os.environ[k] for k in _PARSER_ENV_KEYS if k in os.environ}
+            env["VAULT_PARSE_MEMORY_MB"] = str(settings.parse_memory_mb)
             proc = await asyncio.create_subprocess_exec(
                 sys.executable,
                 "-m",
@@ -66,7 +89,7 @@ class ExtractStage:
                 cwd=str(BACKEND),
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.PIPE,
-                env={**os.environ, "VAULT_PARSE_MEMORY_MB": str(settings.parse_memory_mb)},
+                env=env,
             )
             try:
                 stdout, _ = await asyncio.wait_for(proc.communicate(), timeout=settings.parse_timeout_s)
@@ -76,6 +99,10 @@ class ExtractStage:
                 raise PermanentStageError(
                     "parse_timeout", f"extraction exceeded {settings.parse_timeout_s} s"
                 ) from None
+            except asyncio.CancelledError:  # lease lost or shutdown: never leave a parser running
+                proc.kill()
+                await proc.wait()
+                raise
             if proc.returncode == 3:
                 info = json.loads(stdout.decode().strip().splitlines()[-1])
                 cls = UnsupportedContentError if info["status"] == vs.UNSUPPORTED else PermanentStageError
@@ -86,11 +113,13 @@ class ExtractStage:
                 )
             blob = await asyncio.to_thread(out.read_bytes)
         doc = await asyncio.to_thread(ExtractedDocument.from_json_gz, blob)
-        await store.put(extracted_key(ctx.job.version_id), blob)
         pages = sum(1 for p in doc.pages if p.page_no is not None)
         version_id = ctx.job.version_id
 
         async def write(s: AsyncSession) -> None:
+            # Inside the fenced commit: a worker that lost its lease, or a document deleted meanwhile, never
+            # gets to (re)create the artifact that a purge would then have to chase.
+            await store.put(extracted_key(version_id), blob)
             await s.execute(
                 text("UPDATE document_versions SET page_count = :n WHERE id = :v"),
                 {"n": pages or None, "v": version_id},
@@ -108,7 +137,7 @@ class QualityStage:
 
     async def run(self, ctx: StageContext) -> StageResult:
         doc = await load_extracted(ctx)
-        rows, summary, needs_ocr = assess(doc)
+        rows, summary, needs_ocr = await asyncio.to_thread(assess, doc)
         version_id = ctx.job.version_id
 
         async def write(s: AsyncSession) -> None:
@@ -153,9 +182,10 @@ class ChunkStage:
                 await s.execute(
                     text(
                         "SELECT d.title, d.id FROM documents d "
-                        "JOIN document_versions v ON v.document_id = d.id WHERE v.id = :v"
+                        "JOIN document_versions v ON v.document_id = d.id "
+                        "WHERE v.id = :v AND v.owner_id = :o"
                     ),
-                    {"v": ctx.job.version_id},
+                    {"v": ctx.job.version_id, "o": ctx.job.owner_id},
                 )
             ).one()
         drafts = await asyncio.to_thread(chunk_document, doc, title.title)

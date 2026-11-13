@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.ingestion import status as vs
 from app.ingestion.errors import PermanentStageError, RetryableStageError
 from app.ingestion.runner import StageContext, StageResult
+from app.ingestion.stages import document_deleted
 from app.insights.staleness import on_version_ready
 from app.llm.errors import BadRequestError, LlmError
 from app.llm.gateway import MAX_EMBED_BATCH
@@ -51,6 +52,10 @@ class EmbedStage:
     async def run(self, ctx: StageContext) -> StageResult:
         gateway, settings = ctx.services["gateway"], ctx.services["settings"]
         job = ctx.job
+        if await document_deleted(ctx):
+            return (
+                StageResult()
+            )  # no paid calls for a document deleted meanwhile; the commit fence aborts the job
         model: str = settings.embedding_model
         async with ctx.sm() as s:
             todo = (

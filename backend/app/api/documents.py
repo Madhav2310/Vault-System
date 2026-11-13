@@ -87,6 +87,10 @@ async def upload_document(
 
         h = request_hash(route="POST /v1/documents", sha256=f.sha256, filename=f.filename, title=f.title)
         status, body = await run_idempotent(db, user.id, key, h, op)
+        if status == 202:
+            # Re-assert the blob file after the commit: a purge of the same bytes (delete, then re-upload) may
+            # have removed it between our write and the commit. `put_file` is a no-op when the file is intact.
+            await store_blob(store, f.path, f.sha256)
     if status == 202 and body.get("job_id"):
         # After commit (§6.1 step 7). CAS-guarded, so an idempotent replay cannot enqueue twice; if this
         # enqueue is lost, the sweeper re-dispatches after the grace period.

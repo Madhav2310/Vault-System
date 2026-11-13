@@ -3,6 +3,8 @@ markdown, body order is preserved. One flow page, `page_no=None`. The archive is
 `zipfile` metadata before python-docx parses anything."""
 
 import zipfile
+from collections.abc import Iterator
+from typing import Any
 
 from docx import Document
 from docx.table import Table, _Cell
@@ -44,8 +46,42 @@ def _heading_level(style_name: str) -> int | None:
     return None
 
 
+_TAB, _BR, _CR = f"{_W}tab", f"{_W}br", f"{_W}cr"
+_TEXT = f"{_W}t"
+_BLOCK_WRAPPERS = (f"{_W}sdtContent", f"{_W}ins", f"{_W}customXml", f"{_W}smartTag")
+
+
+def para_text(p: Any) -> str:
+    """Visible text of a `w:p` element: every `w:t` in document order, wherever it sits (plain runs, tracked
+    insertions `w:ins`, hyperlinks, smart tags, fields). Tracked deletions use `w:delText` and are skipped.
+    python-docx's `Paragraph.text` reads direct runs only, which dropped text inside `w:ins` and `w:sdt`."""
+    out: list[str] = []
+    for el in p.iter():
+        if el.tag == _TEXT:
+            out.append(el.text or "")
+        elif el.tag == _TAB:
+            out.append("\t")
+        elif el.tag in (_BR, _CR):
+            out.append("\n")
+    return "".join(out)
+
+
+def iter_blocks(parent: Any) -> Iterator[Any]:
+    """Paragraph and table elements of a body or cell in order, looking inside content controls (`w:sdt`)
+    and block-level tracked insertions."""
+    for child in parent.iterchildren():
+        if child.tag in (f"{_W}p", f"{_W}tbl"):
+            yield child
+        elif child.tag == f"{_W}sdt":
+            for content in child.iterchildren(f"{_W}sdtContent"):
+                yield from iter_blocks(content)
+        elif child.tag in _BLOCK_WRAPPERS:
+            yield from iter_blocks(child)
+
+
 def _cell_text(cell: _Cell) -> str:
-    return " ".join(cell.text.replace("|", "\\|").split())
+    paras = [" ".join(para_text(p).split()) for p in iter_blocks(cell._tc) if p.tag == f"{_W}p"]
+    return " ".join(x for x in paras if x).replace("|", "\\|")
 
 
 def _table_rows(table: Table) -> list[list[str]]:
@@ -79,14 +115,14 @@ class DocxExtractor:
             path_ = [t for _, t in sections]
             elements.append(Element(kind, 0, pos, pos + len(text), text, path_, level, len(elements), header))
             if kind == "heading" and level is not None:
-                sections.append((level, text))
+                sections.append((level, " ".join(text.split())))
             parts.append(text)
             pos += len(text)
 
-        for child in document.element.body.iterchildren():
+        for child in iter_blocks(document.element.body):
             if child.tag == f"{_W}p":
                 para = Paragraph(child, document)
-                text = para.text.strip()
+                text = para_text(child).strip()
                 if not text:
                     continue
                 style = para.style.name if para.style is not None and para.style.name else ""
