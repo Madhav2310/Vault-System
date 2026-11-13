@@ -16,12 +16,14 @@ from pdfminer.pdfdocument import PDFEncryptionError, PDFPasswordIncorrect
 from pdfminer.psparser import PSException
 from pdfplumber.utils.exceptions import PdfminerException
 
+from app.core.settings import get_settings
 from app.ingestion.errors import PermanentStageError, UnsupportedContentError
 from app.ingestion.extract.base import SYNTH, Element, ElementKind, ExtractedDocument, PageText
 from app.ingestion.extract.glyphs import (
     Line,
     PageGeo,
     build_lines,
+    dedupe_chars_fast,
     extract_words,
     text_rotation,
     upright_chars,
@@ -278,6 +280,9 @@ class PdfExtractor:
     def _read(self, path: str) -> list[_Page]:
         out: list[_Page] = []
         with _open(path) as pdf:
+            limit = get_settings().max_pages
+            if len(pdf.pages) > limit:
+                raise UnsupportedContentError("too_many_pages", f"{len(pdf.pages)} pages (limit {limit})")
             for i, page in enumerate(pdf.pages):
                 if self.page_numbers is not None and i + 1 not in self.page_numbers:
                     continue
@@ -287,7 +292,7 @@ class PdfExtractor:
 
     def _page(self, page: Any, page_no: int) -> _Page:
         geo = PageGeo.of(page)
-        raw = page.dedupe_chars().chars
+        raw = dedupe_chars_fast(page.chars)
         chars = upright_chars(raw, page.width, page.height)
         rot = text_rotation(raw)
         uw, uh = (page.height, page.width) if rot in (90, 270) else (page.width, page.height)
@@ -298,6 +303,8 @@ class PdfExtractor:
         ):  # find_tables works in display space; rotated pages keep plain text
             tables, words = extract_tables(page, words)
         ordered = order_page(build_lines(words), uw, uh)
+        for ln in (*ordered.body, *ordered.footnotes):
+            ln.words = []  # word dicts hold every glyph dict (~1.6 KB each): only reading order needed them
         boxes = [geo.normalize((c["x0"], c["top"], c["x1"], c["bottom"])) for c in raw]
         w, h = geo.display_wh()
         flags = ordered.flags + (["has_tables"] if tables else [])

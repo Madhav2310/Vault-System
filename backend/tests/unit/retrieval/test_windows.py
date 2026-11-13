@@ -35,13 +35,13 @@ def test_window_contains_best_sentence() -> None:
 
 def test_firstp_fallback() -> None:
     text, spans = _chunk([FILLER] * 40)
-    w = focus_window(text, spans, "zebra quantum", 180)
+    w = focus_window(text, spans, "zebra quantum", 180, max_chars=10_000)
     assert w == " ".join(text.split()[:180])
 
 
 def test_long_sentence_cut() -> None:
     long = " ".join(["notice"] * 400) + "."
-    w = focus_window(long, [(0, len(long))], "notice", 180)
+    w = focus_window(long, [(0, len(long))], "notice", 180, max_chars=10_000)
     assert len(w.split()) == 180
 
 
@@ -51,7 +51,7 @@ def test_whole_sentences_in_order() -> None:
     for _ in range(50):
         sents = [" ".join(rng.choices(vocab, k=rng.randint(5, 30))) + "." for _ in range(rng.randint(10, 40))]
         text, spans = _chunk(sents)
-        w = focus_window(text, spans, "notice term audit", 120)
+        w = focus_window(text, spans, "notice term audit", 120, max_chars=10_000)
         assert len(w.split()) <= 120
         if len(text.split()) <= 120:
             assert w == text
@@ -62,3 +62,8 @@ def test_whole_sentences_in_order() -> None:
         idx = [sents.index(p) for p in pieces]
         assert idx == list(range(idx[0], idx[0] + len(idx)))
         assert re.sub(r"\s+", " ", w) == " ".join(pieces)
+
+
+def test_char_cap_applies() -> None:
+    text, spans = _chunk([FILLER] * 40)
+    assert len(focus_window(text, spans, "operational", 180)) <= 1050

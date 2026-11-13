@@ -30,14 +30,25 @@ def _words(s: str) -> int:
     return len(s.split())
 
 
+def _cap(s: str, max_chars: int) -> str:
+    if len(s) <= max_chars:
+        return s
+    cut = s.rfind(" ", 0, max_chars)
+    return s[: cut if cut > 0 else max_chars]
+
+
 def focus_window(
-    text: str, sentences: Sequence[tuple[int, int]], query: str, max_words: int = DEFAULT_WINDOW_WORDS
+    text: str,
+    sentences: Sequence[tuple[int, int]],
+    query: str,
+    max_words: int = DEFAULT_WINDOW_WORDS,
+    max_chars: int = 1050,
 ) -> str:
     """The contiguous run of whole sentences (<= max_words) with the most distinct query stems.
 
     Ties go to the earliest window; no overlap -> the first `max_words` words; one over-long sentence is cut
-    at the word limit."""
-    if _words(text) <= max_words:
+    at the word limit. The result is also capped at `max_chars` (word boundary): the reranker input limit."""
+    if _words(text) <= max_words and len(text) <= max_chars:
         return text
     q = stems(query)
     spans = [(a, b) for a, b in sentences if b > a] or [(0, len(text))]
@@ -46,10 +57,12 @@ def focus_window(
     best: tuple[int, int, int] | None = None  # (score, -start, end) maximised; ties -> earliest start
     for i in range(len(spans)):
         words = 0
+        chars = 0
         covered: set[str] = set()
         for j in range(i, len(spans)):
             words += counts[j]
-            if words > max_words and j > i:
+            chars += spans[j][1] - spans[j][0] + 1
+            if (words > max_words or chars > max_chars) and j > i:
                 break
             covered |= q & stems(text[spans[j][0] : spans[j][1]])
             score = len(covered)
@@ -59,6 +72,7 @@ def focus_window(
     score, neg_i, j = best
     i = -neg_i
     if score == 0 or not any(hits):
-        return " ".join(text.split()[:max_words])
+        return _cap(" ".join(text.split()[:max_words]), max_chars)
     window = text[spans[i][0] : spans[j][1]]
-    return " ".join(window.split()[:max_words]) if _words(window) > max_words else window
+    out = " ".join(window.split()[:max_words]) if _words(window) > max_words else window
+    return _cap(out, max_chars)

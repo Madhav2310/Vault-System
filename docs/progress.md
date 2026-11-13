@@ -383,3 +383,8 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - docker-compose.yml: every service has `mem_limit` + `cpus`; `reranker` (profiles rerank, full) and `otel-lgtm` (obs, full) are no longer default; ingest worker `-c 1`, AI worker `-c 2`. Default stack limit sum = 4.4 GB. Makefile: `up-test`, `up-rerank`, `up-full`, `down` stops all profiles; `scripts/wait_healthy.sh` takes services / COMPOSE_PROFILES. `docs/dev-environment.md` written.
 - Evidence: `make ci` 322 passed; `tests/unit/ops/test_compose.py` 2 passed.
 - PENDING (need Docker, user action): AC3 `make up-test`, AC4 `make up` + readyz `degraded`, AC5 user sets Docker Desktop to 6 GB / 4 CPUs, AC6 merged-lanes gate (`make test`).
+
+## 2026-11-13 — S16.05 extraction time and memory (root cause)
+S16.05 profile (cProfile, AMD 10-K, 121 pages, native): `pdfplumber.Page.dedupe_chars` = 93% of cumulative time (its final `sorted(deduped, key=chars.index)` is O(n^2); ~25 s) on top of pdfminer parsing (~25 s under profiling). Memory: reading chars alone peaks 71 MB, but our retained `Line.words` held every glyph dict (~1.6 KB/glyph) -> 5.5 MB/page growth.
+Fixes: `glyphs.dedupe_chars_fast` (same selection, original order via id->index map; verified identical on 5 sample pages), and `ln.words = []` once reading order is done; `max_pages` setting (600) -> `unsupported/too_many_pages`.
+Before/after (AMD 10-K, native, same 420251 chars): 37 s / 720 MB -> 11.3 s / 198 MB. `make eval-extraction` located_pct 100.0; `make ci` 326 passed; tests/integration/ingestion/test_extract_budget.py 3 passed. AC6 (`make c1-check`) pending: Docker image build (stalled uv downloads; added UV_HTTP_TIMEOUT/CONCURRENT_DOWNLOADS).

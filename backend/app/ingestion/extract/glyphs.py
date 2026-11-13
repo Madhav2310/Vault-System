@@ -199,3 +199,28 @@ def build_lines(words: Sequence[dict[str, Any]]) -> list[Line]:
         cur.append(w)
     flush()
     return lines
+
+
+def dedupe_chars_fast(
+    chars: list[dict[str, Any]], tolerance: float = 1, extra_attrs: tuple[str, ...] = ("fontname", "size")
+) -> list[dict[str, Any]]:
+    """pdfplumber's `dedupe_chars` without its O(n^2) final `sorted(..., key=chars.index)`.
+
+    Same selection (cluster identical glyphs by text/font/size and position within `tolerance`, keep the
+    leftmost of each cluster) and the same output order (original order); the order comes from an id->index
+    map instead of `list.index`. Profiled on a 121-page 10-K: ~25 s of 37 s (docs/progress.md S16.05)."""
+    import itertools
+    from operator import itemgetter
+
+    from pdfplumber.utils.clustering import cluster_objects
+
+    key = itemgetter("upright", "text", *extra_attrs)
+    pos_key = itemgetter("doctop", "x0")
+    order = {id(c): i for i, c in enumerate(chars)}
+    kept: list[dict[str, Any]] = []
+    for _grp, grp_chars in itertools.groupby(sorted(chars, key=key), key=key):
+        for y_cluster in cluster_objects(list(grp_chars), itemgetter("doctop"), tolerance):
+            for x_cluster in cluster_objects(y_cluster, itemgetter("x0"), tolerance):
+                kept.append(sorted(x_cluster, key=pos_key)[0])
+    kept.sort(key=lambda c: order[id(c)])
+    return kept
