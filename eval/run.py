@@ -245,7 +245,8 @@ async def _main(a: argparse.Namespace) -> int:
     split = "smoke" if a.suite == "smoke" else a.split
     items = select_filter(ds.select(split), a.filter)
     t_wall = time.monotonic()
-    harness = await _load_setup(a.pipeline, stream=a.stream)(a.config)
+    stream = getattr(a, "stream", False)
+    harness = await (_load_setup(a.pipeline, stream=True) if stream else _load_setup(a.pipeline))(a.config)
     sm = None if a.no_db else get_sessionmaker()
     try:
         run, path = await run_suite(
@@ -263,7 +264,7 @@ async def _main(a: argparse.Namespace) -> int:
             await harness.close()
     print(f"wall_s {time.monotonic() - t_wall:.1f}")
     print(f"degraded_rate {run.degraded_rate():.3f} {run.degraded_by_kind()}")
-    if a.stream:
+    if stream:
         print(ttft_summary(run) or "ttft_ms: no streamed segment events")
     if run.config.get("stopped") == "budget":
         print(f"stopped: budget (cap ${a.max_usd}); partial run, nothing frozen")

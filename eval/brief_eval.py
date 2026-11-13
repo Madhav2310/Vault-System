@@ -563,9 +563,12 @@ def _dry_gateway(ledger: MemoryLedger) -> LlmGateway:
                     "category": "contract",
                     "tags": ["dry run"],
                     "suggested_questions": ["Who are the parties?", "What is the term?", "What is the fee?"],
+                    "tone": "neutral",
+                    "tone_note": "Dry run.",
                 }
                 if "facts" in props:
                     body["facts"] = facts
+                    body["tone_evidence"] = [lines[0][0]] if lines else []
             return ChatResponse((TextPart(json.dumps(body)),), "end_turn", Usage(1500, 300), None, req.model)
 
     settings = Settings(_env_file=None, database_url="postgresql+asyncpg://x/y", redis_url="redis://x")  # type: ignore[call-arg]
