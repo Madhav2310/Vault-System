@@ -3,11 +3,11 @@
 import asyncio
 import dataclasses
 import uuid
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from fastapi import APIRouter, Depends, Query, Request, Response
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import TurnRunner, get_db, get_turn_runner
@@ -31,9 +31,34 @@ class CreateSession(BaseModel):
 
 
 class PostMessage(BaseModel):
-    content: str = Field(min_length=1, max_length=20000)
+    content: str | None = Field(
+        default=None,
+        min_length=1,
+        max_length=20000,
+        description="The question. Omit it when `reask_of` is set.",
+    )
     client_message_id: str = Field(min_length=1, max_length=100)
     mode: Literal["auto", "full_context"] = "auto"
+    reask_of: uuid.UUID | None = Field(
+        default=None,
+        description="Id of an earlier message of this session (a stale answer or its question): its question "
+        "is asked again as a new turn on the current versions of the documents.",
+    )
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {"content": "What is the notice period?", "client_message_id": "c-0001", "mode": "auto"},
+                {"reask_of": "0193c2a4-7b1e-7c3a-9d55-2f6e8a1b4c90", "client_message_id": "c-0002"},
+            ]
+        }
+    )
+
+    @model_validator(mode="after")
+    def _content_or_reask(self) -> Self:
+        if (self.content is None) == (self.reask_of is None):
+            raise ValueError("send exactly one of `content` and `reask_of`")
+        return self
 
 
 def _json(s: svc.SessionRow) -> dict[str, Any]:
@@ -147,7 +172,7 @@ async def events_schema(user: CurrentUser) -> dict[str, Any]:
             "`GET /v1/chat/events/schema`)",
             "content": {"text/event-stream": {"schema": {"type": "string"}}},
         },
-        404: {"description": "Not your session"},
+        404: {"description": "Not your session, or `reask_of` is not a message of it"},
         409: {"description": "Another turn is running in this session (`turn_in_progress`)"},
         503: {"description": "Model provider or capacity unavailable"},
     },
@@ -167,8 +192,18 @@ async def post_message(
     client disconnects. With `Accept: text/event-stream` the turn streams events instead (S18.01): the
     status codes above are decided before the stream starts and the stream itself answers 200."""
     sse = "text/event-stream" in request.headers.get("accept", "")
+    content = body.content
+    if body.reask_of is not None:
+        try:
+            await svc.get_session(db, user.id, session_id)
+        except svc.SessionNotFound:
+            raise DomainError(ErrorCode.NOT_FOUND) from None
+        content = await history.original_question(db, user.id, session_id, body.reask_of)
+        if content is None:
+            raise DomainError(ErrorCode.NOT_FOUND)
+    assert content is not None
     try:
-        t = await svc.start_turn(db, user.id, session_id, body.content, body.client_message_id, body.mode)
+        t = await svc.start_turn(db, user.id, session_id, content, body.client_message_id, body.mode)
     except svc.SessionNotFound:
         raise DomainError(ErrorCode.NOT_FOUND) from None
     except svc.TurnInProgress:
@@ -180,7 +215,7 @@ async def post_message(
     if sse:
         if t.created:
             sink, turn = stream_mod.start_sink_task(
-                lambda: run_turn(user.id, session_id, t.run_id, t.user_message_id, body.content, body.mode),
+                lambda: run_turn(user.id, session_id, t.run_id, t.user_message_id, content, body.mode),
                 _TASKS,
             )
             frames = stream_mod.stream_new_turn(db, user.id, t.run_id, t.user_message_id, sink, turn)
@@ -189,12 +224,12 @@ async def post_message(
         return StreamingResponse(frames, media_type="text/event-stream", headers=stream_mod.SSE_HEADERS)
     if t.created:
         task: asyncio.Future[None] = asyncio.ensure_future(
-            run_turn(user.id, session_id, t.run_id, t.user_message_id, body.content, body.mode)
+            run_turn(user.id, session_id, t.run_id, t.user_message_id, content, body.mode)
         )
         _TASKS.add(task)
         task.add_done_callback(_TASKS.discard)
         await asyncio.shield(task)  # a client disconnect cancels this await, not the turn
-        done = await svc.start_turn(db, user.id, session_id, body.content, body.client_message_id, body.mode)
+        done = await svc.start_turn(db, user.id, session_id, content, body.client_message_id, body.mode)
         t = dataclasses.replace(done, created=True)  # the stored result of the turn this call ran
     if t.status != "running":
         response.status_code = 200

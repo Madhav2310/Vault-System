@@ -23,6 +23,7 @@ from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_
 from app.chat.nodes._common import ERROR_TEXT, NO_DOCUMENTS, NO_EVIDENCE, flush_segments, plain
 from app.chat.nodes.gate import gate
 from app.chat.nodes.load_context import load_context
+from app.chat.nodes.meta import meta
 from app.chat.nodes.plan_context import plan_context
 from app.chat.nodes.retrieve import retrieve
 from app.chat.nodes.route_question import route_question
@@ -69,10 +70,12 @@ def after_route_question(s: TurnState) -> str:
     return "analyze"  # S17.10 adds the fast path here
 
 
-@router("clarify", "plan_context")
+@router("clarify", "meta", "plan_context")
 def after_analyze(s: TurnState) -> str:
-    # S18.05 adds the `meta` branch
-    return "clarify" if s.analysis is not None and s.analysis.clarification is not None else "plan_context"
+    a = s.analysis
+    if a is not None and a.clarification is not None:
+        return "clarify"
+    return "meta" if a is not None and a.intent == "meta" and a.meta_op is not None else "plan_context"
 
 
 @router("retrieve", "generate", "abstain_no_evidence")
@@ -116,7 +119,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         scope_version_ids=state.scope.version_ids,
         generation=gen,
         config={
-            "prompts": ["analyze_query@1", "answer_rag@2", "support_check@1"],
+            "prompts": ["analyze_query@2", "answer_rag@2", "support_check@1"],
             "models": _models(deps.gateway),
             "retrieval": deps.retriever.config.version,
         },
@@ -166,14 +169,14 @@ def build_graph() -> Graph:
             "load_context": load_context, "route_question": route_question, "analyze": analyze,
             "plan_context": plan_context, "retrieve": retrieve, "gate": gate, "generate": generate,
             "verify": verify,
-            "clarify": clarify, "abstain_no_documents": abstain_no_documents,
+            "clarify": clarify, "meta": meta, "abstain_no_documents": abstain_no_documents,
             "abstain_no_evidence": abstain_no_evidence, "persist": persist,
         },
         edges={
             "load_context": after_load_context, "route_question": after_route_question,
             "analyze": after_analyze, "plan_context": after_plan_context, "retrieve": after_retrieve,
             "gate": after_gate,
-            "generate": after_generate, "verify": "persist", "clarify": "persist",
+            "generate": after_generate, "verify": "persist", "clarify": "persist", "meta": "persist",
             "abstain_no_documents": "persist", "abstain_no_evidence": "persist", "persist": END,
         },
         start="load_context",

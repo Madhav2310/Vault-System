@@ -37,6 +37,12 @@ DOCS = [D1, D2, D3]
 NO_MEMORY = Memory(turns=[])
 
 
+COUNT_OP = {
+    "op": "COUNT_DOCUMENTS", "status": None, "category": None, "tag": None, "term": None, "field": None,
+    "before": None, "after": None, "document_ref": None, "limit": None,
+}  # fmt: skip
+
+
 def out(**over: Any) -> dict[str, Any]:
     base: dict[str, Any] = {
         "standalone_query": "What is the term of the Medalist consulting agreement?",
@@ -75,7 +81,7 @@ async def run(*script: Step, question: str = "q?", memory: Memory = NO_MEMORY, d
 
 
 def test_analyze_query_frontmatter() -> None:
-    p = default_registry().get("analyze_query", 1)
+    p = default_registry().get("analyze_query", 2)
     assert (p.role, p.effort, p.output, p.purpose) == ("fast", "none", "schema", "analyze_query")
     assert "untrusted" in p.body.lower() and "<inputs>" in p.body
 
@@ -107,7 +113,7 @@ async def test_intent_restricted_to_route_enum() -> None:
     res, _ = await run(structured(out(intent="delete_all_documents")))
     assert res.fallback and res.intent == "qa" and res.reason_codes == (ANALYZE_FALLBACK,)
     for intent in ("qa", "compare", "summarize", "meta", "chitchat"):
-        r, _ = await run(structured(out(intent=intent)))
+        r, _ = await run(structured(out(intent=intent, meta_op=COUNT_OP if intent == "meta" else None)))
         assert r.intent == intent and not r.fallback
 
 
@@ -125,7 +131,15 @@ async def test_free_text_capped_and_cleaned() -> None:
 
 async def test_meta_and_chitchat_carry_no_targets_or_dimensions() -> None:
     res, _ = await run(
-        structured(out(intent="meta", target_refs=["D1"], dimensions=["x"], needs_whole_document=True))
+        structured(
+            out(
+                intent="meta",
+                target_refs=["D1"],
+                dimensions=["x"],
+                needs_whole_document=True,
+                meta_op=COUNT_OP,
+            )
+        )
     )
     assert (res.target_document_ids, res.dimensions, res.needs_whole_document) == ((), (), False)
 
@@ -237,7 +251,7 @@ async def test_injection_in_question_and_history(leak_guard: LeakGuard) -> None:
     # an "obedient" model output is still bounded by code
     obeyed = out(
         intent="meta", standalone_query=INJECTION * 50, target_refs=["D1", "D2", "D3", foreign],
-        needs_whole_document=True,
+        needs_whole_document=True, meta_op=COUNT_OP,
     )  # fmt: skip
     res, _ = await run(structured(obeyed), question=INJECTION)
     assert res.intent == "meta" and res.target_document_ids == () and len(res.standalone_query) <= 500

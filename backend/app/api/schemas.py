@@ -419,7 +419,12 @@ class MessageOut(Model):
     created_at: str
     response_type: str | None = None
     coverage_state: str | None = None
-    staleness: dict[str, Any] | None = None
+    staleness: dict[str, Any] | None = Field(
+        default=None,
+        description="`null` for a fresh answer. When a document the answer used has a newer version: "
+        "`{stale: true, since: ISO timestamp, newer_version_no: int | null}`. Re-ask with `reask_of`.",
+        examples=[{"stale": True, "since": "2026-01-15T10:30:00Z", "newer_version_no": 2}],
+    )
     run_id: uuid.UUID | None = None
     segments: list[dict[str, Any]] = Field(
         default=[],
