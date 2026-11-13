@@ -92,7 +92,7 @@ test("fact citation highlights sentence", async ({ page }) => {
   await expect(viewer.getByRole("heading", { name: "Master services agreement" })).toBeVisible();
   await expect(viewer.getByTestId("cited-sentence")).toHaveCount(1);
   await expect(viewer.getByTestId("cited-sentence")).toHaveText(TERMINATE);
-  await expect(viewer).toContainText("Page 3");
+  await expect(viewer).toContainText(/Page\s*3/);
   await expect(viewer).toContainText("8 › Termination");
 });
 
