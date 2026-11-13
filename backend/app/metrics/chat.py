@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.feedback.service import feedback_summary
 from app.metrics import WINDOWS_S, num, scope_params, scope_sql
 
 
@@ -108,6 +109,7 @@ async def chat_metrics(db: AsyncSession, owner_id: uuid.UUID | None, window: str
         "ttft_ms": {"p50": num(r["t50"]), "p95": num(r["t95"])},
         "cost_per_turn_usd": {"p50": num(r["c50"], 6), "p95": num(r["c95"], 6)},
         "degraded": degraded,
+        "feedback": await feedback_summary(db, owner_id, WINDOWS_S[window]),
         "llm": {
             "calls": tot["calls"],
             "total_cost_usd": num(tot["cost"], 6),

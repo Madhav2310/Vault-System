@@ -291,6 +291,7 @@ async def test_empty_state(api: httpx.AsyncClient, mk_owner: Callable[..., Any])
         "ttft_ms": {"p50": None, "p95": None},
         "cost_per_turn_usd": {"p50": None, "p95": None},
         "degraded": {},
+        "feedback": {"up": 0, "down": 0, "by_reason": {}},
         "llm": {
             "calls": 0,
             "total_cost_usd": 0.0,
