@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db
 from app.api.errors import DomainError
+from app.chat import history
 from app.chat import sessions as svc
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
@@ -70,6 +71,24 @@ async def get_session(
         return _json(await svc.get_session(db, user.id, session_id))
     except svc.SessionNotFound:
         raise DomainError(ErrorCode.NOT_FOUND) from None
+
+
+@router.get("/sessions/{session_id}/messages")
+async def list_messages(
+    session_id: uuid.UUID,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=svc.MAX_LIMIT)] = svc.DEFAULT_LIMIT,
+    cursor: str | None = None,
+) -> dict[str, Any]:
+    """History, oldest first within a page; pages walk backwards from the newest (`next_cursor` = older)."""
+    try:
+        items, nxt = await history.list_messages(db, user.id, session_id, limit, cursor)
+    except svc.SessionNotFound:
+        raise DomainError(ErrorCode.NOT_FOUND) from None
+    except ValueError:
+        raise DomainError(ErrorCode.VALIDATION_ERROR, "Invalid cursor") from None
+    return {"items": items, "next_cursor": nxt}
 
 
 @router.post(
