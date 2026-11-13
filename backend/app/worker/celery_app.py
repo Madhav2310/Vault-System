@@ -23,6 +23,7 @@ ROUTES: dict[str, str] = {
     "vault.maintenance.purge_document": "maintenance",
     "vault.ingest.stage": "ingest",
     "vault.ai.stage": "ai",
+    "vault.ai.summary": "ai",
 }
 
 # beat: name → (task, seconds). Every entry's task must be routed.
@@ -48,6 +49,7 @@ def make_celery() -> Celery:
             "app.worker.tasks.maintenance",
             "app.worker.tasks.ingest",
             "app.worker.tasks.purge",
+            "app.worker.tasks.summaries",
         ],
     )
     app.conf.update(
