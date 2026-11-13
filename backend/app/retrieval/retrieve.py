@@ -27,6 +27,7 @@ from app.retrieval.config import RetrievalConfig, get_config
 from app.retrieval.expand import expand_neighbors
 from app.retrieval.fusion import FusedCandidate, Ranked, fuse
 from app.retrieval.lexical import LexicalHit, lexical_search
+from app.retrieval.listwise import LlmReranker
 from app.retrieval.query_embed import QueryEmbedder, QueryEmbedding, normalize_query
 from app.retrieval.rerank import RerankClient, RerankedItem, RerankPassage, RerankResult
 from app.retrieval.scope import Scope
@@ -151,11 +152,15 @@ class Retriever:
         reranker: RerankClient,
         redis: aioredis.Redis | None,
         cfg: RetrievalConfig | None = None,
+        llm_reranker: LlmReranker | None = None,
     ) -> None:
         self._embedder = embedder
         self._reranker = reranker
         self._redis = redis
         self._cfg = cfg or get_config()
+        self._llm_reranker = llm_reranker or (
+            LlmReranker(embedder.gateway) if self._cfg.rerank.kind == "llm" else None
+        )
 
     async def warm_up(self) -> None:
         """One tiny rerank request (never raises): the service loads/initializes lazily on first use."""
@@ -177,6 +182,7 @@ class Retriever:
         query: str,
         *,
         embedding: QueryEmbedding | None = None,
+        run_id: uuid.UUID | None = None,
     ) -> RetrievalResult:
         """With a sessionmaker, every DB phase uses its own short session (no connection is held across the
         reranker call) and the vector and lexical searches run concurrently. With a bare session (legacy
@@ -237,6 +243,14 @@ class Retriever:
                 [RerankedItem(c.chunk_id, i, None) for i, c in enumerate(pool[: cfg.rerank.top_n])],
                 [], False, None, None, None,
             )  # fmt: skip
+        elif cfg.rerank.kind == "llm" and self._llm_reranker is not None:
+            rr = await self._llm_reranker.rerank(
+                query,
+                [RerankPassage(c.chunk_id, texts[c.chunk_id]) for c in pool],
+                cfg.rerank.top_n,
+                owner_id=owner_id,
+                run_id=run_id,
+            )
         else:
             rr = await self._reranker.rerank(
                 query, [RerankPassage(c.chunk_id, texts[c.chunk_id]) for c in pool], cfg.rerank.top_n
