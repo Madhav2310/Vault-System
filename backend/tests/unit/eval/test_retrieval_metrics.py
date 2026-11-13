@@ -1,7 +1,6 @@
 """S2.17 AC1: retrieval metrics match hand-computed values on a toy ranking."""
 
 import pytest
-
 from eval.mapping import ChunkHit, GoldTarget
 from eval.metrics.retrieval import by_category, mrr_at, recall_at, retrieval_report
 
