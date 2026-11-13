@@ -44,6 +44,14 @@ export function SourceViewer({ chunkId, sentenceStart, sentenceEnd, onClose }: P
     return () => ctl.abort();
   }, [documentId]);
 
+  // Closing returns focus to whatever opened the viewer (a citation marker), so keyboard users keep their place.
+  useEffect(() => {
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    return () => {
+      if (opener?.isConnected) opener.focus();
+    };
+  }, []);
+
   useEffect(() => {
     heading.current?.focus();
   }, [chunk?.id]);

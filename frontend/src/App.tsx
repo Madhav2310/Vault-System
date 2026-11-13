@@ -2,7 +2,7 @@ import { useCallback, useState } from "react";
 import { api, ApiError, getApiKey, setApiKey } from "./api/client";
 import { ChatPage } from "./chat/ChatPage";
 import { DocumentPage } from "./document/DocumentPage";
-import { useRoute } from "./document/nav";
+import { hrefFor, linkClick, useRoute } from "./document/nav";
 import { Library } from "./library/Library";
 
 /** Demo auth assumption (S19): the API key is typed here and kept in localStorage. */
@@ -73,6 +73,24 @@ export function App() {
       <div className="shell">
         <header className="topbar">
           <span className="brand">Vault</span>
+          {hasKey && (
+            <nav className="topnav" aria-label="Main">
+              <a
+                href={hrefFor("/")}
+                onClick={linkClick("/")}
+                aria-current={route.name !== "chat" ? "page" : undefined}
+              >
+                Library
+              </a>
+              <a
+                href={hrefFor("/chat")}
+                onClick={linkClick("/chat")}
+                aria-current={route.name === "chat" ? "page" : undefined}
+              >
+                Chat
+              </a>
+            </nav>
+          )}
           {hasKey && (
             <button
               className="btn btn-quiet"
