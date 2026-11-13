@@ -17,7 +17,7 @@ from typing import Any
 from pydantic import ValidationError
 
 from app.chat.citations import Resolution, resolve
-from app.chat.evidence import EvidenceSet, Mode, answer_schema
+from app.chat.evidence import EvidenceSet, Mode, answer_schema, cache_mode_for
 from app.chat.memory import Memory
 from app.chat.nodes_common import defuse
 from app.chat.segments_reader import salvage
@@ -104,6 +104,7 @@ async def generate(
             schema=schema,
             route=route,
             mode=mode,
+            cache_mode=cache_mode_for(mode),
             messages=[{"role": "user", "content": message}],
             run_id=run_id,
             budget=budget,
@@ -116,11 +117,13 @@ async def generate(
         return _failed(STOP_REFUSAL)
     except TruncatedError:
         # Keep what finished: complete segments are intact; the cut-off one is dropped.
-        status, segments = salvage("".join(chunks))
+        status, raw_segments = salvage("".join(chunks))
+        segments = [g for g in raw_segments if _well_formed(g)]
         if status == "abstain" or not segments:
             return _failed(STOP_MAX_TOKENS)
+        resolution = resolve(segments, evidence)
         return GenerateResult(
-            "answer", resolve(segments, evidence), (STOP_MAX_TOKENS,), Usage(), Decimal(0), ()
+            "answer", resolution, (STOP_MAX_TOKENS, *resolution.reasons), Usage(), Decimal(0), ()
         )
     assert final is not None
     raw = "".join(chunks)
@@ -135,6 +138,11 @@ async def generate(
     resolution = resolve(out.segments, evidence)
     reasons += list(resolution.reasons)
     return GenerateResult("answer", resolution, tuple(reasons), final.usage, final.cost_usd, final.call_ids)
+
+
+def _well_formed(seg: dict[str, Any]) -> bool:
+    ev = seg.get("evidence")
+    return isinstance(seg.get("text"), str) and isinstance(ev, list) and all(isinstance(h, str) for h in ev)
 
 
 def _failed(reason: str, final: Final | None = None) -> GenerateResult:
