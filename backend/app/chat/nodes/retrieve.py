@@ -14,7 +14,9 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
     query = state.analysis.standalone_query
     emb = state.embedding if normalize_query(query) == normalize_query(state.question) else None
     deps = ctx.deps
-    result = await deps.retriever.retrieve(deps.sm, ctx.owner_id, state.scope, query, embedding=emb)
+    result = await deps.retriever.retrieve(
+        deps.sm, ctx.owner_id, state.scope, query, embedding=emb, run_id=ctx.run_id
+    )
     async with deps.sm() as s:
         state.chunks = await load_evidence_chunks(s, ctx.owner_id, list(result.selected))
     state.retrieval = result

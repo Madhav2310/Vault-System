@@ -74,6 +74,10 @@ class QueryEmbedder:
         self._ttl = ttl_seconds
 
     @property
+    def gateway(self) -> LlmGateway:
+        return self._gw
+
+    @property
     def model(self) -> str:
         return self._gw.settings.embedding_model
 
