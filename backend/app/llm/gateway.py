@@ -25,7 +25,7 @@ from contextlib import aclosing
 from dataclasses import dataclass, replace
 from decimal import Decimal
 from functools import lru_cache
-from typing import Any, Protocol, TypeVar, overload
+from typing import Any, Literal, Protocol, TypeVar, overload
 
 from opentelemetry import trace
 from pydantic import BaseModel, ValidationError
@@ -63,6 +63,7 @@ from app.llm.types import (
     Usage,
 )
 
+CacheMode = Literal["implicit", "explicit"]
 T = TypeVar("T", bound=BaseModel)
 R = TypeVar("R")
 
@@ -324,6 +325,7 @@ class LlmGateway:
         inputs: Mapping[str, Any] | None = None,
         messages: Sequence[Mapping[str, Any]] | None = None,
         search_results: Sequence[SearchResult] = (),
+        cache_mode: CacheMode | None = None,
         run_id: uuid.UUID | None = None,
         job_id: uuid.UUID | None = None,
         budget: Budget | None = None,
@@ -344,6 +346,7 @@ class LlmGateway:
         inputs: Mapping[str, Any] | None = None,
         messages: Sequence[Mapping[str, Any]] | None = None,
         search_results: Sequence[SearchResult] = (),
+        cache_mode: CacheMode | None = None,
         run_id: uuid.UUID | None = None,
         job_id: uuid.UUID | None = None,
         budget: Budget | None = None,
@@ -363,12 +366,13 @@ class LlmGateway:
         inputs: Mapping[str, Any] | None = None,
         messages: Sequence[Mapping[str, Any]] | None = None,
         search_results: Sequence[SearchResult] = (),
+        cache_mode: CacheMode | None = None,
         run_id: uuid.UUID | None = None,
         job_id: uuid.UUID | None = None,
         budget: Budget | None = None,
     ) -> CallResult[Any]:
         p, req, res = self._prepare(
-            prompt, purpose, model, route, mode, inputs, messages, schema, search_results
+            prompt, purpose, model, route, mode, inputs, messages, schema, search_results, cache_mode
         )
         meta = self._meta(purpose, lane, self.chat.name, req, p, res.role, owner_id, run_id, job_id)
         parsed: list[BaseModel] = []
@@ -427,6 +431,7 @@ class LlmGateway:
         inputs: Mapping[str, Any] | None = None,
         messages: Sequence[Mapping[str, Any]] | None = None,
         search_results: Sequence[SearchResult] = (),
+        cache_mode: CacheMode | None = None,
         run_id: uuid.UUID | None = None,
         job_id: uuid.UUID | None = None,
         budget: Budget | None = None,
@@ -435,7 +440,7 @@ class LlmGateway:
         JSON document and the consumer parses them incrementally. Retries only before the first event was
         yielded; refusal / max_tokens raise typed errors after the row is written."""
         p, req, res = self._prepare(
-            prompt, purpose, model, route, mode, inputs, messages, schema, search_results
+            prompt, purpose, model, route, mode, inputs, messages, schema, search_results, cache_mode
         )
         meta = self._meta(purpose, lane, self.chat.name, req, p, res.role, owner_id, run_id, job_id)
         self._admit(meta, budget)
@@ -562,6 +567,7 @@ class LlmGateway:
         messages: Sequence[Mapping[str, Any]] | None,
         schema: type[BaseModel] | None,
         search_results: Sequence[SearchResult],
+        cache_mode: CacheMode | None = None,
     ) -> tuple[Prompt, ChatRequest, Resolved]:
         p = self.prompts.get(*prompt)
         if schema is not None and search_results:
@@ -589,6 +595,7 @@ class LlmGateway:
             effort=res.effort,
             output_schema=schema.model_json_schema() if schema is not None else None,
             search_results=tuple(search_results),
+            cache_mode=cache_mode,
         )
         return p, req, res
 
