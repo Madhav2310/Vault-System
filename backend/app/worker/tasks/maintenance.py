@@ -4,6 +4,7 @@ from sqlalchemy import text
 
 from app.api.idempotency import TTL_HOURS, purge_expired
 from app.core.logging import get_logger
+from app.ingestion.identifiers import backfill_tsv_ids
 from app.worker.celery_app import celery_app
 from app.worker.runtime import SessionFactory, run_db
 
@@ -39,3 +40,16 @@ async def purge_job_events(sm: SessionFactory, days: int = JOB_EVENTS_RETENTION_
 @celery_app.task(name="vault.maintenance.purge_job_events")
 def purge_job_events_task() -> int:
     return run_db(purge_job_events)
+
+
+async def backfill_tsv_ids_task_fn(sm: SessionFactory) -> int:
+    """One-off: fill `tsv_ids` for chunks indexed before S17.04. Idempotent (a second run updates 0)."""
+    async with sm() as s:
+        n = await backfill_tsv_ids(s)
+    _log.info("tsv_ids_backfilled", updated=n)
+    return n
+
+
+@celery_app.task(name="vault.maintenance.backfill_tsv_ids")
+def backfill_tsv_ids_task() -> int:
+    return run_db(backfill_tsv_ids_task_fn)
