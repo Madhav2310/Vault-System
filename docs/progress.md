@@ -378,3 +378,8 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 
 ## 2026-11-13 — S16.06 README skeleton and quickstart
 - `README.md` rewritten (honest "What works today"), `scripts/quickstart.sh` (Docker check, .env, `make up`, migrate, demo user). Tests: `backend/tests/unit/docs/test_readme_skeleton.py` 2 passed. AC3 (real quickstart run) pending Docker.
+
+## 2026-11-13 — S16.01 compose profiles and limits (file work; Docker steps pending)
+- docker-compose.yml: every service has `mem_limit` + `cpus`; `reranker` (profiles rerank, full) and `otel-lgtm` (obs, full) are no longer default; ingest worker `-c 1`, AI worker `-c 2`. Default stack limit sum = 4.4 GB. Makefile: `up-test`, `up-rerank`, `up-full`, `down` stops all profiles; `scripts/wait_healthy.sh` takes services / COMPOSE_PROFILES. `docs/dev-environment.md` written.
+- Evidence: `make ci` 322 passed; `tests/unit/ops/test_compose.py` 2 passed.
+- PENDING (need Docker, user action): AC3 `make up-test`, AC4 `make up` + readyz `degraded`, AC5 user sets Docker Desktop to 6 GB / 4 CPUs, AC6 merged-lanes gate (`make test`).

@@ -14,7 +14,7 @@ define not_implemented
 endef
 
 .PHONY: help up down logs test test-unit test-integration test-e2e lint fmt typecheck migrate seed \
-        seed-users eval eval-retrieval eval-retrieval-fast eval-smoke loadtest ci
+        seed-users up-test up-rerank up-full eval eval-retrieval eval-retrieval-fast eval-smoke loadtest ci
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | tr '\n' ' '; echo
@@ -22,8 +22,17 @@ help:
 up:
 	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) up -d --build
 	scripts/wait_healthy.sh 180
+up-test:  ## Postgres + Redis only (integration tests need nothing else)
+	$(COMPOSE) up -d postgres redis
+	scripts/wait_healthy.sh 120 postgres redis
+up-rerank:  ## default stack + the reranker
+	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) --profile rerank up -d --build
+	COMPOSE_PROFILES=rerank scripts/wait_healthy.sh 240
+up-full:  ## default stack + reranker + observability (heavy)
+	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) --profile full up -d --build
+	COMPOSE_PROFILES=full scripts/wait_healthy.sh 240
 down:
-	$(COMPOSE) down
+	$(COMPOSE) --profile '*' down
 logs:
 	$(COMPOSE) logs -f --tail=200
 

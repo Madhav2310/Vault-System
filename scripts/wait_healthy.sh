@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Wait until every default (non-profile) compose service is healthy. Usage: scripts/wait_healthy.sh [timeout_s]
+# Wait until compose services are healthy. Usage: scripts/wait_healthy.sh [timeout_s] [service...]
+# With no services: every service of the active profiles (set COMPOSE_PROFILES for optional ones).
 set -euo pipefail
 timeout=${1:-120}
-services=$(docker compose config --services)
+shift || true
+services="${*:-$(docker compose config --services)}"
 deadline=$(( $(date +%s) + timeout ))
 while :; do
   pending=()
