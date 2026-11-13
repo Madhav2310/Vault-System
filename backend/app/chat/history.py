@@ -29,7 +29,8 @@ async def list_messages(
         (
             await db.execute(
                 text(
-                    "SELECT id, role, content, response_type, coverage_state, run_id, created_at, followups "
+                    "SELECT id, role, content, response_type, coverage_state, run_id, created_at, followups, "
+                    "stale_since "
                     "FROM chat_messages WHERE session_id = :s AND owner_id = :o "
                     "AND (CAST(:c_at AS timestamptz) IS NULL "
                     "OR (created_at, id) < (CAST(:c_at AS timestamptz), CAST(:c_id AS uuid))) "
@@ -45,10 +46,11 @@ async def list_messages(
     nxt = encode_cursor(page[-1]["created_at"], page[-1]["id"]) if len(rows) > limit else None
     page.reverse()
     segments = await _segments(db, owner_id, [m["id"] for m in page if m["role"] == "assistant"])
-    return [_item(m, segments.get(m["id"], [])) for m in page], nxt
+    stale = await _staleness(db, owner_id, page)
+    return [_item(m, segments.get(m["id"], []), stale.get(m["id"])) for m in page], nxt
 
 
-def _item(m: Any, segments: list[dict[str, Any]]) -> dict[str, Any]:
+def _item(m: Any, segments: list[dict[str, Any]], staleness: dict[str, Any] | None = None) -> dict[str, Any]:
     return {
         "id": str(m["id"]),
         "role": m["role"],
@@ -56,7 +58,7 @@ def _item(m: Any, segments: list[dict[str, Any]]) -> dict[str, Any]:
         "created_at": m["created_at"].isoformat(),
         "response_type": m["response_type"],
         "coverage_state": m["coverage_state"],
-        "staleness": None,
+        "staleness": staleness,
         "run_id": str(m["run_id"]) if m["run_id"] else None,
         "segments": segments,
         "followups": list(m["followups"] or []),
@@ -69,7 +71,8 @@ async def get_message(db: AsyncSession, owner_id: uuid.UUID, message_id: uuid.UU
         (
             await db.execute(
                 text(
-                    "SELECT id, role, content, response_type, coverage_state, run_id, created_at, followups "
+                    "SELECT id, role, content, response_type, coverage_state, run_id, created_at, followups, "
+                    "stale_since "
                     "FROM chat_messages WHERE id = :i AND owner_id = :o"
                 ),
                 {"i": message_id, "o": owner_id},
@@ -81,7 +84,55 @@ async def get_message(db: AsyncSession, owner_id: uuid.UUID, message_id: uuid.UU
     if m is None:
         return None
     segments = await _segments(db, owner_id, [m["id"]]) if m["role"] == "assistant" else {}
-    return _item(m, segments.get(m["id"], []))
+    stale = await _staleness(db, owner_id, [m])
+    return _item(m, segments.get(m["id"], []), stale.get(m["id"]))
+
+
+async def _staleness(
+    db: AsyncSession, owner_id: uuid.UUID, msgs: list[Any]
+) -> dict[uuid.UUID, dict[str, Any]]:
+    """`{stale, since, newer_version_no}` for the marked messages: the newest current version number among the
+    documents whose earlier version the run used (null when none is current any more)."""
+    marked = {m["id"]: m for m in msgs if m["stale_since"] is not None}
+    if not marked:
+        return {}
+    rows = (
+        await db.execute(
+            text(
+                "SELECT m.id, max(cur.version_no) FROM chat_messages m "
+                "JOIN run_versions rv ON rv.run_id = m.run_id "
+                "JOIN document_versions v ON v.id = rv.version_id AND v.owner_id = :o "
+                "JOIN documents d ON d.id = v.document_id AND d.owner_id = :o AND d.deleted_at IS NULL "
+                "JOIN document_versions cur ON cur.id = d.current_version_id AND cur.owner_id = :o "
+                "AND cur.version_no > v.version_no "
+                "WHERE m.id = ANY(:ids) AND m.owner_id = :o GROUP BY m.id"
+            ),
+            {"o": owner_id, "ids": list(marked)},
+        )
+    ).all()
+    newer: dict[uuid.UUID, int | None] = {r[0]: r[1] for r in rows}
+    return {
+        i: {"stale": True, "since": m["stale_since"].isoformat(), "newer_version_no": newer.get(i)}
+        for i, m in marked.items()
+    }
+
+
+async def original_question(
+    db: AsyncSession, owner_id: uuid.UUID, session_id: uuid.UUID, message_id: uuid.UUID
+) -> str | None:
+    """The question of the turn a message (user or assistant) belongs to, owner- and session-scoped; None when
+    the message is not found (another owner's message is indistinguishable from a missing one)."""
+    row = (
+        await db.execute(
+            text(
+                "SELECT r.original_query FROM chat_messages m JOIN rag_runs r "
+                "ON r.id = m.run_id AND r.owner_id = m.owner_id "
+                "WHERE m.id = :i AND m.owner_id = :o AND m.session_id = :s"
+            ),
+            {"i": message_id, "o": owner_id, "s": session_id},
+        )
+    ).first()
+    return None if row is None else str(row[0])
 
 
 async def _segments(
