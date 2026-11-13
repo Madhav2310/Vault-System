@@ -1,0 +1,59 @@
+/* Design tokens. Palette and type mirror the Lucin landing page (paper/ink/red, Plex + Space Grotesk, hairline borders, 2px radii). */
+:root {
+  --paper: #fafaf8;
+  --surface: #ffffff;
+  --ink: #141414;
+  --body: #3d4147;
+  --muted: #54585d;
+  --muted2: #8a8e94; /* decoration only: below AA on paper, never body text */
+  --line: #d7d9dc;
+  --red: #d6321f;
+  --red-ink: #b02a1a; /* red as text on paper: AA */
+  --on-red: #ffffff;
+  --ok: #1d6b3a;
+  --focus: #141414;
+
+  --font-ui: "IBM Plex Sans", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --font-head: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 40px;
+  --radius: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #141414;
+    --surface: #1b1b1b;
+    --ink: #fafaf8;
+    --body: #cfd2d6;
+    --muted: #a6aab0;
+    --muted2: #6f7378;
+    --line: #34373b;
+    --red: #e5503e;
+    --red-ink: #ff7766;
+    --on-red: #141414;
+    --ok: #6fcf8f;
+    --focus: #fafaf8;
+  }
+}
+
+:root[data-theme="dark"] {
+  --paper: #141414;
+  --surface: #1b1b1b;
+  --ink: #fafaf8;
+  --body: #cfd2d6;
+  --muted: #a6aab0;
+  --muted2: #6f7378;
+  --line: #34373b;
+  --red: #e5503e;
+  --red-ink: #ff7766;
+  --on-red: #141414;
+  --ok: #6fcf8f;
+  --focus: #fafaf8;
+}

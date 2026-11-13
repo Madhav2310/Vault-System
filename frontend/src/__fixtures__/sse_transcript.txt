@@ -1,0 +1,23 @@
+event: stage
+data: {"name":"extract","status":"succeeded","attempt":1,"at":"2026-11-13T10:00:01+00:00"}
+
+event: stage
+data: {"name":"quality","status":"succeeded","attempt":1,"at":"2026-11-13T10:00:02+00:00"}
+
+: heartbeat
+
+event: stage
+data: {"name":"chunk","status":"succeeded","attempt":1,"at":"2026-11-13T10:00:03+00:00"}
+
+event: stage
+data: {"name":"embed","status":"succeeded","attempt":1,"at":"2026-11-13T10:00:05+00:00"}
+
+event: stage
+data: {"name":"index","status":"succeeded","attempt":1,"at":"2026-11-13T10:00:06+00:00"}
+
+event: stage
+data: {"name":"brief","status":"succeeded","attempt":1,"at":"2026-11-13T10:00:09+00:00"}
+
+event: done
+data: {"status":"enriched","error_code":null}
+

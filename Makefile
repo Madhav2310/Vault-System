@@ -72,8 +72,25 @@ eval-smoke:
 loadtest:
 	$(call not_implemented,S5.12)
 
-# Fails on the first error: lint → typecheck → unit tests.
-ci: lint typecheck test-unit
+# Fails on the first error: lint → typecheck → unit tests; the frontend checks run only when installed.
+ci: lint typecheck test-unit ui-check
+
+# --- Web UI (S19.01): Vite + React + TS in frontend/, served by the api at /app ---
+.PHONY: ui ui-types ui-types-check ui-check
+UI_OPENAPI := $(CURDIR)/frontend/.openapi.json
+define ui_dump_openapi
+	$(UV) python -c "import json,sys; from app.main import create_app; json.dump(create_app().openapi(), open(sys.argv[1], 'w'), indent=1, sort_keys=True)" $(UI_OPENAPI)
+endef
+ui:
+	cd frontend && npm ci && npm run build
+ui-types:  ## regenerate frontend/src/api/schema.gen.ts from the API's OpenAPI document
+	$(ui_dump_openapi)
+	cd frontend && npx openapi-typescript .openapi.json -o src/api/schema.gen.ts; rc=$$?; rm -f .openapi.json; exit $$rc
+ui-types-check:  ## non-zero when the committed generated types are stale
+	$(ui_dump_openapi)
+	cd frontend && npx openapi-typescript .openapi.json -o /tmp/vault-schema.gen.ts; rc=$$?; rm -f .openapi.json; [ $$rc -eq 0 ] && diff -u src/api/schema.gen.ts /tmp/vault-schema.gen.ts || { echo "ui types are stale: run make ui-types"; exit 1; }
+ui-check:
+	@if [ -d frontend/node_modules ]; then cd frontend && npm run typecheck && npm run lint; else echo "frontend skipped (no frontend/node_modules)"; fi
 
 # --- Eval corpus (S0.18): third-party sources -> eval/sources/ (gitignored); rebuild the golden set ---
 .PHONY: eval-fetch eval-build eval-extraction c1-check
