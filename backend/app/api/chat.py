@@ -1,0 +1,108 @@
+"""Chat endpoints (design §12): sessions (S3.01) and message posting with dedupe/turn ownership (S3.02-03)."""
+
+import uuid
+from typing import Annotated, Any, Literal
+
+from fastapi import APIRouter, Depends, Query, Response
+from pydantic import BaseModel, Field
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.api.deps import get_db
+from app.api.errors import DomainError
+from app.chat import sessions as svc
+from app.core.auth import CurrentUser
+from app.core.error_codes import ErrorCode
+
+router = APIRouter(prefix="/v1/chat", tags=["chat"])
+
+
+class CreateSession(BaseModel):
+    document_ids: list[uuid.UUID] | None = None
+    title: str | None = Field(default=None, max_length=300)
+
+
+class PostMessage(BaseModel):
+    content: str = Field(min_length=1, max_length=20000)
+    client_message_id: str = Field(min_length=1, max_length=100)
+    mode: Literal["auto", "full_context"] = "auto"
+
+
+def _json(s: svc.SessionRow) -> dict[str, Any]:
+    return {
+        "id": str(s.id),
+        "title": s.title,
+        "document_ids": [str(d) for d in s.document_ids] if s.document_ids is not None else None,
+        "created_at": s.created_at.isoformat(),
+        "updated_at": s.updated_at.isoformat(),
+    }
+
+
+@router.post("/sessions", status_code=201)
+async def create_session(
+    body: CreateSession, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
+) -> dict[str, Any]:
+    """Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404."""
+    try:
+        return _json(await svc.create_session(db, user.id, body.document_ids, body.title))
+    except svc.ScopeDocumentNotFound:
+        raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND) from None
+
+
+@router.get("/sessions")
+async def list_sessions(
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    limit: Annotated[int, Query(ge=1, le=svc.MAX_LIMIT)] = svc.DEFAULT_LIMIT,
+    cursor: str | None = None,
+) -> dict[str, Any]:
+    try:
+        page, nxt = await svc.list_sessions(db, user.id, limit, cursor)
+    except ValueError:
+        raise DomainError(ErrorCode.VALIDATION_ERROR, "Invalid cursor") from None
+    return {"items": [_json(s) for s in page], "next_cursor": nxt}
+
+
+@router.get("/sessions/{session_id}")
+async def get_session(
+    session_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
+) -> dict[str, Any]:
+    try:
+        return _json(await svc.get_session(db, user.id, session_id))
+    except svc.SessionNotFound:
+        raise DomainError(ErrorCode.NOT_FOUND) from None
+
+
+@router.post(
+    "/sessions/{session_id}/messages",
+    status_code=202,
+    responses={200: {"description": "Retried client_message_id of a finished turn: the stored result"}},
+)
+async def post_message(
+    session_id: uuid.UUID,
+    body: PostMessage,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    response: Response,
+) -> dict[str, Any]:
+    """Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
+    while running). Another live turn in the session -> 409 `turn_in_progress`. Generation is not wired yet
+    (S3.05+): the run stays `running` until the pipeline completes and releases it."""
+    try:
+        t = await svc.start_turn(db, user.id, session_id, body.content, body.client_message_id, body.mode)
+    except svc.SessionNotFound:
+        raise DomainError(ErrorCode.NOT_FOUND) from None
+    except svc.TurnInProgress:
+        raise DomainError(ErrorCode.TURN_IN_PROGRESS) from None
+    except svc.ClientMessageIdReused:
+        raise DomainError(
+            ErrorCode.IDEMPOTENCY_KEY_REUSED, "client_message_id was used with different content"
+        ) from None
+    if t.status != "running":
+        response.status_code = 200
+    return {
+        "run_id": str(t.run_id),
+        "user_message_id": str(t.user_message_id),
+        "status": t.status,
+        "deduplicated": not t.created,
+        "message": t.assistant_message,
+    }
