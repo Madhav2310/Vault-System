@@ -281,3 +281,9 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Finding: the synthetic ` | ` separators made 3 flattened financial-statement gold quotes fall below the fuzzy threshold (96.8%). The locatability check now compares with separators treated as whitespace (they are formatting, not document text) → 100%, which also confirms cell order.
 - Also in this commit: F-014 closed (integration tests use `vault_test_<checkout hash>`); CLAUDE.md "Parallel work" protocol (user instruction to parallelize throughout); F-027 (repo on iCloud Desktop; worktrees redirected outside iCloud).
 - [T] changes approved: none
+
+### S1.18 — DOCX extractor with bomb limits (worker lane, Sonnet)
+- Date: 2026-11-13 · Commit: 4f00233 (lane branch, merged fast-forward)
+- Merge gate (main session): diff reviewed; `make ci` 123 passed; `make test` 216 passed on the merged tree.
+- Built: `app/ingestion/extract/docx.py`: zip metadata check (100 MB total, 100:1 per member, reads no member data) before python-docx; body walked in order (paragraphs and tables); `Heading N` → section stack like text.py; tables as pipe rows from the real `w:tc` elements (merged cells not duplicated); corrupt archives → permanent `corrupt_file`. AC3 runs the zip bomb through the real runner (dead, version `failed/unsafe_archive`, < 2 s).
+- Known limits (lane report): nested tables, text boxes, footnotes and `w:sdt` content ignored; only `Heading N` style names recognised (localized/`Title` styles become paragraphs); size caps trust zip headers.
