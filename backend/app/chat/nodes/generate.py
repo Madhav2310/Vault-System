@@ -21,7 +21,7 @@ from app.chat.evidence import EvidenceSet, Mode, answer_schema, cache_mode_for
 from app.chat.memory import Memory
 from app.chat.nodes_common import defuse
 from app.chat.segments_reader import salvage
-from app.llm.errors import RefusalError, TruncatedError
+from app.llm.errors import LlmError, RefusalError, TruncatedError
 from app.llm.gateway import Budget, LlmGateway
 from app.llm.types import Final, TextDelta, Usage
 
@@ -113,17 +113,22 @@ async def generate(
                 chunks.append(ev.text)
             elif isinstance(ev, Final):
                 final = ev
-    except RefusalError:
-        return _failed(STOP_REFUSAL)
-    except TruncatedError:
+    except RefusalError as e:
+        return _failed(STOP_REFUSAL, e)
+    except TruncatedError as e:
         # Keep what finished: complete segments are intact; the cut-off one is dropped.
         status, raw_segments = salvage("".join(chunks))
         segments = [g for g in raw_segments if _well_formed(g)]
         if status == "abstain" or not segments:
-            return _failed(STOP_MAX_TOKENS)
+            return _failed(STOP_MAX_TOKENS, e)
         resolution = resolve(segments, evidence)
         return GenerateResult(
-            "answer", resolution, (STOP_MAX_TOKENS, *resolution.reasons), Usage(), Decimal(0), ()
+            "answer",
+            resolution,
+            (STOP_MAX_TOKENS, *resolution.reasons),
+            e.usage or Usage(),
+            e.cost_usd,
+            e.call_ids,
         )
     assert final is not None
     raw = "".join(chunks)
@@ -145,12 +150,14 @@ def _well_formed(seg: dict[str, Any]) -> bool:
     return isinstance(seg.get("text"), str) and isinstance(ev, list) and all(isinstance(h, str) for h in ev)
 
 
-def _failed(reason: str, final: Final | None = None) -> GenerateResult:
+def _failed(reason: str, acct: Final | LlmError | None = None) -> GenerateResult:
+    """An error result that keeps the usage, cost and call ids of the call that produced it."""
+    usage = (acct.usage if acct else None) or Usage()
     return GenerateResult(
         "error",
         Resolution(()),
         (reason,),
-        final.usage if final else Usage(),
-        final.cost_usd if final else Decimal(0),
-        final.call_ids if final else (),
+        usage,
+        acct.cost_usd if acct else Decimal(0),
+        acct.call_ids if acct else (),
     )

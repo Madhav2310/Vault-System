@@ -23,6 +23,7 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
         "selected": len(state.chunks),
         "degraded": list(result.degraded),
         "embed_reused": emb is not None,
+        "cache_hit": result.cache_hit,
         **result.timings,
     }
     return state

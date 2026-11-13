@@ -74,7 +74,7 @@ async def _segments(
                     "SELECT s.message_id, s.id AS segment_id, s.ordinal, s.text, s.support, "
                     "e.chunk_id, e.sentence_start, e.sentence_end, e.cited_text, "
                     "c.page_start, c.page_end, c.section_path, c.version_id, v.version_no, "
-                    "d.id AS document_id, d.title "
+                    "d.id AS document_id, d.title, (d.id IS NULL OR d.deleted_at IS NOT NULL) AS deleted "
                     "FROM answer_segments s "
                     "JOIN chat_messages m ON m.id = s.message_id AND m.owner_id = :o "
                     "LEFT JOIN segment_evidence e ON e.segment_id = s.id "
@@ -99,11 +99,12 @@ async def _segments(
             by_segment[r["segment_id"]] = seg
             out.setdefault(r["message_id"], []).append(seg)
         if r["chunk_id"] is not None:
+            gone = bool(r["deleted"])  # soft-deleted or purged: keep the segment text, redact the quote
             seg["evidence"].append(
                 {
                     "chunk_id": str(r["chunk_id"]),
                     "document_id": str(r["document_id"]) if r["document_id"] else None,
-                    "document_title": r["title"],
+                    "document_title": None if gone else r["title"],
                     "version_id": str(r["version_id"]) if r["version_id"] else None,
                     "version_no": r["version_no"],
                     "pages": [r["page_start"], r["page_end"]]
@@ -112,7 +113,8 @@ async def _segments(
                     "section_path": list(r["section_path"]) if r["section_path"] is not None else None,
                     "sentence_start": r["sentence_start"],
                     "sentence_end": r["sentence_end"],
-                    "cited_text": r["cited_text"],
+                    "cited_text": None if gone else r["cited_text"],
+                    "deleted": gone,
                 }
             )
     return out

@@ -505,7 +505,7 @@ class LlmGateway:
                 )
                 if err is not None:
                     span.set_attribute("error.type", err.error_type)
-                    raise err
+                    raise err.with_accounting(final.usage, total, tuple(ids))
                 yield Final(
                     usage=final.usage, stop_reason=final.stop_reason, cost_usd=total, call_ids=tuple(ids)
                 )
@@ -760,7 +760,7 @@ class LlmGateway:
                     )
                     if err is not None:
                         span.set_attribute("error.type", err.error_type)
-                        raise err
+                        raise err.with_accounting(usage, acct.total, tuple(acct.ids))
                     return r
             await self._sleep(delay)
 
