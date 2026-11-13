@@ -39,6 +39,7 @@ Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector �
 5. A [T] that isn't met: record the measured value and stop for the user. Never relax [A].
 6. Any edit to plan files → `python3 scripts/plan_lint.py` must exit 0.
 7. Report VERIFIED vs UNVERIFIED. Stop at the slice gate; don't start the next slice unasked.
+8. Core path (plan README → M0): work checkpoints C1 → C2 → C3; stop and report at each checkpoint, after a review pass of the diff since the previous one.
 
 ## Model IDs
 Roles → defaults (no date suffixes, change via `MODEL_*` settings): `fast` = `gpt-6-luna`, `balanced` = `gpt-6.1-terra`, `deep` = `gpt-6.1-sol`, `flagship` = `gpt-6-astra` (judge calibration and stage E only); embeddings `text-embedding-3-small`. Routing table: design §4.2. Check SDK usage against current docs before writing — don't guess API shapes (use the Responses API).

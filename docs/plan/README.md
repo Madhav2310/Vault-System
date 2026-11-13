@@ -83,7 +83,8 @@ Balanced (user decision 2026-11-12; re-based on OpenAI 2026-11-13, research 06 �
 ## Execution sequence (authoritative order)
 
 1. **S0** (incl. de-risking spikes S0.19–S0.22; if a spike fails, stop and revise the design before S1)
-2. **S1** → **S2** → **S3** → **S4** (S4 ends with the convergence run, S4.20)
+2. **Core path → Milestone M0** (below): the 51 tasks that make upload → ingest → retrieve → cited chat → metrics work end to end, in ID order within each checkpoint
+3. The rest of **S1** → **S2** → **S3** → **S4** in ID order (S4 ends with the convergence run, S4.20)
 3. **Milestone M1 — spec-complete backend** (below)
 4. **S5**
 5. **S6 ∥ S7** (parallel worktrees allowed)
@@ -91,6 +92,21 @@ Balanced (user decision 2026-11-12; re-based on OpenAI 2026-11-13, research 06 �
 7. **S8** (Tier B backend: matrix)
 8. **S9.14–S9.16** (Tier B screens, S9 gate)
 9. **S10** (starts with the user's golden-set review S10.01 and the post-review re-evaluation S10.02)
+
+### Core path and Milestone M0 — working spine (user decision 2026-11-13)
+Why: after S0 nothing the spec asks for existed yet, and the spec prefers "a fully functional subset over partially implemented features". The core path builds the whole spec loop first, on a strong base (failure handling, recovery, measurement), and defers depth (geometry highlight, scale, tuning stages, streaming, load) to after M0. Nothing is deleted; deferred tasks run afterwards in plan order.
+
+| Checkpoint | Core tasks | Exit check (stop and report to the user) |
+|---|---|---|
+| C1 ingestion | S1.01 S1.02 S1.03 S1.04 S1.05 S1.07 S1.08 S1.09 S1.10 S1.12 S1.13 S1.15 S1.16 S1.17 S1.18 S1.19 S1.21 S1.22 S1.24 S1.25 S1.26 S1.27 | every corpus document reaches `ready` (or a correct terminal state) through the API; `make ci && make test` green; review pass |
+| C2 retrieval and measurement | S2.01 S2.02 S2.03 S2.05 S2.06 S2.07 S2.08 S2.09 S2.10 S2.12 S2.13 S2.14 S2.17 S2.18 | `make eval-retrieval` report with recall@k; judges validated on a sample; spend under the cap; review pass |
+| C3 chat and metrics (= M0) | S3.01 S3.02 S3.03 S3.04 S3.05 S3.06 S3.07 S3.08 S3.09 S3.10 S3.11 S3.15 S7.01 S7.02 S7.03 | `scripts/demo_core.sh` (upload → ready → ask → cited answer → history → metrics) exits 0; sampled grounding baseline; review pass |
+
+Rules for the core path:
+- **Dependency overrides**: a dependency on a slice gate (S1.32, S2.21) or on S5.16 is satisfied by the core tasks of the earlier checkpoints plus green `make ci && make test`. All other dependencies of core tasks are themselves core tasks (checked with the closure script recorded in `docs/progress.md`).
+- **ACs that need deferred tasks stay open** and are listed in the checkpoint report (e.g. S3.15 AC5 highlight precision needs S1.28–S1.30). A task with such an AC is "core-done", not done, and its checkbox stays empty until the AC passes.
+- **Review pass at every checkpoint**: a code review of the diff since the previous checkpoint before reporting (the post-S0 self-review found three bugs that the tests missed, F-023).
+- Live calls stay sampled and capped (`--max-usd`), within the $30 engine budget.
 
 ### Milestone M1 — spec-complete backend
 Reached after S4, before S5. Guarantees a submittable result even if later work is cut. M1 requires:

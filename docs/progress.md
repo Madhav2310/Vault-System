@@ -229,3 +229,8 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Date: 2026-11-13 · M (user decision)
 - Tier evidence: response headers on the project key, `gpt-6.1-terra` 15,000 RPM / 40M TPM, `gpt-6-luna` 30,000 RPM / 180M TPM, embeddings 10,000 RPM (`docs/evidence/spike_openai.md`).
 - Budget: **OpenAI project limit $50; convergence engine `BUDGET_USD` $30** (user, 2026-11-13; lowered from the suggested $200/$150). Spend to date ≈ $0.07. The dashboard limit itself is set by the user in the OpenAI console; the engine and spikes enforce their own caps in code.
+
+### Plan change: core path and Milestone M0 (user decision 2026-11-13)
+- After the S0 assessment the user approved building a working spine first: 51 core tasks in checkpoints C1 (ingestion), C2 (retrieval and measurement), C3 (chat and metrics = M0), with a review pass at each checkpoint. Defined in `docs/plan/README.md` → "Core path"; CLAUDE.md workflow step 8.
+- Pulled in for a strong base beyond the minimal loop: S1.10 sweeper, S1.15 reading order, S1.16 tables, S1.17 PDF failure classes, S1.19 page quality, S2.09 neighbor expansion, S2.14 engine core (spend ledger), S2.18 judges.
+- Closure: `python3 scripts/plan_core_closure.py` → `core tasks=51 unresolved={}`; `plan_lint` 0 errors.
