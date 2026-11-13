@@ -1,0 +1,19 @@
+# Retrieval configuration (design §7). The file name is the config version: changing any value means a new
+# file (retrieval@2.yaml); results and cache keys carry the version.
+version: retrieval@1
+k_vec: 40                # exact cosine search: candidates from the vector list
+k_lex: 40                # candidates from the lexical list
+per_doc_quota: 12        # no document contributes more than this many vector candidates (cross-document queries)
+rrf_k: 60                # reciprocal rank fusion constant
+id_boost: 2              # weight of identifier matches (must equal fusion.ID_BOOST)
+rerank:
+  model: Xenova/ms-marco-MiniLM-L-6-v2
+  candidates: 40         # fused candidates sent to the reranker
+  top_n: 8               # chunks kept after reranking
+expansion:
+  enabled: true
+  max_evidence_tokens: 4000
+cache_ttl_s: 3600
+gate:                    # placeholders: calibrated by the convergence engine (stage C)
+  high: 0.0
+  floor: 0.0

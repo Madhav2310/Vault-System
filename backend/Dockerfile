@@ -18,6 +18,7 @@ RUN uv sync --frozen --no-dev --no-install-project \
 COPY alembic.ini ./
 COPY app ./app
 COPY prompts ./prompts
+COPY config ./config
 RUN uv sync --frozen --no-dev \
  && useradd --create-home --uid 10001 vault \
  && mkdir -p /data/blobs && chown vault /data/blobs

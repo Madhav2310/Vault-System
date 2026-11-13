@@ -1,0 +1,65 @@
+"""Retrieval configuration loader (design §7.3). Strict: unknown keys are rejected at load."""
+
+import pathlib
+from functools import lru_cache
+from typing import Any
+
+import yaml
+from pydantic import BaseModel, ConfigDict, Field
+
+from app.retrieval import fusion
+
+CONFIG_DIR = pathlib.Path(__file__).resolve().parents[2] / "config"
+ID_BOOST = 2.0  # the identifier weight hard-coded in fusion.py (see its docstring); config must agree
+
+
+class RerankCfg(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    model: str
+    candidates: int = Field(ge=1, le=100)
+    top_n: int = Field(ge=1, le=100)
+
+
+class ExpansionCfg(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    enabled: bool
+    max_evidence_tokens: int = Field(ge=100)
+
+
+class GateCfg(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    high: float
+    floor: float
+
+
+class RetrievalConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    version: str = Field(pattern=r"^retrieval@[1-9][0-9]*$")
+    k_vec: int = Field(ge=1, le=500)
+    k_lex: int = Field(ge=1, le=500)
+    per_doc_quota: int | None = Field(ge=1)
+    rrf_k: int = Field(ge=1)
+    id_boost: float
+    rerank: RerankCfg
+    expansion: ExpansionCfg
+    cache_ttl_s: int = Field(ge=0)
+    gate: GateCfg
+
+    def model_post_init(self, _ctx: Any) -> None:
+        if self.id_boost != ID_BOOST:
+            raise ValueError(f"id_boost {self.id_boost} does not match the fusion weight {ID_BOOST}")
+        if self.rrf_k != fusion.RRF_K:
+            raise ValueError(f"rrf_k {self.rrf_k} does not match fusion.RRF_K {fusion.RRF_K}")
+
+
+def load_config(path: pathlib.Path) -> RetrievalConfig:
+    raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+    cfg = RetrievalConfig.model_validate(raw)
+    if path.stem != cfg.version:
+        raise ValueError(f"{path.name}: version {cfg.version!r} must match the file name")
+    return cfg
+
+
+@lru_cache(maxsize=8)
+def get_config(version: str = "retrieval@1") -> RetrievalConfig:
+    return load_config(CONFIG_DIR / f"{version}.yaml")
