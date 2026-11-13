@@ -42,7 +42,8 @@ def main() -> int:
         if not qs or path.suffix.lower() != ".pdf":
             continue
         t0 = time.time()
-        texts = [norm(p.text) for p in PdfExtractor().extract(str(path)).pages]
+        # Table cell separators (` | `) are synthetic formatting, not document text: compare without them.
+        texts = [norm(p.text.replace(" | ", " ").replace("| ", " ").replace(" |", " ")) for p in PdfExtractor().extract(str(path)).pages]
         hit = 0
         for q in qs:
             nq = norm(REF.sub("", q))[:300]

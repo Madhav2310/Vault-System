@@ -273,3 +273,11 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - Built: `app/ingestion/extract/reading_order.py`: gutter split (gap > 1.5 em), column repair (1-D k-means k ∈ {2,3}, silhouette ≥ 0.6, centres ≥ 25% page width apart, each column ≥ 15% of lines and prose-width lines), footnote separation (font < 0.85 × body median in the bottom 20%) as `footnote` elements.
 - Two corpus regressions caught and fixed before commit: (1) financial-statement tables were detected as columns and re-ordered (locatability fell to 94.7%; fixed by requiring prose-width columns); (2) on QASPER 1910.03814 p.2, text inside a figure triggered a repair that spliced tweet fragments into body paragraphs (fixed by requiring column jumps on ≥ 25% of lines, which true interleaving meets and figure text does not). Corpus now: 0 repairs, 7 paper pages with footnotes separated; the interleaved fixture is repaired.
 - [T] changes approved: none
+
+### S1.16 — PDF tables (AC1, AC2; AC3 is chunk-level and is ticked with the chunker, S1.22)
+- Date: 2026-11-13 · Commit: (this commit)
+- Commands: `pytest tests/unit/extract/test_pdf_tables.py` (3 passed); `make eval-extraction` → 100.0 (94/94).
+- Built: `app/ingestion/extract/pdf_tables.py`: ruled tables via `find_tables` become pipe-table rows whose cell text is built from the glyph-mapped words (I1 holds; only ` | `, spaces and newlines are synthetic), spacer columns dropped, table words removed from the paragraph flow, tables placed by vertical position; a table that opens a page and matches the previous page's closing table (same column count) inherits its header (`Element.table_header`).
+- Finding: the synthetic ` | ` separators made 3 flattened financial-statement gold quotes fall below the fuzzy threshold (96.8%). The locatability check now compares with separators treated as whitespace (they are formatting, not document text) → 100%, which also confirms cell order.
+- Also in this commit: F-014 closed (integration tests use `vault_test_<checkout hash>`); CLAUDE.md "Parallel work" protocol (user instruction to parallelize throughout); F-027 (repo on iCloud Desktop; worktrees redirected outside iCloud).
+- [T] changes approved: none

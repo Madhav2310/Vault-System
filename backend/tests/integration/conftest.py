@@ -1,9 +1,10 @@
-"""Integration fixtures: a dedicated `vault_test` database migrated to head once per session.
+"""Integration fixtures: a dedicated `vault_test_<checkout hash>` database migrated to head once per session.
 
 Needs the compose Postgres (`make up`, or `docker compose up -d postgres`). Never touches the dev DB.
 """
 
 import asyncio
+import hashlib
 import os
 import pathlib
 import uuid
@@ -26,7 +27,11 @@ from app.main import create_app
 from app.storage.local import LocalObjectStore
 
 BACKEND = pathlib.Path(__file__).resolve().parents[2]
-TEST_DB = "vault_test"
+# One test database per checkout (F-014): parallel worktrees share the compose Postgres, and a shared name let
+# one run drop the database under another. Override with VAULT_TEST_DB.
+TEST_DB = (
+    os.environ.get("VAULT_TEST_DB") or "vault_test_" + hashlib.sha1(str(BACKEND).encode()).hexdigest()[:8]
+)
 
 
 def _urls() -> tuple[str, str]:

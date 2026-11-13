@@ -41,5 +41,13 @@ Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector �
 7. Report VERIFIED vs UNVERIFIED. Stop at the slice gate; don't start the next slice unasked.
 8. Core path (plan README → M0): work checkpoints C1 → C2 → C3; stop and report at each checkpoint, after a review pass of the diff since the previous one.
 
+## Parallel work (user instruction 2026-11-13: parallelize throughout, highest quality)
+- **Lanes**: the main session (orchestrator) runs the critical-path task; independent tasks go to worktree agents (`isolation: "worktree"`, model `sonnet` by default; Opus only for design-heavy or ambiguous tasks). A task is parallel-safe when its Deps are done and its files don't overlap another live lane's.
+- **Brief = full context**: task IDs with the plan text, design/research sections to read, owned files (exclusive), files not to touch, conventions, commands, and the report format. Agents read CLAUDE.md and their design sections before coding and write the named tests first.
+- **Single writer for shared files**: only the main session edits `docs/progress.md`, `docs/followups.md`, plan ticks, `AI_USAGE.md`, `uv.lock`/`pyproject.toml` (agents request dependencies instead of adding them), `docker-compose.yml`, `Makefile`, migrations. Agents put evidence, deviations and follow-ups in their final report.
+- **Shared infra**: agents use the running compose Postgres with their own test DB (per-checkout name, F-014); they never run `make up/down/migrate`, never touch the dev DB, and run `make ci` and `make test-integration` (e2e runs in the main checkout after merge).
+- **Merge gate (main session)**: read the diff, run `make ci && make test` on the merged tree plus any corpus check the task touches (`make eval-extraction` for extraction), then tick ACs and record progress. A lane that fails review goes back with specific findings; nothing is ticked on an agent's word.
+- **Close agents** when their lane is merged; no idle agents.
+
 ## Model IDs
 Roles → defaults (no date suffixes, change via `MODEL_*` settings): `fast` = `gpt-6-luna`, `balanced` = `gpt-6.1-terra`, `deep` = `gpt-6.1-sol`, `flagship` = `gpt-6-astra` (judge calibration and stage E only); embeddings `text-embedding-3-small`. Routing table: design §4.2. Check SDK usage against current docs before writing — don't guess API shapes (use the Responses API).

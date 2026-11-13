@@ -22,6 +22,7 @@ from app.ingestion.extract.glyphs import (
     text_rotation,
     upright_chars,
 )
+from app.ingestion.extract.pdf_tables import TableBlock, extract_tables
 from app.ingestion.extract.reading_order import order_page
 
 HEADING_SIZE_RATIO = 1.15
@@ -30,6 +31,7 @@ HEADING_SIZE_RATIO = 1.15
 _STRUCTURAL = re.compile(r"^(PART|ITEM|ARTICLE|SECTION|SCHEDULE|EXHIBIT|APPENDIX|ANNEX)\s+[\dIVXLA-Z]", re.I)
 SHORT_LINE_CHARS = 80
 PARA_GAP_RATIO = 0.8  # vertical gap above this times the line height starts a new paragraph
+HEADER_BAND = 0.1  # running headers live in the top 10% of a page
 
 
 @dataclass
@@ -37,6 +39,8 @@ class _Block:
     kind: ElementKind
     lines: list[Line]
     level: int | None = None
+    header: str | None = None  # tables: header row (own, or carried from the previous page)
+    n_cols: int = 0
 
 
 @dataclass
@@ -46,6 +50,7 @@ class _Page:
     height: float
     lines: list[Line]
     footnotes: list[Line]
+    tables: list[TableBlock]
     boxes: list[tuple[float, float, float, float]]
     glyph_count: int
     flags: list[str]
@@ -125,6 +130,33 @@ def _heading_levels(pages: list[_Page], body: float) -> dict[float, int]:
     return {s: i + 1 for i, s in enumerate(sizes[:3])} | {s: 3 for s in sizes[3:]}
 
 
+def _with_tables(blocks: list[_Block], tables: list[TableBlock]) -> list[_Block]:
+    """Insert each table before the first text block that starts below it."""
+    out: list[_Block] = []
+    pending = sorted(tables, key=lambda t: t.top)
+    for b in blocks:
+        while pending and pending[0].top < b.lines[0].top:
+            t = pending.pop(0)
+            out.append(_Block("table", t.rows, header=t.header, n_cols=t.n_cols))
+        out.append(b)
+    out += [_Block("table", t.rows, header=t.header, n_cols=t.n_cols) for t in pending]
+    return out
+
+
+def _carry_header(blocks: list[_Block], prev_tail: _Block | None, page_height: float) -> None:
+    """A table that opens a page (after running headers only) and continues the previous page's closing table
+    (same column count, different first row) inherits that table's header row."""
+    if prev_tail is None or prev_tail.kind != "table" or not prev_tail.header:
+        return
+    for b in blocks:
+        if b.kind == "table":
+            if b.n_cols == prev_tail.n_cols and b.lines[0].text != prev_tail.header:
+                b.header = prev_tail.header
+            return
+        if b.lines[0].top > HEADER_BAND * page_height:  # real content precedes it: not a continuation
+            return
+
+
 class PdfExtractor:
     name = "pdfplumber@1"
 
@@ -138,12 +170,14 @@ class PdfExtractor:
         out_pages: list[PageText] = []
         elements: list[Element] = []
         sections: list[tuple[int, str]] = []
+        prev_tail: _Block | None = None  # last body block of the previous page (table continuation)
         for idx, p in enumerate(pages):
             text: list[str] = []
             src: list[int] = []
-            blocks = _blocks(p.lines, body, p.width, levels) + [
-                _Block("footnote", [ln]) for ln in p.footnotes
-            ]
+            blocks = _with_tables(_blocks(p.lines, body, p.width, levels), p.tables)
+            _carry_header(blocks, prev_tail, p.height)
+            prev_tail = blocks[-1] if blocks else None
+            blocks += [_Block("footnote", [ln]) for ln in p.footnotes]
             for block in blocks:
                 if text:
                     text.append("\n\n")
@@ -166,7 +200,17 @@ class PdfExtractor:
                     )
                     sections.append((level, " ".join(body_text.split())))
                 else:
-                    elements.append(Element(block.kind, idx, start, end, body_text, [t for _, t in sections]))
+                    elements.append(
+                        Element(
+                            block.kind,
+                            idx,
+                            start,
+                            end,
+                            body_text,
+                            [t for _, t in sections],
+                            table_header=block.header if block.kind == "table" else None,
+                        )
+                    )
             page_text = "".join(text)
             out_pages.append(
                 PageText(p.page_no, page_text, p.width, p.height, src, p.boxes, p.flags, p.glyph_count)
@@ -189,7 +233,14 @@ class PdfExtractor:
         chars = upright_chars(raw, page.width, page.height)
         rot = text_rotation(raw)
         uw, uh = (page.height, page.width) if rot in (90, 270) else (page.width, page.height)
-        ordered = order_page(build_lines(extract_words(chars)), uw, uh)
+        words = extract_words(chars)
+        tables: list[TableBlock] = []
+        if (
+            rot == 0 and geo.rotation == 0
+        ):  # find_tables works in display space; rotated pages keep plain text
+            tables, words = extract_tables(page, words)
+        ordered = order_page(build_lines(words), uw, uh)
         boxes = [geo.normalize((c["x0"], c["top"], c["x1"], c["bottom"])) for c in raw]
         w, h = geo.display_wh()
-        return _Page(page_no, w, h, ordered.body, ordered.footnotes, boxes, len(raw), ordered.flags)
+        flags = ordered.flags + (["has_tables"] if tables else [])
+        return _Page(page_no, w, h, ordered.body, ordered.footnotes, tables, boxes, len(raw), flags)
