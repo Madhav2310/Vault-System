@@ -4,8 +4,13 @@ and metric labels. Messages never carry prompt or completion text."""
 
 import email.utils
 import time
+import uuid
 from collections.abc import Mapping
-from typing import ClassVar
+from decimal import Decimal
+from typing import TYPE_CHECKING, ClassVar, Self
+
+if TYPE_CHECKING:
+    from app.llm.types import Usage
 
 
 def parse_retry_after(headers: Mapping[str, str] | None) -> float | None:
@@ -25,6 +30,15 @@ def parse_retry_after(headers: Mapping[str, str] | None) -> float | None:
 class LlmError(Exception):
     error_type: ClassVar[str] = "llm_error"
     retryable: ClassVar[bool] = False
+    # Outcome errors (refusal, truncation) are raised after the ledger row is written: the gateway attaches
+    # that row's accounting so callers keep usage, cost and call ids (S17.11, design §5.3).
+    usage: "Usage | None" = None
+    cost_usd: Decimal = Decimal(0)
+    call_ids: tuple[uuid.UUID, ...] = ()
+
+    def with_accounting(self, usage: "Usage", cost_usd: Decimal, call_ids: tuple[uuid.UUID, ...]) -> Self:
+        self.usage, self.cost_usd, self.call_ids = usage, cost_usd, call_ids
+        return self
 
 
 # --- provider transport/status errors -------------------------------------------------------------
