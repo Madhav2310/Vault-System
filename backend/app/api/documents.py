@@ -1,15 +1,21 @@
 """Document endpoints (design §12). Upload: §6.1."""
 
 import asyncio
+import base64
+import datetime as dt
+import json
 import uuid
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Header, Request, Response
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_db, get_enqueue, get_store
+from app.api.errors import DomainError
 from app.api.idempotency import canonical_response, check_key, request_hash, run_idempotent
 from app.core.auth import CurrentUser
+from app.core.error_codes import ErrorCode
 from app.core.settings import get_settings
 from app.documents.blobs import store_blob
 from app.documents.service import create_from_upload
@@ -85,3 +91,156 @@ async def upload_document(
         # enqueue is lost, the sweeper re-dispatches after the grace period.
         await dispatch(db, uuid.UUID(body["job_id"]), enqueue)
     return canonical_response(status, body)
+
+
+# --- read endpoints (S1.27) ---------------------------------------------------------------------------------
+VersionStatus = Literal[
+    "uploaded", "processing", "ready", "enriched", "needs_ocr", "unsupported", "failed", "superseded"
+]
+DEFAULT_LIMIT, MAX_LIMIT = 20, 100
+
+
+def _encode_cursor(created_at: dt.datetime, doc_id: uuid.UUID) -> str:
+    raw = json.dumps([created_at.isoformat(), str(doc_id)])
+    return base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
+
+
+def _decode_cursor(cursor: str) -> tuple[dt.datetime, uuid.UUID]:
+    try:
+        raw = base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4))
+        ts, did = json.loads(raw)
+        return dt.datetime.fromisoformat(ts), uuid.UUID(did)
+    except (ValueError, TypeError, UnicodeDecodeError) as e:
+        raise DomainError(ErrorCode.VALIDATION_ERROR, "Invalid cursor") from e
+
+
+def _iso(v: dt.datetime | None) -> str | None:
+    return v.isoformat() if v else None
+
+
+def _version_json(r: Any) -> dict[str, Any]:
+    return {
+        "id": str(r["vid"]),
+        "version_no": r["version_no"],
+        "filename": r["filename"],
+        "mime": r["vmime"],
+        "size_bytes": r["size_bytes"],
+        "sha256": r["sha256"],
+        "page_count": r["page_count"],
+        "status": r["status"],
+        "quality": r["quality"],
+        "error_code": r["error_code"],
+        "created_at": _iso(r["vcreated_at"]),
+        "ready_at": _iso(r["ready_at"]),
+    }
+
+
+# The status of a document is its current version's (set when a version becomes ready), else its newest.
+_DOC_VERSION = (
+    "FROM documents d JOIN document_versions v ON v.id = COALESCE(d.current_version_id, "
+    "(SELECT id FROM document_versions x WHERE x.document_id = d.id ORDER BY x.version_no DESC LIMIT 1)) "
+)
+_VERSION_COLS = (
+    "v.id AS vid, v.version_no, v.filename, v.mime AS vmime, v.size_bytes, v.sha256, v.page_count, "
+    "v.status, v.quality, v.error_code, v.created_at AS vcreated_at, v.ready_at"
+)
+
+
+@router.get("/documents")
+async def list_documents(
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    status: VersionStatus | None = None,
+    q: Annotated[str | None, Query(max_length=300)] = None,
+    tag: Annotated[str | None, Query(max_length=100)] = None,
+    category: Annotated[str | None, Query(max_length=100)] = None,
+    cursor: str | None = None,
+    limit: Annotated[int, Query(ge=1, le=MAX_LIMIT)] = DEFAULT_LIMIT,
+) -> dict[str, Any]:
+    """Newest first, keyset-paginated on (created_at, id). `status` is the current version's status."""
+    where = ["d.owner_id = :owner", "d.deleted_at IS NULL"]
+    params: dict[str, Any] = {"owner": user.id, "lim": limit + 1}
+    if status:
+        where.append("v.status = :status")
+        params["status"] = status
+    if q:
+        where.append("strpos(lower(d.title), lower(:q)) > 0")  # substring, no LIKE-escaping needed
+        params["q"] = q
+    if tag:
+        where.append(":tag = ANY(d.tags)")
+        params["tag"] = tag
+    if category:
+        where.append("d.category = :category")
+        params["category"] = category
+    if cursor:
+        params["c_at"], params["c_id"] = _decode_cursor(cursor)
+        where.append("(d.created_at, d.id) < (:c_at, :c_id)")
+    sql = (
+        f"SELECT d.id, d.title, d.category, d.tags, d.created_at, d.current_version_id, {_VERSION_COLS} "
+        f"{_DOC_VERSION} WHERE {' AND '.join(where)} ORDER BY d.created_at DESC, d.id DESC LIMIT :lim"
+    )
+    rows = (await db.execute(text(sql), params)).mappings().all()
+    page, more = rows[:limit], len(rows) > limit
+    items = [
+        {
+            "id": str(r["id"]),
+            "title": r["title"],
+            "status": r["status"],
+            "category": r["category"],
+            "tags": r["tags"],
+            "created_at": _iso(r["created_at"]),
+            "version": _version_json(r),
+        }
+        for r in page
+    ]
+    nxt = _encode_cursor(page[-1]["created_at"], page[-1]["id"]) if more else None
+    return {"items": items, "next_cursor": nxt}
+
+
+@router.get("/documents/{document_id}")
+async def get_document(
+    document_id: uuid.UUID, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
+) -> dict[str, Any]:
+    doc = (
+        (
+            await db.execute(
+                text(
+                    "SELECT id, title, category, tags, created_at, current_version_id FROM documents "
+                    "WHERE id = :d AND owner_id = :o AND deleted_at IS NULL"
+                ),
+                {"d": document_id, "o": user.id},
+            )
+        )
+        .mappings()
+        .first()
+    )
+    if doc is None:
+        raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND)
+    rows = (
+        (
+            await db.execute(
+                text(
+                    f"SELECT {_VERSION_COLS} FROM document_versions v "  # noqa: S608 (constant columns)
+                    "WHERE v.document_id = :d AND v.owner_id = :o ORDER BY v.version_no DESC"
+                ),
+                {"d": document_id, "o": user.id},
+            )
+        )
+        .mappings()
+        .all()
+    )
+    versions = [_version_json(r) for r in rows]
+    current = next((v for v in versions if v["id"] == str(doc["current_version_id"])), None) or (
+        versions[0] if versions else None
+    )
+    return {
+        "id": str(doc["id"]),
+        "title": doc["title"],
+        "category": doc["category"],
+        "tags": doc["tags"],
+        "created_at": _iso(doc["created_at"]),
+        "status": current["status"] if current else None,
+        "current_version_id": str(doc["current_version_id"]) if doc["current_version_id"] else None,
+        "quality": current["quality"] if current else None,
+        "versions": versions,
+    }
