@@ -1,27 +1,9 @@
-"""S16.06: README skeleton and quickstart script."""
+"""S16.06: quickstart script. The README sections are checked by test_readme.py (S20.01)."""
 
 import pathlib
-import re
 import subprocess
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
-HEADINGS = [
-    "Quickstart",
-    "What works today",
-    "Architecture",
-    "Key design decisions",
-    "Evaluation",
-    "Scale",
-    "Limitations and what was deliberately not built",
-    "Repo map",
-]
-
-
-def test_headings() -> None:
-    text = (ROOT / "README.md").read_text()
-    assert text.startswith("# Vault")  # heading 1: what it is
-    found = re.findall(r"^## (.+)$", text, re.M)
-    assert found == HEADINGS
 
 
 def test_quickstart_docker_check(tmp_path: pathlib.Path) -> None:
