@@ -1,5 +1,7 @@
 """Chat endpoints (design §12): sessions (S3.01) and message posting with dedupe/turn ownership (S3.02-03)."""
 
+import asyncio
+import dataclasses
 import uuid
 from typing import Annotated, Any, Literal
 
@@ -7,7 +9,7 @@ from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
+from app.api.deps import TurnRunner, get_db, get_turn_runner
 from app.api.errors import DomainError
 from app.chat import history
 from app.chat import sessions as svc
@@ -15,6 +17,7 @@ from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 
 router = APIRouter(prefix="/v1/chat", tags=["chat"])
+_TASKS: set[asyncio.Future[None]] = set()  # strong refs: running turns must outlive the request
 
 
 class CreateSession(BaseModel):
@@ -102,10 +105,12 @@ async def post_message(
     user: CurrentUser,
     db: Annotated[AsyncSession, Depends(get_db)],
     response: Response,
+    run_turn: Annotated[TurnRunner, Depends(get_turn_runner)],
 ) -> dict[str, Any]:
     """Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
-    while running). Another live turn in the session -> 409 `turn_in_progress`. Generation is not wired yet
-    (S3.05+): the run stays `running` until the pipeline completes and releases it."""
+    while running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion
+    before the response (non-streaming; SSE comes with S5) and returns 200 with the assistant message; it
+    keeps running and persists even if the client disconnects."""
     try:
         t = await svc.start_turn(db, user.id, session_id, body.content, body.client_message_id, body.mode)
     except svc.SessionNotFound:
@@ -116,6 +121,15 @@ async def post_message(
         raise DomainError(
             ErrorCode.IDEMPOTENCY_KEY_REUSED, "client_message_id was used with different content"
         ) from None
+    if t.created:
+        task: asyncio.Future[None] = asyncio.ensure_future(
+            run_turn(user.id, session_id, t.run_id, t.user_message_id, body.content, body.mode)
+        )
+        _TASKS.add(task)
+        task.add_done_callback(_TASKS.discard)
+        await asyncio.shield(task)  # a client disconnect cancels this await, not the turn
+        done = await svc.start_turn(db, user.id, session_id, body.content, body.client_message_id, body.mode)
+        t = dataclasses.replace(done, created=True)  # the stored result of the turn this call ran
     if t.status != "running":
         response.status_code = 200
     return {

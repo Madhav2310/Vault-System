@@ -20,7 +20,7 @@ from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
-from app.api.deps import get_db, get_enqueue, get_store
+from app.api.deps import get_db, get_enqueue, get_store, get_turn_runner
 from app.core.auth import hash_api_key, new_api_key
 from app.db.models import User
 from app.main import create_app
@@ -181,6 +181,11 @@ async def api(
     app.dependency_overrides[get_db] = _db
     app.dependency_overrides[get_store] = lambda: store
     app.dependency_overrides[get_enqueue] = lambda: enqueued
+
+    async def _no_turn(*_a: object) -> None:  # chat tests that need a finished turn override this
+        return None
+
+    app.dependency_overrides[get_turn_runner] = lambda: _no_turn
     transport = httpx.ASGITransport(app=app, raise_app_exceptions=False)
     async with httpx.AsyncClient(transport=transport, base_url="http://test", timeout=60) as c:
         yield c

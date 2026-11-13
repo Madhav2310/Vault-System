@@ -35,8 +35,20 @@ async def load_evidence_chunks(
             r[5],
             tuple(r[6] or ()),
             r[7],
-            tuple((int(a), int(b)) for a, b in r[8]),
+            _sentences(r[8]),
         )
         for r in rows
     }
     return [by_id[i] for i in chunk_ids if i in by_id]
+
+
+def _sentences(raw: Sequence[object]) -> tuple[tuple[int, int], ...]:
+    """Stored as `[start, end]` pairs (chunk stage); tolerate `{"start", "end"}` objects."""
+    out: list[tuple[int, int]] = []
+    for item in raw:
+        if isinstance(item, dict):
+            out.append((int(item["start"]), int(item["end"])))
+        else:
+            pair: Sequence[int] = item  # type: ignore[assignment]
+            out.append((int(pair[0]), int(pair[1])))
+    return tuple(out)

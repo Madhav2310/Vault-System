@@ -114,8 +114,6 @@ def _validate(rec: TurnRecord) -> None:
     missing = [k for k in CONFIG_KEYS if k not in rec.config]
     if missing:
         raise LedgerError(f"config is missing {missing}")
-    if not rec.scope_version_ids:
-        raise LedgerError("scope_version_ids is empty")
 
 
 async def _lock_run(db: AsyncSession, owner_id: uuid.UUID, run_id: uuid.UUID) -> Any:
