@@ -63,6 +63,7 @@
   color: var(--ink);
   cursor: pointer;
   padding: var(--s2) var(--s3);
+  font: 400 14px/1.4 var(--font-ui); /* a question to ask, not a status label */
 }
 .chip-link:hover {
   background: var(--ink);

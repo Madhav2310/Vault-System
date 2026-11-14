@@ -3,10 +3,10 @@ import { hrefFor, linkClick } from "../document/nav";
 import { chatApi } from "./api";
 import { REASON_CHIPS } from "./logic";
 
-const PICK_SCOPE = "/chat?pick=1";
+const pickScope = (question?: string) => `/chat?pick=1${question ? `&draft=${encodeURIComponent(question)}` : ""}`;
 
 /** Thumbs on one answer. A rating posts at once; a reason chip for "down" is optional and replaces the rating. */
-export function Feedback({ messageId }: { messageId: string }) {
+export function Feedback({ messageId, question }: { messageId: string; question?: string }) {
   const [rating, setRating] = useState<"up" | "down" | null>(null);
   const [chip, setChip] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -60,7 +60,7 @@ export function Feedback({ messageId }: { messageId: string }) {
             <button
               key={c.key}
               type="button"
-              className="chip chip-small"
+              className="qchip qchip-small"
               aria-pressed={chip === c.key}
               disabled={busy}
               onClick={() => void rate("down", c.key)}
@@ -74,7 +74,7 @@ export function Feedback({ messageId }: { messageId: string }) {
       {rating === "down" && chip === "wrong" && (
         <p className="feedback-nudge" data-testid="wrong-doc-nudge">
           Wrong document?{" "}
-          <a href={hrefFor(PICK_SCOPE)} onClick={linkClick(PICK_SCOPE)}>
+          <a href={hrefFor(pickScope(question))} onClick={linkClick(pickScope(question))}>
             Choose which documents to search
           </a>
         </p>

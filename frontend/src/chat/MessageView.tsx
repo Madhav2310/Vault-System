@@ -39,15 +39,17 @@ interface Props {
   onRegenerate?: () => void;
   /** Put the last question back in the composer (offered on the last question only). */
   onEdit?: () => void;
+  /** The question this answer responds to (carried into a new chat from "Wrong document?"). */
+  question?: string;
 }
 
-export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onPick, onReask, busy = false, isLast = false, onRegenerate, onEdit }: Props) {
+export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onPick, onReask, busy = false, isLast = false, onRegenerate, onEdit, question }: Props) {
   if (msg.role === "user") {
     return (
       <li className="msg msg-user" data-testid="user-message">
-        <p>{msg.content}</p>
+        <p className="bubble">{msg.content}</p>
         {onEdit && (
-          <button type="button" className="btn btn-quiet msg-edit" onClick={onEdit} data-testid="edit-question">
+          <button type="button" className="msg-edit" onClick={onEdit} data-testid="edit-question">
             Edit and resend
           </button>
         )}
@@ -170,10 +172,10 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onPick, onRea
         </p>
       )}
       {followups.length > 0 && !msg.streaming && (
-        <ul className="chips" aria-label="Follow-up questions" data-testid="followups">
+        <ul className="qchips" aria-label="Follow-up questions" data-testid="followups">
           {followups.map((q) => (
             <li key={q}>
-              <button type="button" className="chip" disabled={busy} onClick={() => onAsk(q)}>
+              <button type="button" className="qchip" disabled={busy} onClick={() => onAsk(q)}>
                 {q}
               </button>
             </li>
@@ -195,7 +197,7 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onPick, onRea
           )}
         </div>
       )}
-      {!msg.streaming && !failed && !clarifying && !msg.stopped && !msg.id.startsWith("a-") && <Feedback key={msg.id} messageId={msg.id} />}
+      {!msg.streaming && !failed && !clarifying && !msg.stopped && !msg.id.startsWith("a-") && <Feedback key={msg.id} messageId={msg.id} {...(question ? { question } : {})} />}
     </li>
   );
 }

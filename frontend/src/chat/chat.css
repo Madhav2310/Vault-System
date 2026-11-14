@@ -69,16 +69,21 @@
 .msg-user {
   justify-self: end;
   max-width: 80%;
+  color: var(--ink);
+}
+.bubble {
   background: var(--surface);
   border: 1px solid var(--line);
+  border-radius: var(--radius);
   padding: var(--s2) var(--s3);
-  color: var(--ink);
+  overflow-wrap: anywhere;
 }
 .msg-assistant {
   max-width: 72ch;
 }
 .answer {
-  line-height: 1.6;
+  font-size: 16px;
+  line-height: 1.65;
 }
 .status-line {
   color: var(--muted);
@@ -103,11 +108,19 @@
   text-underline-offset: 3px;
 }
 .card-abstain {
-  border: 1px solid var(--ink);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--ink);
   background: var(--surface);
-  padding: var(--s4);
+  padding: var(--s3) var(--s4);
 }
-.chips {
+.card-abstain h3 {
+  font-size: 16px;
+  margin-bottom: var(--s1);
+}
+.card-abstain .hint {
+  margin-top: var(--s2);
+}
+.qchips {
   list-style: none;
   display: flex;
   flex-wrap: wrap;
@@ -115,18 +128,20 @@
   padding: 0;
   margin: var(--s3) 0 0;
 }
-.chip {
-  font: 400 13px var(--font-ui);
+.qchip {
+  font: 400 14px/1.4 var(--font-ui);
   color: var(--ink);
   background: var(--surface);
-  border: 1px solid var(--ink);
+  border: 1px solid var(--line);
   border-radius: var(--radius);
-  padding: var(--s1) var(--s3);
+  padding: 6px var(--s3);
   cursor: pointer;
+  text-align: left;
 }
-.chip:hover {
-  background: var(--ink);
-  color: var(--paper);
+@media (hover: hover) and (pointer: fine) {
+  .qchip:hover:not(:disabled) {
+    border-color: var(--ink);
+  }
 }
 .composer {
   display: grid;
@@ -153,6 +168,57 @@
 @media (max-width: 760px) {
   .chat-layout {
     grid-template-columns: 1fr;
+    gap: var(--s3);
+    margin-top: var(--s3);
+  }
+  /* Chats become one scrolling strip instead of a stack that pushes the conversation down. */
+  .chat-sessions {
+    display: flex;
+    align-items: center;
+    gap: var(--s3);
+    min-width: 0;
+  }
+  .chat-sessions .btn {
+    flex: none;
+  }
+  .chat-sessions ul {
+    margin: 0;
+    display: flex;
+    gap: var(--s1);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .chat-sessions a:not(.btn) {
+    white-space: nowrap;
+    padding: var(--s2) var(--s3);
+    border-left: 0;
+    border-bottom: 2px solid transparent;
+  }
+  .chat-sessions a[aria-current="page"] {
+    border-bottom-color: var(--red);
+  }
+  .chat-sessions > .hint {
+    display: none;
+  }
+  .msg-user {
+    max-width: 92%;
+  }
+  .chat-empty {
+    margin: var(--s5) 0;
+  }
+  .empty-lead {
+    font-size: 20px;
+  }
+}
+/* No keyboard to explain on a phone: the hint stays for screen readers (aria-describedby). */
+@media (hover: none) and (pointer: coarse) {
+  .composer-row .hint {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
   }
 }
 
@@ -163,8 +229,8 @@
 
 /* conflict callout */
 .conflict {
-  border: 1px solid var(--ink);
-  border-left: 4px solid var(--red);
+  border: 1px solid var(--line);
+  border-left: 2px solid var(--red);
   background: var(--surface);
   padding: var(--s3) var(--s4);
   margin: var(--s3) 0;
@@ -202,7 +268,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--s2) var(--s3);
-  margin-top: var(--s2);
+  margin-top: var(--s3);
   font-size: 13px;
   color: var(--muted);
 }
@@ -236,35 +302,31 @@
 }
 
 /* ---- S23.03 interaction polish ------------------------------------------------------------ */
-.empty {
-  margin: var(--s5) 0;
+.chat-empty {
+  margin: var(--s6) 0 var(--s5);
 }
 .empty-lead {
-  font: 500 20px/1.35 var(--font-head);
+  font: 500 22px/1.35 var(--font-head);
+  letter-spacing: -0.01em;
   color: var(--ink);
-  max-width: 36ch;
-  margin: 0 0 var(--s3);
+  max-width: 34ch;
+  margin: 0 0 var(--s4);
+  text-wrap: balance;
 }
-.chip:focus-visible,
-.chip-small:focus-visible {
+.qchip:focus-visible {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
-.chip:disabled {
+.qchip:disabled {
   opacity: 0.5;
   cursor: default;
 }
-.chip:disabled:hover {
-  background: var(--surface);
-  color: var(--ink);
-}
-.chip-small {
-  border-color: var(--line);
+.qchip-small {
   color: var(--muted);
   padding: 2px var(--s2);
   font-size: 13px;
 }
-.chip-small[aria-pressed="true"] {
+.qchip-small[aria-pressed="true"] {
   background: var(--ink);
   border-color: var(--ink);
   color: var(--paper);
@@ -286,8 +348,7 @@
   gap: var(--s2) var(--s3);
   margin-top: var(--s3);
 }
-.actions .btn,
-.msg-edit {
+.actions .btn {
   padding: 4px 10px;
   font-size: 13px;
 }
@@ -296,10 +357,30 @@
   color: var(--muted);
   min-width: 0;
 }
+/* an empty live region stays in the DOM (so it announces) but takes no room in the row */
+.action-status:empty,
+.feedback-thanks:empty {
+  position: absolute;
+}
 .msg-user {
   display: grid;
-  gap: var(--s2);
+  gap: var(--s1);
   justify-items: end;
+}
+.msg-edit {
+  font: 400 13px var(--font-ui);
+  color: var(--muted);
+  background: none;
+  border: 0;
+  padding: var(--s1) 0;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--line);
+}
+.msg-edit:hover {
+  color: var(--ink);
+  text-decoration-color: currentColor;
 }
 .stopped-note {
   margin-top: var(--s2) !important;
@@ -321,15 +402,16 @@
   position: sticky;
   bottom: 0;
   background: var(--paper);
-  padding: var(--s3) 0;
+  padding: var(--s3) 0 calc(var(--s3) + env(safe-area-inset-bottom, 0px));
 }
+/* Anchored to the composer's top edge, so it follows the composer at any width or height. */
 .jump {
-  position: fixed;
+  position: absolute;
   left: 50%;
-  bottom: 148px;
+  bottom: 100%;
+  margin-bottom: var(--s2);
   transform: translateX(-50%);
-  background: var(--paper);
-  border-color: var(--ink);
+  background: var(--surface);
   z-index: 5;
 }
 
@@ -363,6 +445,16 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .qchip,
+  .msg-edit {
+    transition: border-color 120ms ease-out, background-color 120ms ease-out, color 120ms ease-out, transform 120ms ease-out;
+  }
+  .qchip:active:not(:disabled) {
+    transform: scale(0.97);
+  }
+  .jump {
+    animation: jump-in 160ms ease-out both;
+  }
   .seg-in {
     animation: seg-in 160ms ease-out both;
   }
@@ -374,6 +466,16 @@
   }
   .stopped-note {
     animation: seg-in 160ms ease-out both;
+  }
+}
+@keyframes jump-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
   }
 }
 @keyframes seg-in {

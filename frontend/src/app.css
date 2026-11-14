@@ -154,6 +154,10 @@ h2 {
   color: var(--ink);
   min-width: 0;
 }
+.field input,
+.field select {
+  min-height: 38px;
+}
 .field input:focus-visible,
 .field select:focus-visible {
   outline-offset: 0;
@@ -334,9 +338,27 @@ dialog .actions {
   .row {
     grid-template-columns: 1fr;
   }
+  .topbar {
+    gap: var(--s3);
+  }
+  .brand {
+    white-space: nowrap;
+  }
+  .topnav {
+    margin-left: 0;
+    gap: var(--s3);
+  }
+  .topbar .btn {
+    white-space: nowrap;
+    padding: 6px 10px;
+    font-size: 13px;
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .btn {
-    transition: background-color 0.12s, color 0.12s;
+    transition: background-color 120ms ease-out, color 120ms ease-out, transform 120ms ease-out;
+  }
+  .btn:active:not(:disabled) {
+    transform: scale(0.98);
   }
 }
