@@ -85,6 +85,9 @@ class Settings(BaseSettings):
     contextualize_variant: Literal["off", "deterministic", "llm"] = "off"
     contextualize_max_usd: float = 0.02  # per document; reaching it stops further header calls
 
+    # --- retrieval config file under backend/config (design §7.3), e.g. retrieval@2 ---
+    retrieval_config: str = "retrieval@2"
+
     # --- whole-document answering (design §8.2, S17.07) ---
     full_context_auto: bool = False  # off until the answer A/B decides (docs/evidence/answer_ab.md)
     full_context_max_docs: int = 3

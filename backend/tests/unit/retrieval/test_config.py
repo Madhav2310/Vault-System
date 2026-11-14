@@ -22,7 +22,7 @@ def _write(tmp: pathlib.Path, raw: dict, name: str = "retrieval@1.yaml") -> path
 def test_schema_strict(tmp_path: pathlib.Path) -> None:
     cfg = get_config()
     assert (
-        cfg.version == "retrieval@1" and cfg.k_vec == 40 and cfg.rerank.top_n == 8 and cfg.expansion.enabled
+        cfg.version == "retrieval@2" and cfg.k_vec == 40 and cfg.rerank.top_n == 8 and cfg.expansion.enabled
     )
     with pytest.raises(ValidationError):
         load_config(_write(tmp_path, {**_raw(), "surprise": 1}))  # unknown key

@@ -11,7 +11,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.llm.providers.fake import bad_request, structured
 from app.retrieval.config import get_config
+from app.retrieval.query_embed import QueryEmbedder
+from app.retrieval.rerank import RerankClient
+from app.retrieval.retrieve import Retriever
+from app.retrieval.scope import compute_scope
 from tests.support.ledger_env import ledger_owners
+from tests.support.llm import make_gateway
 from tests.support.turn_env import answer_script, install_runner, new_session, post, seed_chunk
 
 __all__ = ["ledger_owners"]  # fixture import
@@ -89,3 +94,24 @@ async def test_llm_rerank_failure_degrades(
             await s.execute(text("SELECT degraded FROM rag_runs WHERE owner_id = :o"), {"o": o.id})
         ).scalar_one()
     assert "no_rerank" in list(degraded)
+
+
+async def test_rerank_none_no_http(
+    sm: async_sessionmaker[AsyncSession], ledger_owners: Callable[[], Any], tmp_path: Any
+) -> None:
+    o = await ledger_owners()
+    await seed_chunk(sm, o.id)
+    calls: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        calls.append(request)
+        return httpx.Response(500)
+
+    reranker = RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
+    gw, _prov, _, _ = make_gateway(tmp_path)
+    r = Retriever(QueryEmbedder(gw, None), reranker, None, get_config("retrieval@2-norerank"))
+    async with sm() as s:
+        scope = await compute_scope(s, o.id, None)
+        res = await r.retrieve(s, o.id, scope, Q)
+    assert res.selected and not res.degraded  # fusion order: a deliberate config, not a degraded run
+    assert calls == []

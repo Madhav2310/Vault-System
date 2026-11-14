@@ -129,7 +129,7 @@ async def test_cited_answer_end_to_end(
             )
         ).one()
         assert run[0] == "completed" and run[1] == "qa" and run[2] == 3
-        assert run[3]["retrieval"] == "retrieval@1" and "answer_rag@3" in run[3]["prompts"]
+        assert run[3]["retrieval"] == "retrieval@2" and "answer_rag@3" in run[3]["prompts"]
         n = (
             await s.execute(
                 text(
