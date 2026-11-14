@@ -92,6 +92,7 @@ class TurnState:
     memory: Any = None
     docs: list[ScopeDoc] = field(default_factory=list)
     scope: Scope = Scope.empty
+    scope_unnarrowed: Scope | None = None  # the scope before the analysis narrowed it to a named document
     analysis: AnalyzeResult | None = None
     embedding: QueryEmbedding | None = None  # speculative embedding of the raw question
     spec_retrieval: SpeculativeRetrieval | None = None  # retrieval of the raw question, run during analyze

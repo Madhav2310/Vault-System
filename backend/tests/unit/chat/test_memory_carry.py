@@ -43,3 +43,9 @@ def test_zero_limit_or_nothing_prior_changes_nothing() -> None:
     cur = [chunk(1, V1)]
     assert merge_carried(cur, [chunk(2, V1)], {V1}, limit=0) == cur
     assert merge_carried(cur, [], {V1}, limit=4) == cur
+
+
+def test_turn_state_remembers_the_scope_before_narrowing() -> None:
+    from app.chat.graph import TurnState
+
+    assert TurnState.__dataclass_fields__["scope_unnarrowed"].default is None

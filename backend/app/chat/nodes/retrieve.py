@@ -78,7 +78,8 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
             )
             carried = await load_evidence_chunks(s, ctx.owner_id, prior)
             before = len(state.chunks)
-            state.chunks = merge_carried(state.chunks, carried, set(state.scope.version_ids), limit=carry)
+            allowed = set((state.scope_unnarrowed or state.scope).version_ids)  # still in the session scope
+            state.chunks = merge_carried(state.chunks, carried, allowed, limit=carry)
             carry_info = {
                 "carry_prior": len(prior),
                 "carry_loaded": len(carried),
