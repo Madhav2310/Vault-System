@@ -36,6 +36,30 @@ def test_env_example_lists_all_fields() -> None:
     assert not missing, f".env.example lacks {sorted(missing)}"
 
 
+# Keys whose example value is deliberately not the code default: container URLs and local-only settings.
+EXAMPLE_DIFFERS = {"database_url", "redis_url", "model_routes", "llm_prices"}
+
+
+def test_env_example_values_match_the_defaults() -> None:
+    """Copying .env.example to .env must run the shipped defaults, not a stale experiment."""
+    wrong = []
+    for key, raw in re.findall(r"^([A-Z][A-Z0-9_]+)=([^#\n]*)", ENV_EXAMPLE.read_text(), re.M):
+        field = Settings.model_fields.get(key.lower())
+        if field is None or key.lower() in EXAMPLE_DIFFERS or field.is_required():
+            continue
+        default, value = field.default, raw.strip()
+        if hasattr(default, "get_secret_value") or default is None:
+            continue
+        same = (
+            value.lower() == str(default).lower()
+            if isinstance(default, bool | str)
+            else float(value) == float(default)
+        )
+        if not same:
+            wrong.append(f"{key}={value} (default {default})")
+    assert not wrong, wrong
+
+
 def test_secrets_masked(clean_env: pytest.MonkeyPatch) -> None:
     s = make(clean_env, ANTHROPIC_API_KEY="sk-ant-very-secret")
     assert isinstance(s.anthropic_api_key, SecretStr)
