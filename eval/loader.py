@@ -149,8 +149,8 @@ def validate_items_v2(raw: list[Any]) -> DatasetV2:
 
 
 def load_dataset_v2(root: pathlib.Path = DATASET_V2_DIR) -> DatasetV2:
-    """Load v2 items from `<root>/golden.yaml` plus every part file (`parts/*.yaml`, `authored/*.yaml`), each a
-    top-level `items:` list, validated together (so the per-document cap spans parts). v1 stays on `load_dataset`."""
+    """Load v2 items from `golden.yaml` plus part files (`parts/*.yaml`, `authored/*.yaml`), each a top-level
+    `items:` list, validated together so the per-document cap spans parts. v1 stays on `load_dataset`."""
     files = [
         root / "golden.yaml",
         *sorted((root / "parts").glob("*.yaml")),
