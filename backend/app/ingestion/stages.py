@@ -5,6 +5,7 @@ inside the runner's fenced commit (idempotent re-runs).
 """
 
 import asyncio
+import hashlib
 import json
 import os
 import pathlib
@@ -23,6 +24,7 @@ from app.ingestion.artifacts import extracted_key
 from app.ingestion.chunk import CHUNKER_VERSION, chunk_document
 from app.ingestion.errors import PermanentStageError, RetryableStageError, UnsupportedContentError
 from app.ingestion.extract.base import ExtractedDocument
+from app.ingestion.index_text import build_index_text, deterministic_header, extra_lines
 from app.ingestion.quality import assess
 from app.ingestion.runner import Stage, StageContext, StageResult
 
@@ -171,6 +173,31 @@ class QualityStage:
         )
 
 
+def _index_fields(c: Any, title: str, version: str, index_context: str) -> dict[str, Any]:
+    """Index text and hash of one chunk. `none`: exactly the chunker's values. `deterministic`: a code-built
+    header joins `embedding_text` (so it feeds the vector and `tsv_en`) and the hash covers it, so
+    changing the setting changes the hash. `original_text` is never touched."""
+    if index_context != "deterministic":
+        return {
+            "contextual_prefix": None,
+            "embedding_text": c.embedding_text,
+            "content_hash": c.content_hash,
+        }
+    header = deterministic_header(
+        title,
+        c.section_path,
+        table_caption=c.extras.get("table_caption") if c.kind == "table" else None,
+        table_header=c.extras.get("header") if c.kind == "table" else None,
+    )
+    extra = extra_lines(c.structural_prefix, None, c.original_text, c.embedding_text)
+    text_ = build_index_text(c.structural_prefix, header, c.original_text, extra)
+    return {
+        "contextual_prefix": header,
+        "embedding_text": text_,
+        "content_hash": hashlib.sha256((text_ + version + "+ctx").encode()).hexdigest(),
+    }
+
+
 class ChunkStage:
     """`chunks` rows (no embeddings yet) from the extracted document (design §6.5)."""
 
@@ -191,9 +218,11 @@ class ChunkStage:
             ).one()
         chunker_version = getattr(ctx.services.get("settings"), "chunker_version", CHUNKER_VERSION)
         drafts = await asyncio.to_thread(chunk_document, doc, title.title, chunker_version)
+        index_context = getattr(ctx.services.get("settings"), "index_context", "none")
         job = ctx.job
         rows = [
             {
+                **_index_fields(c, title.title, chunker_version, index_context),
                 "id": uuid7(),
                 "owner_id": job.owner_id,
                 "document_id": title.id,
@@ -202,14 +231,12 @@ class ChunkStage:
                 "kind": c.kind,
                 "original_text": c.original_text,
                 "structural_prefix": c.structural_prefix,
-                "embedding_text": c.embedding_text,
                 "page_start": c.page_start,
                 "page_end": c.page_end,
                 "section_path": c.section_path,
                 "sentences": json.dumps(c.sentences),
                 "spans": json.dumps([asdict(sp) for sp in c.spans]),
                 "token_count": c.token_count,
-                "content_hash": c.content_hash,
             }
             for c in drafts
         ]
@@ -224,10 +251,12 @@ class ChunkStage:
                 await s.execute(
                     text(
                         "INSERT INTO chunks (id, owner_id, document_id, version_id, ordinal, kind, "
-                        "original_text, structural_prefix, embedding_text, page_start, page_end, "
+                        "original_text, structural_prefix, contextual_prefix, embedding_text, page_start, "
+                        "page_end, "
                         "section_path, sentences, spans, token_count, content_hash) VALUES (:id, "
                         ":owner_id, :document_id, :version_id, :ordinal, :kind, :original_text, "
-                        ":structural_prefix, :embedding_text, :page_start, :page_end, :section_path, "
+                        ":structural_prefix, :contextual_prefix, :embedding_text, :page_start, :page_end, "
+                        ":section_path, "
                         "CAST(:sentences AS jsonb), CAST(:spans AS jsonb), :token_count, :content_hash)"
                     ),
                     rows,
@@ -237,7 +266,9 @@ class ChunkStage:
                 {"cv": chunker_version, "t": tokens, "v": job.version_id},
             )
 
-        return StageResult(write=write, detail={"chunks": len(rows), "tokens": tokens})
+        return StageResult(
+            write=write, detail={"chunks": len(rows), "tokens": tokens, "index_context": index_context}
+        )
 
 
 def default_stages() -> dict[str, Stage]:

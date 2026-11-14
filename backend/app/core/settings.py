@@ -94,6 +94,9 @@ class Settings(BaseSettings):
     # --- contextual chunk headers, index side only (design §6.5, S17.05); off until the A/B decides ---
     contextualize_variant: Literal["off", "deterministic", "llm"] = "off"
     contextualize_max_usd: float = 0.02  # per document; reaching it stops further header calls
+    # S22.02 contextual index text for both legs: none = chunker text unchanged; deterministic = code header
+    # (title, section, table caption/header, written by the chunk stage); llm = chunk_context@1 headers.
+    index_context: Literal["none", "deterministic", "llm"] = "none"
 
     # --- retrieval config file under backend/config (design §7.3), e.g. retrieval@2 ---
     retrieval_config: str = "retrieval@2"
