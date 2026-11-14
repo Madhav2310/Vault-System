@@ -43,6 +43,13 @@ from app.core.logging import get_logger
 from app.core.quota import over_quota
 from app.ingestion.embed_index import EMBED_BATCH, vec_literal
 from app.ingestion.errors import PermanentStageError
+from app.ingestion.index_text import (
+    build_index_text,
+    caption_from_prefix,
+    deterministic_header,
+    extra_lines,
+    table_header_from_extra,
+)
 from app.ingestion.jobs import ClaimedJob
 from app.ingestion.runner import StageContext, StageResult
 from app.ingestion.sentences import split_sentences
@@ -60,6 +67,7 @@ MAX_SUMMARY_SENTENCE_CHARS = 300
 MAX_CHUNK_CHARS = 6000
 VARIANT_DETERMINISTIC = "deterministic"
 VARIANT_LLM = "llm"
+VARIANT_INDEX = "index_deterministic"  # S22.02: code-only header (title, section, table caption / header row)
 WAVE = 4  # concurrent header calls; the cost cap is checked before every wave
 
 
@@ -78,6 +86,7 @@ class ChunkRow:
     contextual_prefix: str | None
     embedding_text: str
     section_path: tuple[str, ...]
+    kind: str = "text"
 
 
 @dataclass(frozen=True)
@@ -106,11 +115,11 @@ def clip_context(raw: str) -> str:
     return " ".join(raw.split()[:MAX_CONTEXT_WORDS])
 
 
-def build_embedding_text(structural_prefix: str, contextual_prefix: str | None, original_text: str) -> str:
+def build_embedding_text(
+    structural_prefix: str, contextual_prefix: str | None, original_text: str, extra: str = ""
+) -> str:
     """Without a header this is exactly what the chunker produced (`prefix + "\\n" + text`)."""
-    if not contextual_prefix:
-        return f"{structural_prefix}\n{original_text}"
-    return f"{structural_prefix}\n{contextual_prefix}\n{original_text}"
+    return build_index_text(structural_prefix, contextual_prefix, original_text, extra)
 
 
 async def _read(
@@ -122,7 +131,7 @@ async def _read(
             await s.execute(
                 text(
                     "SELECT id, original_text, structural_prefix, contextual_prefix, embedding_text, "
-                    "section_path FROM chunks WHERE owner_id = :o AND version_id = :v ORDER BY ordinal"
+                    "section_path, kind FROM chunks WHERE owner_id = :o AND version_id = :v ORDER BY ordinal"
                 ),
                 {"o": job.owner_id, "v": job.version_id},
             )
@@ -167,6 +176,7 @@ async def _read(
             r.contextual_prefix,
             r.embedding_text,
             tuple(r.section_path or ()),
+            r.kind,
         )
         for r in rows
     ]
@@ -330,7 +340,18 @@ async def plan_and_embed(
         return StageResult(detail={**detail, "changed": 0})
     headers: dict[uuid.UUID, str] = {}
     llm_calls, cost = 0, Decimal(0)
-    if variant == VARIANT_DETERMINISTIC:
+    if variant == VARIANT_INDEX:
+        for c in chunks:
+            extra = extra_lines(c.structural_prefix, c.contextual_prefix, c.original_text, c.embedding_text)
+            h = deterministic_header(
+                title,
+                c.section_path,
+                table_caption=caption_from_prefix(c.structural_prefix) if c.kind == "table" else None,
+                table_header=table_header_from_extra(extra) if c.kind == "table" else None,
+            )
+            if h:
+                headers[c.id] = h
+    elif variant == VARIANT_DETERMINISTIC:
         if brief is None:
             return StageResult(detail={**detail, "skipped": "no_brief"})
         headers = {c.id: deterministic_prefix(brief, c.section_path) for c in chunks}
@@ -358,7 +379,8 @@ async def plan_and_embed(
     changed: list[tuple[ChunkRow, str | None, str]] = []
     for c in chunks:
         prefix = headers.get(c.id)
-        new_text = build_embedding_text(c.structural_prefix, prefix, c.original_text)
+        extra = extra_lines(c.structural_prefix, c.contextual_prefix, c.original_text, c.embedding_text)
+        new_text = build_embedding_text(c.structural_prefix, prefix, c.original_text, extra)
         if new_text != c.embedding_text or prefix != c.contextual_prefix:
             changed.append((c, prefix, new_text))
     detail |= {"changed": len(changed), "llm_calls": llm_calls, "cost_usd": str(cost)}
@@ -380,12 +402,24 @@ async def plan_and_embed(
     return StageResult(write=_writer(ctx, model, rows), detail=detail)
 
 
+def effective_variant(settings: Any) -> str:
+    """`index_context` wins when set: `llm` runs the header calls here;
+    `deterministic` is written by the chunk stage (no work here);
+    `none` falls back to the legacy `contextualize_variant`."""
+    ic = getattr(settings, "index_context", "none")
+    if ic == "llm":
+        return VARIANT_LLM
+    if ic == "deterministic":
+        return "off"
+    return str(settings.contextualize_variant)
+
+
 class ContextualizeStage:
     name = "contextualize"
 
     async def run(self, ctx: StageContext) -> StageResult:
         settings = ctx.services["settings"]
-        variant: str = settings.contextualize_variant
+        variant = effective_variant(settings)
         if variant == "off":
             return StageResult(detail={"skipped": "off"})
         gateway: LlmGateway | None = ctx.services.get("gateway")
@@ -500,7 +534,11 @@ async def _cli(argv: Sequence[str]) -> int:
 
     ap = argparse.ArgumentParser(description="Backfill contextual chunk headers for one owner's documents.")
     ap.add_argument("--owner-email", required=True)
-    ap.add_argument("--variant", choices=[VARIANT_DETERMINISTIC, VARIANT_LLM], default=VARIANT_DETERMINISTIC)
+    ap.add_argument(
+        "--variant",
+        choices=[VARIANT_DETERMINISTIC, VARIANT_LLM, VARIANT_INDEX],
+        default=VARIANT_DETERMINISTIC,
+    )
     ap.add_argument("--max-usd", type=Decimal, default=None, help="stop once this much has been spent")
     args = ap.parse_args(argv)
     sm = get_sessionmaker()
