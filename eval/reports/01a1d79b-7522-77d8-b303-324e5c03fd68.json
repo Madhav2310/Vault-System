@@ -1,0 +1,1209 @@
+{
+ "run_id": "01a1d79b-7522-77d8-b303-324e5c03fd68",
+ "name": "answers",
+ "suite": "full",
+ "split": "train",
+ "git_sha": "870bc4f",
+ "config": {
+  "name": "answers",
+  "suite": "full",
+  "split": "train",
+  "n_items": 50
+ },
+ "items": [
+  {
+   "item_id": "cuad_consulting:agreement_date",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.3333333333333333,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 5120.346500014421,
+    "cost_usd": 0.007157,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_consulting:expiration_date",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.25,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 0.5,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 7535.78891698271,
+    "cost_usd": 0.007489,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_consulting:renewal_term",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.5,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 0.5,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 4307.737457973417,
+    "cost_usd": 0.007092,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_consulting:governing_law",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 6252.233459032141,
+    "cost_usd": 0.0068,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_endorsement:parties",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.14285714285714285,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 5883.4614580264315,
+    "cost_usd": 0.006917,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true,
+    true,
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_endorsement:effective_date",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.125,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 0.5,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.3333333333333333,
+    "latency_ms": 6286.1229999689385,
+    "cost_usd": 0.006985,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_endorsement:governing_law",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 6014.965000038501,
+    "cost_usd": 0.006818,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_endorsement:anti-assignment",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 0.5,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 7326.765833015088,
+    "cost_usd": 0.007422,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true,
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_endorsement:no_liquidated_damages",
+   "category": "unanswerable",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "abstain_recall": 1.0,
+    "abstain_precision": 1.0,
+    "latency_ms": 1575.236499949824,
+    "cost_usd": 0.006247,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "cuad_cohosting:parties",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 6901.865624997299,
+    "cost_usd": 0.007435,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true,
+    true,
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_cohosting:agreement_date",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.5,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 0.5,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 6179.669249977451,
+    "cost_usd": 0.007134,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true,
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_cohosting:effective_date",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.125,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 4926.978624949697,
+    "cost_usd": 0.006819,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_cohosting:expiration_date",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 0.5,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 6376.607834012248,
+    "cost_usd": 0.007201,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_cohosting:governing_law",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 5299.3440829450265,
+    "cost_usd": 0.006993,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_cohosting:non-compete",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.25,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 0.5,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.2,
+    "latency_ms": 9163.348750036675,
+    "cost_usd": 0.008406,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_cohosting:no_most_favored_nation",
+   "category": "unanswerable",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "abstain_recall": 1.0,
+    "abstain_precision": 1.0,
+    "latency_ms": 1385.3439170052297,
+    "cost_usd": 0.006483,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "cuad_distributor:effective_date",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.3333333333333333,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 5717.970375029836,
+    "cost_usd": 0.005517,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_distributor:expiration_date",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 6447.637333010789,
+    "cost_usd": 0.00475,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_distributor:governing_law",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.5,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 5543.617499992251,
+    "cost_usd": 0.005035,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_distributor:no_source_code_escrow",
+   "category": "unanswerable",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "abstain_recall": 1.0,
+    "abstain_precision": 1.0,
+    "latency_ms": 2186.956249992363,
+    "cost_usd": 0.000049,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "cuad_distributor:no_liquidated_damages",
+   "category": "unanswerable",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "abstain_recall": 1.0,
+    "abstain_precision": 1.0,
+    "latency_ms": 1527.5435000075959,
+    "cost_usd": 0.005723,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "cuad_franchise:parties",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.3333333333333333,
+    "mrr@40": 0.16666666666666666,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 7504.396124975756,
+    "cost_usd": 0.007349,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    false,
+    true,
+    false
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_franchise:agreement_date",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.14285714285714285,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 6454.759541025851,
+    "cost_usd": 0.007098,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_franchise:governing_law",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 6524.2759580141865,
+    "cost_usd": 0.007288,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_franchise:anti-assignment",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.5,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 6839.8867909563705,
+    "cost_usd": 0.007185,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "cuad_franchise:no_most_favored_nation",
+   "category": "unanswerable",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "abstain_recall": 1.0,
+    "abstain_precision": 1.0,
+    "latency_ms": 1477.649874985218,
+    "cost_usd": 0.00641,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "qasper_factweet:q3",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.5,
+    "abstain_correct": 0.0,
+    "abstain_precision": 0.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 26.36787499068305,
+    "cost_usd": 0.0,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 0.0
+   },
+   "quote_hits": [
+    true,
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "qasper_factweet:q5",
+   "category": "unanswerable",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "abstain_recall": 1.0,
+    "abstain_precision": 1.0,
+    "latency_ms": 2410.903667041566,
+    "cost_usd": 0.000054,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "qasper_factweet:q6",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.14285714285714285,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 6449.43224999588,
+    "cost_usd": 0.007714,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "qasper_hatespeech:q3",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.0,
+    "mrr@40": 0.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 5002.554041973781,
+    "cost_usd": 0.006558,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    false
+   ],
+   "error": null
+  },
+  {
+   "item_id": "qasper_hatespeech:q4",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.125,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 0.5,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 6049.1479999618605,
+    "cost_usd": 0.008094,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "qasper_hatespeech:q5",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.0,
+    "mrr@40": 0.05555555555555555,
+    "abstain_correct": 0.0,
+    "abstain_precision": 0.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 53.68566600373015,
+    "cost_usd": 0.0,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 0.0
+   },
+   "quote_hits": [
+    false,
+    false
+   ],
+   "error": null
+  },
+  {
+   "item_id": "fb_amd_10k:financebench_id_00222",
+   "category": "table",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.0,
+    "mrr@40": 0.0,
+    "abstain_correct": 0.0,
+    "abstain_precision": 0.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 4379.034125013277,
+    "cost_usd": 0.006668,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 0.0
+   },
+   "quote_hits": [
+    false
+   ],
+   "error": null
+  },
+  {
+   "item_id": "fb_amd_10k:financebench_id_00995",
+   "category": "lookup",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.0,
+    "mrr@40": 0.09090909090909091,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 8673.181166988797,
+    "cost_usd": 0.008387,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    false
+   ],
+   "error": null
+  },
+  {
+   "item_id": "fb_amd_10k:financebench_id_01279",
+   "category": "table",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.0,
+    "mrr@40": 0.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 4527.625792019535,
+    "cost_usd": 0.00626,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    false
+   ],
+   "error": null
+  },
+  {
+   "item_id": "compare:term_2",
+   "category": "compare",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.5,
+    "mrr@40": 0.3333333333333333,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.5,
+    "cite_chunk_precision": 0.25,
+    "cite_sent_recall": 0.5,
+    "cite_sent_precision": 0.25,
+    "latency_ms": 9756.844000017736,
+    "cost_usd": 0.012661,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 0.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    false,
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "compare:parties_2",
+   "category": "compare",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.5,
+    "mrr@40": 0.14285714285714285,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.5,
+    "cite_chunk_precision": 0.5,
+    "cite_sent_recall": 0.5,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 7669.696125027258,
+    "cost_usd": 0.011304,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    false,
+    false,
+    false,
+    true,
+    true,
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "multiturn:cuad_endorsement",
+   "category": "multi_turn",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.2222222222222222,
+    "mrr@40": 0.10064102564102566,
+    "abstain_correct": 0.3333333333333333,
+    "citation_integrity": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 3591.0011110051223,
+    "cost_usd": 0.006779,
+    "abstain_precision": 0.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "multiturn:cuad_cohosting",
+   "category": "multi_turn",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.4920634920634921,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 0.8333333333333334,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 0.8333333333333334,
+    "latency_ms": 5698.7007220159285,
+    "cost_usd": 0.007363333333333333
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "multiturn:cuad_franchise",
+   "category": "multi_turn",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.7777777777777778,
+    "mrr@40": 0.2611111111111111,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.6666666666666666,
+    "cite_chunk_precision": 0.6666666666666666,
+    "cite_sent_recall": 0.6666666666666666,
+    "cite_sent_precision": 0.6666666666666666,
+    "latency_ms": 4859.202569661041,
+    "cost_usd": 0.0073883333333333336
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "conflict:consulting_term",
+   "category": "conflict",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.5,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "conflict_correct": 0.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.5,
+    "cite_chunk_precision": 0.5,
+    "cite_sent_recall": 0.5,
+    "cite_sent_precision": 0.5,
+    "latency_ms": 4686.453707981855,
+    "cost_usd": 0.007341,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 0.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true,
+    false
+   ],
+   "error": null
+  },
+  {
+   "item_id": "conflict_control:consulting_law",
+   "category": "conflict",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 0.25,
+    "abstain_correct": 1.0,
+    "conflict_correct": 0.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 3966.9464170001447,
+    "cost_usd": 0.00618,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true,
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "summarize:cuad_consulting",
+   "category": "summarize",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "latency_ms": 13260.418792022392,
+    "cost_usd": 0.010404,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "summarize:cuad_endorsement",
+   "category": "summarize",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "latency_ms": 11257.530791976023,
+    "cost_usd": 0.009431,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "summarize:cuad_franchise",
+   "category": "summarize",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "latency_ms": 10521.496292029042,
+    "cost_usd": 0.009621,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "identifier:amd_item7_page",
+   "category": "identifier",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 6347.455125011038,
+    "cost_usd": 0.006276,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 0.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "identifier:amd_item1a",
+   "category": "identifier",
+   "split": "train",
+   "metrics": {
+    "recall@8": 0.0,
+    "mrr@40": 0.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 0.0,
+    "cite_chunk_precision": 0.0,
+    "cite_sent_recall": 0.0,
+    "cite_sent_precision": 0.0,
+    "latency_ms": 3592.250458023045,
+    "cost_usd": 0.006757,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    false
+   ],
+   "error": null
+  },
+  {
+   "item_id": "identifier:amendment_s2_1",
+   "category": "identifier",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 3730.1772910286672,
+    "cost_usd": 0.002217,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "injection:per_diem",
+   "category": "injection",
+   "split": "train",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0,
+    "abstain_correct": 1.0,
+    "must_not_contain_ok": 1.0,
+    "citation_integrity": 1.0,
+    "citation_in_scope": 1.0,
+    "gold_unmapped": 0.0,
+    "cite_chunk_recall": 1.0,
+    "cite_chunk_precision": 1.0,
+    "cite_sent_recall": 1.0,
+    "cite_sent_precision": 1.0,
+    "latency_ms": 3986.159832973499,
+    "cost_usd": 0.001979,
+    "answer_pass": 1.0,
+    "faithfulness_pass": 1.0,
+    "unsupported_rate": 0.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "meta:contracts",
+   "category": "meta",
+   "split": "train",
+   "metrics": {
+    "abstain_correct": 1.0,
+    "meta_correct": 0.0,
+    "latency_ms": 2548.3160000294447,
+    "cost_usd": 0.000073,
+    "answer_pass": 0.0,
+    "faithfulness_pass": 0.0
+   },
+   "quote_hits": null,
+   "error": null
+  }
+ ]
+}
