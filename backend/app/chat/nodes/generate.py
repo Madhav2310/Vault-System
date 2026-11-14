@@ -33,11 +33,15 @@ STOP_REFUSAL = "STOP_REFUSAL"
 STOP_MAX_TOKENS = "STOP_MAX_TOKENS"
 GENERATION_INVALID = "GENERATION_INVALID"
 PROMPT = ("answer_rag", 3)
-COMPLETE_PROMPT = ("answer_rag", 6)  # completeness-first wording; used when `chat_answer_version` is 6
+COMPLETE_PROMPT = (
+    "answer_rag",
+    7,
+)  # completeness-first, scope rule (`chat_answer_version`)
 
 
 def answer_prompt(settings: Any) -> tuple[str, int]:
-    return COMPLETE_PROMPT if getattr(settings, "chat_answer_version", 3) == 6 else PROMPT
+    version = getattr(settings, "chat_answer_version", 3)
+    return ("answer_rag", version) if version in (6, 7) else PROMPT
 
 
 @dataclass(frozen=True)

@@ -125,8 +125,8 @@ class Settings(BaseSettings):
     # --- support check (S22.06): 2 = support_check@2 (prunes unneeded citations, removes unsupported
     # segments, one regeneration if every segment fails); 1 until the paired A/B accepts it ---
     chat_support_version: Literal[1, 2] = 1
-    # --- completeness-first answers: 6 = answer_rag@6 (every asked part, qualifiers, gaps); 3 until A/B ---
-    chat_answer_version: Literal[3, 6] = 3
+    # --- completeness-first answers: 6 or 7 = answer_rag@6/@7 (@7 adds a scope rule); 3 until the A/B ---
+    chat_answer_version: Literal[3, 6, 7] = 3
     # --- analysis prompt (S22.09): 3 = analyze_query@3 (shorter prompt and output budget); 2 until A/B ---
     chat_analyze_version: Literal[2, 3] = 2
     # --- compare quotas + coverage gate (S22.05): answer_compare@2 + repair; off until the A/B decides ---

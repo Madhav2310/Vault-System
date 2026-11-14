@@ -34,7 +34,8 @@ def test_answer_version_switch_reads_from_env_and_selects_the_prompt(monkeypatch
     monkeypatch.setenv("REDIS_URL", "redis://h/0")
     monkeypatch.delenv("CHAT_ANSWER_VERSION", raising=False)
     assert answer_prompt(Settings(_env_file=None)) == PROMPT  # type: ignore[call-arg]
-    monkeypatch.setenv("CHAT_ANSWER_VERSION", "6")
+    monkeypatch.setenv("CHAT_ANSWER_VERSION", "7")
     s = Settings(_env_file=None)  # type: ignore[call-arg]
-    assert s.chat_answer_version == 6 and answer_prompt(s) == COMPLETE_PROMPT
-    assert "every part" in default_registry().get(*COMPLETE_PROMPT).body
+    assert s.chat_answer_version == 7 and answer_prompt(s) == COMPLETE_PROMPT
+    body = default_registry().get(*COMPLETE_PROMPT).body
+    assert "every part" in body and "answer for that version only" in body
