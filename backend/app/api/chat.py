@@ -5,13 +5,14 @@ import dataclasses
 import uuid
 from typing import Annotated, Any, Literal, Self
 
-from fastapi import APIRouter, Depends, Query, Request, Response
+from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import TurnRunner, get_db, get_turn_runner
 from app.api.errors import DomainError
+from app.api.idempotency import canonical_response, check_key, request_hash, run_idempotent
 from app.api.schemas import EventSchemaOut, MessageList, PostMessageOut, SessionList, SessionOut
 from app.chat import history
 from app.chat import sessions as svc
@@ -79,13 +80,28 @@ def _json(s: svc.SessionRow) -> dict[str, Any]:
     responses={404: {"description": "A document in `document_ids` is not yours or was deleted"}},
 )
 async def create_session(
-    body: CreateSession, user: CurrentUser, db: Annotated[AsyncSession, Depends(get_db)]
-) -> dict[str, Any]:
-    """Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404."""
+    body: CreateSession,
+    user: CurrentUser,
+    db: Annotated[AsyncSession, Depends(get_db)],
+    idempotency_key: Annotated[str | None, Header()] = None,
+) -> Response:
+    """Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404. A retry
+    with the same `Idempotency-Key` returns the same session (design §14)."""
+    key = check_key(idempotency_key)
+
+    async def op() -> tuple[int, dict[str, Any]]:
+        return 201, _json(await svc.create_session(db, user.id, body.document_ids, body.title, commit=False))
+
+    h = request_hash(
+        route="POST /v1/chat/sessions",
+        document_ids=sorted(str(d) for d in set(body.document_ids or [])),
+        title=body.title,
+    )
     try:
-        return _json(await svc.create_session(db, user.id, body.document_ids, body.title))
+        status, out = await run_idempotent(db, user.id, key, h, op)
     except svc.ScopeDocumentNotFound:
         raise DomainError(ErrorCode.DOCUMENT_NOT_FOUND) from None
+    return canonical_response(status, out)
 
 
 @router.get(
