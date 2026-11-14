@@ -112,6 +112,9 @@ class Settings(BaseSettings):
     # --- warm voice (S23.01): appends prompts/voice@1.md to the answer prompts; off until the A/B decides ---
     chat_voice: bool = False
 
+    # --- clarify when ambiguous (S23.02): code-checked ambiguity gives option chips; off until reviewed ---
+    chat_clarify: bool = False
+
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"

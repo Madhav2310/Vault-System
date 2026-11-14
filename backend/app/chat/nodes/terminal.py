@@ -2,6 +2,7 @@
 
 import dataclasses
 
+from app.chat.events import Clarify, ClarifyOptionOut
 from app.chat.gate import ABSTAIN_NO_EVIDENCE, abstain_text
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.nodes._common import (
@@ -33,9 +34,18 @@ async def abstain_no_evidence(state: TurnState, ctx: TurnCtx) -> TurnState:
 
 
 async def clarify(state: TurnState, ctx: TurnCtx) -> TurnState:
-    assert state.analysis is not None and state.analysis.clarification is not None
-    c = state.analysis.clarification
-    body = c.question + (" " + " / ".join(c.options) if c.options else "")
-    state.generation = plain("clarify", body, state.analysis.reason_codes)
+    """The turn ends with a question (S23.02): template text, options from real document titles."""
+    c = state.clarification
+    assert c is not None
+    state.route = "clarify"
+    state.generation = plain("clarify", c.text, (c.reason,))
     await flush_segments(state, ctx)
+    await ctx.emit(
+        Clarify(
+            run_id=str(ctx.run_id),
+            question=c.text,
+            options=[ClarifyOptionOut(label=o.label, document_id=str(o.document_id)) for o in c.options],
+        )
+    )
+    state.last_decision = {"options": len(c.options), "reason": c.reason}
     return state

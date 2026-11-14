@@ -14,6 +14,7 @@ import asyncio
 import dataclasses
 import time
 import uuid
+from typing import Any
 
 from app.chat import sessions as svc
 from app.chat.conflicts import conflicts_record
@@ -43,6 +44,20 @@ _log = get_logger("vault.chat.turn")
 
 HEARTBEAT_S = 30.0
 __all__ = ["NO_DOCUMENTS", "NO_EVIDENCE", "TURN_ERROR", "TurnDeps", "run_turn"]
+
+
+def _analysis_record(state: TurnState) -> dict[str, Any] | None:
+    a = state.analysis
+    if a is None:
+        return None
+    rec: dict[str, Any] = {"intent": a.intent, "dimensions": list(a.dimensions)}
+    if state.clarification is not None:  # the options, so history can show the chips again
+        rec["clarify"] = state.clarification.to_json()
+    if state.pick_document_id is not None:
+        rec["clarify_pick"] = {"document_id": str(state.pick_document_id)}
+    if state.supersedes is not None:
+        rec["supersedes"] = str(state.supersedes)
+    return rec
 
 
 def _candidates(r: RetrievalResult) -> tuple[CandidateRecord, ...]:
@@ -77,7 +92,7 @@ def after_route_question(s: TurnState) -> str:
 @router("clarify", "meta", "plan_context")
 def after_analyze(s: TurnState) -> str:
     a = s.analysis
-    if a is not None and a.clarification is not None:
+    if s.clarification is not None:  # decided by code (S23.02), never by the model alone
         return "clarify"
     return "meta" if a is not None and a.intent == "meta" and a.meta_op is not None else "plan_context"
 
@@ -89,8 +104,10 @@ def after_plan_context(s: TurnState) -> str:
     return "generate" if s.chunks else "abstain_no_evidence"  # full context always generates (no gate)
 
 
-@router("abstain_no_evidence", "gate")
+@router("abstain_no_evidence", "clarify", "gate")
 def after_retrieve(s: TurnState) -> str:
+    if s.clarification is not None:
+        return "clarify"
     return "gate" if s.chunks else "abstain_no_evidence"
 
 
@@ -137,7 +154,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         steps=tuple(state.steps),
         call_ids=tuple(dict.fromkeys([*state.call_ids, *gen.call_ids])),
         standalone_query=analysis.standalone_query if analysis else None,
-        analysis={"intent": analysis.intent, "dimensions": list(analysis.dimensions)} if analysis else None,
+        analysis=_analysis_record(state),
         conflicts=conflicts_record(gen.conflicts),
         reason_codes=(*gen.reasons, *state.reasons),
         degraded=tuple(dict.fromkeys(state.degraded)),

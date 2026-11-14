@@ -86,7 +86,10 @@ async def load_memory(
         await db.execute(
             text(
                 "SELECT role, content FROM chat_messages WHERE session_id = :s AND owner_id = :o "
-                "AND (CAST(:x AS uuid) IS NULL OR id <> :x) ORDER BY created_at DESC, id DESC LIMIT :n"
+                "AND (CAST(:x AS uuid) IS NULL OR id <> :x) "
+                "AND (run_id IS NULL OR run_id NOT IN (SELECT CAST(r.analysis->>'supersedes' AS uuid) "
+                "FROM rag_runs r WHERE r.session_id = :s AND r.owner_id = :o AND r.status = 'completed' "
+                "AND r.analysis->>'supersedes' IS NOT NULL)) ORDER BY created_at DESC, id DESC LIMIT :n"
             ),
             {"s": session_id, "o": owner_id, "x": exclude_message_id, "n": _FETCH_LIMIT},
         )

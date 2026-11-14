@@ -91,6 +91,19 @@ class Followups(_Event):
     questions: list[str]
 
 
+class ClarifyOptionOut(BaseModel):
+    label: str
+    document_id: str
+
+
+class Clarify(_Event):
+    """The turn ended with a question (S23.02). Text and options come from code, never the model."""
+
+    type: Literal["clarify"] = "clarify"
+    question: str
+    options: list[ClarifyOptionOut]
+
+
 class UsageOut(BaseModel):
     input_tokens: int
     output_tokens: int
@@ -119,7 +132,8 @@ class Error(_Event):
 
 
 TurnEvent = Annotated[
-    RunStarted | Status | Segment | Verification | Followups | Done | Error, Field(discriminator="type")
+    RunStarted | Status | Segment | Verification | Followups | Clarify | Done | Error,
+    Field(discriminator="type"),
 ]
 _ADAPTER: TypeAdapter[TurnEvent] = TypeAdapter(TurnEvent)
 

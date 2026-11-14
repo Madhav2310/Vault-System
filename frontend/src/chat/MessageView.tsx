@@ -1,5 +1,6 @@
 import { CitationMarker } from "../source";
 import { ConflictCallout } from "./ConflictCallout";
+import { ClarifyChips } from "./ClarifyChips";
 import { CopyButton } from "./CopyButton";
 import { Feedback } from "./Feedback";
 import {
@@ -26,6 +27,8 @@ interface Props {
   onOpen: (o: Open) => void;
   onAsk: (q: string) => void;
   onWhy: (runId: string) => void;
+  /** Choose option `i` of a clarification (the chips are live on the newest message only). */
+  onPick?: (option: number) => void;
   /** Ask the question of message `id` again on the current document versions. */
   onReask?: (id: string) => void;
   /** A turn is in flight: actions that would start another are inert. */
@@ -38,7 +41,7 @@ interface Props {
   onEdit?: () => void;
 }
 
-export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask, busy = false, isLast = false, onRegenerate, onEdit }: Props) {
+export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onPick, onReask, busy = false, isLast = false, onRegenerate, onEdit }: Props) {
   if (msg.role === "user") {
     return (
       <li className="msg msg-user" data-testid="user-message">
@@ -53,11 +56,13 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask, busy
   }
   const { segments: numbers, conflicts: conflictNumbers } = numberMessage(msg.segments, msg.conflicts);
   const abstain = msg.responseType === "abstain";
+  const clarifying = msg.responseType === "clarify" || msg.clarify.length > 0;
   const stale = staleInfo(msg);
   const failed = msg.errorCode !== null || msg.responseType === "error";
   const waiting = msg.streaming && msg.segments.length === 0 && !abstain;
-  const copyText = !failed && (msg.segments.length > 0 || msg.content) ? formatCopy(msg) : "";
-  const followups = msg.followups.length > 0 ? msg.followups : isLast && !failed && !abstain ? FALLBACK_FOLLOWUPS : [];
+  const copyText = !failed && !clarifying && (msg.segments.length > 0 || msg.content) ? formatCopy(msg) : "";
+  const followups =
+    msg.followups.length > 0 ? msg.followups : isLast && !failed && !abstain && !clarifying ? FALLBACK_FOLLOWUPS : [];
 
   return (
     <li className="msg msg-assistant" data-testid="assistant-message">
@@ -83,7 +88,14 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask, busy
           <span />
         </div>
       )}
-      {abstain ? (
+      {clarifying ? (
+        <div className="card-clarify" data-testid="clarify-card">
+          <p>{msg.content || msg.segments.map((s) => s.text).join(" ")}</p>
+          {msg.clarify.length > 0 && (
+            <ClarifyChips options={msg.clarify} disabled={busy || !isLast || !onPick} onPick={(i) => onPick?.(i)} />
+          )}
+        </div>
+      ) : abstain ? (
         <div className="card-abstain" data-testid="abstain-card">
           <h3>Not found in your documents</h3>
           {msg.content && <p>{msg.content}</p>}
@@ -168,7 +180,7 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask, busy
           ))}
         </ul>
       )}
-      {!msg.streaming && (copyText || onRegenerate || msg.runId) && (
+      {!msg.streaming && !clarifying && (copyText || onRegenerate || msg.runId) && (
         <div className="actions" data-testid="answer-actions">
           {copyText && <CopyButton text={copyText} />}
           {onRegenerate && (
@@ -183,7 +195,7 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask, busy
           )}
         </div>
       )}
-      {!msg.streaming && !failed && !msg.stopped && !msg.id.startsWith("a-") && <Feedback key={msg.id} messageId={msg.id} />}
+      {!msg.streaming && !failed && !clarifying && !msg.stopped && !msg.id.startsWith("a-") && <Feedback key={msg.id} messageId={msg.id} />}
     </li>
   );
 }

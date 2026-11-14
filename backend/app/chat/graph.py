@@ -30,6 +30,7 @@ from app.retrieval.retrieve import RetrievalResult, Retriever
 from app.retrieval.scope import Scope
 
 if TYPE_CHECKING:  # node modules import this module; keep the runtime import graph acyclic
+    from app.chat.clarify import Clarification
     from app.chat.nodes.analyze import AnalyzeResult, ScopeDoc
     from app.chat.nodes.generate import GenerateResult
     from app.chat.speculative import SpeculativeRetrieval
@@ -114,6 +115,15 @@ class TurnState:
     fast_path: bool = False  # set by `route_question`: `analyze` is skipped (S17.10)
     gate_abstain: bool = False  # set by `gate`: the evidence is below the floor (S17.08)
     compare: bool = False  # set by `analyze`: a compare turn over 2-5 documents (S18.06)
+    prev_clarified: bool = (
+        False  # set by `load_context`: the last assistant message was a clarification (S23.02)
+    )
+    pick_document_id: uuid.UUID | None = None  # set by `load_context`: the option chosen from a clarification
+    supersedes: uuid.UUID | None = None  # set by `load_context`: the earlier run this turn replaces
+    clarify_hint: bool = (
+        False  # set by `analyze`: the model hinted at a document ambiguity (code still decides)
+    )
+    clarification: Clarification | None = None  # set by a code rule; sends the turn to `clarify`
 
     def fail(self, *codes: str | None) -> None:
         self.status = "failed"

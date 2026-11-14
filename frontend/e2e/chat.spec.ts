@@ -61,6 +61,8 @@ const session = { id: SESSION, title: "Termination", document_ids: null, created
 
 interface Opts {
   stream?: string;
+  /** Streams for the 1st, 2nd, ... message POST (each falls back to `stream`). */
+  streams?: string[];
   postStatus?: { status: number; body: object; headers?: Record<string, string> };
   history?: unknown[];
   /** Filled with the JSON body of every message POST and every feedback POST. */
@@ -69,6 +71,7 @@ interface Opts {
 }
 
 async function mock(page: Page, o: Opts = {}) {
+  let call = 0;
   await page.route("**/v1/session", (r) => r.fulfill({ status: 204 })); // session cookie probe
   await page.route("**/v1/documents?**", (r) => r.fulfill(json({ items: [], next_cursor: null })));
   await page.route("**/v1/chat/sessions?**", (r) => r.fulfill(json({ items: [session], next_cursor: null })));
@@ -80,7 +83,7 @@ async function mock(page: Page, o: Opts = {}) {
     if (r.request().method() === "GET") return r.fulfill(json({ items: o.history ?? [], next_cursor: null }));
     o.posts?.push(r.request().postDataJSON() as Record<string, unknown>);
     if (o.postStatus) return r.fulfill(json(o.postStatus.body, o.postStatus.status, o.postStatus.headers));
-    return r.fulfill({ status: 200, contentType: "text/event-stream", body: o.stream ?? answerStream });
+    return r.fulfill({ status: 200, contentType: "text/event-stream", body: o.streams?.[call++] ?? o.stream ?? answerStream });
   });
   await page.route("**/v1/feedback", (r) => {
     const body = r.request().postDataJSON() as Record<string, unknown>;
@@ -444,7 +447,10 @@ test("regenerate answers the same question with a new message id", async ({ page
   await expect(page.getByTestId("regenerate")).toBeVisible();
   await page.getByTestId("regenerate").click();
   await expect.poll(() => posts.length).toBe(2);
-  expect(posts[1]!["content"]).toBe("How can the contract end?");
+  // the server re-asks the stored question and hides the replaced pair (no duplicate turn on reload)
+  expect(posts[1]!["reask_of"]).toBe("m-a1");
+  expect(posts[1]!["replaces"]).toBe("m-a1");
+  expect(posts[1]!["content"]).toBeUndefined();
   expect(posts[1]!["client_message_id"]).not.toBe(posts[0]!["client_message_id"]);
   await expect(page.getByTestId("user-message")).toHaveCount(1);
   await expect(page.getByTestId("assistant-message")).toHaveCount(1);
@@ -463,6 +469,7 @@ test("edit and resend the last question", async ({ page }) => {
   await page.getByRole("button", { name: "Resend", exact: true }).click();
   await expect.poll(() => posts.length).toBe(2);
   expect(posts[1]!["content"]).toBe("When can I leave early?");
+  expect(posts[1]!["replaces"]).toBe("m-a1");
   await expect(page.getByTestId("user-message")).toHaveCount(1);
   await expect(page.getByTestId("user-message")).toContainText("When can I leave early?");
 });
@@ -593,4 +600,70 @@ test("axe on an answer with reason chips and the nudge", async ({ page }) => {
   await page.getByTestId("reason-wrong").click();
   await expect(page.getByTestId("wrong-doc-nudge")).toBeVisible();
   await axeClean(page, "reasons");
+});
+
+// S23.02: clarify when ambiguous. The chips are real documents; picking one posts a clarify_choice.
+const clarifyDone = done("clarify", "More than one of your documents could answer this. Which one should I look in?").replace(
+  '"message_id":"m-a1"',
+  '"message_id":"m-c1"',
+);
+const clarifyStream = [
+  frame("run.started", { message_id: "m-u1" }),
+  frame("status", { stage: "writing" }),
+  frame("segment", { index: 0, text: "More than one of your documents could answer this. Which one should I look in?", support: "none", evidence: [] }),
+  frame("clarify", {
+    question: "More than one of your documents could answer this. Which one should I look in?",
+    options: [
+      { label: "Master services agreement", document_id: DOC },
+      { label: "Pricing memo", document_id: "22222222-2222-4222-8222-222222222222" },
+    ],
+  }),
+  clarifyDone,
+].join("");
+
+test("clarify chips: picking a document posts clarify_choice and the answer follows", async ({ page }) => {
+  const posts: Record<string, unknown>[] = [];
+  await mock(page, { posts, streams: [clarifyStream, answerStream.replace('"message_id":"m-a1"', '"message_id":"m-a2"')] });
+  await ask(page, "What is the notice period?");
+  const chips = page.getByTestId("clarify-chips");
+  await expect(chips.getByRole("button")).toHaveText(["Master services agreement", "Pricing memo"]);
+  await expect(page.getByTestId("tag-uncited")).toHaveCount(0); // a question, not an unsupported answer
+  await expect(page.getByTestId("feedback")).toHaveCount(0);
+  await chips.getByRole("button", { name: "Pricing memo" }).click();
+  await expect.poll(() => posts.length).toBe(2);
+  expect(posts[1]!["clarify_choice"]).toEqual({ message_id: "m-c1", option: 1 });
+  expect(posts[1]!["content"]).toBeUndefined();
+  await expect(page.getByTestId("segment")).toHaveCount(3);
+  await expect(page.getByTestId("clarify-chips").getByRole("button").first()).toBeDisabled(); // past clarification
+});
+
+test("clarify: a typed reply is still possible", async ({ page }) => {
+  const posts: Record<string, unknown>[] = [];
+  await mock(page, { posts, streams: [clarifyStream, answerStream] });
+  await ask(page, "What is the notice period?");
+  await expect(page.getByTestId("clarify-chips")).toBeVisible();
+  await page.getByLabel("Your question").fill("The master agreement, notice period");
+  await page.getByRole("button", { name: "Ask" }).click();
+  await expect.poll(() => posts.length).toBe(2);
+  expect(posts[1]!["content"]).toBe("The master agreement, notice period");
+});
+
+test("clarify options are restored from history", async ({ page }) => {
+  const clar = {
+    id: "m-c1", role: "assistant", content: "More than one of your documents could answer this. Which one should I look in?",
+    created_at: "2026-11-13T10:00:05Z", response_type: "clarify", coverage_state: null, staleness: null, run_id: RUN,
+    followups: [], conflicts: [], segments: [{ ordinal: 0, text: "More than one of your documents could answer this. Which one should I look in?", support: "none", evidence: [] }],
+    clarify_options: [{ label: "Master services agreement", document_id: DOC }, { label: "Pricing memo", document_id: "22222222-2222-4222-8222-222222222222" }],
+  };
+  await mock(page, { history: [histUser, clar] });
+  await page.goto(`/app/chat?s=${SESSION}`);
+  await expect(page.getByTestId("clarify-chips").getByRole("button")).toHaveCount(2);
+  await expect(page.getByTestId("clarify-chips").getByRole("button").first()).toBeEnabled();
+});
+
+test("axe on a clarification", async ({ page }) => {
+  await mock(page, { stream: clarifyStream });
+  await ask(page, "What is the notice period?");
+  await expect(page.getByTestId("clarify-chips")).toBeVisible();
+  await axeClean(page, "clarify");
 });

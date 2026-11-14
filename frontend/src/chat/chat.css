@@ -393,3 +393,11 @@
     opacity: 1;
   }
 }
+
+.card-clarify {
+  border-left: 2px solid var(--red);
+  padding-left: var(--s3);
+}
+.card-clarify p {
+  margin: 0;
+}

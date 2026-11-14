@@ -33,6 +33,9 @@ async def list_messages(
                     "SELECT id, role, content, response_type, coverage_state, run_id, created_at, followups, "
                     "stale_since "
                     "FROM chat_messages WHERE session_id = :s AND owner_id = :o "
+                    "AND (run_id IS NULL OR run_id NOT IN (SELECT CAST(r.analysis->>'supersedes' AS uuid) "
+                    "FROM rag_runs r WHERE r.session_id = :s AND r.owner_id = :o AND r.status = 'completed' "
+                    "AND r.analysis->>'supersedes' IS NOT NULL)) "
                     "AND (CAST(:c_at AS timestamptz) IS NULL "
                     "OR (created_at, id) < (CAST(:c_at AS timestamptz), CAST(:c_id AS uuid))) "
                     "ORDER BY created_at DESC, id DESC LIMIT :n"
@@ -51,8 +54,12 @@ async def list_messages(
     conflicts = await load_conflicts(
         db, owner_id, [m["run_id"] for m in page if m["run_id"] and m["role"] == "assistant"]
     )
+    clarify = await _clarify_options(db, owner_id, page)
     return [
-        _item(m, segments.get(m["id"], []), stale.get(m["id"]), conflicts.get(m["run_id"])) for m in page
+        _item(
+            m, segments.get(m["id"], []), stale.get(m["id"]), conflicts.get(m["run_id"]), clarify.get(m["id"])
+        )
+        for m in page
     ], nxt
 
 
@@ -61,6 +68,7 @@ def _item(
     segments: list[dict[str, Any]],
     staleness: dict[str, Any] | None = None,
     conflicts: list[ConflictView] | None = None,
+    clarify: list[dict[str, str]] | None = None,
 ) -> dict[str, Any]:
     return {
         "id": str(m["id"]),
@@ -74,6 +82,7 @@ def _item(
         "segments": segments,
         "followups": list(m["followups"] or []),
         "conflicts": [c.model_dump() for c in conflicts or []] if m["role"] == "assistant" else [],
+        "clarify_options": clarify or [],
     }
 
 
@@ -100,7 +109,46 @@ async def get_message(db: AsyncSession, owner_id: uuid.UUID, message_id: uuid.UU
     conflicts = await load_conflicts(
         db, owner_id, [m["run_id"]] if m["run_id"] and m["role"] == "assistant" else []
     )
-    return _item(m, segments.get(m["id"], []), stale.get(m["id"]), conflicts.get(m["run_id"]))
+    clarify = await _clarify_options(db, owner_id, [m])
+    return _item(
+        m, segments.get(m["id"], []), stale.get(m["id"]), conflicts.get(m["run_id"]), clarify.get(m["id"])
+    )
+
+
+async def _clarify_options(
+    db: AsyncSession, owner_id: uuid.UUID, msgs: list[Any]
+) -> dict[uuid.UUID, list[dict[str, str]]]:
+    """`{label, document_id}` options of the clarification messages (stored with the run, S23.02)."""
+    marked = {m["run_id"]: m["id"] for m in msgs if m["response_type"] == "clarify" and m["run_id"]}
+    if not marked:
+        return {}
+    rows = await db.execute(
+        text("SELECT id, analysis->'clarify'->'options' FROM rag_runs WHERE owner_id = :o AND id = ANY(:r)"),
+        {"o": owner_id, "r": list(marked)},
+    )
+    return {marked[r[0]]: list(r[1] or []) for r in rows}
+
+
+async def clarify_pick(
+    db: AsyncSession, owner_id: uuid.UUID, session_id: uuid.UUID, message_id: uuid.UUID, option: int
+) -> tuple[str, uuid.UUID] | None:
+    """(the clarified question, the chosen document id) for option `option` of a clarification message of this
+    session; None when it is not a stored clarification of the owner or the index is out of range."""
+    row = (
+        await db.execute(
+            text(
+                "SELECT r.original_query, r.analysis->'clarify'->'options' "
+                "FROM chat_messages m JOIN rag_runs r "
+                "ON r.id = m.run_id AND r.owner_id = m.owner_id WHERE m.id = :i AND m.owner_id = :o "
+                "AND m.session_id = :s AND m.role = 'assistant' AND m.response_type = 'clarify'"
+            ),
+            {"i": message_id, "o": owner_id, "s": session_id},
+        )
+    ).first()
+    options = list(row[1] or []) if row is not None else []
+    if row is None or not 0 <= option < len(options):
+        return None
+    return str(row[0]), uuid.UUID(options[option]["document_id"])
 
 
 async def _staleness(
@@ -214,3 +262,16 @@ async def _segments(
                 }
             )
     return out
+
+
+async def run_of_message(
+    db: AsyncSession, owner_id: uuid.UUID, session_id: uuid.UUID, message_id: uuid.UUID
+) -> uuid.UUID | None:
+    """The run of the turn a message (user or assistant) belongs to, owner- and session-scoped."""
+    row = (
+        await db.execute(
+            text("SELECT run_id FROM chat_messages WHERE id = :i AND owner_id = :o AND session_id = :s"),
+            {"i": message_id, "o": owner_id, "s": session_id},
+        )
+    ).first()
+    return None if row is None or row[0] is None else uuid.UUID(str(row[0]))
