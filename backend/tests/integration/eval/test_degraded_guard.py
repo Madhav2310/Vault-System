@@ -95,7 +95,7 @@ async def test_warmup_once(sm: SM, make_owner: Callable[[], Any], tmp_path: path
 
     gw, _p, _l, _s = make_gateway(tmp_path)
     rr = RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
-    r = Retriever(QueryEmbedder(gw, None), rr, None, get_config())
+    r = Retriever(QueryEmbedder(gw, None), rr, None, get_config("retrieval@2-rerank"))
     await r.warm_up()
     assert calls == [1]  # exactly one tiny request, before any item
     from app.retrieval.scope import compute_scope
