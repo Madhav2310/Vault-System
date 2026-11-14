@@ -86,9 +86,10 @@ def install_runner(
     before: Callable[[], Awaitable[None]] | None = None,
     fast_path: bool = False,
     cfg: RetrievalConfig | None = None,
+    **settings: Any,
 ) -> FakeProvider:
     """Override the turn runner with a real `run_turn` over a scripted fake provider (`before` runs first)."""
-    gw, prov = fake_gateway(script, ledger=DbLedgerWriter(sm), fast_path=fast_path)
+    gw, prov = fake_gateway(script, ledger=DbLedgerWriter(sm), fast_path=fast_path, **settings)
     deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), rerank_client(), None, cfg))
 
     async def runner(*a: Any) -> None:
