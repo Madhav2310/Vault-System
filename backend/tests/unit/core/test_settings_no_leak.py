@@ -71,3 +71,23 @@ def test_answer_version_8_is_selectable_and_only_adds_the_relabel_rule(
     added = [ln for ln in eight if ln not in seven]
     assert [ln for ln in seven if ln not in eight] == [] and len(added) == 1
     assert "own label" in added[0] and "do not abstain" in added[0]
+
+
+def test_answer_version_9_selects_the_detail_discipline_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.chat.nodes.generate import answer_prompt
+    from app.llm.prompts import default_registry
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://u:p@h/db")
+    monkeypatch.setenv("REDIS_URL", "redis://h/0")
+    monkeypatch.setenv("CHAT_ANSWER_VERSION", "9")
+    s = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert answer_prompt(s) == ("answer_rag", 9)
+    reg = default_registry()
+    v7, v9 = reg.get("answer_rag", 7), reg.get("answer_rag", 9)
+    assert (v9.role, v9.purpose, v9.output, v9.effort, v9.max_tokens) == (
+        v7.role,
+        v7.purpose,
+        v7.output,
+        v7.effort,
+        v7.max_tokens,
+    )

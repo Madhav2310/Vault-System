@@ -127,8 +127,9 @@ class Settings(BaseSettings):
     chat_support_version: Literal[1, 2] = 1
     # --- answer prompt: 7 = answer_rag@7 (completeness-first, scope rule; accepted by the paired dev A/B);
     # 3 = the previous short-answer wording; 6 = @7 without the scope rule; 8 = @7 plus answering under the
-    # evidence's own period label instead of abstaining (off until the paired dev A/B decides) ---
-    chat_answer_version: Literal[3, 6, 7, 8] = 7
+    # evidence's own period label instead of abstaining (not adopted); 9 = @7 plus: no detail the cited
+    # sentence lacks, latest version only for current-terms questions, what an uncovered document does say ---
+    chat_answer_version: Literal[3, 6, 7, 8, 9] = 7
     # --- analysis prompt (S22.09): 3 = analyze_query@3 (shorter prompt and output budget); 2 until A/B ---
     chat_analyze_version: Literal[2, 3] = 2
     # --- compare quotas + coverage gate (S22.05): answer_compare@2 + repair; off until the A/B decides ---
