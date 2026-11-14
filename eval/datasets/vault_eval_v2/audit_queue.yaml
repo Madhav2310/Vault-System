@@ -3343,3 +3343,24 @@ queue:
   prev_reasons:
   - vault_fails_gold
   - strong_fails_gold
+# Owner review of 18 disputed items (2026-11-14), after the S21.05 apply. Rule: gold changes only if (a) the
+# source does not support the claim, (b) the claim is a verbatim-clause artifact, or (c) it requires more than
+# the question asks. Sources checked against the raw documents. Applied to the dataset files directly.
+review_2026_11_14:
+  conflict_policy: a superseded-value claim is required when the question invokes the version change ("once the
+    amendment is taken into account", "today") and not for a pure date lookup ("from February 2026")
+  applied:
+    pub_numeric_calc_af530d2752: {rule: a, change: 77.78 -> approximately 70 (700M total, 90% incurred)}
+    pub_multi_hop_7faab3b3fa: {rule: a, change: agreement between systems -> between the human references}
+    pub_multi_span_7c5d1d67f9: {rule: 'a, c', change: dataset headings -> the five trained tasks}
+    pub_single_span_0748ea720f: {rule: c, change: garbled term claim -> effective date March 1 2005}
+    pub_conditional_19f80c3435: {rule: 'b, c', change: verbatim term clause -> two atomic renewal facts}
+    s21-con-01: {rule: c, change: dropped the Amendment No. 1 attribution}
+    s21-con-10: {rule: c, change: dropped "no document says which is authoritative", disagreement kept}
+    pub_multi_span_6fed2a5316: {rule: b, change: claim 1 verbatim clause -> operative fact}
+    pub_multi_span_b732b8d7d4: {rule: c, change: claim 1 drops "who understand the knowledge base"}
+  rejected:
+    s21-con-14: the sources state different bases (annualised vs voluntary and involuntary leavers); the claim stays
+    s21-con-02: the question invokes the amendment; "replaces the twelve-month term" stays
+  unchanged_no_gold_change: [pub_multi_span_267f540bab, mig-summarize-qasper_factweet, pub_multi_span_9748844d4e,
+    pub_multi_hop_17217d5c78, pub_multi_hop_d508f95538, s21-mul-03, s21-cmp-18]

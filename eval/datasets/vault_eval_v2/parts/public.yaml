@@ -42,11 +42,11 @@ items:
   question: What is the effective date of the contract?
   source_doc: cuad_bangiinc_05_25_2005_ex_10_premium_manage_288d03
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - The effective date is The effective term is 12 months beginning March 1, 2005 and ending February 28, 2006..
+  - The effective date is March 1, 2005.
   alternates:
-    The effective date is The effective term is 12 months beginning March 1, 2005 and ending February 28, 2006..:
+    The effective date is March 1, 2005.:
     - '2005-03-01'
     - 1 March 2005
     - 3/1/2005
@@ -57,6 +57,10 @@ items:
     sentence_end: 9
   doc_ids:
   - cuad_bangiinc_05_25_2005_ex_10_premium_manage_288d03
+  optional_claims:
+  - The term is 12 months, ending February 28, 2006.
+  audit_note: '[review 2026-11-14: gold_wrong, rule c] Claim text was garbled and required the term; the question asks only
+    the effective date. Source sentence 8: the effective term is 12 months beginning March 1, 2005 and ending February 28, 2006.'
 - id: pub_single_span_07cc855990
   stratum: single_span
   question: Does 3M maintain a stable trend of dividend distribution?
@@ -749,18 +753,18 @@ items:
   question: How does the contract extend beyond its initial term?
   source_doc: cuad_cybergyholdingsinc_20140520_10_q_ex_10_2_b275e5
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - 'The agreement provides: This agreement shall begin upon the date of its execution by MA and acceptance in writing by
-    Company and shall remain in effect until the end of the current calendar year and shall be automatically renewed for successive
-    one (1) year periods unless otherwise terminated according to the cancellation or termination provisions contained in
-    paragraph 18 of this Agreement.'
+  - After the initial term, the agreement renews automatically for successive one-year periods.
+  - The renewal applies unless the agreement is terminated under its cancellation or termination provisions.
   gold_evidence:
   - doc: cuad_cybergyholdingsinc_20140520_10_q_ex_10_2_b275e5
     sentence_start: 19
     sentence_end: 20
   doc_ids:
   - cuad_cybergyholdingsinc_20140520_10_q_ex_10_2_b275e5
+  audit_note: '[review 2026-11-14: gold_wrong, rule b, c] Verbatim clause split into atomic facts; the start date, initial term
+    and paragraph number are not asked. Source [19].'
 - id: pub_conditional_30875f71ca
   stratum: conditional
   question: Under what conditions can a party end this agreement without cause?
@@ -1461,23 +1465,25 @@ items:
   question: How much does Pfizer expect to pay to spin off Upjohn in the future in USD million?
   source_doc: fb_pfizer_2023q2_10q
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - The answer is 77.78.
+  - The answer is approximately 70 (USD million).
   optional_claims:
-  - 10% cost is remaining amount in the future.
-  - 'Calculation: 700/9 is 10% of the cost remaining'
+  - About 10% of the approximately $700 million total remains to be incurred.
   alternates:
-    The answer is 77.78.:
-    - $77.78
+    The answer is approximately 70 (USD million).:
+    - $70 million
+    - about $70M
+    - '70'
   gold_evidence:
   - doc: fb_pfizer_2023q2_10q
     sentence_start: 2807
     sentence_end: 2809
   doc_ids:
   - fb_pfizer_2023q2_10q
-  audit_note: 'demoted from table_lookup: answer figure not verbatim in a gold-page row; gold is page-level: FinanceBench
-    evidence is a whole page'
+  audit_note: 'demoted from table_lookup: answer figure not verbatim in a gold-page row; gold is page-level: FinanceBench evidence
+    is a whole page [review 2026-11-14: gold_wrong, rule a] Source [2807]: costs of approximately $700 million, of which approximately
+    90% incurred; about $70M remains (700/9 misreads the total).'
 - id: pub_numeric_calc_b9c71e3ff7
   stratum: numeric_calc
   question: Taking into account the information outlined in the income statement, what is the FY2019 - FY2021 3 year average
@@ -1693,13 +1699,11 @@ items:
   question: Which revenue-sharing or profit-sharing terms appear in the contract?
   source_doc: cuad_ideanomicsinc_20151124_8_k_ex_10_2_93547_bfb865
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - 'The agreement provides: Such Advertising shall be determined by Licensee in its sole discretion and Licensee shall be
-    entitled to retain all revenues resulting from the sale of Advertising.'
-  - 'The agreement provides: The consideration for the licenses granted by Licensor to Licensee under this Agreement is the
-    issuance of the IP Common Shares as defined in the Securities Purchase Agreement, dated as of November 23, 2015, by and
-    among the Licensee and the Licensor (the "Share Consideration").'
+  - 'The agreement provides: Such Advertising shall be determined by Licensee in its sole discretion and Licensee shall be entitled
+    to retain all revenues resulting from the sale of Advertising.'
+  - The consideration for the licenses is the issuance of IP Common Shares.
   - 'The agreement provides: For content listed in Schedule A6 of Schedule A, Licensor will only grant Licensee certain profit
     participation rights, for certain durations, as detailed and set forth in Schedule A6 of Schedule A.'
   gold_evidence:
@@ -1714,6 +1718,8 @@ items:
     sentence_end: 94
   doc_ids:
   - cuad_ideanomicsinc_20151124_8_k_ex_10_2_93547_bfb865
+  audit_note: '[review 2026-11-14: gold_wrong, rule b] Verbatim clause reduced to its operative fact (source [93]); c0 and c2
+    unchanged.'
 - id: pub_multi_span_719892130d
   stratum: multi_span
   question: Why did they choose WER as evaluation metric?
@@ -1757,11 +1763,13 @@ items:
   question: What are the tasks used in the mulit-task learning setup?
   source_doc: qasper_1909_03526
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - 'The answer includes: Author profiling and deception detection in Arabic'
-  - 'The answer includes: LAMA+DINA Emotion detection'
-  - 'The answer includes: Sentiment analysis in Arabic tweets'
+  - The setup includes age detection.
+  - The setup includes gender detection.
+  - The setup includes dialect (variety) identification.
+  - The setup includes emotion detection.
+  - The setup includes sentiment analysis.
   gold_evidence:
   - doc: qasper_1909_03526
     sentence_start: 137
@@ -1777,6 +1785,8 @@ items:
     sentence_end: 153
   doc_ids:
   - qasper_1909_03526
+  audit_note: '[review 2026-11-14: gold_wrong, rule a, c] The paper trains on sentiment, gender, age, dialect and emotion ([141],
+    [147], [152], [65]) and says it does not use deception detection; the gold listed dataset headings.'
 - id: pub_multi_span_89fa363e6b
   stratum: multi_span
   question: List all parties to this agreement.
@@ -1913,17 +1923,18 @@ items:
   question: What experiments do the authors present to validate their system?
   source_doc: qasper_2003_08553
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: we measure our system''s performance for datasets across various domains'
-  - 'The answer includes: evaluations are done by managed judges who understands the knowledge base and then judge user queries
-    relevance to the QA pairs'
+  - Managed judges label the relevance of user queries to QA pairs.
   gold_evidence:
   - doc: qasper_2003_08553
     sentence_start: 220
     sentence_end: 226
   doc_ids:
   - qasper_2003_08553
+  audit_note: '[review 2026-11-14: gold_wrong, rule c] The judges'' understanding of the knowledge base is a property, not what
+    was asked; operative fact kept (source [221]).'
 - id: pub_multi_span_c08dce639e
   stratum: multi_span
   question: What dataset do they use?
@@ -2208,9 +2219,9 @@ items:
   question: What makes it a more reliable metric?
   source_doc: qasper_1808_08850
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - It takes into account the agreement between different systems
+  - WiSeBE takes into account the agreement between the (human) references.
   gold_evidence:
   - doc: qasper_1808_08850
     sentence_start: 459
@@ -2220,6 +2231,7 @@ items:
     sentence_end: 469
   doc_ids:
   - qasper_1808_08850
+  audit_note: '[review 2026-11-14: gold_wrong, rule a] Sources [468], [465]: agreement between references, not systems.'
 - id: pub_multi_hop_8006e9f12e
   stratum: multi_hop
   question: What models are used for painting embedding and what for language style transfer?

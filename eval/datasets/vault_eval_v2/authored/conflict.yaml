@@ -7,7 +7,7 @@ items:
   answer_type: answer
   audit_status: verified
   required_claims:
-  - From 1 February 2026, the applicable consulting rate is USD 165 per hour under Amendment No. 1.
+  - From 1 February 2026 the hourly rate is USD 165.
   gold_evidence:
   - doc: consulting_vantage_amend1
     sentence_start: 3
@@ -23,7 +23,9 @@ items:
   - consulting_vantage_amend1
   audit_note: 'Contract says USD 140; amendment sets USD 165 and states it replaces the corresponding provision, so the later
     version wins explicitly. [S21.05 audit: gold_wrong] The question asks only for the rate. The original-rate replacement explanation
-    is true context but not a required claim for this answer.'
+    is true context but not a required claim for this answer. [review 2026-11-14: gold_wrong, rule c] The question asks the
+    rate from February 2026, not which document sets it; the attribution is dropped (amend1 [3]). Conflict policy: a date lookup
+    carries no superseded-value claim.'
 - id: s21-con-02
   stratum: conflict
   question: How long does the Pinecrest and Vantage engagement last once the first amendment is taken into account?
@@ -210,7 +212,7 @@ items:
   required_claims:
   - The engineering post-mortem says 47 minutes (09:12 to 09:59 UTC).
   - The customer notice says 62 minutes.
-  - The two documents disagree and no document says which figure is authoritative.
+  - The post-mortem and the customer notice give different durations.
   gold_evidence:
   - doc: report_outage_postmortem
     sentence_start: 2
@@ -223,7 +225,8 @@ items:
   - report_outage_customer_notice
   audit_note: '47 versus 62 minutes; neither document supersedes the other. [S21.05 audit: system_wrong] Both durations and
     the fact that the sources conflict are essential to answer this question faithfully. Vault states all three; the proposed
-    fix wrongly drops the disagreement claim.'
+    fix wrongly drops the disagreement claim. [review 2026-11-14: gold_wrong, rule c] Neither source says which figure is authoritative;
+    the disagreement claim stays (post-mortem [2] vs notice [2]).'
 - id: s21-con-11
   stratum: conflict
   question: Which regions were hit by the 9 September login failure?
