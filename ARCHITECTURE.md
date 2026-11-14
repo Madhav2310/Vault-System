@@ -399,6 +399,7 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 | `analyze_query@2` | fast | Intent, standalone query, dimensions, optional document narrowing, optional meta operation, clarification hint | Default (`backend/app/chat/nodes/analyze.py`) |
 | `analyze_query@3` | fast | The same job in a shorter prompt (about 25% fewer tokens, question last, 500 max tokens) | Switch `CHAT_ANALYZE_VERSION=3` |
 | `answer_rag@7` | balanced | Segments with evidence handles, conflicts and follow-ups; answers every part the question asks, keeps qualifiers, names a document that has no such statement, and stays within the version or document the question names | Default (`CHAT_ANSWER_VERSION=7`, `backend/app/chat/nodes/generate.py`) |
+| `answer_rag@8` | balanced | `answer_rag@7` plus one rule: when the evidence states what the question asks under its own period label (the question says FY2023, the text says fiscal 2022), the model states the label difference in an uncited segment and answers under the evidence's label instead of abstaining | Switch `CHAT_ANSWER_VERSION=8` |
 | `answer_rag@3` | balanced | The short-answer wording ("as short as the question allows"); the plan and calc prompts below build on it | `CHAT_ANSWER_VERSION=3` |
 | `answer_rag@4` | balanced | `answer_rag@3` plus a `plan` of required elements; code decides coverage | Switch `CHAT_PLAN_FIRST` |
 | `answer_rag@5` | balanced | `answer_rag@4` plus typed calculation segments; code does the arithmetic | Switch `CHAT_CALC` |
@@ -431,7 +432,7 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 | `CHAT_COMPARE_QUOTA` | `false` | `answer_compare@2` and a per-document coverage repair | Paired dev evaluation on compare and conflict strata |
 | `CHAT_SCOPE_FLOOR` | `false` | Plain qa turns over 2-5 scoped documents: a document with fewer than two selected chunks is topped up from its own best candidates | Paired dev evaluation on aggregation and compare strata |
 | `CHAT_SUPPORT_VERSION` | `1` | `2` selects `support_check@2`: prune, remove unsupported segments and regenerate once | Paired dev evaluation |
-| `CHAT_ANSWER_VERSION` | `7` | `7` completeness-first answers; `3` the short-answer wording (`6` is `7` without the scope rule) | Paired dev evaluation: answer_pass +8.5 points, 95% CI [+1.9, +16.1], no guard metric regressed |
+| `CHAT_ANSWER_VERSION` | `7` | `7` completeness-first answers; `3` the short-answer wording (`6` is `7` without the scope rule); `8` is `7` plus answering under the evidence's own period label instead of abstaining, off until a paired dev evaluation accepts it | Paired dev evaluation: answer_pass +8.5 points, 95% CI [+1.9, +16.1], no guard metric regressed |
 | `CHAT_ANALYZE_VERSION` | `2` | `3` selects the shorter `analyze_query@3` | Paired dev evaluation plus a live time-to-first-token measurement |
 | `CHAT_ABSTAIN_SCORED` | `false` | Logistic abstention (`backend/config/abstain@1.yaml`, `fitted: false`) in place of the floor gate | Calibration on the train split, then a paired dev evaluation |
 | `CHAT_LOCATE` (+ `CHAT_LOCATE_MIN_CHUNKS` 150, `CHAT_LOCATE_MIN_PAGES` 60) | `false` | Locate loop for long single documents | Paired dev evaluation on long-filing strata |
