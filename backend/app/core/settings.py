@@ -125,6 +125,8 @@ class Settings(BaseSettings):
     # --- support check (S22.06): 2 = support_check@2 (prunes unneeded citations, removes unsupported
     # segments, one regeneration if every segment fails); 1 until the paired A/B accepts it ---
     chat_support_version: Literal[1, 2] = 1
+    # --- completeness-first answers: 6 = answer_rag@6 (every asked part, qualifiers, gaps); 3 until A/B ---
+    chat_answer_version: Literal[3, 6] = 3
     # --- analysis prompt (S22.09): 3 = analyze_query@3 (shorter prompt and output budget); 2 until A/B ---
     chat_analyze_version: Literal[2, 3] = 2
     # --- compare quotas + coverage gate (S22.05): answer_compare@2 + repair; off until the A/B decides ---
@@ -153,7 +155,7 @@ class Settings(BaseSettings):
     otel_service_name: str = "vault-api"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
-    @field_validator("chat_support_version", "chat_analyze_version", mode="before")
+    @field_validator("chat_support_version", "chat_analyze_version", "chat_answer_version", mode="before")
     @classmethod
     def _int_from_env(cls, v: object) -> object:
         """Env vars arrive as strings ("2"); the Literal[int] fields need the int."""

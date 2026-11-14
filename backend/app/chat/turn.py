@@ -26,6 +26,7 @@ from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_
 from app.chat.nodes._common import ERROR_TEXT, NO_DOCUMENTS, NO_EVIDENCE, flush_segments, plain
 from app.chat.nodes.compare_retrieve import compare_retrieve
 from app.chat.nodes.gate import gate
+from app.chat.nodes.generate import answer_prompt
 from app.chat.nodes.load_context import load_context
 from app.chat.nodes.locate import locate
 from app.chat.nodes.meta import meta
@@ -158,7 +159,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
                 f"analyze_query@{deps.gateway.settings.chat_analyze_version}",
                 f"answer_compare@{compare_prompt(deps.gateway.settings)[1]}"
                 if state.compare
-                else "answer_rag@3",
+                else f"answer_rag@{answer_prompt(deps.gateway.settings)[1]}",
                 f"support_check@{deps.gateway.settings.chat_support_version}",
                 *(recorded_voice(deps.gateway.settings) if gen.call_ids else []),
             ],

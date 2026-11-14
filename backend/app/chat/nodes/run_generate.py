@@ -12,7 +12,7 @@ from app.chat.evidence import build_evidence
 from app.chat.followups import clean_followups
 from app.chat.graph import TURN_ERROR, TurnCtx, TurnState
 from app.chat.nodes._common import ERROR_TEXT, abstain_followups, emit_segment, flush_segments, plain
-from app.chat.nodes.generate import GenerateResult
+from app.chat.nodes.generate import GenerateResult, answer_prompt
 from app.chat.nodes.generate import generate as generate_answer
 from app.chat.voice import generate_call as voice_call
 from app.llm.errors import LlmError
@@ -23,6 +23,7 @@ def generate_kwargs(state: TurnState, ctx: TurnCtx) -> dict[str, Any]:
     assert state.analysis is not None
     full = state.mode == "full_context"
     call: dict[str, Any] = {"route": state.analysis.intent if full else "qa"}
+    call["prompt"] = answer_prompt(ctx.deps.gateway.settings)  # compare, plan and calc below override
     call.update(
         compare_call(state, ctx.deps.gateway.settings) if state.compare else {}
     )  # S18.06: route, prompt, coverage (S22.05: quota prompt when switched on)

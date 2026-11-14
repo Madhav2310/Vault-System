@@ -24,3 +24,17 @@ def test_version_switches_read_from_env(monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("CHAT_ANALYZE_VERSION", "3")
     s = Settings(_env_file=None)  # type: ignore[call-arg]
     assert s.chat_support_version == 2 and s.chat_analyze_version == 3
+
+
+def test_answer_version_switch_reads_from_env_and_selects_the_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
+    from app.chat.nodes.generate import COMPLETE_PROMPT, PROMPT, answer_prompt
+    from app.llm.prompts import default_registry
+
+    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://u:p@h/db")
+    monkeypatch.setenv("REDIS_URL", "redis://h/0")
+    monkeypatch.delenv("CHAT_ANSWER_VERSION", raising=False)
+    assert answer_prompt(Settings(_env_file=None)) == PROMPT  # type: ignore[call-arg]
+    monkeypatch.setenv("CHAT_ANSWER_VERSION", "6")
+    s = Settings(_env_file=None)  # type: ignore[call-arg]
+    assert s.chat_answer_version == 6 and answer_prompt(s) == COMPLETE_PROMPT
+    assert "every part" in default_registry().get(*COMPLETE_PROMPT).body
