@@ -10,6 +10,7 @@ import uuid
 
 from app.chat.clarify import near_tie
 from app.chat.graph import TurnCtx, TurnState
+from app.chat.memory import merge_carried, previous_selected_chunk_ids
 from app.chat.nodes.run_analyze import clarify_ok
 from app.chat.speculative import HIT, MISS, cancel
 from app.retrieval.load import load_evidence_chunks
@@ -66,6 +67,13 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
         )
     async with deps.sm() as s:
         state.chunks = await load_evidence_chunks(s, ctx.owner_id, list(result.selected))
+        carry = deps.gateway.settings.chat_memory_carry_evidence
+        if carry and state.memory is not None and state.memory.turns:
+            prior = await previous_selected_chunk_ids(
+                s, ctx.owner_id, ctx.session_id, ctx.run_id, limit=carry
+            )
+            carried = await load_evidence_chunks(s, ctx.owner_id, prior)
+            state.chunks = merge_carried(state.chunks, carried, set(state.scope.version_ids), limit=carry)
     state.retrieval = result
     _near_tie(state, ctx, result)
     state.degraded += result.degraded

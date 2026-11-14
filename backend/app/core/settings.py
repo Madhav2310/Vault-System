@@ -151,6 +151,10 @@ class Settings(BaseSettings):
     # --- clarify when ambiguous (S23.02): code-checked ambiguity gives option chips; off until reviewed ---
     chat_clarify: bool = False
 
+    # --- follow-up memory: number of top chunks of the previous turn's evidence added to a follow-up's
+    # own retrieval (0 = off); a rewritten follow-up often retrieves only the new subject ---
+    chat_memory_carry_evidence: int = 0
+
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"
