@@ -68,7 +68,7 @@ async def test_llm_rerank_ledgered(
     await seed_chunk(sm, o.id)
     base = answer_script(Q, *ONE)[1:]  # fast path: embed slot, answer, support check
     script = [base[0], structured({"ranking": [1]}), *base[1:]]
-    prov = install_runner(api, sm, script, fast_path=True, cfg=get_config("retrieval@2-llm"))
+    prov = install_runner(api, sm, script, fast_path=True, cfg=get_config("retrieval@5"))
     r = await post(api, o, await new_session(api, o), Q, "m1")
     assert r.status_code == 200 and r.json()["message"]["response_type"] == "answer"
     assert len(prov.requests) == 3  # rerank, generate, support check (the embedding is counted apart)
@@ -86,7 +86,7 @@ async def test_llm_rerank_failure_degrades(
     await seed_chunk(sm, o.id)
     base = answer_script(Q, *ONE)[1:]
     script = [base[0], bad_request(), *base[1:]]
-    install_runner(api, sm, script, fast_path=True, cfg=get_config("retrieval@2-llm"))
+    install_runner(api, sm, script, fast_path=True, cfg=get_config("retrieval@5"))
     r = await post(api, o, await new_session(api, o), Q, "m1")
     assert r.status_code == 200 and r.json()["message"]["response_type"] == "answer"
     async with sm() as s:
@@ -109,7 +109,7 @@ async def test_rerank_none_no_http(
 
     reranker = RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
     gw, _prov, _, _ = make_gateway(tmp_path)
-    r = Retriever(QueryEmbedder(gw, None), reranker, None, get_config("retrieval@2-norerank"))
+    r = Retriever(QueryEmbedder(gw, None), reranker, None, get_config("retrieval@2"))
     async with sm() as s:
         scope = await compute_scope(s, o.id, None)
         res = await r.retrieve(s, o.id, scope, Q)

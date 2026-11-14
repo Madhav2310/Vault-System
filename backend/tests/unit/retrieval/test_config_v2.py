@@ -19,8 +19,7 @@ def test_both_versions_load(tmp_path: pathlib.Path) -> None:
         "none",
     )
     assert get_config().version == "retrieval@5"  # the default
-    assert get_config("retrieval@2-norerank").rerank.kind == "none"
-    assert get_config("retrieval@2-llm").rerank.kind == "llm"
+    assert get_config("retrieval@5").rerank.kind == "llm"
     raw = yaml.safe_load((CONFIG_DIR / "retrieval@2.yaml").read_text())
     raw["rerank"]["kind"] = "bogus"
     bad = tmp_path / "retrieval@2.yaml"

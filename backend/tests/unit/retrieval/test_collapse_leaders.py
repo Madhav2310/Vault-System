@@ -63,12 +63,9 @@ def test_original_text_is_not_modified() -> None:
     assert text == before
 
 
-def test_retrieval_5_collapses_and_earlier_versions_do_not() -> None:
+def test_the_default_collapses_and_the_fusion_baseline_does_not() -> None:
     assert get_config("retrieval@5").rerank.collapse_leaders is True
-    assert get_config("retrieval@4").rerank.collapse_leaders is False
     assert get_config("retrieval@2").rerank.collapse_leaders is False
-    a, b = get_config("retrieval@4"), get_config("retrieval@5")
-    assert a.model_dump(exclude={"version", "rerank"}) == b.model_dump(exclude={"version", "rerank"})
 
 
 def test_collapse_takes_the_number_only_sentences_after_the_label() -> None:

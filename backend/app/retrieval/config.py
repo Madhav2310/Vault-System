@@ -49,7 +49,6 @@ class RetrievalConfig(BaseModel):
     expansion: ExpansionCfg
     cache_ttl_s: int = Field(ge=0)
     gate: GateCfg
-    per_doc_evidence: int = Field(default=0, ge=0, le=20)  # multi-document: per-document top chunks
     lexical: Literal["v1", "v2"] = "v1"  # v2 = S22.03: length-normalised rank_cd, number/unit variants
     single_doc_full_k: bool = False  # one-document scope: no per_doc_quota (it caps the list below k_vec)
 

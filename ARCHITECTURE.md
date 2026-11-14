@@ -405,7 +405,7 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 | `support_check@1` | fast | Per-segment support verdict; advisory | Default |
 | `support_check@2` | fast | Verdict plus the minimal handles needed; code repairs the answer | Switch `CHAT_SUPPORT_VERSION=2` |
 | `locate_step@1` | fast | Typed next move of the locate loop | Switch `CHAT_LOCATE` |
-| `rerank_listwise@1` | fast | LLM listwise rerank | Retrieval config `retrieval@2-llm` only |
+| `rerank_listwise@1` | fast | LLM listwise rerank over the top 50 fused candidates | Default, through `retrieval@5` |
 | `brief_extract@3` | balanced | Document brief: summary, facts with handles, tags, category (1,800 max tokens) | Default (`backend/app/insights/stage.py`) |
 | `brief_merge@2` | fast | Merge of map-step briefs, with tone | Default |
 | `summary_custom@1` | balanced | Custom summaries (`POST /v1/documents/{id}/summaries`) | Default (`backend/app/insights/summaries.py`) |
@@ -433,7 +433,7 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 | `CHUNKER_VERSION` | `chunker@1` | `chunker@2`, `chunker@2-overlap25` | Retrieval-only paired evaluation after a re-ingest |
 | `INDEX_CONTEXT` | `none` | `deterministic` or `llm` index-only headers | Retrieval-only paired evaluation after a re-ingest |
 | `CONTEXTUALIZE_VARIANT` (+ `CONTEXTUALIZE_MAX_USD` $0.02) | `off` | Alias for the same stage as `INDEX_CONTEXT`; `INDEX_CONTEXT` wins when both are set | As `INDEX_CONTEXT` |
-| `RETRIEVAL_CONFIG` | `retrieval@5` | `retrieval@4` (no leader collapse), `retrieval@3`, `retrieval@2` (no reranker), `retrieval@2-rerank`, `-llm`, `-lexical2`, `-norerank`, `-fullk`, `retrieval@1` | Retrieval-only paired evaluation (section 5) |
+| `RETRIEVAL_CONFIG` | `retrieval@5` | `retrieval@2` (fusion order, no reranker), `retrieval@2-rerank` (cross-encoder), `retrieval@2-lexical2`, `retrieval@1` (the retrieval-only gate baseline) | Retrieval-only paired evaluation (section 5) |
 
 Operational settings that are not behaviour experiments:
 

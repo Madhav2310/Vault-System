@@ -99,15 +99,10 @@ def test_build_prompt_numbers_from_one() -> None:
     assert "[1] a" in p and "[2] b" in p
 
 
-def test_llm_config_loads() -> None:
-    cfg = get_config("retrieval@2-llm")
-    assert cfg.rerank.kind == "llm" and cfg.rerank.candidates == 20 and cfg.version == "retrieval@2-llm"
-
-
 def test_deep_pool_config_sends_every_candidate_to_the_reranker() -> None:
     from app.retrieval.retrieve import Retriever
 
-    cfg = get_config("retrieval@4")
+    cfg = get_config("retrieval@5")
     assert cfg.rerank.kind == "llm" and cfg.rerank.candidates == 50 and cfg.rerank.top_n == 8
     gw, _ = fake_gateway([])
     r = Retriever(SimpleNamespace(gateway=gw), object(), None, cfg=cfg)  # type: ignore[arg-type]
