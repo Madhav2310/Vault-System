@@ -1,4 +1,4 @@
-import { ApiError, getApiKey, NetworkError } from "../api/client";
+import { ApiError, CSRF_HEADERS, NetworkError } from "../api/client";
 import type {
   ChatEvent,
   ChatSession,
@@ -62,10 +62,9 @@ export const chatApi = {
     clientMessageId: string,
     signal?: AbortSignal,
   ): AsyncGenerator<ChatEvent> {
-    const key = getApiKey();
     const opts: Parameters<typeof streamEvents<ChatEvent>>[1] = {
       method: "POST",
-      headers: key ? { Authorization: `Bearer ${key}` } : {},
+      headers: CSRF_HEADERS,
       body:
         "content" in turn
           ? { content: turn.content, client_message_id: clientMessageId }

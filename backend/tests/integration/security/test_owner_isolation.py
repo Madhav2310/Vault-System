@@ -28,6 +28,9 @@ from tests.support.uploads import VALID_PDF, multipart
 ALLOWLIST: dict[str, str] = {
     "GET /healthz": "liveness probe: no auth, no data",
     "GET /readyz": "readiness probe: dependency status only, no owner data",
+    "POST /v1/session": "stateless login: returns no owner data, only a cookie bound to the caller's own key",
+    "GET /v1/session": "credential probe: 204 or 401, no owner data",
+    "DELETE /v1/session": "clears the caller's own cookie; touches no resource",
     "GET /v1/chat/events/schema": "static SSE event JSON schema: identical for every caller (asserted below)",
 }
 

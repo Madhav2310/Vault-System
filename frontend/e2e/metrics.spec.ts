@@ -22,7 +22,7 @@ const chat = {
 };
 
 async function mock(page: Page, windows: string[] = []) {
-  await page.addInitScript(() => localStorage.setItem("vault.apiKey", "vk_test_demo"));
+  await page.route("**/v1/session", (r) => r.fulfill({ status: 204 })); // session cookie probe
   await page.route("**/v1/metrics/documents", (r) => r.fulfill(json(documents)));
   await page.route("**/v1/metrics/processing**", (r) => {
     const w = new URL(r.request().url()).searchParams.get("window") ?? "";

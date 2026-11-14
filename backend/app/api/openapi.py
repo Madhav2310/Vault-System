@@ -26,9 +26,14 @@ TAGS: list[dict[str, str]] = [
         "name": "Metrics",
         "description": "Documents, processing and chat metrics (owner scope; admin may use global).",
     },
+    {
+        "name": "Session",
+        "description": "Exchange an API key for an httpOnly session cookie (browser UI); curl uses Bearer.",
+    },
     {"name": "Health", "description": "Liveness and readiness. No authentication."},
 ]
 SECURITY_SCHEME = "ApiKey"
+COOKIE_SCHEME = "SessionCookie"
 HEALTH_TAG = "Health"
 
 _ERROR_DESCRIPTIONS = {
@@ -86,7 +91,17 @@ def polish(schema: dict[str, Any]) -> dict[str, Any]:
             "scheme": "bearer",
             "bearerFormat": "vk_<token>",
             "description": "Your API key: `Authorization: Bearer vk_...`",
-        }
+        },
+        COOKIE_SCHEME: {
+            "type": "apiKey",
+            "in": "cookie",
+            "name": "vault_session",
+            "description": (
+                "Set by `POST /v1/session` (httpOnly, SameSite=Strict). State-changing requests "
+                "authenticated by this cookie must also send `X-Requested-With: vault-ui`; "
+                "Bearer requests need no such header."
+            ),
+        },
     }
     schema["tags"] = TAGS
     for ops in schema["paths"].values():
@@ -104,7 +119,8 @@ def polish(schema: dict[str, Any]) -> dict[str, Any]:
                 if _is_error(code):
                     responses[code] = _error_response(code, responses[code])
             op["responses"] = dict(sorted(responses.items()))
-            op["security"] = [] if health else [{SECURITY_SCHEME: []}]
+            login = op.get("operationId", "").startswith("login_session")
+            op["security"] = [] if health or login else [{SECURITY_SCHEME: []}, {COOKIE_SCHEME: []}]
     return schema
 
 

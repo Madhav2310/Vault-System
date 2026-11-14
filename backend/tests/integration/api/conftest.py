@@ -67,6 +67,10 @@ async def db_client(session: AsyncSession) -> AsyncIterator[httpx.AsyncClient]:
     async def whoami(user: CurrentUser) -> dict[str, object]:
         return {"id": str(user.id), "email": user.email, "is_admin": user.is_admin}
 
+    @app.post("/_test/whoami")
+    async def whoami_post(user: CurrentUser) -> dict[str, object]:
+        return {"email": user.email}
+
     async def _db() -> AsyncIterator[AsyncSession]:
         yield session
 

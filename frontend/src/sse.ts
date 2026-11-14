@@ -84,7 +84,7 @@ export class SseHttpError extends Error {
 export async function* streamEvents<E>(url: string, opts: StreamOptions<E>): AsyncGenerator<E> {
   const f = opts.fetchImpl ?? fetch;
   const headers: Record<string, string> = { Accept: "text/event-stream", ...opts.headers };
-  const init: RequestInit = { method: opts.method ?? "GET", headers };
+  const init: RequestInit = { method: opts.method ?? "GET", headers, credentials: "same-origin" };
   if (opts.signal) init.signal = opts.signal;
   if (opts.body !== undefined) {
     headers["Content-Type"] = "application/json";

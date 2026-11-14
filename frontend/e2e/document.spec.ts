@@ -48,7 +48,7 @@ function brief(chunk: string, pages: number[]) {
 }
 
 async function mock(page: Page, opts: { doc: string; chunk: string; pages: number[] }) {
-  await page.addInitScript(() => localStorage.setItem("vault.apiKey", "vk_test_demo"));
+  await page.route("**/v1/session", (r) => r.fulfill({ status: 204 })); // session cookie probe
   const json = (body: unknown, status = 200) => ({ status, contentType: "application/json", body: JSON.stringify(body) });
   await page.route("**/v1/documents/**", (r) => {
     const url = new URL(r.request().url());
@@ -164,7 +164,7 @@ function versionJson(no: number, status: string) {
 }
 
 async function mockVersions(page: Page, state: { versions: ReturnType<typeof versionJson>[]; current: string; uploads: string[]; deletes: number }) {
-  await page.addInitScript(() => localStorage.setItem("vault.apiKey", "vk_test_demo"));
+  await page.route("**/v1/session", (r) => r.fulfill({ status: 204 })); // session cookie probe
   const json = (body: unknown, status = 200) => ({ status, contentType: "application/json", body: JSON.stringify(body) });
   await page.route("**/v1/documents?**", (r) => r.fulfill(json({ items: [], next_cursor: null })));
   await page.route("**/v1/documents/**", (r) => {

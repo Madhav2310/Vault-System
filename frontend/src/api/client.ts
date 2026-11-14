@@ -11,24 +11,11 @@ import type {
   VersionStatus,
 } from "./types";
 
-const KEY_STORAGE = "vault.apiKey";
-
-export function getApiKey(): string {
-  try {
-    return localStorage.getItem(KEY_STORAGE) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-export function setApiKey(key: string): void {
-  try {
-    if (key) localStorage.setItem(KEY_STORAGE, key);
-    else localStorage.removeItem(KEY_STORAGE);
-  } catch {
-    /* storage unavailable: the key lasts until reload */
-  }
-}
+/**
+ * Auth is an httpOnly session cookie set by POST /v1/session (S22.11): the key is never stored in the page.
+ * State-changing requests carry this custom header, which the server requires for cookie auth (CSRF guard).
+ */
+export const CSRF_HEADERS: Record<string, string> = { "X-Requested-With": "vault-ui" };
 
 /** A mapped API failure. `retryAfterS` comes from Retry-After on 429. */
 export class ApiError extends Error {
@@ -63,14 +50,13 @@ async function toError(res: Response): Promise<ApiError> {
 }
 
 function authHeaders(): Record<string, string> {
-  const key = getApiKey();
-  return key ? { Authorization: `Bearer ${key}` } : {};
+  return CSRF_HEADERS;
 }
 
 async function request(path: string, init: RequestInit = {}): Promise<Response> {
   let res: Response;
   try {
-    res = await fetch(path, { ...init, headers: { ...authHeaders(), ...init.headers } });
+    res = await fetch(path, { ...init, credentials: "same-origin", headers: { ...authHeaders(), ...init.headers } });
   } catch (e) {
     if (e instanceof DOMException && e.name === "AbortError") throw e;
     throw new NetworkError("Network error: could not reach the server.");
@@ -137,9 +123,28 @@ export const api = {
     await request(`/v1/documents/${id}`, { method: "DELETE" });
   },
 
-  /** Probe the key without side effects. */
-  async ping(): Promise<void> {
-    await request("/v1/documents?limit=1");
+  /** Exchange the API key for the session cookie. The key is not kept. */
+  async login(apiKey: string): Promise<void> {
+    await request("/v1/session", {
+      method: "POST",
+      body: JSON.stringify({ api_key: apiKey }),
+      headers: { "Content-Type": "application/json" },
+    });
+  },
+
+  async logout(): Promise<void> {
+    await request("/v1/session", { method: "DELETE" });
+  },
+
+  /** True when the session cookie is valid; false on 401. Other failures throw. */
+  async hasSession(): Promise<boolean> {
+    try {
+      await request("/v1/session");
+      return true;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return false;
+      throw e;
+    }
   },
 
   processingEvents(versionId: string, signal?: AbortSignal): AsyncGenerator<ProcessingEvent> {

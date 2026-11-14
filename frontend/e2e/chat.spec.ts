@@ -69,7 +69,7 @@ interface Opts {
 }
 
 async function mock(page: Page, o: Opts = {}) {
-  await page.addInitScript(() => localStorage.setItem("vault.apiKey", "vk_test_demo"));
+  await page.route("**/v1/session", (r) => r.fulfill({ status: 204 })); // session cookie probe
   await page.route("**/v1/documents?**", (r) => r.fulfill(json({ items: [], next_cursor: null })));
   await page.route("**/v1/chat/sessions?**", (r) => r.fulfill(json({ items: [session], next_cursor: null })));
   await page.route("**/v1/chat/sessions", (r) =>
