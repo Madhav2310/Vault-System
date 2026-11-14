@@ -412,6 +412,8 @@ class BriefStage:
     name = "brief"
 
     async def run(self, ctx: StageContext) -> StageResult:
+        if not ctx.services["settings"].brief_enabled:  # BRIEF_ENABLED=false: no enrichment, stays `ready`
+            return StageResult(detail={"skipped": "disabled"})
         gateway: LlmGateway | None = ctx.services.get("gateway")
         if gateway is None:  # no model access in this runtime: leave the version `ready`
             return StageResult(detail={"skipped": "no_gateway"})
