@@ -430,6 +430,7 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 | `CHAT_CALC` | `false` | `answer_rag@5`: typed calculations computed in code with `Decimal` (`backend/app/chat/calc.py`) | Paired dev evaluation on the numeric stratum |
 | `CHAT_COMPARE_QUOTA` | `false` | `answer_compare@2` and a per-document coverage repair | Paired dev evaluation on compare and conflict strata |
 | `CHAT_SCOPE_FLOOR` | `false` | Plain qa turns over 2-5 scoped documents: a document with fewer than two selected chunks is topped up from its own best candidates | Paired dev evaluation on aggregation and compare strata |
+| `CHAT_NAMED_DOCS` | `false` | A question that names 2-5 scoped documents (matched in code against titles and opening text, no model call) also retrieves inside each named document and tops each up to `CHAT_NAMED_DOCS_K` (3) chunks in the global selection | Paired dev evaluation on compare, aggregation and conflict strata |
 | `CHAT_SUPPORT_VERSION` | `1` | `2` selects `support_check@2`: prune, remove unsupported segments and regenerate once | Paired dev evaluation |
 | `CHAT_ANSWER_VERSION` | `7` | `7` completeness-first answers; `3` the short-answer wording (`6` is `7` without the scope rule) | Paired dev evaluation: answer_pass +8.5 points, 95% CI [+1.9, +16.1], no guard metric regressed |
 | `CHAT_ANALYZE_VERSION` | `2` | `3` selects the shorter `analyze_query@3` | Paired dev evaluation plus a live time-to-first-token measurement |
