@@ -22,8 +22,6 @@ htmlcov/
 data/
 *.log
 
-# Design-phase transcript from another assistant (kept locally, not part of the submission)
-docs/archive/
 
 # Third-party eval sources (fetched by eval/build/fetch_sources.sh)
 eval/sources/
