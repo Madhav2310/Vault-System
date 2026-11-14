@@ -2,6 +2,7 @@
 
 import re
 import uuid
+from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
@@ -101,3 +102,19 @@ def test_build_prompt_numbers_from_one() -> None:
 def test_llm_config_loads() -> None:
     cfg = get_config("retrieval@2-llm")
     assert cfg.rerank.kind == "llm" and cfg.rerank.candidates == 20 and cfg.version == "retrieval@2-llm"
+
+
+def test_deep_pool_config_sends_every_candidate_to_the_reranker() -> None:
+    from app.retrieval.retrieve import Retriever
+
+    cfg = get_config("retrieval@4")
+    assert cfg.rerank.kind == "llm" and cfg.rerank.candidates == 50 and cfg.rerank.top_n == 8
+    gw, _ = fake_gateway([])
+    r = Retriever(SimpleNamespace(gateway=gw), object(), None, cfg=cfg)  # type: ignore[arg-type]
+    assert r._llm_reranker is not None and r._llm_reranker._max == 50
+
+
+async def test_reranker_ranks_passages_beyond_thirty() -> None:
+    gw, _ = fake_gateway([structured({"ranking": [45, 1]})])
+    out = await LlmReranker(gw, max_passages=50).rerank("q", _passages(50), 2)
+    assert not out.degraded and [i.chunk_id.int for i in out.items] == [45, 1]

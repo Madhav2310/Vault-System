@@ -27,7 +27,7 @@ from app.retrieval.config import RetrievalConfig, get_config, vector_quota
 from app.retrieval.expand import expand_neighbors
 from app.retrieval.fusion import FusedCandidate, Ranked, fuse
 from app.retrieval.lexical import LexicalHit, lexical_search
-from app.retrieval.listwise import LlmReranker
+from app.retrieval.listwise import MAX_PASSAGES, LlmReranker
 from app.retrieval.per_doc import add_per_document
 from app.retrieval.query_embed import QueryEmbedder, QueryEmbedding, normalize_query
 from app.retrieval.rerank import RerankClient, RerankedItem, RerankPassage, RerankResult
@@ -160,7 +160,9 @@ class Retriever:
         self._redis = redis
         self._cfg = cfg or get_config()
         self._llm_reranker = llm_reranker or (
-            LlmReranker(embedder.gateway) if self._cfg.rerank.kind == "llm" else None
+            LlmReranker(embedder.gateway, max_passages=max(MAX_PASSAGES, self._cfg.rerank.candidates))
+            if self._cfg.rerank.kind == "llm"
+            else None
         )
 
     async def warm_up(self) -> None:
