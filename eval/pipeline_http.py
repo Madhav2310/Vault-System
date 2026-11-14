@@ -15,6 +15,7 @@ import os
 import pathlib
 import time
 import uuid
+from collections.abc import Sequence
 from typing import Any
 
 import httpx
@@ -34,11 +35,31 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 READY = {"ready", "enriched"}
 
 
-async def setup(config: str, *, with_judges: bool | None = None, stream: bool = False) -> Harness:
+async def setup(
+    config: str,
+    *,
+    with_judges: bool | None = None,
+    stream: bool = False,
+    dataset: str = "v1",
+    doc_keys: Sequence[str] | None = None,
+) -> Harness:
+    """`dataset="v2"` uploads the documents `doc_keys` names (map: vault_eval_v2/documents.yaml) in
+    ingest-light mode (wait for `ready`; the brief stage is never awaited), attaches judges, gold."""
     import os
 
     base = os.environ.get("API_BASE_URL", "http://localhost:8100")
-    ds = load_dataset()
+    v2 = dataset == "v2"
+    if v2:
+        from eval.build.build_v2_docs import document_units, load_documents_v2, missing_files, resolve_file
+
+        v2_docs = load_documents_v2()
+        keys = list(doc_keys or ())
+        if bad := missing_files(keys, v2_docs):
+            lines = [f"  {k}: {why}" for k, why in list(bad.items())[:20]]
+            raise RuntimeError(f"{len(bad)} v2 document(s) unavailable:\n" + "\n".join(lines))
+        documents: dict[str, dict[str, Any]] = {k: v2_docs[k] for k in keys}
+    else:
+        documents = load_dataset().documents
     with_judges = config.startswith("answers") if with_judges is None else with_judges
     sm = get_sessionmaker()
     key, uid = new_api_key(), uuid.uuid4()
@@ -47,8 +68,8 @@ async def setup(config: str, *, with_judges: bool | None = None, stream: bool = 
         await s.commit()
     http = httpx.AsyncClient(base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=180)
     doc_ids: dict[str, str] = {}
-    for k, meta in ds.documents.items():
-        p = ROOT / meta["file"]
+    for k, meta in documents.items():
+        p = resolve_file(meta["file"]) if v2 else ROOT / meta["file"]
         r = await http.post("/v1/documents", files={"file": (p.name, p.read_bytes())})
         r.raise_for_status()
         doc_ids[k] = r.json()["document_id"]
@@ -136,32 +157,38 @@ async def setup(config: str, *, with_judges: bool | None = None, stream: bool = 
                 .scalars()
                 .all()
             )
-            cands = (
-                (
-                    await s.execute(
-                        text(
-                            "SELECT chunk_id FROM retrieval_candidates WHERE run_id = :r ORDER BY "
-                            "rerank_score DESC NULLS LAST, rrf_score DESC NULLS LAST"
-                        ),
-                        {"r": run[0]},
-                    )
+            cand_rows = (
+                await s.execute(
+                    text(
+                        "SELECT chunk_id, attempt, selected FROM retrieval_candidates "
+                        "WHERE run_id = :r ORDER BY "
+                        "rerank_score DESC NULLS LAST, rrf_score DESC NULLS LAST"
+                    ),
+                    {"r": run[0]},
                 )
-                .scalars()
-                .all()
-            )
+            ).all()
+        cands = [r[0] for r in cand_rows]
         abstained = msg["response_type"] in {"abstain", "clarify"}
-        return ItemOutput(
-            retrieved=[str(c) for c in cands],
-            segments=[] if abstained and not segs else segs,
-            abstained=abstained,
-            latency_ms=ms,
-            ttft_ms=ttft,
-            cost_usd=float(run[1] or 0),
-            call_ids=tuple(str(c) for c in call_ids),
-            verdicts=tuple(
+        kw: dict[str, Any] = {
+            "retrieved": [str(c) for c in cands],
+            "segments": [] if abstained and not segs else segs,
+            "abstained": abstained,
+            "latency_ms": ms,
+            "ttft_ms": ttft,
+            "cost_usd": float(run[1] or 0),
+            "call_ids": tuple(str(c) for c in call_ids),
+            "verdicts": tuple(
                 seg["verification"] for seg in msg["segments"] if seg.get("verification") in _VERDICTS
             ),
-        )
+        }
+        if not v2:
+            return ItemOutput(**kw)
+        from eval.run_v2 import ItemOutputV2
+
+        last = max((r[1] for r in cand_rows), default=0)  # the final attempt's selected chunks + cited ones
+        picked = {str(r[0]) for r in cand_rows if r[2] and r[1] == last}
+        picked |= {c.chunk_id for sg in segs for c in sg.citations}
+        return ItemOutputV2(**kw, evidence=sorted(picked))
 
     get_settings()  # fail early on a bad environment
     started = dt.datetime.now(dt.UTC)
@@ -181,6 +208,29 @@ async def setup(config: str, *, with_judges: bool | None = None, stream: bool = 
         return float(v) + float(judges.spent if judges else 0)
 
     judges = _JudgeScorer() if with_judges else None
+    if v2:
+        units_cache: dict[str, list[str] | None] = {}
+
+        def gold_units(doc: str) -> list[str] | None:
+            if doc not in units_cache:
+                try:
+                    units_cache[doc] = document_units(doc, v2_docs[doc]) if doc in v2_docs else None
+                except Exception as e:  # unknown gold is reported as not recorded, never as a failure
+                    print(f"gold sentences unavailable for {doc}: {type(e).__name__}: {e}")
+                    units_cache[doc] = None
+            return units_cache[doc]
+
+        return Harness(
+            pipeline,
+            chunks,
+            EvalContext(owner_id=uid, doc_ids=doc_ids),
+            new_session,
+            spent=spent,
+            close=http.aclose,
+            judge_gw=judges.gw if judges else None,
+            judge_guard=judges.guard if judges else None,
+            gold_units=gold_units,
+        )
     return Harness(
         pipeline,
         chunks,

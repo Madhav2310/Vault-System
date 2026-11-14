@@ -14,7 +14,7 @@ define not_implemented
 endef
 
 .PHONY: help up down logs test test-unit test-integration test-e2e lint fmt typecheck migrate seed \
-        seed-users up-test up-rerank up-full eval eval-retrieval eval-retrieval-fast eval-answers eval-smoke loadtest ci
+        seed-users up-test up-rerank up-full eval eval-retrieval eval-retrieval-fast eval-answers eval-answers-v2 eval-v2-docs eval-smoke loadtest ci
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | tr '\n' ' '; echo
@@ -65,8 +65,12 @@ eval-retrieval:
 	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config retrieval --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 eval-retrieval-fast:
 	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config $(or $(RETR_CONFIG),retrieval@1) --split $(or $(SPLIT),all) --pipeline eval.pipeline_retrieval:setup $(EVAL_ARGS)
-eval-answers:  ## full answers with judges: make eval-answers SPLIT=train MAX_USD=3 [FILTER=scope_docs=1]
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite full --config answers --split $(or $(SPLIT),train) --max-usd $(or $(MAX_USD),3) $(if $(FILTER),--filter $(FILTER)) --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
+eval-answers:  ## full answers with judges: make eval-answers SPLIT=train MAX_USD=3 [FILTER=scope_docs=1] [DATASET=v2]
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite full --config answers --split $(or $(SPLIT),train) --max-usd $(or $(MAX_USD),3) $(if $(DATASET),--dataset $(DATASET)) $(if $(FILTER),--filter $(FILTER)) --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
+eval-answers-v2:  ## v2 gold set: make eval-answers-v2 SPLIT=dev MAX_USD=3 [FILTER=stratum=injection] [EVAL_ARGS="--freeze answer_v2"]
+	$(MAKE) eval-answers DATASET=v2
+eval-v2-docs:  ## regenerate vault_eval_v2/documents.yaml ($0): make eval-v2-docs [ARGS=--download|--check]
+	cd backend && VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) UV_PYTHON_PREFERENCE=only-managed uv run --frozen python ../eval/build/build_v2_docs.py $(ARGS)
 eval-smoke:
 	$(UV) env PYTHONPATH=.. python -m eval.run --suite smoke --config smoke --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 loadtest:
