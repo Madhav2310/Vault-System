@@ -66,21 +66,54 @@ def test_global_cap_across_strata() -> None:
     assert {k.split("_")[0] for k in keys} == {"k11"} and len(keys) == 3
 
 
-def test_fb_rules() -> None:
-    def row(qt: str, r: str | None, ans: str, ev: int = 1) -> dict:
-        return {"question_type": qt, "question_reasoning": r, "answer": ans, "evidence": [{}] * ev}
+def _fb_row(question: str, ans: str, r: str | None = None, qt: str = "domain-relevant", ev: int = 1) -> dict:
+    return {
+        "financebench_id": "fb1",
+        "doc_name": "ACME_2022_10K",
+        "question": question,
+        "question_type": qt,
+        "question_reasoning": r,
+        "answer": ans,
+        "justification": "",
+        "evidence": [{"evidence_text": "Revenue 1,577 1,373", "evidence_page_num": 3}] * ev,
+    }
 
-    assert sp.fb_stratum(row("metrics-generated", "Information extraction", "$1577.00")) == "table_lookup"
-    assert sp.fb_stratum(row("metrics-generated", "Numerical reasoning", "24.26")) == "numeric_calc"
-    assert sp.fb_stratum(row("domain-relevant", "Numerical reasoning", "$4.2 billion")) == "numeric_calc"
+
+def test_fb_rules() -> None:
+    lookup = _fb_row("What is the FY2018 capital expenditure for ACME (USD millions)?", "$1577.00")
+    assert sp.fb_stratum(lookup) == "table_lookup"
+    assert sp.fb_stratum(_fb_row("What is the FY2019 fixed asset turnover ratio?", "24.26")) == "numeric_calc"
     assert (
-        sp.fb_stratum(row("novel-generated", None, "The consumer segment shrank the most.")) == "single_span"
+        sp.fb_stratum(_fb_row("By how much did revenue change from 2017 to 2018?", "$200")) == "numeric_calc"
     )
-    assert (
-        sp.fb_stratum(row("domain-relevant", "Logical reasoning (based on numerical reasoning)", "No."))
-        is None
+    assert sp.fb_stratum(_fb_row("What was the average of inventories?", "$4.2 billion")) == "numeric_calc"
+    assert sp.fb_stratum(_fb_row("Operating margin in FY2020?", "12.5%")) == "numeric_calc"
+    shrank = _fb_row(
+        "Which segment shrank the most?", "The consumer segment shrank the most.", qt="novel-generated"
     )
-    assert sp.fb_stratum(row("novel-generated", None, "Yes. A. B. C.", ev=3)) is None
+    assert sp.fb_stratum(shrank) == "single_span"
+    logical = _fb_row("Is ACME capital intensive?", "No.", "Logical reasoning (based on numerical reasoning)")
+    assert sp.fb_stratum(logical) is None
+    assert sp.fb_stratum(_fb_row("Q?", "Yes. A. B. C.", qt="novel-generated", ev=3)) is None
+
+
+def test_fb_table_lookup_needs_verbatim_row() -> None:
+    texts = ["capital expenditures", "purchases of ppe (1,577) (1,373)", "operating margin was 18.75 percent"]
+    st = sp.Stream([3, 3, 3], ["paragraph", "table", "paragraph"], texts)
+    # figure present verbatim in a row: lookup (1577.00 -> 1,577 matches, bounded)
+    assert sp.figure_units(st, 0, 3, sp.figure_forms("$1577.00")) == [1]
+    # 8.7 must not match inside 18.75; no verbatim figure means the candidate is a derived value
+    assert sp.figure_units(st, 0, 3, sp.figure_forms("$8.70")) == []
+    # the demotion path: a table_lookup candidate carries a numeric_calc twin
+    cand = sp.fb_cand(
+        _fb_row("What is the FY2018 capex?", "$8.70"), "table_lookup", lambda n: pathlib.Path(n)
+    )
+    assert cand is not None and cand.demote is not None
+    twin = cand.demote()
+    assert twin is not None and twin.stratum == "numeric_calc" and not twin.narrow
+    # map_cand rejects the lookup candidate with the reason run() demotes on
+    cand.quotes = [("purchases of ppe (1,577) (1,373)", 3)]
+    assert sp.map_cand(cand, st) == "figure_not_in_row"
 
 
 def test_qasper_rules() -> None:

@@ -972,6 +972,25 @@ items:
     sentence_end: 166
   doc_ids:
   - cuad_aurasystemsinc_06_16_2010_ex_10_25_strat_8a402e
+- id: pub_table_lookup_03ce44c0ce
+  stratum: table_lookup
+  question: If JPM went bankrupted by the end by 2021 Q1 and liquidated all of its assets to pay its shareholders, how much
+    could each shareholder get?
+  source_doc: fb_jpmorgan_2021q1_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - The answer is They could receive $66.56 per share..
+  alternates:
+    The answer is They could receive $66.56 per share..:
+    - '66.56'
+    - $66.56
+  gold_evidence:
+  - doc: fb_jpmorgan_2021q1_10q
+    sentence_start: 434
+    sentence_end: 435
+  doc_ids:
+  - fb_jpmorgan_2021q1_10q
 - id: pub_table_lookup_0cc2ba4fcd
   stratum: table_lookup
   question: What is the FY2016 COGS for Microsoft? Please state answer in USD millions. Provide a response to the question
@@ -1022,31 +1041,6 @@ items:
     sentence_end: 2777
   doc_ids:
   - fb_3m_2018_10k
-- id: pub_table_lookup_90081dbb35
-  stratum: table_lookup
-  question: 'We need to calculate a financial metric by using information only provided within the balance sheet. Please answer
-    the following question: what is Boeing''s year end FY2018 net property, plant, and equipment (in USD millions)?'
-  source_doc: fb_boeing_2018_10k
-  answer_type: answer
-  audit_status: draft
-  required_claims:
-  - The answer is $12645.00 million.
-  alternates:
-    The answer is $12645.00 million.:
-    - 12,645 million
-    - $12,645 million
-    - 12,645
-    - $12,645
-    - 12645 million
-    - $12645 million
-    - '12645'
-    - $12645
-  gold_evidence:
-  - doc: fb_boeing_2018_10k
-    sentence_start: 1942
-    sentence_end: 1943
-  doc_ids:
-  - fb_boeing_2018_10k
 - id: pub_table_lookup_baca3b0fcf
   stratum: table_lookup
   question: What is the year end FY2019 total amount of inventories for Best Buy? Answer in USD millions. Base your judgments
@@ -1125,36 +1119,33 @@ items:
     sentence_end: 1322
   doc_ids:
   - fb_amazon_2019_10k
-- id: pub_numeric_calc_081a1d0aa4
+- id: pub_numeric_calc_063672cf46
   stratum: numeric_calc
-  question: Basing your judgments off of the cash flow statement and the income statement, what is American Water Works's
-    FY2021 unadjusted operating income + depreciation and amortization from the cash flow statement (unadjusted EBITDA) in
-    USD millions?
-  source_doc: fb_americanwaterworks_2021_10k
+  question: What is the FY2021 capital expenditure amount (in USD billions) for PepsiCo? Respond to the question by assuming
+    the perspective of an investment analyst who can only use the details shown within the statement of cash flows.
+  source_doc: fb_pepsico_2021_10k
   answer_type: answer
   audit_status: draft
   required_claims:
-  - The answer is $1832.00 million.
+  - The answer is $4.60 billion.
   alternates:
-    The answer is $1832.00 million.:
-    - 1,832 million
-    - $1,832 million
-    - 1,832
-    - $1,832
-    - 1832 million
-    - $1832 million
-    - '1832'
-    - $1832
+    The answer is $4.60 billion.:
+    - 4.6 billion
+    - $4.6 billion
+    - '4.6'
+    - $4.6
+    - 4.60 billion
+    - $4.60 billion
+    - '4.60'
+    - $4,600 million
   gold_evidence:
-  - doc: fb_americanwaterworks_2021_10k
-    sentence_start: 2360
-    sentence_end: 2395
-  - doc: fb_americanwaterworks_2021_10k
-    sentence_start: 2407
-    sentence_end: 2455
+  - doc: fb_pepsico_2021_10k
+    sentence_start: 1562
+    sentence_end: 1602
   doc_ids:
-  - fb_americanwaterworks_2021_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+  - fb_pepsico_2021_10k
+  audit_note: 'demoted from table_lookup: answer figure not verbatim in a gold-page row; gold is page-level: FinanceBench
+    evidence is a whole page'
 - id: pub_numeric_calc_0f6ea79bf1
   stratum: numeric_calc
   question: Considering the data in the balance sheet, what is Block's (formerly known as Square) FY2016 working capital ratio?
@@ -1175,53 +1166,60 @@ items:
   doc_ids:
   - fb_block_2016_10k
   audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
-- id: pub_numeric_calc_155f763546
+- id: pub_numeric_calc_11768347ef
   stratum: numeric_calc
-  question: 'Based on the information provided primarily in the statement of financial position and the statement of income,
-    what is AES''s FY2022 return on assets (ROA)? ROA is defined as: FY2022 net income / (average total assets between FY2021
-    and FY2022). Round your answer to two decimal places.'
-  source_doc: fb_aes_2022_10k
+  question: What is Amcor's year end FY2020 net AR (in USD millions)? Address the question by adopting the perspective of
+    a financial analyst who can only use the details shown within the balance sheet.
+  source_doc: fb_amcor_2020_10k
   answer_type: answer
   audit_status: draft
   required_claims:
-  - The answer is -0.02.
+  - The answer is $1616.00 million.
   alternates:
-    The answer is -0.02.:
-    - -$0.02
+    The answer is $1616.00 million.:
+    - 1,616 million
+    - $1,616 million
+    - 1,616
+    - $1,616
+    - 1616 million
+    - $1616 million
+    - '1616'
+    - $1616
   gold_evidence:
-  - doc: fb_aes_2022_10k
-    sentence_start: 3660
-    sentence_end: 3771
+  - doc: fb_amcor_2020_10k
+    sentence_start: 1293
+    sentence_end: 1347
   doc_ids:
-  - fb_aes_2022_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
-- id: pub_numeric_calc_182229dd5b
+  - fb_amcor_2020_10k
+  audit_note: 'demoted from table_lookup: answer figure not verbatim in a gold-page row; gold is page-level: FinanceBench
+    evidence is a whole page'
+- id: pub_numeric_calc_2660b55506
   stratum: numeric_calc
-  question: 'We want to calculate a financial metric. Please help us compute it by basing your answers off of the cash flow
-    statement and the income statement. Here''s the question: what is the FY2022 retention ratio (using total cash dividends
-    paid and net income attributable to shareholders) for General Mills? Round answer to two decimal places.'
-  source_doc: fb_generalmills_2022_10k
+  question: 'Assume that you are a public equities analyst. Answer the following question by primarily using information that
+    is shown in the balance sheet: what is the year end FY2018 net PPNE for 3M? Answer in USD billions.'
+  source_doc: fb_3m_2018_10k
   answer_type: answer
   audit_status: draft
   required_claims:
-  - The answer is 0.54.
-  optional_claims:
-  - The metric in question was calculated using other simpler metrics.
-  - 'The various simpler metrics (from the current and, if relevant, previous fiscal year(s)) used were: Metric 1: Total cash
-    dividends paid out.'
+  - The answer is $8.70 billion.
   alternates:
-    The answer is 0.54.:
-    - $0.54
+    The answer is $8.70 billion.:
+    - 8.7 billion
+    - $8.7 billion
+    - '8.7'
+    - $8.7
+    - 8.70 billion
+    - $8.70 billion
+    - '8.70'
+    - $8,700 million
   gold_evidence:
-  - doc: fb_generalmills_2022_10k
-    sentence_start: 1623
-    sentence_end: 1688
-  - doc: fb_generalmills_2022_10k
-    sentence_start: 1940
-    sentence_end: 2072
+  - doc: fb_3m_2018_10k
+    sentence_start: 2558
+    sentence_end: 2659
   doc_ids:
-  - fb_generalmills_2022_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+  - fb_3m_2018_10k
+  audit_note: 'demoted from table_lookup: answer figure not verbatim in a gold-page row; gold is page-level: FinanceBench
+    evidence is a whole page'
 - id: pub_numeric_calc_3b8671b759
   stratum: numeric_calc
   question: 'What is Kraft Heinz''s FY2019 inventory turnover ratio? Inventory turnover ratio is defined as: (FY2019 COGS)
@@ -1268,70 +1266,28 @@ items:
   doc_ids:
   - fb_mgmresorts_2020_10k
   audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
-- id: pub_numeric_calc_4464def038
+- id: pub_numeric_calc_5ceb5e8bcb
   stratum: numeric_calc
-  question: What is Lockheed Martin's FY2021 net working capital? Define net working capital as total current assets less
-    total current liabilities. Answer in USD millions. Respond to the question by assuming the perspective of an investment
-    analyst who can only use the details shown within the balance sheet.
-  source_doc: fb_lockheedmartin_2021_10k
+  question: 'We want to calculate a financial metric. Please help us compute it by basing your answers off of the statement
+    of income and the statement of cash flows. Here''s the question: what is the FY2015 unadjusted EBITDA % margin for Netflix?
+    Calculate unadjusted EBITDA using unadjusted operating income and D&A (from cash flow statement).'
+  source_doc: fb_netflix_2015_10k
   answer_type: answer
   audit_status: draft
   required_claims:
-  - The answer is $5818.00 million.
+  - The answer is 5.4%.
   alternates:
-    The answer is $5818.00 million.:
-    - 5,818 million
-    - $5,818 million
-    - 5,818
-    - $5,818
-    - 5818 million
-    - $5818 million
-    - '5818'
-    - $5818
+    The answer is 5.4%.:
+    - 5.4 percent
   gold_evidence:
-  - doc: fb_lockheedmartin_2021_10k
-    sentence_start: 2053
-    sentence_end: 2094
+  - doc: fb_netflix_2015_10k
+    sentence_start: 1432
+    sentence_end: 1487
+  - doc: fb_netflix_2015_10k
+    sentence_start: 1507
+    sentence_end: 1628
   doc_ids:
-  - fb_lockheedmartin_2021_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
-- id: pub_numeric_calc_4ddacb90a8
-  stratum: numeric_calc
-  question: What is Adobe's year-over-year change in unadjusted operating income from FY2015 to FY2016 (in units of percents
-    and round to one decimal place)? Give a solution to the question by using the income statement.
-  source_doc: fb_adobe_2016_10k
-  answer_type: answer
-  audit_status: draft
-  required_claims:
-  - The answer is 65.4%.
-  alternates:
-    The answer is 65.4%.:
-    - 65.4 percent
-  gold_evidence:
-  - doc: fb_adobe_2016_10k
-    sentence_start: 2287
-    sentence_end: 2386
-  doc_ids:
-  - fb_adobe_2016_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
-- id: pub_numeric_calc_523718c76c
-  stratum: numeric_calc
-  question: What is Lockheed Martin's 2 year total revenue CAGR from FY2020 to FY2022 (in units of percents and round to one
-    decimal place)? Provide a response to the question by primarily using the statement of income.
-  source_doc: fb_lockheedmartin_2022_10k
-  answer_type: answer
-  audit_status: draft
-  required_claims:
-  - The answer is 0.4%.
-  alternates:
-    The answer is 0.4%.:
-    - 0.4 percent
-  gold_evidence:
-  - doc: fb_lockheedmartin_2022_10k
-    sentence_start: 2125
-    sentence_end: 2217
-  doc_ids:
-  - fb_lockheedmartin_2022_10k
+  - fb_netflix_2015_10k
   audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
 - id: pub_numeric_calc_6d07d5cd41
   stratum: numeric_calc
@@ -1375,29 +1331,6 @@ items:
   doc_ids:
   - fb_cocacola_2021_10k
   audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
-- id: pub_numeric_calc_7b10748841
-  stratum: numeric_calc
-  question: 'What is Amazon''s FY2017 days payable outstanding (DPO)? DPO is defined as: 365 * (average accounts payable between
-    FY2016 and FY2017) / (FY2017 COGS + change in inventory between FY2016 and FY2017). Round your answer to two decimal places.
-    Address the question by using the line items and information shown within the balance sheet and the P&L statement.'
-  source_doc: fb_amazon_2017_10k
-  answer_type: answer
-  audit_status: draft
-  required_claims:
-  - The answer is 93.86.
-  alternates:
-    The answer is 93.86.:
-    - $93.86
-  gold_evidence:
-  - doc: fb_amazon_2017_10k
-    sentence_start: 1401
-    sentence_end: 1445
-  - doc: fb_amazon_2017_10k
-    sentence_start: 1469
-    sentence_end: 1526
-  doc_ids:
-  - fb_amazon_2017_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
 - id: pub_numeric_calc_8e035f67db
   stratum: numeric_calc
   question: 'You are an investment banker and your only resource(s) to answer the following question is (are): the statement
@@ -1422,6 +1355,32 @@ items:
   doc_ids:
   - fb_adobe_2015_10k
   audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+- id: pub_numeric_calc_90081dbb35
+  stratum: numeric_calc
+  question: 'We need to calculate a financial metric by using information only provided within the balance sheet. Please answer
+    the following question: what is Boeing''s year end FY2018 net property, plant, and equipment (in USD millions)?'
+  source_doc: fb_boeing_2018_10k
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - The answer is $12645.00 million.
+  alternates:
+    The answer is $12645.00 million.:
+    - 12,645 million
+    - $12,645 million
+    - 12,645
+    - $12,645
+    - 12645 million
+    - $12645 million
+    - '12645'
+    - $12645
+  gold_evidence:
+  - doc: fb_boeing_2018_10k
+    sentence_start: 1915
+    sentence_end: 2002
+  doc_ids:
+  - fb_boeing_2018_10k
+  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
 - id: pub_numeric_calc_9ecc6251c3
   stratum: numeric_calc
   question: 'What is the FY2017 return on assets (ROA) for Coca Cola? ROA is defined as: FY2017 net income / (average total
@@ -1444,29 +1403,6 @@ items:
     sentence_end: 3105
   doc_ids:
   - fb_cocacola_2017_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
-- id: pub_numeric_calc_a11f73b797
-  stratum: numeric_calc
-  question: 'Based on the information provided primarily in the balance sheet and the statement of income, what is FY2020
-    days payable outstanding (DPO) for Corning? DPO is defined as: 365 * (average accounts payable between FY2019 and FY2020)
-    / (FY2020 COGS + change in inventory between FY2019 and FY2020). Round your answer to two decimal places.'
-  source_doc: fb_corning_2020_10k
-  answer_type: answer
-  audit_status: draft
-  required_claims:
-  - The answer is 63.86.
-  alternates:
-    The answer is 63.86.:
-    - $63.86
-  gold_evidence:
-  - doc: fb_corning_2020_10k
-    sentence_start: 2185
-    sentence_end: 2251
-  - doc: fb_corning_2020_10k
-    sentence_start: 2274
-    sentence_end: 2348
-  doc_ids:
-  - fb_corning_2020_10k
   audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
 - id: pub_numeric_calc_a61cb4246b
   stratum: numeric_calc
@@ -1492,6 +1428,51 @@ items:
   doc_ids:
   - fb_amd_2015_10k
   audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+- id: pub_numeric_calc_ab43d6d2ba
+  stratum: numeric_calc
+  question: 'What is the FY2017 operating cash flow ratio for Adobe? Operating cash flow ratio is defined as: cash from operations
+    / total current liabilities. Round your answer to two decimal places. Please utilize information provided primarily within
+    the balance sheet and the cash flow statement.'
+  source_doc: fb_adobe_2017_10k
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - The answer is 0.83.
+  alternates:
+    The answer is 0.83.:
+    - $0.83
+  gold_evidence:
+  - doc: fb_adobe_2017_10k
+    sentence_start: 2168
+    sentence_end: 2244
+  - doc: fb_adobe_2017_10k
+    sentence_start: 2569
+    sentence_end: 2704
+  doc_ids:
+  - fb_adobe_2017_10k
+  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+- id: pub_numeric_calc_af530d2752
+  stratum: numeric_calc
+  question: How much does Pfizer expect to pay to spin off Upjohn in the future in USD million?
+  source_doc: fb_pfizer_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - The answer is 77.78.
+  optional_claims:
+  - 10% cost is remaining amount in the future.
+  - 'Calculation: 700/9 is 10% of the cost remaining'
+  alternates:
+    The answer is 77.78.:
+    - $77.78
+  gold_evidence:
+  - doc: fb_pfizer_2023q2_10q
+    sentence_start: 2807
+    sentence_end: 2809
+  doc_ids:
+  - fb_pfizer_2023q2_10q
+  audit_note: 'demoted from table_lookup: answer figure not verbatim in a gold-page row; gold is page-level: FinanceBench
+    evidence is a whole page'
 - id: pub_numeric_calc_b9c71e3ff7
   stratum: numeric_calc
   question: Taking into account the information outlined in the income statement, what is the FY2019 - FY2021 3 year average
@@ -1555,25 +1536,57 @@ items:
   doc_ids:
   - fb_lockheedmartin_2020_10k
   audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
-- id: pub_numeric_calc_d27930bb47
+- id: pub_numeric_calc_cd5f9b2d6e
   stratum: numeric_calc
-  question: In agreement with the information outlined in the income statement, what is the FY2015 - FY2017 3 year average
-    net profit margin (as a %) for Best Buy? Answer in units of percents and round to one decimal place.
-  source_doc: fb_bestbuy_2017_10k
+  question: What is the FY2018 - FY2020 3 year average unadjusted EBITDA % margin for Walmart? Define unadjusted EBITDA as
+    unadjusted operating income + depreciation and amortization from the cash flow statement. Answer in units of percents
+    and round to one decimal place. Calculate what was asked by utilizing the line items clearly shown in the P&L statement
+    and the cash flow statement.
+  source_doc: fb_walmart_2020_10k
   answer_type: answer
   audit_status: draft
   required_claims:
-  - The answer is 2.8%.
+  - The answer is 6.2%.
   alternates:
-    The answer is 2.8%.:
-    - 2.8 percent
+    The answer is 6.2%.:
+    - 6.2 percent
   gold_evidence:
-  - doc: fb_bestbuy_2017_10k
-    sentence_start: 2527
-    sentence_end: 2617
+  - doc: fb_walmart_2020_10k
+    sentence_start: 2541
+    sentence_end: 2632
+  - doc: fb_walmart_2020_10k
+    sentence_start: 3061
+    sentence_end: 3224
   doc_ids:
-  - fb_bestbuy_2017_10k
+  - fb_walmart_2020_10k
   audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+- id: pub_numeric_calc_e370ba1e7d
+  stratum: numeric_calc
+  question: What is Netflix's year end FY2017 total current liabilities (in USD millions)? Base your judgments on the information
+    provided primarily in the balance sheet.
+  source_doc: fb_netflix_2017_10k
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - The answer is $5466.00 million.
+  alternates:
+    The answer is $5466.00 million.:
+    - 5,466 million
+    - $5,466 million
+    - 5,466
+    - $5,466
+    - 5466 million
+    - $5466 million
+    - '5466'
+    - $5466
+  gold_evidence:
+  - doc: fb_netflix_2017_10k
+    sentence_start: 1607
+    sentence_end: 1665
+  doc_ids:
+  - fb_netflix_2017_10k
+  audit_note: 'demoted from table_lookup: answer figure not verbatim in a gold-page row; gold is page-level: FinanceBench
+    evidence is a whole page'
 - id: pub_multi_span_03a492e6c8
   stratum: multi_span
   question: what language pairs are explored?
