@@ -64,7 +64,7 @@ The rule is fixed before the measurement. Accepting a switch is a one-line defau
 
 ## 2. Current measurements
 
-All rows are **provisional**: gold is unaudited and the v2 judges are uncalibrated. Run costs are the spend recorded by the run.
+All rows are **provisional**: gold is unaudited and the claim-level judges are uncalibrated. Run costs are the spend recorded by the run.
 
 | Measure | Value | Regenerate |
 |---|---|---|
