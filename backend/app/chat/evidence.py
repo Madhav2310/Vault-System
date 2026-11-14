@@ -106,20 +106,35 @@ def build_evidence(chunks: Sequence[EvidenceChunk]) -> EvidenceSet:
     return EvidenceSet(f"<evidence>\n{body}\n</evidence>", manifest, by_id, tuple(handles), chunk_handles)
 
 
-def answer_schema(evidence: EvidenceSet | None, mode: Mode = "rag") -> type[BaseModel]:
-    """Strict answer schema. RAG mode with an enum-sized evidence set: handle enum; else plain strings."""
+def answer_schema(
+    evidence: EvidenceSet | None, mode: Mode = "rag", plan_ids: Sequence[str] = ()
+) -> type[BaseModel]:
+    """Strict answer schema. RAG mode with an enum-sized evidence set: handle enum; else plain strings.
+    `plan_ids` (S22.04, e.g. `("R1", "R2")`) adds a `plan` field before the segments; empty = unchanged."""
     cfg = ConfigDict(extra="forbid")
     item: Any = str
     if mode == "rag" and evidence is not None and evidence.enum_ok and evidence.handles:
         item = Literal[evidence.handles]
     status: Any = Literal["answer", "abstain"]
     segment: Any = create_model("Segment", __config__=cfg, text=(str, ...), evidence=(list[item], ...))
+    plan: dict[str, Any] = {}
+    element_type: Any = Literal[tuple(plan_ids)] if plan_ids else str
+    if plan_ids:
+        entry: Any = create_model(
+            "PlanEntry",
+            __config__=cfg,
+            element=(element_type, ...),
+            handles=(list[item], ...),
+            not_found=(bool, ...),
+        )
+        plan = {"plan": (list[entry], ...)}
     # `followups` comes last (the model writes segments first, so streaming is not delayed) and defaults to
     # empty for replies without it; on the wire the strict schema still requires it. Limits are code.
     return create_model(
         "Answer",
         __config__=cfg,
         status=(status, ...),
+        **plan,
         segments=(list[segment], ...),
         followups=(list[str], Field(default_factory=list)),
         # S18.07: handles are plain strings (an enum here would triple the schema's enum-value count);

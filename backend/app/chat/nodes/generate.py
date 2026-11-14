@@ -10,7 +10,7 @@ its citations are resolved by code (`citations.resolve`): the model never suppli
 
 import json
 import uuid
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -19,6 +19,7 @@ from pydantic import ValidationError
 
 from app.chat.citations import Resolution, ResolvedSegment, resolve, resolve_segment
 from app.chat.conflicts import CONFLICT_DETECTED, ResolvedConflict, resolve_conflicts
+from app.chat.coverage import apply_plan, check_plan, element_ids, elements_block
 from app.chat.evidence import EvidenceSet, Mode, answer_schema, cache_mode_for
 from app.chat.memory import Memory
 from app.chat.nodes_common import defuse
@@ -69,6 +70,7 @@ def compose_user_message(
     memory: Memory | None = None,
     coverage: str | None = None,
     conflicts: str | None = None,
+    elements: str | None = None,
 ) -> str:
     """Evidence first (stable for FULL_CONTEXT prefix caching), the question last."""
     parts = [evidence.text, history_block(memory), f"<route>{defuse(route)}</route>"]
@@ -76,6 +78,8 @@ def compose_user_message(
         parts.append(f"<coverage>\n{defuse(coverage)}\n</coverage>")
     if conflicts:
         parts.append(f"<conflicts>\n{defuse(conflicts)}\n</conflicts>")
+    if elements:
+        parts.append(f"<required_elements>\n{defuse(elements)}\n</required_elements>")
     parts.append(f"<question>\n{defuse(question)}\n</question>")
     return "\n\n".join(parts)
 
@@ -92,6 +96,7 @@ async def generate(
     memory: Memory | None = None,
     coverage: str | None = None,
     conflicts: str | None = None,
+    plan_elements: Sequence[str] = (),
     run_id: uuid.UUID | None = None,
     budget: Budget | None = None,
     on_segment: Callable[[ResolvedSegment], Awaitable[None]] | None = None,
@@ -99,8 +104,10 @@ async def generate(
     """`on_segment` receives each segment (citations resolved by code) as soon as its JSON object closes in
     the stream, before the whole answer has arrived. The final result is resolved from the complete, validated
     answer and is what gets persisted."""
-    schema = answer_schema(evidence, mode)
-    message = compose_user_message(evidence, question, route, memory, coverage, conflicts)
+    plan_ids = element_ids(len(plan_elements)) if mode == "rag" else ()
+    schema = answer_schema(evidence, mode, plan_ids)
+    elements = elements_block(plan_elements) if plan_ids else None
+    message = compose_user_message(evidence, question, route, memory, coverage, conflicts, elements)
     chunks: list[str] = []
     final: Final | None = None
     reasons: list[str] = []
@@ -147,16 +154,24 @@ async def generate(
         )
     assert final is not None
     raw = "".join(chunks)
+    plan: Any = None
     try:
         out: Any = schema.model_validate_json(raw)
+        plan = [p.model_dump() for p in out.plan] if plan_ids else None
     except ValidationError:
-        return _failed(GENERATION_INVALID, final)
+        out = _without_plan(raw, evidence, mode) if plan_ids else None  # a bad plan never fails the answer
+        if out is None:
+            return _failed(GENERATION_INVALID, final)
     if out.status == "abstain" or not out.segments:
         return GenerateResult(
             "abstain", Resolution(()), tuple(reasons), final.usage, final.cost_usd, final.call_ids
         )
     resolution = resolve(out.segments, evidence)
     reasons += list(resolution.reasons)
+    check = check_plan(plan, plan_elements, evidence) if plan_ids else None
+    if check is not None:
+        resolution, plan_reasons = apply_plan(resolution, check)
+        reasons += plan_reasons
     flagged = resolve_conflicts(out.conflicts, evidence)
     if flagged:
         reasons.append(CONFLICT_DETECTED)
@@ -170,6 +185,16 @@ async def generate(
         tuple(out.followups),
         flagged,
     )
+
+
+def _without_plan(raw: str, evidence: EvidenceSet, mode: Mode) -> Any:
+    """The answer validated against the plain schema with its `plan` removed, or None when that fails too."""
+    try:
+        data = json.loads(raw)
+        data.pop("plan", None)
+        return answer_schema(evidence, mode).model_validate(data)
+    except (ValueError, AttributeError, ValidationError):
+        return None
 
 
 def _well_formed(seg: dict[str, Any]) -> bool:

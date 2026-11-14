@@ -48,6 +48,7 @@ REASON_TEMPLATES: dict[str, str] = {
     "CONFLICT_DETECTED": "The sources disagree on a point, so both sides are shown with their citations.",
     "COMPARE_TOO_MANY": "Too many documents to compare (limit 5), so this was answered as one question.",
     "COMPARE_SIDE_MISSING": "A document had nothing relevant to the comparison, and the answer says so.",
+    "ELEMENT_NOT_FOUND": "Part of the question had no supporting passage, and the answer says so.",
     "FAST_PATH": "",
     "LOOP_GUARD": "",
     "BAD_ROUTE": "",

@@ -5,6 +5,7 @@ from typing import Any
 
 from app.chat.citations import ResolvedSegment
 from app.chat.compare import compare_call, missing_titles, name_missing_sides
+from app.chat.coverage import plan_call
 from app.chat.evidence import build_evidence
 from app.chat.followups import clean_followups
 from app.chat.graph import TURN_ERROR, TurnCtx, TurnState
@@ -25,6 +26,7 @@ async def generate(state: TurnState, ctx: TurnCtx) -> TurnState:
     try:
         call: dict[str, Any] = {"route": state.analysis.intent if full else "qa"}
         call.update(compare_call(state) if state.compare else {})  # S18.06: route, prompt, coverage
+        call.update(plan_call(state, ctx.deps.gateway.settings, full))  # S22.04: empty unless switched on
         gen = await generate_answer(
             ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
             question=state.analysis.standalone_query, **call,

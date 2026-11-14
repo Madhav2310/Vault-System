@@ -106,6 +106,9 @@ class Settings(BaseSettings):
     chat_fast_path: bool = True
     chat_speculative_retrieval: bool = True  # retrieve on the raw question while `analyze` runs
 
+    # --- plan-first answers (S22.04): answer_rag@4 + coverage plan; off until the A/B decides ---
+    chat_plan_first: bool = False
+
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"
