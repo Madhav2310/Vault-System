@@ -165,6 +165,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
             ],
             "models": _models(deps.gateway),
             "retrieval": deps.retriever.config.version,
+            "switches": _switches(deps.gateway),
         },
         candidates=_candidates(retrieval) if retrieval else (),
         steps=tuple(state.steps),
@@ -278,6 +279,13 @@ async def run_turn(
         return await _run_turn(deps, owner_id, session_id, run_id, user_message_id, question, mode)
     finally:
         hb.cancel()
+
+
+def _switches(gw: LlmGateway) -> dict[str, Any]:
+    """The behaviour switches in force for the turn (every `chat_*` setting), recorded so that two runs can
+    be shown to have used the same configuration."""
+    s = gw.settings
+    return {k: v for k, v in sorted(s.model_dump().items()) if k.startswith("chat_")}
 
 
 def _models(gw: LlmGateway) -> dict[str, str]:

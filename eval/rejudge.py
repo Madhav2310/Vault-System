@@ -6,7 +6,8 @@ Reads the answers dump (answer text and per-segment cited passages), judges agai
 abstention) and writes `<run_id>.rejudged.json`: per item the old metrics (from the run's sidecar
 `<run_id>.json` next to the answers file, when present), the new metrics, the per-claim / per-segment
 verdicts and the old-vs-new diff. Stdout: the diff table of every item whose verdict changed and the
-aggregate means. A judge-validation result, never a baseline.
+aggregate means. A judge-validation result, never a baseline. `--write-sidecar` also writes
+`<run_id>.rejudged.sidecar.json` (original sidecar, new metrics, new judge versions in the fingerprint).
 """
 
 from __future__ import annotations
@@ -22,7 +23,9 @@ from decimal import Decimal
 from typing import Any
 
 from app.llm.gateway import LlmGateway, MemoryLedger
+from eval import fingerprint
 from eval.judge import (
+    PROMPTS_V2,
     SegmentView,
     SpendCapReached,
     SpendGuard,
@@ -110,6 +113,35 @@ async def rejudge_row(
     if item.answer_type == "abstain" and "abstention_correct" in metrics:
         metrics["answer_pass"] = metrics["abstention_correct"]
     return {"metrics": metrics, "errors": errors, "judge": verdict_record(claims, support, abstain)}
+
+
+def rejudged_sidecar(
+    old: Mapping[str, Any],
+    res: Mapping[str, Any],
+    judge: Mapping[str, str],
+    code: Mapping[str, Any],
+) -> dict[str, Any]:
+    """A sidecar of the re-judged items: the original run's sidecar with the judged metrics replaced, the
+    judge versions of this re-judge and the current eval code in the fingerprint (answer side unchanged)."""
+    judged = res["items"]
+    items = []
+    for it in old["items"]:
+        r = judged.get(it["item_id"])
+        if r is None:
+            continue
+        kept = {k: v for k, v in it["metrics"].items() if k not in (*METRICS, "judge_quote_overrules")}
+        items.append({**it, "metrics": {**kept, **r["new"]}})
+    out = {**old, "run_id": f"{old['run_id']}.rejudged", "items": items}
+    fp = old.get("fingerprint")
+    if fp is not None:
+        ids = sorted(i["item_id"] for i in items)
+        out["fingerprint"] = {
+            **fp,
+            "judge": dict(judge),
+            "code": dict(code),
+            "items": {"n": len(ids), "ids": ids, "sha": fingerprint.digest(ids)},
+        }
+    return out
 
 
 def _changed(old: float | None, new: float | None) -> bool:
@@ -207,6 +239,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--old", default=None, help="sidecar of the original run (default: <run_id>.json beside --answers)"
     )
     ap.add_argument("--out-dir", default=str(REPORTS_DIR))
+    ap.add_argument(
+        "--write-sidecar",
+        action="store_true",
+        help="also write <run_id>.rejudged.sidecar.json: the original sidecar with the new metrics and "
+        "judge versions, usable by eval.paired",
+    )
     ap.add_argument("--limit", type=int, default=0, help="judge only the first N rows (0 = all)")
     a = ap.parse_args(argv)
     if a.max_usd is None:
@@ -237,6 +275,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         f"judged {res['n_judged']} items, stopped={res['stopped']}, spent ${guard.spent} of cap ${guard.cap}"
     )
     print(f"wrote {out}")
+    if a.write_sidecar:
+        src = pathlib.Path(a.old) if a.old else path.with_name(f"{run_id_of(path)}.json")
+        if not src.exists():
+            print(f"--write-sidecar needs the original sidecar ({src})", file=sys.stderr)
+            return 2
+        old_sc = json.loads(src.read_text("utf-8"))
+        if old_sc.get("fingerprint") is None:
+            print("note: the original sidecar has no fingerprint; the written sidecar needs --legacy")
+        sc = rejudged_sidecar(old_sc, res, fingerprint.judge_versions(PROMPTS_V2), fingerprint.code_version())
+        sc_out = out.with_name(f"{run_id_of(path)}.rejudged.sidecar.json")
+        sc_out.write_text(json.dumps(sc, indent=1, ensure_ascii=False), "utf-8")
+        print(f"wrote {sc_out}")
     return 0 if res["stopped"] is None else 3
 
 

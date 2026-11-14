@@ -90,6 +90,8 @@ class Harness:
     judge_gw: Any = None
     judge_guard: Any = None
     gold_units: Callable[[str], Sequence[str] | None] | None = None
+    # the answer-side config the server recorded for this run's turns (eval.fingerprint.merge_answer_config)
+    answer_config: Callable[[], Awaitable[dict[str, Any] | None]] | None = None
 
 
 def select_filter(items: Sequence[GoldenItem], spec: str | None) -> list[GoldenItem]:

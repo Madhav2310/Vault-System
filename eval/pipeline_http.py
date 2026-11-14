@@ -25,6 +25,7 @@ from app.core.auth import hash_api_key, new_api_key
 from app.core.settings import get_settings
 from app.db.models import User
 from app.db.session import get_sessionmaker
+from eval.fingerprint import merge_answer_config
 from eval.loader import load_dataset
 from eval.mapping import ChunkInfo, chunks_from_rows
 from eval.run import Harness
@@ -154,6 +155,8 @@ async def setup(
     for c in chunks_from_rows([dict(r) for r in rows if str(r["document_id"]) in by_id], by_id):
         chunks[c.doc_id].append(c)
 
+    seen_runs: set[uuid.UUID] = set()  # rag_runs of this process's turns: the server's record of the config
+
     async def new_session(q: Query, ctx: EvalContext) -> uuid.UUID:
         body = {"document_ids": [ctx.doc_ids[d] for d in q.scope_docs]} if q.scope_docs else {}
         r = await http.post("/v1/chat/sessions", json=body)
@@ -209,8 +212,14 @@ async def setup(
                     {"m": msg_id, "o": uid},
                 )
             ).one()
+            seen_runs.add(run[0])
             call_ids = (
-                (await s.execute(text("SELECT id FROM llm_calls WHERE run_id = :r"), {"r": run[0]}))
+                (
+                    await s.execute(
+                        text("SELECT id FROM llm_calls WHERE run_id = :r"),
+                        {"r": run[0]},
+                    )
+                )
                 .scalars()
                 .all()
             )
@@ -279,6 +288,47 @@ async def setup(
             ).scalar_one()
         return float(v) + float(judges.spent if judges else 0)
 
+    async def answer_config() -> dict[str, Any] | None:
+        """What the server recorded for this run's turns (`rag_runs.config`) and for the ingested documents
+        (`document_versions.chunker_version`, contextual prefixes): not local settings."""
+        if not seen_runs:
+            return None
+        async with sm() as s:
+            cfgs = (
+                (
+                    await s.execute(
+                        text("SELECT config FROM rag_runs WHERE owner_id = :o AND id = ANY(:ids)"),
+                        {"o": uid, "ids": list(seen_runs)},
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            chunkers = (
+                (
+                    await s.execute(
+                        text(
+                            "SELECT DISTINCT coalesce(chunker_version, 'unknown') FROM document_versions "
+                            "WHERE owner_id = :o AND document_id = ANY(:docs)"
+                        ),
+                        {"o": uid, "docs": [uuid.UUID(d) for d in doc_ids.values()]},
+                    )
+                )
+                .scalars()
+                .all()
+            )
+            ctx_prefix = (
+                await s.execute(
+                    text("SELECT bool_or(contextual_prefix IS NOT NULL) FROM chunks WHERE owner_id = :o"),
+                    {"o": uid},
+                )
+            ).scalar_one()
+        index = {
+            "chunker": "|".join(sorted(chunkers)),
+            "contextual_prefix": bool(ctx_prefix),
+        }
+        return merge_answer_config([c for c in cfgs if c], index)
+
     judges = _JudgeScorer() if with_judges else None
     if v2:
         units_cache: dict[str, list[str] | None] = {}
@@ -302,6 +352,7 @@ async def setup(
             judge_gw=judges.gw if judges else None,
             judge_guard=judges.guard if judges else None,
             gold_units=gold_units,
+            answer_config=answer_config,
         )
     return Harness(
         pipeline,
@@ -311,6 +362,7 @@ async def setup(
         extra_scorer=judges.score if judges else None,
         spent=spent,
         close=http.aclose,
+        answer_config=answer_config,
     )
 
 

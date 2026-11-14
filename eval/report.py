@@ -47,6 +47,7 @@ class RunResult:
     finished_at: dt.datetime | None = None
     items: list[ItemResult] = field(default_factory=list)
     config: dict[str, Any] = field(default_factory=dict)
+    fingerprint: dict[str, Any] | None = None  # eval.fingerprint (v2 runs)
 
     @property
     def n_errors(self) -> int:
@@ -97,6 +98,7 @@ class Sidecar(BaseModel):
     split: str
     git_sha: str
     config: dict[str, Any]
+    fingerprint: dict[str, Any] | None = None  # eval.fingerprint; None in reports written before it existed
     items: list[SidecarItem]
 
 
@@ -108,6 +110,7 @@ def sidecar(run: RunResult) -> Sidecar:
         split=run.split,
         git_sha=run.git_sha,
         config=run.config,
+        fingerprint=run.fingerprint,
         items=[
             SidecarItem(
                 item_id=i.item_id,

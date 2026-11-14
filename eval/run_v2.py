@@ -40,6 +40,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.ids import uuid7
 from eval import baseline as bl
+from eval import fingerprint
 from eval.answers_dump import (
     abstain_path,
     abstain_row,
@@ -58,6 +59,7 @@ from eval.graders import (
 )
 from eval.judge import (
     CONCURRENCY,
+    PROMPTS_V2,
     AbstainJudgement,
     ClaimJudgement,
     JudgeOutputError,
@@ -440,6 +442,8 @@ async def run_suite_v2(
     max_usd: float | None = None,
     answer_concurrency: int = 2,
     judge_concurrency: int = CONCURRENCY,
+    split_items: Sequence[GoldItemV2] | None = None,
+    filter_spec: str | None = None,
 ) -> tuple[RunResult, pathlib.Path]:
     if suite not in SUITES:
         raise ValueError(f"unknown suite {suite!r}")
@@ -447,6 +451,7 @@ async def run_suite_v2(
     if answers and (harness.judge_gw is None):
         raise ValueError("v2 answer suites need harness.judge_gw (the judges' gateway)")
     items = live_items(items)
+    gold = live_items(split_items) if split_items is not None else items
     run = RunResult(
         uuid7(),
         name,
@@ -538,6 +543,16 @@ async def run_suite_v2(
     if harness.spent is not None:
         run.config["spent_usd"] = round(await harness.spent(), 4)
     run.finished_at = dt.datetime.now(dt.UTC)
+    run.fingerprint = fingerprint.build(
+        dataset_id=f"vault_eval_{DATASET}",
+        split=split,
+        split_items=gold,
+        evaluated_ids=[i.item_id for i in run.items],
+        filter_spec=filter_spec,
+        judge=fingerprint.judge_versions(PROMPTS_V2) if answers else {},
+        answer=await harness.answer_config() if harness.answer_config is not None else None,
+        code=fingerprint.code_version(),
+    )
     if sm is not None:
         await _persist(sm, run)
     write_sidecar(run, report_dir)
@@ -667,6 +682,8 @@ async def main_v2(a: argparse.Namespace) -> int:
             sm=sm,
             max_usd=a.max_usd,
             answer_concurrency=a.answer_concurrency,
+            split_items=select_v2(all_items, a.split),
+            filter_spec=a.filter,
         )
     finally:
         if harness.close is not None:
