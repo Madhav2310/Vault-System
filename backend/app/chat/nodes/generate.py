@@ -17,6 +17,7 @@ from typing import Any
 
 from pydantic import ValidationError
 
+from app.chat.calc import resolve_calc, resolve_calc_segment
 from app.chat.citations import Resolution, ResolvedSegment, resolve, resolve_segment
 from app.chat.conflicts import CONFLICT_DETECTED, ResolvedConflict, resolve_conflicts
 from app.chat.coverage import apply_plan, check_plan, element_ids, elements_block
@@ -97,6 +98,7 @@ async def generate(
     coverage: str | None = None,
     conflicts: str | None = None,
     plan_elements: Sequence[str] = (),
+    calc: bool = False,
     system_suffix: str | None = None,
     run_id: uuid.UUID | None = None,
     budget: Budget | None = None,
@@ -106,7 +108,8 @@ async def generate(
     the stream, before the whole answer has arrived. The final result is resolved from the complete, validated
     answer and is what gets persisted."""
     plan_ids = element_ids(len(plan_elements)) if mode == "rag" else ()
-    schema = answer_schema(evidence, mode, plan_ids)
+    calc = calc and mode == "rag"  # S22.08: typed calculation segments
+    schema = answer_schema(evidence, mode, plan_ids, calc)
     elements = elements_block(plan_elements) if plan_ids else None
     message = compose_user_message(evidence, question, route, memory, coverage, conflicts, elements)
     chunks: list[str] = []
@@ -133,7 +136,12 @@ async def generate(
                 if on_segment is not None:
                     for done_seg in reader.feed(ev.text):
                         if reader.status == "answer" and _well_formed(done_seg):
-                            await on_segment(resolve_segment(streamed, done_seg, evidence))
+                            seg = (
+                                resolve_calc_segment(streamed, done_seg, evidence)[0]
+                                if calc
+                                else resolve_segment(streamed, done_seg, evidence)
+                            )
+                            await on_segment(seg)
                             streamed += 1
             elif isinstance(ev, Final):
                 final = ev
@@ -145,7 +153,7 @@ async def generate(
         segments = [g for g in raw_segments if _well_formed(g)]
         if status == "abstain" or not segments:
             return _failed(STOP_MAX_TOKENS, e)
-        resolution = resolve(segments, evidence)
+        resolution = resolve_calc(segments, evidence) if calc else resolve(segments, evidence)
         return GenerateResult(
             "answer",
             resolution,
@@ -161,14 +169,15 @@ async def generate(
         out: Any = schema.model_validate_json(raw)
         plan = [p.model_dump() for p in out.plan] if plan_ids else None
     except ValidationError:
-        out = _without_plan(raw, evidence, mode) if plan_ids else None  # a bad plan never fails the answer
+        # a bad plan or calculation never fails the answer
+        out = _without_plan(raw, evidence, mode) if plan_ids or calc else None
         if out is None:
             return _failed(GENERATION_INVALID, final)
     if out.status == "abstain" or not out.segments:
         return GenerateResult(
             "abstain", Resolution(()), tuple(reasons), final.usage, final.cost_usd, final.call_ids
         )
-    resolution = resolve(out.segments, evidence)
+    resolution = resolve_calc(out.segments, evidence) if calc else resolve(out.segments, evidence)
     reasons += list(resolution.reasons)
     check = check_plan(plan, plan_elements, evidence) if plan_ids else None
     if check is not None:
@@ -194,6 +203,8 @@ def _without_plan(raw: str, evidence: EvidenceSet, mode: Mode) -> Any:
     try:
         data = json.loads(raw)
         data.pop("plan", None)
+        for seg in data.get("segments", []):
+            seg.pop("calc", None)
         return answer_schema(evidence, mode).model_validate(data)
     except (ValueError, AttributeError, ValidationError):
         return None

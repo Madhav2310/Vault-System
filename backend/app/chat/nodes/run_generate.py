@@ -4,6 +4,7 @@ import dataclasses
 import uuid
 from typing import Any
 
+from app.chat.calc import calc_call
 from app.chat.citations import ResolvedSegment
 from app.chat.compare import Repair, compare_call, coverage_gate, missing_titles, name_missing_sides, quota_on
 from app.chat.coverage import plan_call
@@ -26,6 +27,7 @@ def generate_kwargs(state: TurnState, ctx: TurnCtx) -> dict[str, Any]:
         compare_call(state, ctx.deps.gateway.settings) if state.compare else {}
     )  # S18.06: route, prompt, coverage (S22.05: quota prompt when switched on)
     call.update(plan_call(state, ctx.deps.gateway.settings, full))  # S22.04: empty unless switched on
+    call.update(calc_call(state, ctx.deps.gateway.settings, full))  # S22.08: empty unless switched on
     call.update(voice_call(ctx.deps.gateway.settings))  # S23.01: empty unless switched on
     return dict(
         gateway=ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
