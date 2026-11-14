@@ -134,6 +134,10 @@ class Settings(BaseSettings):
     chat_compare_quota: bool = False
     # --- per-document evidence floor on the plain qa route (scope of 2-5 documents); off until the A/B ---
     chat_scope_floor: bool = False
+    # --- named-document retrieval: a question naming 2-5 scoped documents also retrieves inside each
+    # of them (up to `chat_named_docs_k` chunks per document, merged into the global selection); off until A/B
+    chat_named_docs: bool = False
+    chat_named_docs_k: int = Field(default=3, ge=1, le=8)
 
     # --- scored abstention (S22.07): logistic combiner (config/abstain@1.yaml) replaces the binary gate;
     # off until calibrated on a v2 run and the paired A/B accepts it ---

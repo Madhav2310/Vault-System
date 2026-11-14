@@ -97,6 +97,7 @@ class AnalyzeQueryOut(BaseModel):
 class ScopeDoc:
     id: uuid.UUID
     title: str
+    lead: str = ""  # opening text, loaded only for named-document detection; never sent to the model
 
 
 @dataclass(frozen=True)

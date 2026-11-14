@@ -12,6 +12,7 @@ from app.chat.clarify import near_tie
 from app.chat.compare import floor_on, floor_per_doc
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.memory import merge_carried, previous_selected_chunk_ids, scope_with_carried
+from app.chat.named_docs import apply_named, named_on
 from app.chat.nodes.run_analyze import clarify_ok
 from app.chat.speculative import HIT, MISS, cancel
 from app.retrieval.load import load_evidence_chunks
@@ -66,6 +67,19 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
         result = await deps.retriever.retrieve(
             deps.sm, ctx.owner_id, state.scope, query, embedding=emb, run_id=ctx.run_id
         )
+    named_info: dict[str, int] = {}
+    if named_on(deps.gateway.settings) and not state.compare and len(state.scope.entries) >= 2:
+        result, named_info = await apply_named(
+            deps.retriever,
+            deps.sm,
+            ctx.owner_id,
+            state.docs,
+            state.scope,
+            query,
+            result,
+            embedding=emb,
+            k=deps.gateway.settings.chat_named_docs_k,
+        )
     if floor_on(deps.gateway.settings):
         result = floor_per_doc(result, state.scope)
     carry_info: dict[str, int] = {}
@@ -96,6 +110,7 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
         "cache_hit": result.cache_hit,
         "speculative": speculative,
         **carry_info,
+        **named_info,
         **result.timings,
     }
     return state
