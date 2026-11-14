@@ -18,5 +18,5 @@ expansion:
 cache_ttl_s: 3600
 gate:
   high: 0.0              # placeholder (the high-confidence skip is not implemented)
-  floor: 0.0             # top_score below this abstains without generating; set by `python -m eval.calibrate_gate --write`
-  enabled: false         # `--write` turns the gate on together with a calibrated floor
+  floor: -5.44077             # top_score below this abstains without generating; set by `python -m eval.calibrate_gate --write`
+  enabled: true         # `--write` turns the gate on together with a calibrated floor
