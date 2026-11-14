@@ -41,6 +41,7 @@ function brief(chunk: string, pages: number[]) {
       { field: "termination", value: "30 days notice", status: "verified", evidence: [cite(chunk, pages)] },
       { field: "governing_law", value: "Delaware", status: "unverified", evidence: [cite(chunk, pages)] },
     ],
+    tone: { label: "formal", note: "Precise legal drafting.", status: "verified", evidence: [cite(chunk, pages)] },
     model: "fake",
     created_at: null,
   };
@@ -94,6 +95,15 @@ test("fact citation highlights sentence", async ({ page }) => {
   await expect(viewer.getByTestId("cited-sentence")).toHaveText(TERMINATE);
   await expect(viewer).toContainText(/Page\s*3/);
   await expect(viewer).toContainText("8 › Termination");
+});
+
+test("tone shown with its citation", async ({ page }) => {
+  await mock(page, { doc: DOC, chunk: CHUNK, pages: [3, 3] });
+  await page.goto(`/app/documents/${DOC}`);
+  const tone = page.getByTestId("tone");
+  await expect(tone).toContainText("formal");
+  await tone.getByRole("button", { name: /Citation/ }).click();
+  await expect(page.getByTestId("source-viewer").getByTestId("cited-sentence")).toHaveText(TERMINATE);
 });
 
 test("unverified labelled", async ({ page }) => {

@@ -7,6 +7,13 @@ export interface Fact {
   evidence: Citation[];
 }
 
+export interface Tone {
+  label: string;
+  note: string;
+  status: string;
+  evidence: Citation[];
+}
+
 export interface Brief {
   status: "pending" | "ready" | "failed" | "partial";
   version_id: string | null;
@@ -16,6 +23,8 @@ export interface Brief {
   summary: string | null;
   suggested_questions: string[];
   facts: Fact[];
+  /** Overall tone with cited evidence; absent or null for older briefs. */
+  tone?: Tone | null;
 }
 
 export interface SummarySegment {
