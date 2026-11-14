@@ -63,6 +63,9 @@ def brief_reply(
     category: str = "contract",
     summary: str = "A twelve month services agreement.",
     usage: Any = None,
+    tone: str = "formal",
+    tone_note: str = "Precise contract drafting.",
+    tone_evidence: list[str] | None = None,
 ) -> fake.FakeReply:
     body = {
         "document_type": "services agreement",
@@ -71,11 +74,14 @@ def brief_reply(
         "tags": ["consulting", "Real Estate"],
         "suggested_questions": ["Who are the parties?", "What is the fee?", "When does it start?"],
         "facts": facts or [],
+        "tone": tone,
+        "tone_note": tone_note,
+        "tone_evidence": tone_evidence or [],
     }
     return fake.structured(body, **({"usage": usage} if usage is not None else {}))
 
 
-def merge_reply(category: str = "contract") -> fake.FakeReply:
+def merge_reply(category: str = "contract", tone: str = "formal") -> fake.FakeReply:
     return fake.structured(
         {
             "document_type": "services agreement",
@@ -83,6 +89,8 @@ def merge_reply(category: str = "contract") -> fake.FakeReply:
             "category": category,
             "tags": ["merged", "contract"],
             "suggested_questions": ["Who are the parties?", "What is the fee?", "When does it end?"],
+            "tone": tone,
+            "tone_note": "Merged tone note.",
         }
     )
 

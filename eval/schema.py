@@ -217,6 +217,7 @@ class ItemOutput:
     meta: str | list[str] | None = None  # structured result of a vault-metadata route
     conflict_flagged: bool | None = None
     latency_ms: float | None = None
+    ttft_ms: float | None = None  # streamed runs: request start to the first segment event
     cost_usd: float | None = None
     call_ids: tuple[str, ...] = ()  # llm_calls ids of the run: the engine/ledger sees the answering spend
     verdicts: tuple[str, ...] = ()  # support-check verdicts per cited segment (supported|partial|unsupported)

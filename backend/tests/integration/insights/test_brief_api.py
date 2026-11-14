@@ -19,6 +19,7 @@ TOP_KEYS = {
     "summary": str,
     "suggested_questions": list,
     "facts": list,
+    "tone": dict,
     "model": str,
     "created_at": str,
 }

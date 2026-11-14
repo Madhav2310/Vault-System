@@ -34,6 +34,7 @@ FactField = Literal[
     "other",
 ]
 Category = Literal["contract", "financial_report", "research_paper", "policy", "correspondence", "other"]
+Tone = Literal["neutral", "formal", "adversarial", "positive", "negative", "mixed"]
 
 MAX_SUMMARY_CHARS = 1200
 MAX_FACTS = 40
@@ -45,9 +46,11 @@ MAX_QUESTION_CHARS = 200
 MAX_DOCUMENT_TYPE_CHARS = 80
 MAX_FACT_VALUE_CHARS = 400
 MAX_FACT_EVIDENCE = 4  # references kept per fact (after a merge of duplicates)
+MAX_TONE_NOTE_CHARS = 160
+MAX_TONE_EVIDENCE = 3
 
 KIND = "brief"  # document_insights.kind
-PROMPT_VERSION = 1  # brief_extract@1; part of the insight key
+PROMPT_VERSION = 2  # brief_extract@2 / brief_merge@2 (adds tone); part of the insight key
 
 
 def params_hash(params: Mapping[str, Any]) -> str:
@@ -79,6 +82,9 @@ class BriefOut(BaseModel):
     tags: list[str]
     suggested_questions: list[str]
     facts: list[FactOut]
+    tone: Tone
+    tone_note: str
+    tone_evidence: list[str]
 
 
 class MergeOut(BaseModel):
@@ -91,6 +97,8 @@ class MergeOut(BaseModel):
     category: Category
     tags: list[str]
     suggested_questions: list[str]
+    tone: Tone
+    tone_note: str
 
 
 def brief_schema(evidence: EvidenceSet | None) -> type[BriefOut]:
@@ -105,7 +113,9 @@ def brief_schema(evidence: EvidenceSet | None) -> type[BriefOut]:
         __base__=FactOut,
         evidence=(list[handle], ...),
     )
-    return create_model("BriefOut", __base__=BriefOut, facts=(list[fact], ...))
+    return create_model(
+        "BriefOut", __base__=BriefOut, facts=(list[fact], ...), tone_evidence=(list[handle], ...)
+    )
 
 
 # --- normalization (code, after parsing) ------------------------------------------------------------------
@@ -157,6 +167,9 @@ class Normalized:
     suggested_questions: tuple[str, ...]
     facts: tuple[FactOut, ...]
     reasons: tuple[str, ...]
+    tone: str = "neutral"
+    tone_note: str = ""
+    tone_evidence: tuple[str, ...] = ()  # handles, resolved by code
 
 
 def normalize(out: BriefOut) -> Normalized:
@@ -179,6 +192,9 @@ def normalize(out: BriefOut) -> Normalized:
         suggested_questions=tuple(normalize_questions(out.suggested_questions)),
         facts=facts,
         reasons=tuple(reasons),
+        tone=out.tone,
+        tone_note=_cut(out.tone_note, MAX_TONE_NOTE_CHARS),
+        tone_evidence=tuple(dict.fromkeys(out.tone_evidence)),
     )
 
 
@@ -208,6 +224,17 @@ class StoredFact(BaseModel):
     evidence: list[StoredEvidence]
 
 
+class StoredTone(BaseModel):
+    """The document's overall tone. The label and note are the model's; `evidence` is resolved by code like a
+    fact's. `unverified` (reason `NO_CITATION`) when no citation into this version resolved."""
+
+    label: str
+    note: str
+    status: Literal["verified", "unverified"]
+    reason: str | None
+    evidence: list[StoredEvidence]
+
+
 class Brief(BaseModel):
     """The `document_insights.content` of a brief."""
 
@@ -219,6 +246,7 @@ class Brief(BaseModel):
     facts: list[StoredFact]
     reasons: list[str]
     partial: bool
+    tone: StoredTone | None = None  # absent in briefs stored before brief@2
 
 
 @dataclass(frozen=True)
@@ -236,26 +264,38 @@ def resolve_facts(
     resolution = resolve([{"text": f.value, "evidence": f.evidence} for f in facts], evidence)
     out: list[ResolvedFact] = []
     for fact, seg in zip(facts, resolution.segments, strict=True):
-        refs: list[StoredEvidence] = []
-        for r in seg.references:
-            chunk = evidence.chunks[r.chunk_id]
-            pages = list(range(chunk.page_start, chunk.page_end + 1)) if chunk.page_start else []
-            refs.append(
-                StoredEvidence(
-                    chunk_id=r.chunk_id,
-                    version_id=r.version_id,
-                    version_no=chunk.version_no,
-                    pages=pages,
-                    section_path=list(chunk.section_path),
-                    sentence_start=r.sentence_start,
-                    sentence_end=r.sentence_end,
-                    char_start=r.char_start,
-                    char_end=r.char_end,
-                    cited_text=r.cited_text,
-                )
-            )
-        out.append(ResolvedFact(fact.field, fact.value, tuple(refs)))
+        out.append(ResolvedFact(fact.field, fact.value, _stored(seg.references, evidence)))
     return out, resolution.reasons
+
+
+def resolve_tone(
+    note: str, handles: Sequence[str], evidence: EvidenceSet
+) -> tuple[tuple[StoredEvidence, ...], tuple[str, ...]]:
+    """Tone handles -> `StoredEvidence` (same resolver, same drop rule), at most `MAX_TONE_EVIDENCE`."""
+    resolution = resolve([{"text": note, "evidence": list(handles)}], evidence)
+    return _stored(resolution.segments[0].references, evidence)[:MAX_TONE_EVIDENCE], resolution.reasons
+
+
+def _stored(refs: Sequence[Any], evidence: EvidenceSet) -> tuple[StoredEvidence, ...]:
+    out: list[StoredEvidence] = []
+    for r in refs:
+        chunk = evidence.chunks[r.chunk_id]
+        pages = list(range(chunk.page_start, chunk.page_end + 1)) if chunk.page_start else []
+        out.append(
+            StoredEvidence(
+                chunk_id=r.chunk_id,
+                version_id=r.version_id,
+                version_no=chunk.version_no,
+                pages=pages,
+                section_path=list(chunk.section_path),
+                sentence_start=r.sentence_start,
+                sentence_end=r.sentence_end,
+                char_start=r.char_start,
+                char_end=r.char_end,
+                cited_text=r.cited_text,
+            )
+        )
+    return tuple(out)
 
 
 def fact_key(field: str, value: str) -> tuple[str, str]:

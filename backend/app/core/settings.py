@@ -81,6 +81,10 @@ class Settings(BaseSettings):
     brief_max_evidence_tokens: int = 12_000  # above this the brief maps over section groups, then merges
     brief_max_usd: float = 0.05  # per document; reaching it stops further map calls (BRIEF_PARTIAL_BUDGET)
 
+    # --- contextual chunk headers, index side only (design §6.5, S17.05); off until the A/B decides ---
+    contextualize_variant: Literal["off", "deterministic", "llm"] = "off"
+    contextualize_max_usd: float = 0.02  # per document; reaching it stops further header calls
+
     # --- whole-document answering (design §8.2, S17.07) ---
     full_context_auto: bool = False  # off until the answer A/B decides (docs/evidence/answer_ab.md)
     full_context_max_docs: int = 3

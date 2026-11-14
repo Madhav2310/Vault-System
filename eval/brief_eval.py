@@ -63,7 +63,7 @@ VERIFIED_TARGET = 0.80
 DEFAULT_DOCS = 10
 DEFAULT_FACTS_PER_DOC = 10
 COVERAGE_MIN = 0.8
-BRIEF_PROMPTS = {"brief_extract": ("brief_extract", 1), "brief_merge": ("brief_merge", 1)}
+BRIEF_PROMPTS = {"brief_extract": ("brief_extract", 2), "brief_merge": ("brief_merge", 2)}
 
 # CUAD clause type -> brief fact fields in which it may appear
 FIELD_MAP: dict[str, tuple[str, ...]] = {
@@ -563,9 +563,12 @@ def _dry_gateway(ledger: MemoryLedger) -> LlmGateway:
                     "category": "contract",
                     "tags": ["dry run"],
                     "suggested_questions": ["Who are the parties?", "What is the term?", "What is the fee?"],
+                    "tone": "neutral",
+                    "tone_note": "Dry run.",
                 }
                 if "facts" in props:
                     body["facts"] = facts
+                    body["tone_evidence"] = [lines[0][0]] if lines else []
             return ChatResponse((TextPart(json.dumps(body)),), "end_turn", Usage(1500, 300), None, req.model)
 
     settings = Settings(_env_file=None, database_url="postgresql+asyncpg://x/y", redis_url="redis://x")  # type: ignore[call-arg]

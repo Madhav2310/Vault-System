@@ -150,6 +150,8 @@ class ScriptedProvider(FakeProvider):
             "category": "other" if "other" in categories else (categories or ["other"])[0],
             "tags": ["fixture"],
             "suggested_questions": [e.question for e in self.entries.values() if e.suggest],
+            "tone": "neutral",
+            "tone_note": "Scripted: plain descriptive language.",
         }
         if facts:
             lines = _EVIDENCE_LINE.findall(user)
@@ -158,4 +160,5 @@ class ScriptedProvider(FakeProvider):
             out["facts"] = (
                 [{"field": fields[-1], "value": lines[0][1][:60], "evidence": [lines[0][0]]}] if lines else []
             )
+            out["tone_evidence"] = [lines[0][0]] if lines else []
         return out

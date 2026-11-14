@@ -170,6 +170,41 @@ class DocumentDetail(Model):
     )
 
 
+class ToneOut(Model):
+    label: str = Field(
+        description="Overall tone: `neutral`, `formal`, `adversarial`, `positive`, `negative` or `mixed`"
+    )
+    note: str = Field(description="One line saying what drives the tone")
+    status: str = Field(
+        description="`verified` when the application resolved at least one citation for it, else `unverified`"
+    )
+    evidence: list[dict[str, Any]] = Field(
+        description="Citations (up to 3) copied by the application from the stored sentences"
+    )
+    model_config = ConfigDict(
+        json_schema_extra={
+            "examples": [
+                {
+                    "label": "formal",
+                    "note": "Precise legal drafting with defined terms.",
+                    "status": "verified",
+                    "evidence": [
+                        {
+                            "chunk_id": CHUNK_ID,
+                            "version_no": 1,
+                            "pages": [1],
+                            "section_path": ["Term"],
+                            "sentence_start": 0,
+                            "sentence_end": 1,
+                            "cited_text": "This Services Agreement is made between Acme and Globex.",
+                        }
+                    ],
+                }
+            ]
+        }
+    )
+
+
 class BriefOut(Model):
     status: str = Field(description="`pending`, `ready`, `partial` or `failed`")
     version_id: uuid.UUID | None = None
@@ -179,6 +214,11 @@ class BriefOut(Model):
     summary: str | None = None
     suggested_questions: list[str] = []
     facts: list[dict[str, Any]] = Field(default=[], description="Cited facts, each `verified` or not")
+    tone: ToneOut | None = Field(
+        default=None,
+        description="Overall tone with its cited evidence; null while pending or failed, for briefs made "
+        "before tone existed, and (with `include_unverified=false`) when its citation did not resolve",
+    )
     model: str | None = None
     created_at: str | None = None
     model_config = ConfigDict(
@@ -195,6 +235,12 @@ class BriefOut(Model):
                     "summary": "Services agreement between Acme and Globex.",
                     "suggested_questions": ["What is the termination notice period?"],
                     "facts": [],
+                    "tone": {
+                        "label": "formal",
+                        "note": "Precise legal drafting with defined terms.",
+                        "status": "verified",
+                        "evidence": [],
+                    },
                     "model": "balanced-model",
                     "created_at": TS,
                 }
