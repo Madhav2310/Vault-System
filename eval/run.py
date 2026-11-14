@@ -51,6 +51,7 @@ import sys
 import time
 from collections.abc import Awaitable, Callable, Mapping, Sequence
 from dataclasses import dataclass, field
+from typing import Any
 
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -84,6 +85,11 @@ class Harness:
     # total spend so far (USD) for `--max-usd`: pipeline answering + judges
     spent: Callable[[], Awaitable[float]] | None = None
     close: Callable[[], Awaitable[None]] | None = None  # release clients (HTTP) when the run ends
+    # v2 runs (eval.run_v2): the judges' gateway + spend guard, and document key -> document sentence texts
+    # (the stream gold_evidence ranges index; None = unavailable)
+    judge_gw: Any = None
+    judge_guard: Any = None
+    gold_units: Callable[[str], Sequence[str] | None] | None = None
 
 
 def select_filter(items: Sequence[GoldenItem], spec: str | None) -> list[GoldenItem]:
@@ -238,6 +244,12 @@ def ttft_summary(run: RunResult) -> str | None:
 
 
 async def _main(a: argparse.Namespace) -> int:
+    if getattr(a, "dataset", "v1") == "v2":
+        from eval.run_v2 import main_v2
+
+        return await main_v2(a)
+    if a.split == "dev":
+        raise SystemExit("--split dev exists for --dataset v2 only (v1 has train / test / smoke)")
     from app.db.session import get_sessionmaker
     from eval.loader import load_dataset
 
@@ -296,7 +308,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--config", required=True, help="config name recorded with the run and passed to the setup"
     )
     p.add_argument("--pipeline", required=True, help="module:setup, an async (config) -> Harness")
-    p.add_argument("--split", choices=("train", "test", "smoke", "all"), default="all")
+    p.add_argument("--split", choices=("train", "dev", "test", "smoke", "all"), default="all")
+    p.add_argument(
+        "--dataset",
+        choices=("v1", "v2"),
+        default="v1",
+        help="v2: claim-level judges and attribution over vault_eval_v2 (train/dev/test by source_doc)",
+    )
+    p.add_argument(
+        "--answer-concurrency",
+        type=int,
+        default=2,
+        help="v2: items answered at once (the judges run in one bounded gather afterwards)",
+    )
     p.add_argument("--freeze", metavar="NAME", help="write eval/baselines/NAME.json from this run")
     p.add_argument(
         "--compare", metavar="NAME", help="exit 1 if a metric regressed vs eval/baselines/NAME.json"

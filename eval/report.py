@@ -33,6 +33,7 @@ class ItemResult:
     degraded: tuple[str, ...] = ()
     source_doc: str | None = None  # cluster key (S21.07); None = singleton cluster
     stratum: str | None = None
+    attribution: dict[str, Any] | None = None  # S21.08 signals the runner recorded (None = not recorded)
 
 
 @dataclass
@@ -84,6 +85,7 @@ class SidecarItem(BaseModel):
     error: str | None = None
     source_doc: str | None = None
     stratum: str | None = None
+    attribution: dict[str, Any] | None = None
 
 
 class Sidecar(BaseModel):
@@ -116,6 +118,7 @@ def sidecar(run: RunResult) -> Sidecar:
                 error=i.error,
                 source_doc=i.source_doc,
                 stratum=i.stratum,
+                attribution=i.attribution,
             )
             for i in run.items
         ],
@@ -205,6 +208,14 @@ def cluster_key(item_id: str, source_doc: str | None) -> str:
     return source_doc or item_id
 
 
+_SCOPE_V1 = (
+    "- scope: deterministic graders only (no LLM judge); labelled pre-review while every item is `draft`"
+)
+_SCOPE_V2 = (
+    "- scope: v2 claim/support/abstention judges plus deterministic graders; items `draft` until audited"
+)
+
+
 def _f(v: float | None) -> str:
     if v is None:
         return "-"
@@ -227,7 +238,7 @@ def render(run: RunResult) -> str:
         f"- name: `{run.name}`  suite: `{run.suite}`  split: `{run.split}`  git: `{run.git_sha}`",
         f"- started: {run.started_at.isoformat()}  finished: {_iso(run.finished_at)}",
         f"- items: {len(run.items)}  errored: {run.n_errors}",
-        "- scope: deterministic graders only (no LLM judge); labelled pre-review while every item is `draft`",
+        _SCOPE_V2 if run.config.get("dataset") == "v2" else _SCOPE_V1,
         "",
         "## Totals",
         "",
