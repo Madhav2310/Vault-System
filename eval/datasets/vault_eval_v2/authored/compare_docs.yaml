@@ -1,0 +1,388 @@
+# S21.03 authored stratum: compare_docs. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+items:
+- id: s21-cmp-01
+  stratum: compare_docs
+  question: Which of Cloudlane's and Northwind's agreements gives the supplier the longer window to report a personal
+    data breach?
+  source_doc: dpa_cloudlane
+  answer_type: answer
+  required_claims:
+  - Cloudlane's DPA allows 72 hours.
+  - The Northwind MSA allows 48 hours.
+  - So Cloudlane's window is longer by 24 hours.
+  gold_evidence:
+  - doc: dpa_cloudlane
+    sentence_start: 11
+    sentence_end: 12
+  - doc: msa_northwind_v2
+    sentence_start: 18
+    sentence_end: 19
+  doc_ids:
+  - dpa_cloudlane
+  - msa_northwind_v2
+- id: s21-cmp-02
+  stratum: compare_docs
+  question: Which of the Fibrenet line, the Northwind platform and the Quill subscription promises the highest uptime?
+  source_doc: sla_fibrenet
+  answer_type: answer
+  required_claims:
+  - Fibrenet commits to 99.95% monthly availability.
+  - The Northwind platform commits to 99.5%.
+  - Quill targets 99.9%.
+  - Fibrenet has the highest commitment.
+  gold_evidence:
+  - doc: sla_fibrenet
+    sentence_start: 6
+    sentence_end: 7
+  - doc: msa_northwind_v2
+    sentence_start: 14
+    sentence_end: 15
+  - doc: order_quill_v2
+    sentence_start: 22
+    sentence_end: 23
+  doc_ids:
+  - sla_fibrenet
+  - msa_northwind_v2
+  - order_quill_v2
+- id: s21-cmp-03
+  stratum: compare_docs
+  question: How do the Helios licence and the Cloudlane addendum differ on checking up on the other party?
+  source_doc: license_helios
+  answer_type: answer
+  required_claims:
+  - Helios may audit sales records once a year on twenty days' notice.
+  - Cloudlane's controller may audit once a year on fourteen days' notice, or at any time after a breach.
+  gold_evidence:
+  - doc: license_helios
+    sentence_start: 14
+    sentence_end: 15
+  - doc: dpa_cloudlane
+    sentence_start: 16
+    sentence_end: 17
+  doc_ids:
+  - license_helios
+  - dpa_cloudlane
+- id: s21-cmp-04
+  stratum: compare_docs
+  question: 'Once the relationship ends, who gets customer data back sooner: Quill''s customers or Cloudlane''s?'
+  source_doc: order_quill
+  answer_type: answer
+  required_claims:
+  - Cloudlane must delete or return personal data within thirty days after the agreement ends.
+  - Quill provides a data export on request during the term and for ninety days afterwards.
+  - 'The two work differently: Cloudlane''s deadline is 30 days, Quill''s request window runs 90 days.'
+  gold_evidence:
+  - doc: dpa_cloudlane
+    sentence_start: 19
+    sentence_end: 20
+  - doc: order_quill_v2
+    sentence_start: 20
+    sentence_end: 21
+  doc_ids:
+  - dpa_cloudlane
+  - order_quill_v2
+- id: s21-cmp-05
+  stratum: compare_docs
+  question: Compare the deadlines for reporting a workplace accident at Bramble & Rowe's suppliers and in Kestrel's
+    lab.
+  source_doc: supplier_code
+  answer_type: answer
+  required_claims:
+  - Bramble & Rowe suppliers must report serious accidents within five days.
+  - Kestrel Materials requires all incidents, including near misses, to be reported within twenty-four hours.
+  gold_evidence:
+  - doc: supplier_code
+    sentence_start: 12
+    sentence_end: 13
+  - doc: safety_lab
+    sentence_start: 18
+    sentence_end: 19
+  doc_ids:
+  - supplier_code
+  - safety_lab
+- id: s21-cmp-06
+  stratum: compare_docs
+  question: Who erases personal data faster after the relationship ends, the fitness app or the hosting provider?
+  source_doc: privacy_policy
+  answer_type: answer
+  required_claims:
+  - Cloudlane deletes within thirty days.
+  - Pinewood removes account data within sixty days of deletion, keeping invoices seven years.
+  - Cloudlane is faster.
+  gold_evidence:
+  - doc: privacy_policy
+    sentence_start: 14
+    sentence_end: 15
+  - doc: dpa_cloudlane
+    sentence_start: 19
+    sentence_end: 20
+  doc_ids:
+  - privacy_policy
+  - dpa_cloudlane
+- id: s21-cmp-07
+  stratum: compare_docs
+  question: 'Which runs longer: the Meridian research grant or the Fibrenet internet contract''s minimum term?'
+  source_doc: grant_award
+  answer_type: answer
+  required_claims:
+  - The grant runs thirty months.
+  - Fibrenet's minimum term is thirty-six months.
+  - Fibrenet's term is longer by six months.
+  gold_evidence:
+  - doc: grant_award
+    sentence_start: 3
+    sentence_end: 4
+  - doc: sla_fibrenet
+    sentence_start: 20
+    sentence_end: 21
+  doc_ids:
+  - grant_award
+  - sla_fibrenet
+- id: s21-cmp-08
+  stratum: compare_docs
+  question: How quickly must a claim be raised under the Hollis motor policy, the Fibrenet credits and the Norden
+    warranty?
+  source_doc: insurance_summary
+  answer_type: partial
+  required_claims:
+  - Hollis requires claims to be reported within forty-eight hours.
+  - Fibrenet credits must be claimed within thirty days after month end.
+  - The Norden warranty names no claim deadline; it only promises a technician visit within five working days.
+  gold_evidence:
+  - doc: insurance_summary
+    sentence_start: 13
+    sentence_end: 14
+  - doc: sla_fibrenet
+    sentence_start: 11
+    sentence_end: 12
+  - doc: warranty_terms
+    sentence_start: 9
+    sentence_end: 11
+  doc_ids:
+  - insurance_summary
+  - sla_fibrenet
+  - warranty_terms
+  audit_note: 'Third side partly absent: the warranty gives no claim deadline.'
+- id: s21-cmp-09
+  stratum: compare_docs
+  question: What cover period do the Norden dishwasher and the Sensor Hub S2 each carry?
+  source_doc: warranty_terms
+  answer_type: partial
+  required_claims:
+  - The Norden dishwasher carries a two-year warranty on parts and labour.
+  - The Sensor Hub S2 specification states no warranty period.
+  gold_evidence:
+  - doc: warranty_terms
+    sentence_start: 3
+    sentence_end: 4
+  doc_ids:
+  - warranty_terms
+  - spec_sensorhub
+  audit_note: 'One side absent: spec_sensorhub has no warranty statement; the answer must say so.'
+- id: s21-cmp-10
+  stratum: compare_docs
+  question: Do Fibrenet and Cloudlane each put a maximum repair time on an outage?
+  source_doc: sla_fibrenet
+  answer_type: partial
+  required_claims:
+  - Fibrenet commits to restore a total loss of service within four hours in business hours and eight hours otherwise.
+  - The Cloudlane addendum states no repair or recovery time.
+  gold_evidence:
+  - doc: sla_fibrenet
+    sentence_start: 13
+    sentence_end: 14
+  doc_ids:
+  - sla_fibrenet
+  - dpa_cloudlane
+  audit_note: 'One side absent: dpa_cloudlane covers data processing only.'
+- id: s21-cmp-11
+  stratum: compare_docs
+  question: Which encryption protocol versions are named for data moving over the network in the Sensor Hub and
+    Cloudlane documents?
+  source_doc: spec_sensorhub
+  answer_type: answer
+  required_claims:
+  - The Sensor Hub S2 encrypts cloud data with TLS 1.3.
+  - Cloudlane requires TLS 1.2 or higher in transit.
+  gold_evidence:
+  - doc: spec_sensorhub
+    sentence_start: 16
+    sentence_end: 17
+  - doc: dpa_cloudlane
+    sentence_start: 5
+    sentence_end: 6
+  doc_ids:
+  - spec_sensorhub
+  - dpa_cloudlane
+- id: s21-cmp-12
+  stratum: compare_docs
+  question: Are managers at Orchard and at Alder & Finch equally quick to sign off on requests?
+  source_doc: handbook_leave
+  answer_type: answer
+  required_claims:
+  - Orchard managers answer leave requests within three working days.
+  - Alder & Finch managers approve expense reports within three business days under the current policy.
+  - The turnaround is the same.
+  gold_evidence:
+  - doc: handbook_leave
+    sentence_start: 20
+    sentence_end: 21
+  - doc: policy_expense_v2
+    sentence_start: 29
+    sentence_end: 30
+  doc_ids:
+  - handbook_leave
+  - policy_expense_v2
+  audit_note: Uses the current policy version (3 days); v1 says five.
+- id: s21-cmp-13
+  stratum: compare_docs
+  question: What must a newcomer finish early on at Juniper Legal and at Kestrel Materials?
+  source_doc: onboarding_checklist
+  answer_type: answer
+  required_claims:
+  - Juniper Legal's new starter completes the information security course and a conflict-of-interest declaration
+    by the end of the first week.
+  - Kestrel Materials staff complete the safety induction before entering the lab, and refresher training every
+    twelve months.
+  gold_evidence:
+  - doc: onboarding_checklist
+    sentence_start: 9
+    sentence_end: 10
+  - doc: safety_lab
+    sentence_start: 15
+    sentence_end: 16
+  doc_ids:
+  - onboarding_checklist
+  - safety_lab
+- id: s21-cmp-14
+  stratum: compare_docs
+  question: Which of the Westbrook tender and the Bramble & Rowe code puts a number on buying nearby?
+  source_doc: rfp_catering
+  answer_type: partial
+  required_claims:
+  - The Westbrook RFP requires at least 30% of food spend from suppliers within 150 miles.
+  - The Bramble & Rowe code sets no local sourcing requirement.
+  gold_evidence:
+  - doc: rfp_catering
+    sentence_start: 11
+    sentence_end: 12
+  doc_ids:
+  - rfp_catering
+  - supplier_code
+  audit_note: 'One side absent: supplier_code has no local sourcing clause.'
+- id: s21-cmp-15
+  stratum: compare_docs
+  question: How does Plover's database failover time compare with Fibrenet's promised fault repair time?
+  source_doc: runbook_db
+  answer_type: answer
+  required_claims:
+  - Plover expects recovery of about eight minutes after failover.
+  - Fibrenet commits to restoring total loss of service within four hours during business hours.
+  - The failover is much shorter.
+  gold_evidence:
+  - doc: runbook_db
+    sentence_start: 11
+    sentence_end: 12
+  - doc: sla_fibrenet
+    sentence_start: 13
+    sentence_end: 14
+  doc_ids:
+  - runbook_db
+  - sla_fibrenet
+- id: s21-cmp-16
+  stratum: compare_docs
+  question: Which holds records longer, Pinewood with its invoices or Cloudlane with its access logs?
+  source_doc: privacy_policy
+  answer_type: answer
+  required_claims:
+  - Pinewood keeps invoices for seven years.
+  - Cloudlane keeps access logs for twelve months.
+  - Pinewood keeps them longer.
+  gold_evidence:
+  - doc: privacy_policy
+    sentence_start: 14
+    sentence_end: 15
+  - doc: dpa_cloudlane
+    sentence_start: 6
+    sentence_end: 7
+  doc_ids:
+  - privacy_policy
+  - dpa_cloudlane
+- id: s21-cmp-17
+  stratum: compare_docs
+  question: How much advance warning of a site or records inspection do Bramble & Rowe, Cloudlane and Helios give?
+  source_doc: supplier_code
+  answer_type: answer
+  required_claims:
+  - Bramble & Rowe gives ten working days' notice.
+  - Cloudlane gives fourteen days' notice (none after a breach).
+  - Helios gives twenty days' notice.
+  gold_evidence:
+  - doc: supplier_code
+    sentence_start: 19
+    sentence_end: 20
+  - doc: dpa_cloudlane
+    sentence_start: 16
+    sentence_end: 17
+  - doc: license_helios
+    sentence_start: 14
+    sentence_end: 15
+  doc_ids:
+  - supplier_code
+  - dpa_cloudlane
+  - license_helios
+- id: s21-cmp-18
+  stratum: compare_docs
+  question: Which costs more each month, the Hollis fleet cover or the Harcourt broadband line, and by how much?
+  source_doc: insurance_summary
+  answer_type: answer
+  required_claims:
+  - The Hollis policy costs GBP 2,636.67 per month.
+  - The Fibrenet line costs GBP 940 per month.
+  - The insurance is higher by about GBP 1,696.67 per month.
+  gold_evidence:
+  - doc: insurance_summary
+    sentence_start: 16
+    sentence_end: 17
+  - doc: sla_fibrenet
+    sentence_start: 18
+    sentence_end: 19
+  doc_ids:
+  - insurance_summary
+  - sla_fibrenet
+- id: s21-cmp-19
+  stratum: compare_docs
+  question: What is the oldest Node release Quarry 4.2 supports, and is a minimum Node version stated for the Sensor
+    Hub?
+  source_doc: release_notes
+  answer_type: partial
+  required_claims:
+  - Quarry 4.2 requires Node 20 or later.
+  - The Sensor Hub S2 specification states no Node version requirement.
+  gold_evidence:
+  - doc: release_notes
+    sentence_start: 7
+    sentence_end: 8
+  doc_ids:
+  - release_notes
+  - spec_sensorhub
+  audit_note: 'One side absent: the hub is hardware and its spec names no Node requirement.'
+- id: s21-cmp-20
+  stratum: compare_docs
+  question: How much lead time does Orchard ask for before a sabbatical versus what Juniper allows to end a probationary
+    job?
+  source_doc: handbook_leave
+  answer_type: answer
+  required_claims:
+  - Orchard requires at least four months' notice for a sabbatical request.
+  - During probation at Juniper Legal either party may end employment on one week's notice.
+  gold_evidence:
+  - doc: handbook_leave
+    sentence_start: 17
+    sentence_end: 18
+  - doc: onboarding_checklist
+    sentence_start: 15
+    sentence_end: 16
+  doc_ids:
+  - handbook_leave
+  - onboarding_checklist

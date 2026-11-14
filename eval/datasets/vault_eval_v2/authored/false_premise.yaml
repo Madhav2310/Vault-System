@@ -1,0 +1,232 @@
+# S21.03 authored stratum: false_premise. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+items:
+- id: s21-fal-01
+  stratum: false_premise
+  question: How much does Marlowe pay if it cancels the Quill subscription early?
+  source_doc: order_quill
+  answer_type: partial
+  required_claims:
+  - The order form contains no early cancellation fee.
+  - The subscription renews automatically unless the customer gives written notice before the renewal date.
+  gold_evidence:
+  - doc: order_quill_v2
+    sentence_start: 11
+    sentence_end: 12
+  doc_ids:
+  - order_quill_v2
+  audit_note: 'False premise: no early cancellation fee exists in the order form; the true nearby fact is the non-renewal
+    notice.'
+- id: s21-fal-02
+  stratum: false_premise
+  question: What discount does Marlowe get for paying the Quill fee annually up front?
+  source_doc: order_quill
+  answer_type: partial
+  required_claims:
+  - The order form states no discount for annual prepayment.
+  - The fee is billed annually in advance at the per-seat price.
+  gold_evidence:
+  - doc: order_quill_v2
+    sentence_start: 6
+    sentence_end: 7
+  doc_ids:
+  - order_quill_v2
+  audit_note: 'False premise: annual billing in advance is stated, but no discount for it is.'
+- id: s21-fal-03
+  stratum: false_premise
+  question: Which clause of the Bramble & Rowe code limits the working week to forty hours?
+  source_doc: supplier_code
+  answer_type: partial
+  required_claims:
+  - The code sets no forty-hour limit.
+  - Regular hours may not exceed forty-eight per week and total hours with overtime sixty.
+  gold_evidence:
+  - doc: supplier_code
+    sentence_start: 8
+    sentence_end: 9
+  doc_ids:
+  - supplier_code
+  audit_note: 'False premise: the code''s cap is 48 regular hours and 60 total, not 40.'
+- id: s21-fal-04
+  stratum: false_premise
+  question: Why does the Meridian grant allow indirect costs of up to a quarter of direct costs?
+  source_doc: grant_award
+  answer_type: partial
+  required_claims:
+  - The grant does not allow 25%; indirect costs are limited to 15% of direct costs.
+  gold_evidence:
+  - doc: grant_award
+    sentence_start: 6
+    sentence_end: 7
+  doc_ids:
+  - grant_award
+  audit_note: 'False premise: the limit is 15%, not 25%.'
+- id: s21-fal-05
+  stratum: false_premise
+  question: Can the five-year warranty on a Norden dishwasher be handed to a buyer of a used unit?
+  source_doc: warranty_terms
+  answer_type: partial
+  required_claims:
+  - Norden dishwashers carry a two-year warranty, not five years.
+  - The warranty does pass to a new owner if the appliance is sold within the warranty period with proof of purchase.
+  gold_evidence:
+  - doc: warranty_terms
+    sentence_start: 3
+    sentence_end: 4
+  - doc: warranty_terms
+    sentence_start: 15
+    sentence_end: 16
+  doc_ids:
+  - warranty_terms
+  audit_note: 'False premise: the dishwasher warranty is two years.'
+- id: s21-fal-06
+  stratum: false_premise
+  question: What does the IP67 rating of the Sensor Hub S2 protect against?
+  source_doc: spec_sensorhub
+  answer_type: partial
+  required_claims:
+  - The Sensor Hub S2 is rated IP54, not IP67.
+  gold_evidence:
+  - doc: spec_sensorhub
+    sentence_start: 10
+    sentence_end: 11
+  doc_ids:
+  - spec_sensorhub
+  audit_note: 'False premise: the specification states IP54.'
+- id: s21-fal-07
+  stratum: false_premise
+  question: What is assessed at the twelve-month probation review at Juniper Legal?
+  source_doc: onboarding_checklist
+  answer_type: partial
+  required_claims:
+  - Probation lasts six months, not twelve.
+  - Reviews take place at the end of months three and six.
+  gold_evidence:
+  - doc: onboarding_checklist
+    sentence_start: 14
+    sentence_end: 16
+  doc_ids:
+  - onboarding_checklist
+  audit_note: 'False premise: probation is six months with reviews at months three and six.'
+- id: s21-fal-08
+  stratum: false_premise
+  question: Why is the Westbrook catering proposal deadline set for 15 March 2026?
+  source_doc: rfp_catering
+  answer_type: partial
+  required_claims:
+  - Proposals are due on 27 February 2026 at 5:00 p.m., not 15 March.
+  gold_evidence:
+  - doc: rfp_catering
+    sentence_start: 4
+    sentence_end: 5
+  doc_ids:
+  - rfp_catering
+  audit_note: 'False premise: the due date is 27 February 2026.'
+- id: s21-fal-09
+  stratum: false_premise
+  question: Why does Plover require the incident commander to approve every database failover?
+  source_doc: runbook_db
+  answer_type: partial
+  required_claims:
+  - Approval is not required in every case.
+  - The on-call engineer may start failover alone when replica lag is under five seconds; the commander approves
+    only when lag is higher.
+  gold_evidence:
+  - doc: runbook_db
+    sentence_start: 6
+    sentence_end: 8
+  doc_ids:
+  - runbook_db
+  audit_note: 'False premise: approval is conditional on replica lag.'
+- id: s21-fal-10
+  stratum: false_premise
+  question: What does the Helios licence say about the ten percent royalty on net sales?
+  source_doc: license_helios
+  answer_type: partial
+  required_claims:
+  - There is no ten percent royalty in the Helios licence.
+  - The licence sets six percent of net sales.
+  gold_evidence:
+  - doc: license_helios
+    sentence_start: 7
+    sentence_end: 8
+  doc_ids:
+  - license_helios
+  audit_note: 'False premise: the base licence royalty is 6% (8% after the second amendment), never 10%.'
+- id: s21-fal-11
+  stratum: false_premise
+  question: When does Vantage's engagement end under its twenty-four-month term?
+  source_doc: consulting_vantage
+  answer_type: partial
+  required_claims:
+  - The agreement does not have a twenty-four-month term.
+  - The original term is twelve months from 6 October 2025.
+  gold_evidence:
+  - doc: consulting_vantage
+    sentence_start: 5
+    sentence_end: 6
+  doc_ids:
+  - consulting_vantage
+  audit_note: 'False premise: the original term is 12 months (18 after the amendment).'
+- id: s21-fal-12
+  stratum: false_premise
+  question: Within the ninety-day cure period for material breach, what must the Northwind supplier fix?
+  source_doc: msa_northwind
+  answer_type: partial
+  required_claims:
+  - The cure period is thirty days, not ninety.
+  gold_evidence:
+  - doc: msa_northwind_v2
+    sentence_start: 30
+    sentence_end: 31
+  doc_ids:
+  - msa_northwind_v2
+  audit_note: 'False premise: the cure period is thirty days.'
+- id: s21-fal-13
+  stratum: false_premise
+  question: Under which section can Corvane end the Brightwater NDA early?
+  source_doc: nda_brightwater
+  answer_type: partial
+  required_claims:
+  - The NDA has no section allowing early termination.
+  - Confidentiality obligations run for a fixed period from the last disclosure.
+  gold_evidence:
+  - doc: nda_brightwater_v2
+    sentence_start: 12
+    sentence_end: 13
+  doc_ids:
+  - nda_brightwater_v2
+  audit_note: 'False premise: there is no early termination clause.'
+- id: s21-fal-14
+  stratum: false_premise
+  question: What is the one-hundred-dollar daily meal allowance in the expense policy?
+  source_doc: policy_expense
+  answer_type: partial
+  required_claims:
+  - The policy does not allow USD 100 per day for meals.
+  - The current meal cap is USD 75 per day.
+  gold_evidence:
+  - doc: policy_expense_v2
+    sentence_start: 9
+    sentence_end: 10
+  doc_ids:
+  - policy_expense_v2
+  audit_note: 'False premise: the cap is 75 dollars (60 in the superseded version), not 100.'
+- id: s21-fal-15
+  stratum: false_premise
+  question: Why did the 9 September sign-in outage last about two hours?
+  source_doc: report_outage_postmortem
+  answer_type: partial
+  required_claims:
+  - The outage did not last two hours; the post-mortem says 47 minutes.
+  - The customer notice says 62 minutes.
+  gold_evidence:
+  - doc: report_outage_postmortem
+    sentence_start: 2
+    sentence_end: 3
+  - doc: report_outage_customer_notice
+    sentence_start: 2
+    sentence_end: 3
+  doc_ids:
+  - report_outage_postmortem
+  - report_outage_customer_notice
+  audit_note: 'False premise: reported duration is 47 or 62 minutes.'

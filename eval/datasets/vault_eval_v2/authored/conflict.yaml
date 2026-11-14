@@ -1,0 +1,316 @@
+# S21.03 authored stratum: conflict. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+items:
+- id: s21-con-01
+  stratum: conflict
+  question: What hourly charge applies to Vantage's work from February 2026?
+  source_doc: consulting_vantage_amend1
+  answer_type: answer
+  required_claims:
+  - From 1 February 2026 the rate is USD 165 per hour (Amendment No. 1).
+  - The original agreement's USD 140 per hour is replaced because the amendment states Section 1 replaces the corresponding
+    provision.
+  gold_evidence:
+  - doc: consulting_vantage_amend1
+    sentence_start: 3
+    sentence_end: 4
+  - doc: consulting_vantage_amend1
+    sentence_start: 11
+    sentence_end: 12
+  - doc: consulting_vantage
+    sentence_start: 7
+    sentence_end: 8
+  doc_ids:
+  - consulting_vantage
+  - consulting_vantage_amend1
+  audit_note: Contract says USD 140; amendment sets USD 165 and states it replaces the corresponding provision,
+    so the later version wins explicitly.
+- id: s21-con-02
+  stratum: conflict
+  question: How long does the Pinecrest and Vantage engagement last once the first amendment is taken into account?
+  source_doc: consulting_vantage_amend1
+  answer_type: answer
+  required_claims:
+  - The term is eighteen (18) months from 6 October 2025.
+  - This replaces the twelve-month term of the original agreement.
+  gold_evidence:
+  - doc: consulting_vantage_amend1
+    sentence_start: 5
+    sentence_end: 6
+  - doc: consulting_vantage_amend1
+    sentence_start: 11
+    sentence_end: 12
+  - doc: consulting_vantage
+    sentence_start: 5
+    sentence_end: 6
+  doc_ids:
+  - consulting_vantage
+  - consulting_vantage_amend1
+  audit_note: 'Contract: twelve months; Amendment section 2: eighteen months, and amendment section 5 says sections
+    1 and 2 replace the originals.'
+- id: s21-con-03
+  stratum: conflict
+  question: What notice does either side have to give to end the Vantage consulting arrangement?
+  source_doc: consulting_vantage_amend1
+  answer_type: answer
+  required_claims:
+  - The original agreement says thirty (30) days' written notice.
+  - Amendment No. 1 says forty-five (45) days' written notice.
+  - 'The sources conflict: the amendment says only its Sections 1 and 2 replace provisions, so it is unclear whether
+    30 or 45 days applies.'
+  gold_evidence:
+  - doc: consulting_vantage
+    sentence_start: 12
+    sentence_end: 13
+  - doc: consulting_vantage_amend1
+    sentence_start: 7
+    sentence_end: 8
+  - doc: consulting_vantage_amend1
+    sentence_start: 11
+    sentence_end: 13
+  doc_ids:
+  - consulting_vantage
+  - consulting_vantage_amend1
+  audit_note: 'Genuine conflict: amendment section 3 says 45 days but section 5 names only sections 1 and 2 as replacing;
+    a good answer flags this rather than picking one.'
+- id: s21-con-04
+  stratum: conflict
+  question: What percentage of net sales does Granite owe Helios as royalty today?
+  source_doc: license_helios_amend2
+  answer_type: answer
+  required_claims:
+  - The royalty is now eight percent (8%) of net sales under the Second Amendment.
+  - The original agreement's six percent is superseded because the amendment controls on conflict.
+  gold_evidence:
+  - doc: license_helios_amend2
+    sentence_start: 3
+    sentence_end: 4
+  - doc: license_helios_amend2
+    sentence_start: 9
+    sentence_end: 10
+  - doc: license_helios
+    sentence_start: 7
+    sentence_end: 8
+  doc_ids:
+  - license_helios
+  - license_helios_amend2
+  audit_note: 'Original: 6%. Second Amendment: 8%, and its precedence clause says it controls.'
+- id: s21-con-05
+  stratum: conflict
+  question: Where may Granite sell products that contain the Helios image library?
+  source_doc: license_helios_amend2
+  answer_type: answer
+  required_claims:
+  - After the Second Amendment the licence is valid worldwide, excluding countries under United States export embargoes.
+  - The original agreement limited it to the United States and Canada.
+  gold_evidence:
+  - doc: license_helios_amend2
+    sentence_start: 5
+    sentence_end: 6
+  - doc: license_helios
+    sentence_start: 5
+    sentence_end: 6
+  doc_ids:
+  - license_helios
+  - license_helios_amend2
+  audit_note: 'Original: US and Canada. Amendment: worldwide except embargoed countries; amendment controls.'
+- id: s21-con-06
+  stratum: conflict
+  question: Is Granite allowed to pass the Helios library on to resellers under a sublicence?
+  source_doc: license_helios_amend2
+  answer_type: answer
+  required_claims:
+  - Yes, the Second Amendment lets the Licensee sublicense to distributors with the Licensor's prior written consent,
+    not unreasonably withheld.
+  - The original agreement prohibited any sublicensing.
+  gold_evidence:
+  - doc: license_helios_amend2
+    sentence_start: 7
+    sentence_end: 8
+  - doc: license_helios
+    sentence_start: 9
+    sentence_end: 10
+  doc_ids:
+  - license_helios
+  - license_helios_amend2
+  audit_note: Original forbids sublicensing; amendment permits it with consent; amendment controls on conflict.
+- id: s21-con-07
+  stratum: conflict
+  question: What was the quarter's revenue according to the finance and the regional sales write-ups?
+  source_doc: report_sales_q3_regional
+  answer_type: answer
+  required_claims:
+  - Finance reports revenue of USD 4.82 million.
+  - Regional Sales reports booked revenue of USD 4.68 million.
+  - The two documents disagree; the figures come from different sources (general ledger versus CRM bookings).
+  gold_evidence:
+  - doc: report_sales_q3_finance
+    sentence_start: 3
+    sentence_end: 4
+  - doc: report_sales_q3_regional
+    sentence_start: 3
+    sentence_end: 4
+  - doc: report_sales_q3_finance
+    sentence_start: 2
+    sentence_end: 3
+  - doc: report_sales_q3_regional
+    sentence_start: 2
+    sentence_end: 3
+  doc_ids:
+  - report_sales_q3_finance
+  - report_sales_q3_regional
+  audit_note: Two reports disagree on one number; neither states it supersedes the other, so the answer should report
+    both and not pick.
+- id: s21-con-08
+  stratum: conflict
+  question: How many fresh customer accounts did the company gain in Q3?
+  source_doc: report_sales_q3_regional
+  answer_type: answer
+  required_claims:
+  - Finance counts 61 new accounts (first paid invoice).
+  - Regional Sales counts 57 new accounts (contract signature).
+  - The numbers differ because the two teams count on different dates.
+  gold_evidence:
+  - doc: report_sales_q3_finance
+    sentence_start: 4
+    sentence_end: 5
+  - doc: report_sales_q3_regional
+    sentence_start: 4
+    sentence_end: 5
+  doc_ids:
+  - report_sales_q3_finance
+  - report_sales_q3_regional
+  audit_note: 61 versus 57 with different counting rules stated in each report.
+- id: s21-con-09
+  stratum: conflict
+  question: Do the finance and regional sales summaries agree on the churn rate for the quarter?
+  source_doc: report_sales_q3_regional
+  answer_type: answer
+  required_claims:
+  - Yes, both documents give customer churn of 2.1% for the quarter.
+  gold_evidence:
+  - doc: report_sales_q3_finance
+    sentence_start: 5
+    sentence_end: 6
+  - doc: report_sales_q3_regional
+    sentence_start: 5
+    sentence_end: 6
+  doc_ids:
+  - report_sales_q3_finance
+  - report_sales_q3_regional
+  audit_note: 'Control item: no conflict on churn (both 2.1%); an answer that invents a conflict is wrong.'
+- id: s21-con-10
+  stratum: conflict
+  question: How long were people locked out of signing in on 9 September?
+  source_doc: report_outage_customer_notice
+  answer_type: answer
+  required_claims:
+  - The engineering post-mortem says 47 minutes (09:12 to 09:59 UTC).
+  - The customer notice says 62 minutes.
+  - The two documents disagree and no document says which figure is authoritative.
+  gold_evidence:
+  - doc: report_outage_postmortem
+    sentence_start: 2
+    sentence_end: 3
+  - doc: report_outage_customer_notice
+    sentence_start: 2
+    sentence_end: 3
+  doc_ids:
+  - report_outage_postmortem
+  - report_outage_customer_notice
+  audit_note: 47 versus 62 minutes; neither document supersedes the other.
+- id: s21-con-11
+  stratum: conflict
+  question: Which regions were hit by the 9 September login failure?
+  source_doc: report_outage_customer_notice
+  answer_type: answer
+  required_claims:
+  - The post-mortem says only EU-West was affected.
+  - The customer notice says EU-West and EU-Central were affected.
+  - The sources disagree about EU-Central.
+  gold_evidence:
+  - doc: report_outage_postmortem
+    sentence_start: 3
+    sentence_end: 5
+  - doc: report_outage_customer_notice
+    sentence_start: 3
+    sentence_end: 4
+  doc_ids:
+  - report_outage_postmortem
+  - report_outage_customer_notice
+  audit_note: 'Post-mortem: EU-West only. Notice: EU-West and EU-Central.'
+- id: s21-con-12
+  stratum: conflict
+  question: What was behind the 9 September sign-in failure, according to both write-ups?
+  source_doc: report_outage_customer_notice
+  answer_type: answer
+  required_claims:
+  - Both documents attribute it to an expired TLS certificate on the identity gateway.
+  gold_evidence:
+  - doc: report_outage_postmortem
+    sentence_start: 5
+    sentence_end: 6
+  - doc: report_outage_customer_notice
+    sentence_start: 4
+    sentence_end: 5
+  doc_ids:
+  - report_outage_postmortem
+  - report_outage_customer_notice
+  audit_note: 'Control item: the two documents agree on the cause.'
+- id: s21-con-13
+  stratum: conflict
+  question: What was the employee count at the end of September?
+  source_doc: report_headcount_finance
+  answer_type: answer
+  required_claims:
+  - The People Team report gives 412 employees, including 14 part-time staff.
+  - The Finance payroll report gives 398 employees, counting each part-timer as one head.
+  - The figures differ; the reports use different sources.
+  gold_evidence:
+  - doc: report_headcount_hr
+    sentence_start: 2
+    sentence_end: 3
+  - doc: report_headcount_finance
+    sentence_start: 2
+    sentence_end: 3
+  doc_ids:
+  - report_headcount_hr
+  - report_headcount_finance
+  audit_note: 412 (HR) versus 398 (payroll); neither supersedes the other.
+- id: s21-con-14
+  stratum: conflict
+  question: How fast are staff leaving over the last twelve months?
+  source_doc: report_headcount_finance
+  answer_type: answer
+  required_claims:
+  - The People Team reports annualised attrition of 9.4%.
+  - Finance reports attrition of 11.0%.
+  - The reports disagree and measure attrition differently.
+  gold_evidence:
+  - doc: report_headcount_hr
+    sentence_start: 3
+    sentence_end: 4
+  - doc: report_headcount_finance
+    sentence_start: 3
+    sentence_end: 4
+  doc_ids:
+  - report_headcount_hr
+  - report_headcount_finance
+  audit_note: 9.4% versus 11.0%; Finance's measure includes voluntary and involuntary leavers.
+- id: s21-con-15
+  stratum: conflict
+  question: Do HR and Finance report the same number of open positions?
+  source_doc: report_headcount_finance
+  answer_type: answer
+  required_claims:
+  - Yes, both reports give 23 open requisitions.
+  gold_evidence:
+  - doc: report_headcount_hr
+    sentence_start: 4
+    sentence_end: 5
+  - doc: report_headcount_finance
+    sentence_start: 4
+    sentence_end: 5
+  doc_ids:
+  - report_headcount_hr
+  - report_headcount_finance
+  audit_note: 'Control item: both documents say 23.'

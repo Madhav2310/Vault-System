@@ -1,0 +1,226 @@
+# S21.03 authored stratum: aggregation. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+items:
+- id: s21-agg-01
+  stratum: aggregation
+  question: Out of the hosting addendum, the fitness app privacy notice and the supplier code, which let the counterparty
+    carry out inspections?
+  source_doc: dpa_cloudlane
+  answer_type: answer
+  required_claims:
+  - The Cloudlane DPA gives the controller audit rights.
+  - The Bramble & Rowe supplier code lets the company audit any site.
+  - The Pinewood privacy policy has no audit right.
+  gold_evidence:
+  - doc: dpa_cloudlane
+    sentence_start: 16
+    sentence_end: 17
+  - doc: supplier_code
+    sentence_start: 19
+    sentence_end: 20
+  doc_ids:
+  - dpa_cloudlane
+  - privacy_policy
+  - supplier_code
+- id: s21-agg-02
+  stratum: aggregation
+  question: Which of the Q3 sales summary, the Q3 sales summary by region, the HR headcount report and the Finance
+    headcount report came from the Finance team?
+  source_doc: report_sales_q3_finance
+  answer_type: answer
+  required_claims:
+  - The finance Q3 sales summary was prepared by Finance.
+  - The Headcount and Payroll Report was prepared by Finance.
+  - The other two reports came from Regional Sales and the People Team.
+  gold_evidence:
+  - doc: report_sales_q3_finance
+    sentence_start: 1
+    sentence_end: 2
+  - doc: report_headcount_finance
+    sentence_start: 1
+    sentence_end: 2
+  - doc: report_sales_q3_regional
+    sentence_start: 1
+    sentence_end: 2
+  - doc: report_headcount_hr
+    sentence_start: 1
+    sentence_end: 2
+  doc_ids:
+  - report_sales_q3_finance
+  - report_sales_q3_regional
+  - report_headcount_hr
+  - report_headcount_finance
+- id: s21-agg-03
+  stratum: aggregation
+  question: How many of the two quarterly sales summaries quote a churn percentage, and what figure?
+  source_doc: report_sales_q3_finance
+  answer_type: answer
+  required_claims:
+  - Both sales summaries (2) state churn.
+  - The churn figure is 2.1% in both.
+  gold_evidence:
+  - doc: report_sales_q3_finance
+    sentence_start: 5
+    sentence_end: 6
+  - doc: report_sales_q3_regional
+    sentence_start: 5
+    sentence_end: 6
+  doc_ids:
+  - report_sales_q3_finance
+  - report_sales_q3_regional
+- id: s21-agg-04
+  stratum: aggregation
+  question: When are the next two committee meetings of the housing association and the migration steering group?
+  source_doc: minutes_board
+  answer_type: answer
+  required_claims:
+  - The housing association board meets next on 10 December 2025.
+  - The Atlas Migration steering committee meets next on 9 July 2025.
+  gold_evidence:
+  - doc: minutes_board
+    sentence_start: 18
+    sentence_end: 19
+  - doc: inj_meeting_notes
+    sentence_start: 16
+    sentence_end: 17
+  doc_ids:
+  - minutes_board
+  - inj_meeting_notes
+- id: s21-agg-05
+  stratum: aggregation
+  question: Which of the privacy notice and the hosting addendum says how soon data is wiped, and what are the periods?
+  source_doc: privacy_policy
+  answer_type: answer
+  required_claims:
+  - The Pinewood privacy policy removes data within sixty days after account deletion, except invoices kept seven
+    years.
+  - The Cloudlane DPA requires deletion or return within thirty days after the agreement ends.
+  gold_evidence:
+  - doc: privacy_policy
+    sentence_start: 14
+    sentence_end: 15
+  - doc: dpa_cloudlane
+    sentence_start: 19
+    sentence_end: 20
+  doc_ids:
+  - privacy_policy
+  - dpa_cloudlane
+- id: s21-agg-06
+  stratum: aggregation
+  question: Name the supplier or provider in each of the order form, the data addendum and the internet agreement.
+  source_doc: sla_fibrenet
+  answer_type: answer
+  required_claims:
+  - The order form's provider is Quill Practice Software, Inc.
+  - The addendum's processor is Cloudlane Hosting B.V.
+  - The internet service is provided by Fibrenet Connectivity Ltd.
+  gold_evidence:
+  - doc: order_quill_v2
+    sentence_start: 1
+    sentence_end: 2
+  - doc: dpa_cloudlane
+    sentence_start: 1
+    sentence_end: 2
+  - doc: sla_fibrenet
+    sentence_start: 1
+    sentence_end: 2
+  doc_ids:
+  - order_quill_v2
+  - dpa_cloudlane
+  - sla_fibrenet
+- id: s21-agg-07
+  stratum: aggregation
+  question: How many of the Tidewater summary, the Cedarline price list and the hub specification contain a table?
+  source_doc: annual_fin
+  answer_type: answer
+  required_claims:
+  - 'Two of them contain a table: the Tidewater financial summary and the Cedarline partner price list.'
+  - The Sensor Hub specification has no table.
+  gold_evidence:
+  - doc: annual_fin
+    sentence_start: 3
+    sentence_end: 4
+  - doc: inj_price_list
+    sentence_start: 3
+    sentence_end: 4
+  doc_ids:
+  - annual_fin
+  - inj_price_list
+  - spec_sensorhub
+- id: s21-agg-08
+  stratum: aggregation
+  question: Which of the lab safety SOP, the supplier code and the failover runbook sets a reporting deadline measured
+    in hours?
+  source_doc: safety_lab
+  answer_type: answer
+  required_claims:
+  - 'Only the lab safety SOP does: incidents must be reported within twenty-four hours.'
+  - The supplier code uses five days and the runbook uses five working days.
+  gold_evidence:
+  - doc: safety_lab
+    sentence_start: 18
+    sentence_end: 19
+  - doc: supplier_code
+    sentence_start: 12
+    sentence_end: 13
+  - doc: runbook_db
+    sentence_start: 18
+    sentence_end: 19
+  doc_ids:
+  - safety_lab
+  - supplier_code
+  - runbook_db
+- id: s21-agg-09
+  stratum: aggregation
+  question: Which of the hosting addendum, the internet SLA, the research grant, the motor policy and the appliance
+    warranty state a time limit in hours?
+  source_doc: insurance_summary
+  answer_type: answer
+  required_claims:
+  - The hosting addendum (72 hours), the internet SLA (4 and 8 hours; 6 hours maintenance) and the motor policy
+    (48 hours) do.
+  - The grant and the warranty do not.
+  gold_evidence:
+  - doc: dpa_cloudlane
+    sentence_start: 11
+    sentence_end: 12
+  - doc: sla_fibrenet
+    sentence_start: 13
+    sentence_end: 14
+  - doc: insurance_summary
+    sentence_start: 13
+    sentence_end: 14
+  doc_ids:
+  - dpa_cloudlane
+  - sla_fibrenet
+  - grant_award
+  - insurance_summary
+  - warranty_terms
+- id: s21-agg-10
+  stratum: aggregation
+  question: Which of the internet SLA, the Northwind services contract, the Marlowe order form and the Harbor Street
+    lease run three years or longer?
+  source_doc: lease_harbor
+  answer_type: answer
+  required_claims:
+  - The Fibrenet minimum term is 36 months.
+  - The current Northwind agreement has a 36-month initial term.
+  - The current Harbor Street lease is seven years.
+  - The Marlowe order form (24 months) does not.
+  gold_evidence:
+  - doc: sla_fibrenet
+    sentence_start: 20
+    sentence_end: 21
+  - doc: msa_northwind_v2
+    sentence_start: 8
+    sentence_end: 9
+  - doc: lease_harbor_v2
+    sentence_start: 4
+    sentence_end: 5
+  - doc: order_quill_v2
+    sentence_start: 10
+    sentence_end: 11
+  doc_ids:
+  - sla_fibrenet
+  - msa_northwind_v2
+  - lease_harbor_v2
+  - order_quill_v2

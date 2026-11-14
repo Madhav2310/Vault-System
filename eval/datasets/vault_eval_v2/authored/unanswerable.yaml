@@ -1,0 +1,208 @@
+# S21.03 authored stratum: unanswerable. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+items:
+- id: s21-una-01
+  stratum: unanswerable
+  question: What does a double plot cost for a season at the Riverside community garden?
+  source_doc: newsletter_twocol
+  answer_type: abstain
+  doc_ids:
+  - newsletter_twocol
+  audit_note: 'Absent: the newsletter gives fees only for a standard plot (45 dollars, 20 reduced); no double plot
+    is mentioned.'
+- id: s21-una-02
+  stratum: unanswerable
+  question: Who serves as treasurer of the Riverside garden committee?
+  source_doc: newsletter_twocol
+  answer_type: abstain
+  doc_ids:
+  - newsletter_twocol
+  audit_note: 'Absent: only the coordinator (Leila Haddad) and Marcus Bell (tools) are named; no treasurer.'
+- id: s21-una-03
+  stratum: unanswerable
+  question: When does the autumn planting season open at the Riverside garden?
+  source_doc: newsletter_twocol
+  answer_type: abstain
+  doc_ids:
+  - newsletter_twocol
+  audit_note: 'Right topic, wrong season: the newsletter covers only the spring season opening on 12 April.'
+- id: s21-una-04
+  stratum: unanswerable
+  question: How many customers were affected by the 9 September sign-in outage?
+  source_doc: report_outage_postmortem
+  answer_type: abstain
+  doc_ids:
+  - report_outage_postmortem
+  - report_outage_customer_notice
+  audit_note: 'Absent: the post-mortem gives duration and region, never a customer count.'
+- id: s21-una-05
+  stratum: unanswerable
+  question: Which engineer disabled the certificate renewal job during the earlier migration?
+  source_doc: report_outage_postmortem
+  answer_type: abstain
+  doc_ids:
+  - report_outage_postmortem
+  audit_note: 'Absent: the post-mortem names no individual, only the team.'
+- id: s21-una-06
+  stratum: unanswerable
+  question: What was the average salary of employees at the end of September?
+  source_doc: report_headcount_hr
+  answer_type: abstain
+  doc_ids:
+  - report_headcount_hr
+  - report_headcount_finance
+  audit_note: 'Absent: the HR report has no compensation data; the Finance report gives total payroll cost only.'
+- id: s21-una-07
+  stratum: unanswerable
+  question: How many employees work in the Sales department?
+  source_doc: report_headcount_hr
+  answer_type: abstain
+  doc_ids:
+  - report_headcount_hr
+  audit_note: 'Absent: only Engineering''s open requisitions (11) are broken out; no department headcount.'
+- id: s21-una-08
+  stratum: unanswerable
+  question: What operating profit did the company make in the third quarter?
+  source_doc: report_sales_q3_finance
+  answer_type: abstain
+  doc_ids:
+  - report_sales_q3_finance
+  audit_note: 'Near miss: the report gives revenue, gross margin (63%) and deferred revenue, but no operating profit.'
+- id: s21-una-09
+  stratum: unanswerable
+  question: What is the ceiling on Tessellate's liability if it breaches confidentiality?
+  source_doc: msa_northwind
+  answer_type: abstain
+  doc_ids:
+  - msa_northwind_v2
+  audit_note: 'Right clause, absent value: section 8 states the confidentiality breach is excepted from the cap
+    but names no separate ceiling.'
+- id: s21-una-10
+  stratum: unanswerable
+  question: What discount does Northwind receive on the platform fee for prepaying a full year?
+  source_doc: msa_northwind
+  answer_type: abstain
+  doc_ids:
+  - msa_northwind_v2
+  audit_note: 'Absent: fees are monthly in advance; no prepayment discount appears in either version.'
+- id: s21-una-11
+  stratum: unanswerable
+  question: What fixed damages must a party pay if it leaks information under the Brightwater NDA?
+  source_doc: nda_brightwater
+  answer_type: abstain
+  doc_ids:
+  - nda_brightwater_v2
+  audit_note: 'Absent: the remedies clause allows an injunction but sets no liquidated damages.'
+- id: s21-una-12
+  stratum: unanswerable
+  question: What notice must be given to cancel the Brightwater and Corvane non-disclosure agreement before it expires?
+  source_doc: nda_brightwater
+  answer_type: abstain
+  doc_ids:
+  - nda_brightwater_v2
+  audit_note: 'Absent: the NDA has no early-termination clause, only a confidentiality survival period.'
+- id: s21-una-13
+  stratum: unanswerable
+  question: What daily meal allowance applies to a trip to Tokyo under the Alder & Finch policy?
+  source_doc: policy_expense
+  answer_type: abstain
+  doc_ids:
+  - policy_expense_v2
+  audit_note: 'Absent: meals are a single daily cap with no city-specific rates (city rates exist only for lodging).'
+- id: s21-una-14
+  stratum: unanswerable
+  question: What mileage rate in cents per mile does Alder & Finch pay for personal cars?
+  source_doc: policy_expense
+  answer_type: abstain
+  doc_ids:
+  - policy_expense_v2
+  audit_note: 'Near miss: the policy refers to the current IRS rate without stating a number.'
+- id: s21-una-15
+  stratum: unanswerable
+  question: How many square feet of storage space does the Harbor Street tenant get?
+  source_doc: lease_harbor
+  answer_type: abstain
+  doc_ids:
+  - lease_harbor_v2
+  audit_note: 'Absent: the lease covers the 3,100 sq ft office suite and parking passes only.'
+- id: s21-una-16
+  stratum: unanswerable
+  question: What monthly rent applies to Suite 420 at 88 Harbor Street?
+  source_doc: lease_harbor
+  answer_type: abstain
+  doc_ids:
+  - lease_harbor_v2
+  audit_note: 'Wrong entity: the lease covers Suite 410 only.'
+- id: s21-una-17
+  stratum: unanswerable
+  question: What premium rate does Vantage charge for weekend consulting work?
+  source_doc: consulting_vantage
+  answer_type: abstain
+  doc_ids:
+  - consulting_vantage
+  - consulting_vantage_amend1
+  audit_note: 'Absent: only a flat hourly rate (USD 140, later 165) is given; no weekend premium.'
+- id: s21-una-18
+  stratum: unanswerable
+  question: What was Tidewater's profit after tax for 2024?
+  source_doc: annual_fin
+  answer_type: abstain
+  doc_ids:
+  - annual_fin
+  audit_note: 'Near miss: the summary stops at profit before tax (97.7); tax charge and profit after tax are not
+    given.'
+- id: s21-una-19
+  stratum: unanswerable
+  question: What interim dividend did Tidewater pay during 2024?
+  source_doc: annual_fin
+  answer_type: abstain
+  doc_ids:
+  - annual_fin
+  audit_note: 'Absent: only the proposed final dividend (9.5p) and the total (14.0p) appear, no interim figure.'
+- id: s21-una-20
+  stratum: unanswerable
+  question: What is the largest volume of acid allowed in the yellow cabinet?
+  source_doc: safety_lab
+  answer_type: abstain
+  doc_ids:
+  - safety_lab
+  audit_note: 'Near miss: the SOP caps flammable solvents at fifty litres but gives no acid quantity limit.'
+- id: s21-una-21
+  stratum: unanswerable
+  question: Who is deputy safety officer at Kestrel Materials?
+  source_doc: safety_lab
+  answer_type: abstain
+  doc_ids:
+  - safety_lab
+  audit_note: 'Absent: only the safety officer (Nadia Petrov) is named.'
+- id: s21-una-22
+  stratum: unanswerable
+  question: What did the Mill Lane site cost the housing association?
+  source_doc: minutes_board
+  answer_type: abstain
+  doc_ids:
+  - minutes_board
+  audit_note: 'Absent: the minutes give the number of homes and timing, not the price.'
+- id: s21-una-23
+  stratum: unanswerable
+  question: Which board member voted against the repairs contract award?
+  source_doc: minutes_board
+  answer_type: abstain
+  doc_ids:
+  - minutes_board
+  audit_note: 'Absent: the minutes record approval without any vote breakdown or dissent.'
+- id: s21-una-24
+  stratum: unanswerable
+  question: On what date was Quarry 4.3 released?
+  source_doc: release_notes
+  answer_type: abstain
+  doc_ids:
+  - release_notes
+  audit_note: 'Wrong entity: the notes describe 4.2 (8 September 2025); no 4.3 exists in the document.'
+- id: s21-una-25
+  stratum: unanswerable
+  question: Which minimum Python version does Quarry 4.2 need?
+  source_doc: release_notes
+  answer_type: abstain
+  doc_ids:
+  - release_notes
+  audit_note: 'Wrong entity: only a minimum Node version (20) is stated; Python is never mentioned.'

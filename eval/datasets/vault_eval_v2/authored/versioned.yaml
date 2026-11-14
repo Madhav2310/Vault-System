@@ -1,0 +1,250 @@
+# S21.03 authored stratum: versioned. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+items:
+- id: s21-ver-01
+  stratum: versioned
+  question: What does the customer currently pay every month for the platform under the Northwind and Tessellate
+    software deal?
+  source_doc: msa_northwind_v2
+  answer_type: answer
+  required_claims:
+  - The current monthly platform fee is USD 19,400.
+  alternates:
+    The current monthly platform fee is USD 19,400.:
+    - USD 19,400 per month
+    - $19,400 a month
+  gold_evidence:
+  - doc: msa_northwind_v2
+    sentence_start: 12
+    sentence_end: 13
+  must_not_contain:
+  - 18,500
+  audit_note: Current version is the Amended and Restated MSA of 3 March 2026 (msa_northwind_v2); the superseded
+    2025 text says USD 18,500.
+- id: s21-ver-02
+  stratum: versioned
+  question: For how many months does the Tessellate services contract run initially, in its latest form?
+  source_doc: msa_northwind_v2
+  answer_type: answer
+  required_claims:
+  - The initial term is thirty-six (36) months.
+  alternates:
+    The initial term is thirty-six (36) months.:
+    - 36 months
+    - three years
+  gold_evidence:
+  - doc: msa_northwind_v2
+    sentence_start: 8
+    sentence_end: 9
+  must_not_contain:
+  - twenty-four
+  - 24 months
+  audit_note: 'Stale v1 value: twenty-four (24) months.'
+- id: s21-ver-03
+  stratum: versioned
+  question: Which company is the customer in the current Tessellate platform contract?
+  source_doc: msa_northwind_v2
+  answer_type: answer
+  required_claims:
+  - The customer is Northwind Group plc.
+  gold_evidence:
+  - doc: msa_northwind_v2
+    sentence_start: 1
+    sentence_end: 2
+  must_not_contain:
+  - Northwind Logistics
+  audit_note: 'Changed party: Northwind Logistics Ltd (v1) became Northwind Group plc (v2).'
+- id: s21-ver-04
+  stratum: versioned
+  question: How long must the other side keep secrets after the Brightwater and Corvane investment talks, according
+    to the newest NDA?
+  source_doc: nda_brightwater_v2
+  answer_type: answer
+  required_claims:
+  - Confidentiality obligations last five (5) years from the last disclosure.
+  alternates:
+    Confidentiality obligations last five (5) years from the last disclosure.:
+    - 5 years
+    - five years
+  gold_evidence:
+  - doc: nda_brightwater_v2
+    sentence_start: 12
+    sentence_end: 13
+  must_not_contain:
+  - three (3) years
+  audit_note: 'Stale v1 value: three (3) years.'
+- id: s21-ver-05
+  stratum: versioned
+  question: Which state's law governs the up-to-date Brightwater confidentiality agreement?
+  source_doc: nda_brightwater_v2
+  answer_type: answer
+  required_claims:
+  - The agreement is governed by the laws of the State of Delaware.
+  gold_evidence:
+  - doc: nda_brightwater_v2
+    sentence_start: 23
+    sentence_end: 24
+  must_not_contain:
+  - New York
+  audit_note: 'Stale v1 value: State of New York.'
+- id: s21-ver-06
+  stratum: versioned
+  question: Who is the investor counterparty named in the current Brightwater non-disclosure agreement?
+  source_doc: nda_brightwater_v2
+  answer_type: answer
+  required_claims:
+  - The counterparty is Corvane Partners LP.
+  gold_evidence:
+  - doc: nda_brightwater_v2
+    sentence_start: 1
+    sentence_end: 2
+  must_not_contain:
+  - Corvane Capital
+  audit_note: 'Changed party: Corvane Capital LLC (v1) became Corvane Partners LP (v2).'
+- id: s21-ver-07
+  stratum: versioned
+  question: What monthly base rent does Suite 410 on Harbor Street carry under the restated lease?
+  source_doc: lease_harbor_v2
+  answer_type: answer
+  required_claims:
+  - The base rent is USD 13,150 per month.
+  alternates:
+    The base rent is USD 13,150 per month.:
+    - $13,150 a month
+    - USD 13,150 monthly
+  gold_evidence:
+  - doc: lease_harbor_v2
+    sentence_start: 7
+    sentence_end: 8
+  must_not_contain:
+  - 12,400
+  audit_note: 'Stale v1 value: USD 12,400.'
+- id: s21-ver-08
+  stratum: versioned
+  question: How many years does the restated Harbor Street office lease last?
+  source_doc: lease_harbor_v2
+  answer_type: answer
+  required_claims:
+  - The term is seven (7) years, beginning 1 September 2025.
+  alternates:
+    The term is seven (7) years, beginning 1 September 2025.:
+    - 7 years
+    - seven years
+  gold_evidence:
+  - doc: lease_harbor_v2
+    sentence_start: 4
+    sentence_end: 5
+  must_not_contain:
+  - five (5) years
+  audit_note: 'Stale v1 value: five (5) years from 1 September 2023.'
+- id: s21-ver-09
+  stratum: versioned
+  question: What security deposit has the tenant of Suite 410 put down according to the amended and restated lease?
+  source_doc: lease_harbor_v2
+  answer_type: answer
+  required_claims:
+  - The security deposit is USD 26,300.
+  gold_evidence:
+  - doc: lease_harbor_v2
+    sentence_start: 11
+    sentence_end: 12
+  must_not_contain:
+  - 24,800
+  audit_note: 'Stale v1 value: USD 24,800.'
+- id: s21-ver-10
+  stratum: versioned
+  question: What yearly subscription charge applies to Marlowe Dental's renewal order with Quill?
+  source_doc: order_quill_v2
+  answer_type: answer
+  required_claims:
+  - The annual subscription fee is USD 64,800.
+  alternates:
+    The annual subscription fee is USD 64,800.:
+    - $64,800 per year
+    - USD 64,800 annually
+  gold_evidence:
+  - doc: order_quill_v2
+    sentence_start: 6
+    sentence_end: 7
+  must_not_contain:
+  - 54,720
+  audit_note: 'Stale v1 value: USD 54,720 (120 seats at USD 38).'
+- id: s21-ver-11
+  stratum: versioned
+  question: How many clinician seats does the renewal order form for Marlowe cover?
+  source_doc: order_quill_v2
+  answer_type: answer
+  required_claims:
+  - The renewal covers 150 named clinician seats.
+  gold_evidence:
+  - doc: order_quill_v2
+    sentence_start: 3
+    sentence_end: 4
+  must_not_contain:
+  - 120 named
+  - ten clinics
+  audit_note: 'Stale v1 value: 120 seats at ten clinics.'
+- id: s21-ver-12
+  stratum: versioned
+  question: How much warning must Marlowe give to stop the Quill subscription from rolling over, per the renewal
+    order?
+  source_doc: order_quill_v2
+  answer_type: answer
+  required_claims:
+  - The customer must give ninety (90) days' written notice before the renewal date.
+  alternates:
+    The customer must give ninety (90) days' written notice before the renewal date.:
+    - 90 days' notice
+    - ninety days notice
+  gold_evidence:
+  - doc: order_quill_v2
+    sentence_start: 11
+    sentence_end: 12
+  must_not_contain:
+  - sixty (60)
+  audit_note: 'Stale v1 value: sixty (60) days.'
+- id: s21-ver-13
+  stratum: versioned
+  question: What is the daily allowance for meals on the road in the revised Alder & Finch expense policy?
+  source_doc: policy_expense_v2
+  answer_type: answer
+  required_claims:
+  - Meals while travelling are reimbursed up to USD 75 per day.
+  gold_evidence:
+  - doc: policy_expense_v2
+    sentence_start: 9
+    sentence_end: 10
+  must_not_contain:
+  - USD 60
+  audit_note: 'Stale v1 value: USD 60 per day.'
+- id: s21-ver-14
+  stratum: versioned
+  question: By when must an Alder & Finch employee file an expense claim under the current rules?
+  source_doc: policy_expense_v2
+  answer_type: answer
+  required_claims:
+  - Expense reports must be submitted within forty-five (45) days after the expense is incurred.
+  alternates:
+    Expense reports must be submitted within forty-five (45) days after the expense is incurred.:
+    - 45 days
+    - within forty-five days
+  gold_evidence:
+  - doc: policy_expense_v2
+    sentence_start: 26
+    sentence_end: 27
+  must_not_contain:
+  - thirty (30) days
+  audit_note: 'Stale v1 value: thirty (30) days.'
+- id: s21-ver-15
+  stratum: versioned
+  question: Above what amount does the revised Alder & Finch policy insist on an itemised receipt?
+  source_doc: policy_expense_v2
+  answer_type: answer
+  required_claims:
+  - An itemised receipt is required for expenses of USD 30 or more.
+  gold_evidence:
+  - doc: policy_expense_v2
+    sentence_start: 23
+    sentence_end: 24
+  must_not_contain:
+  - USD 25
+  audit_note: 'Stale v1 value: USD 25.'
