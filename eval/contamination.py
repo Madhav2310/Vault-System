@@ -80,12 +80,12 @@ def default_prompts() -> list[tuple[str, int]]:
     """Every prompt a default turn or a default judge run calls."""
     from app.chat.compare import COMPARE_PROMPT
     from app.chat.nodes.analyze import PROMPT as ANALYZE
-    from app.chat.nodes.generate import COMPLETE_PROMPT
+    from app.chat.nodes.generate import PROMPT as ANSWER
     from app.chat.support_check import PROMPT as SUPPORT_CHECK
     from app.retrieval.listwise import PROMPT as RERANK
     from eval.judge import PROMPTS_V2
 
-    return sorted({ANALYZE, COMPLETE_PROMPT, COMPARE_PROMPT, SUPPORT_CHECK, RERANK, *PROMPTS_V2.values()})
+    return sorted({ANALYZE, ANSWER, COMPARE_PROMPT, SUPPORT_CHECK, RERANK, *PROMPTS_V2.values()})
 
 
 def item_index(items: Iterable[object]) -> dict[str, set[tuple[str, str]]]:

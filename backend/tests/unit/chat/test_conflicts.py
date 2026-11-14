@@ -70,6 +70,5 @@ async def test_generate_reports_conflict_and_reason() -> None:
 
 
 def test_prompt_version_and_rule() -> None:
-    p = default_registry().get("answer_rag", 3)
+    p = default_registry().get("answer_rag", 12)
     assert "`conflicts`" in p.body and "supersedes" in p.body
-    assert default_registry().get("answer_rag", 2).version == 2  # the previous version stays loadable

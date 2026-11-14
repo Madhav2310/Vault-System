@@ -125,14 +125,6 @@ class Settings(BaseSettings):
     # --- support check (S22.06): 2 = support_check@2 (prunes unneeded citations, removes unsupported
     # segments, one regeneration if every segment fails); 1 until the paired A/B accepts it ---
     chat_support_version: Literal[1, 2] = 1
-    # --- answer prompt: 10 = answer_rag@10 (the default: @7's completeness-first rules plus detail
-    # discipline, accepted by paired train and dev runs); 7 = completeness-first with a scope rule;
-    # 3 = the previous short-answer wording; 6 = @7 without the scope rule; 8 = @7 plus answering under the
-    # evidence's own period label instead of abstaining (not adopted); 9 = @7 plus: no detail the cited
-    # sentence lacks, latest version only for current-terms questions, what an uncovered document does say;
-    # 10 = @9 plus: no derived counts, keep every cited detail; 11 = @7 with a neutral example; 12 = @10 with
-    # neutral document names in its examples (the default) ---
-    chat_answer_version: Literal[3, 6, 7, 8, 9, 10, 11, 12] = 12
     # --- analysis prompt: 4 = analyze_query@4 (the default: @2 with neutral document names in its examples);
     # 3 = analyze_query@3 (shorter prompt and output budget); 2 = the earlier default ---
     chat_analyze_version: Literal[2, 3, 4] = 4
@@ -157,7 +149,7 @@ class Settings(BaseSettings):
     otel_service_name: str = "vault-api"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
-    @field_validator("chat_support_version", "chat_analyze_version", "chat_answer_version", mode="before")
+    @field_validator("chat_support_version", "chat_analyze_version", mode="before")
     @classmethod
     def _int_from_env(cls, v: object) -> object:
         """Env vars arrive as strings ("2"); the Literal[int] fields need the int."""

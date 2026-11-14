@@ -23,7 +23,7 @@ async def test_request_shape() -> None:
     assert res.response_type == "answer"
     req = fake.requests[0]
     assert req.cache_mode == "explicit"  # RAG evidence differs per request: no cache write charge
-    assert req.system == default_registry().get("answer_rag", 3).body
+    assert req.system == default_registry().get("answer_rag", 12).body
     resolved = gw.router.resolve("generate", "lookup", "rag")
     assert (resolved.role, req.model, req.effort) == ("balanced", resolved.model, "none")
     params = build_params(req)

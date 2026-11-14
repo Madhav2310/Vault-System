@@ -27,7 +27,5 @@ def test_schema_and_prompt_contract() -> None:
     schema = answer_schema(evidence())
     assert list(schema.model_json_schema()["properties"]) == ["status", "segments", "followups", "conflicts"]
     assert schema.model_validate({"status": "abstain", "segments": []}).followups == []  # type: ignore[attr-defined]
-    p = default_registry().get("answer_rag", 3)
-    assert "followups" in p.body and "conflicts" in p.body and p.version == 3
-    assert "followups" in default_registry().get("answer_rag", 2).body  # the previous version stays loadable
-    assert default_registry().get("answer_rag", 1).version == 1  # the previous version stays loadable
+    p = default_registry().get("answer_rag", 12)
+    assert "followups" in p.body and "conflicts" in p.body and p.version == 12

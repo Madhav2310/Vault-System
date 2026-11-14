@@ -32,16 +32,12 @@ from app.llm.types import Final, TextDelta, Usage
 STOP_REFUSAL = "STOP_REFUSAL"
 STOP_MAX_TOKENS = "STOP_MAX_TOKENS"
 GENERATION_INVALID = "GENERATION_INVALID"
-PROMPT = ("answer_rag", 3)
-COMPLETE_PROMPT = (
-    "answer_rag",
-    12,
-)  # completeness-first with detail discipline (`chat_answer_version`)
+PROMPT: tuple[str, int] = ("answer_rag", 12)  # completeness-first with detail discipline
 
 
-def answer_prompt(settings: Any) -> tuple[str, int]:
-    version = getattr(settings, "chat_answer_version", 3)
-    return ("answer_rag", version) if version in (6, 7, 8, 9, 10, 11, 12) else PROMPT
+def answer_prompt(settings: Any = None) -> tuple[str, int]:
+    """The answer prompt of a qa turn (compare, plan-first and calc turns select their own)."""
+    return PROMPT
 
 
 @dataclass(frozen=True)
