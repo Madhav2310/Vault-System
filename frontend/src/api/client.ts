@@ -132,6 +132,17 @@ export const api = {
     });
   },
 
+  /** Local runs: sign in as the fixed local user. True when the server allowed it, false on 404. */
+  async loginLocal(): Promise<boolean> {
+    try {
+      await request("/v1/session/local", { method: "POST" });
+      return true;
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 404) return false;
+      throw e;
+    }
+  },
+
   async logout(): Promise<void> {
     await request("/v1/session", { method: "DELETE" });
   },

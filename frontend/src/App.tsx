@@ -63,8 +63,10 @@ export function App() {
   const [hasKey, setHasKey] = useState<boolean | null>(null);
   useEffect(() => {
     let live = true;
+    // A valid cookie wins; otherwise a local run signs in on its own; only then is a key asked for.
     api
       .hasSession()
+      .then((ok) => (ok ? true : api.loginLocal().catch(() => false)))
       .then((ok) => live && setHasKey(ok))
       .catch(() => live && setHasKey(false));
     return () => {

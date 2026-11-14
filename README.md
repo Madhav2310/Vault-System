@@ -15,7 +15,7 @@ scripts/demo.sh           # full story with curl: upload, status, guides, stream
 scripts/demo_core.sh      # shorter smoke: upload, ready, one cited answer, history, metrics
 ```
 
-- Open `/app` (the web UI) and paste the API key `quickstart.sh` printed. API docs: `http://localhost:8100/docs`.
+- Open `/app` (the web UI). On localhost it signs you in as a local user automatically (`LOCAL_AUTOLOGIN=true`, never in prod); on a deployed instance paste an API key. API docs: `http://localhost:8100/docs`.
 - No OpenAI key: `make ui-e2e` runs the UI tests against a scripted fake model on its own ports and tears itself down. `scripts/demo.sh` also runs against that stack with `LLM_PROVIDER=fake` (instructions at the top of the script).
 - Docker is only needed to run the stack. Unit tests and lint need none: `make ci`. Docker limits and which target needs what: `docs/ops/dev-environment.md`.
 - The recorded walkthrough and its narration script: `docs/ops/demo.md`.

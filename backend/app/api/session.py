@@ -21,6 +21,7 @@ from app.core.auth import (
     CurrentUser,
     hash_api_key,
     issue_session_token,
+    new_api_key,
 )
 from app.core.error_codes import ErrorCode
 from app.core.settings import get_settings
@@ -62,6 +63,43 @@ async def login(body: SessionIn, request: Request, db: Annotated[AsyncSession, D
         httponly=True,
         samesite="strict",
         secure=_secure(request),
+    )
+    return resp
+
+
+LOCAL_USER_EMAIL = "local@vault.local"
+
+
+@router.post(
+    "/session/local",
+    summary="Sign in as the local demo user (local runs only)",
+    description=(
+        "For a laptop run: when `LOCAL_AUTOLOGIN` is on, the environment is not `prod` and the request host is "
+        "localhost, signs in as one fixed local user (created on first use; its key is never shown). 404 "
+        "everywhere else, so a deployed instance still needs a real API key."
+    ),
+    operation_id="login_local_session",
+    status_code=204,
+    responses={404: {"description": "Not a local run, or auto sign-in is switched off"}},
+)
+async def login_local(request: Request, db: Annotated[AsyncSession, Depends(get_db)]) -> Response:
+    st = get_settings()
+    if not st.local_autologin or st.environment == "prod" or request.url.hostname not in _LOCAL_HOSTS:
+        raise DomainError(ErrorCode.NOT_FOUND)
+    row = (await db.execute(select(User).where(User.email == LOCAL_USER_EMAIL))).scalar()
+    if row is None:
+        row = User(email=LOCAL_USER_EMAIL, api_key_hash=hash_api_key(new_api_key()), is_admin=False)
+        db.add(row)
+        await db.commit()
+    resp = Response(status_code=204)
+    resp.set_cookie(
+        SESSION_COOKIE,
+        issue_session_token(row.id, row.api_key_hash),
+        max_age=st.session_ttl_s,
+        path="/",
+        httponly=True,
+        samesite="strict",
+        secure=False,
     )
     return resp
 

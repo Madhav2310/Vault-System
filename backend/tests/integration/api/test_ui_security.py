@@ -108,3 +108,25 @@ async def test_expired_token_rejected(
     cookie = _cookie(await _login(db_client, key))
     monkeypatch.setattr(auth, "_now", lambda: 1_000 + 10**7)
     assert (await db_client.get(WHOAMI, headers={"cookie": cookie})).status_code == 401
+
+
+async def test_local_autologin(db_client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    """One-click sign-in works on localhost only, only when switched on, and never in prod."""
+    from app.core.settings import get_settings
+
+    async def local(host: str) -> httpx.Response:
+        return await db_client.post("/v1/session/local", headers={"host": host})
+
+    r = await local("localhost:8100")
+    assert r.status_code == 204 and "vault_session=" in r.headers["set-cookie"]
+    assert "httponly" in r.headers["set-cookie"].lower()
+    assert (await db_client.get("/v1/session", headers={"host": "localhost"})).status_code == 204
+    assert (await local("localhost")).status_code == 204  # second call: same user, no duplicate row
+    assert (await local("vault.example.com")).status_code == 404  # not a local run
+
+    st = get_settings()
+    monkeypatch.setattr(st, "local_autologin", False)
+    assert (await local("localhost")).status_code == 404
+    monkeypatch.setattr(st, "local_autologin", True)
+    monkeypatch.setattr(st, "environment", "prod")
+    assert (await local("localhost")).status_code == 404
