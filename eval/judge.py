@@ -37,14 +37,16 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any, Literal, get_args
 
+import yaml
 from pydantic import BaseModel, ConfigDict
 
 from app.llm.errors import LlmError
 from app.llm.gateway import LlmGateway, MemoryLedger, render_inputs
 from app.llm.routing import EFFORT_SUPPORT, ROLES, ModelRouter, Role, Route
 from eval.graders import grade_item
+from eval.labels.schema import LabeledPair, LabeledSegment, LabelFile
 from eval.mapping import ChunkInfo, GoldTarget
-from eval.schema import CitedRange, GoldenItem, ItemOutput
+from eval.schema import CitedRange, GoldenItem, GoldItemV2, ItemOutput
 
 JudgeType = Literal["faithfulness", "citation", "completeness", "rubric"]
 JUDGE_TYPES: tuple[JudgeType, ...] = get_args(JudgeType)
@@ -363,7 +365,13 @@ class SpendGuard:
 
 
 def _worst_case(gw: LlmGateway, jt: JudgeType, inputs: Mapping[str, Any], route: str | None) -> Decimal:
-    p = gw.prompts.get(*PROMPTS[jt])
+    return _worst_case_for(gw, PROMPTS[jt], inputs, route)
+
+
+def _worst_case_for(
+    gw: LlmGateway, prompt: tuple[str, int], inputs: Mapping[str, Any], route: str | None
+) -> Decimal:
+    p = gw.prompts.get(*prompt)
     res = gw.router.resolve(PURPOSE, route, default=Route(p.role, p.effort))
     price = gw.prices.price(res.model)
     in_tok = (len(p.body) + len(render_inputs(inputs))) // 4 + 1
@@ -573,6 +581,457 @@ def sample_cases(items: Sequence[GoldenItem], jt: JudgeType, n: int) -> list[Jud
     return cases
 
 
+# --- v2 claim-level judges (S21.06) -------------------------------------------------------------------
+#
+# Three narrow judges, each a binary decision per unit: claim entailed by the answer (completeness), segment
+# entailed by its own cited sentences (support), answer behaved correctly on an unanswerable / false-premise /
+# versioned item (abstention). Code applies the decisions: completeness = recall over required claims,
+# answer_pass = all required claims entailed. A "supported" decision that carries a quote the answer (or the
+# cited passages) does not contain is overruled to false: the model's quote is never trusted.
+# The v1 judges above are untouched and still serve v1 reports.
+
+PROMPTS_V2: dict[str, tuple[str, int]] = {
+    "claims": ("eval_judge_claims", 1),
+    "support": ("eval_judge_support", 1),
+    "abstain": ("eval_judge_abstain", 1),
+}
+ABSTAIN_STRATA = ("unanswerable", "false_premise", "versioned")
+EXPECTED_BEHAVIOUR: dict[str, str] = {
+    "unanswerable": "States that the documents do not contain the information and does not invent a value.",
+    "false_premise": "Rejects or corrects the false premise instead of answering as if it held.",
+    "versioned": "Answers for the document version or date the question depends on, without mixing versions.",
+}
+JUDGES_V2 = ("claims", "support", "abstain")
+CONCURRENCY = 8
+
+
+class ClaimDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    claim_index: int
+    entailed: bool
+    quote: str
+
+
+class ClaimsVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    decisions: list[ClaimDecision]
+
+
+class SegmentDecision(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    segment_index: int
+    supported: bool
+    quote: str
+
+
+class SupportVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    decisions: list[SegmentDecision]
+
+
+class AbstainVerdict(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    reason: str
+    behaviour: Literal["declined", "corrected", "answered_as_asked", "other"]
+    correct: bool
+
+
+def _norm(s: str) -> str:
+    return " ".join(s.casefold().split())
+
+
+def _quote_in(quote: str, haystacks: Sequence[str]) -> bool:
+    q = _norm(quote)
+    return bool(q) and any(q in _norm(h) for h in haystacks)
+
+
+async def _call_v2(
+    gw: LlmGateway,
+    key: str,
+    schema: type[BaseModel],
+    inputs: dict[str, Any],
+    *,
+    route: str | None,
+    guard: SpendGuard | None,
+) -> tuple[Any, Decimal]:
+    check_tiers(gw.router)
+    names = list(gw.router.role_models.values())
+    inputs = _scrub(inputs, _name_pattern(names))
+    assert_blind(inputs, names)
+    if guard is not None:
+        guard.check(_worst_case_for(gw, PROMPTS_V2[key], inputs, route))
+    res = await gw.call(
+        purpose=PURPOSE,
+        lane="background",
+        prompt=PROMPTS_V2[key],
+        owner_id=None,
+        schema=schema,
+        route=route,
+        inputs=inputs,
+    )
+    if res.output is None:
+        raise JudgeOutputError("no parsed output")
+    return res.output, res.cost_usd
+
+
+async def gather_bounded[T](coros: Sequence[Any], limit: int = CONCURRENCY) -> list[T]:
+    """Run independent judge calls concurrently, at most `limit` at once; results keep the input order."""
+    sem = asyncio.Semaphore(limit)
+
+    async def one(c: Any) -> T:
+        async with sem:
+            return await c  # type: ignore[no-any-return]
+
+    return list(await asyncio.gather(*(one(c) for c in coros)))
+
+
+def _complete_indices(got: Sequence[int], n: int, what: str) -> None:
+    if sorted(got) != list(range(n)):
+        raise JudgeOutputError(f"{what} decisions {sorted(got)} do not cover 0..{n - 1} exactly once")
+
+
+# claim judge
+
+
+@dataclass(frozen=True)
+class ClaimJudgement:
+    item_id: str
+    entailed: tuple[bool, ...]  # per required claim, in item order
+    cost_usd: Decimal
+
+    @property
+    def completeness(self) -> float:
+        return sum(self.entailed) / len(self.entailed) if self.entailed else math.nan
+
+    @property
+    def answer_pass(self) -> bool:
+        return bool(self.entailed) and all(self.entailed)
+
+
+def claim_inputs(item: GoldItemV2, answer: str) -> dict[str, Any]:
+    return {
+        "question": item.question,
+        "answer": answer,
+        "claims": [
+            {"index": i, "claim": c, "accepted_variants": list(item.alternates.get(c, []))}
+            for i, c in enumerate(item.required_claims)
+        ],
+    }
+
+
+async def judge_claims(
+    gw: LlmGateway,
+    item: GoldItemV2,
+    answer: str,
+    *,
+    route: str | None = None,
+    guard: SpendGuard | None = None,
+) -> ClaimJudgement:
+    n = len(item.required_claims)
+    if n == 0:
+        raise ValueError(f"item {item.id} has no required claims")
+    out, cost = await _call_v2(
+        gw, "claims", ClaimsVerdict, claim_inputs(item, answer), route=route, guard=guard
+    )
+    _complete_indices([d.claim_index for d in out.decisions], n, "claim")
+    by = {d.claim_index: d for d in out.decisions}
+    ent = tuple(by[i].entailed and _quote_in(by[i].quote, [answer]) for i in range(n))
+    return ClaimJudgement(item.id, ent, cost)
+
+
+# support judge
+
+
+@dataclass(frozen=True)
+class SupportJudgement:
+    supported: tuple[bool | None, ...]  # per segment; None = no cited passages, not judged
+    cost_usd: Decimal
+
+    @property
+    def rate(self) -> float:
+        judged = [s for s in self.supported if s is not None]
+        return sum(judged) / len(judged) if judged else math.nan
+
+
+async def judge_support(
+    gw: LlmGateway,
+    segments: Sequence[SegmentView],
+    *,
+    route: str | None = None,
+    guard: SpendGuard | None = None,
+) -> SupportJudgement:
+    idx = [i for i, s in enumerate(segments) if s.passages]
+    if not idx:
+        return SupportJudgement(tuple(None for _ in segments), Decimal(0))
+    inputs = {
+        "segments": [
+            {"index": i, "text": segments[i].text, "cited_passages": list(segments[i].passages)} for i in idx
+        ]
+    }
+    out, cost = await _call_v2(gw, "support", SupportVerdict, inputs, route=route, guard=guard)
+    by = {d.segment_index: d for d in out.decisions}
+    if len(out.decisions) != len(idx) or set(by) != set(idx):
+        raise JudgeOutputError(f"segment decisions {sorted(by)} do not match the judged segments {idx}")
+    res: list[bool | None] = [None] * len(segments)
+    for i in idx:
+        d = by[i]
+        res[i] = d.supported and (not d.quote or _quote_in(d.quote, segments[i].passages))
+    return SupportJudgement(tuple(res), cost)
+
+
+# abstention judge
+
+
+@dataclass(frozen=True)
+class AbstainJudgement:
+    item_id: str
+    correct: bool
+    behaviour: str
+    reason: str
+    cost_usd: Decimal
+
+
+def abstain_applicable(item: GoldItemV2) -> bool:
+    return item.stratum in ABSTAIN_STRATA
+
+
+async def judge_abstention(
+    gw: LlmGateway,
+    item: GoldItemV2,
+    answer: str,
+    *,
+    route: str | None = None,
+    guard: SpendGuard | None = None,
+) -> AbstainJudgement:
+    if not abstain_applicable(item):
+        raise ValueError(f"item {item.id} (stratum {item.stratum}) is not an abstention item")
+    inputs = {
+        "question": item.question,
+        "answer": answer,
+        "case": item.stratum,
+        "expected_behaviour": EXPECTED_BEHAVIOUR[item.stratum],
+        "reference_claims": list(item.required_claims),
+    }
+    out, cost = await _call_v2(gw, "abstain", AbstainVerdict, inputs, route=route, guard=guard)
+    ok = out.correct and out.behaviour != "answered_as_asked"  # a contradictory verdict is not a pass
+    return AbstainJudgement(item.id, ok, out.behaviour, out.reason, cost)
+
+
+# --- calibration math ---------------------------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class Confusion:
+    """Judge vs human on a binary decision; positive = entailed / supported / correct."""
+
+    tp: int = 0
+    fn: int = 0
+    tn: int = 0
+    fp: int = 0
+
+    @property
+    def n(self) -> int:
+        return self.tp + self.fn + self.tn + self.fp
+
+    @property
+    def tpr(self) -> float:
+        return self.tp / (self.tp + self.fn) if self.tp + self.fn else math.nan
+
+    @property
+    def tnr(self) -> float:
+        return self.tn / (self.tn + self.fp) if self.tn + self.fp else math.nan
+
+    @property
+    def kappa(self) -> float:
+        return cohens_kappa(self)
+
+    def __add__(self, o: Confusion) -> Confusion:
+        return Confusion(self.tp + o.tp, self.fn + o.fn, self.tn + o.tn, self.fp + o.fp)
+
+
+def confusion(pairs: Sequence[tuple[bool, bool]]) -> Confusion:
+    """`pairs` are (human, judge)."""
+    tp = sum(h and j for h, j in pairs)
+    fn = sum(h and not j for h, j in pairs)
+    tn = sum(not h and not j for h, j in pairs)
+    fp = sum(not h and j for h, j in pairs)
+    return Confusion(tp, fn, tn, fp)
+
+
+def cohens_kappa(c: Confusion) -> float:
+    """(po - pe) / (1 - pe); NaN when empty or when chance agreement is 1 (a constant rater pair)."""
+    if c.n == 0:
+        return math.nan
+    po = (c.tp + c.tn) / c.n
+    pe = ((c.tp + c.fn) * (c.tp + c.fp) + (c.fn + c.tn) * (c.fp + c.tn)) / (c.n * c.n)
+    return math.nan if pe == 1 else (po - pe) / (1 - pe)
+
+
+KAPPA_TARGET = 0.75
+TNR_TARGET = 0.90
+
+
+def meets_targets(c: Confusion) -> bool:
+    return c.kappa >= KAPPA_TARGET and c.tnr >= TNR_TARGET  # NaN compares False
+
+
+# --- label export -------------------------------------------------------------------------------------
+
+SPLIT_FRACTIONS = (("few_shot", 0.15), ("dev", 0.40), ("test", 0.45))
+FAILURE_SHARE = 0.6
+
+
+def split_of_doc(source_doc: str, seed: int = 0) -> str:
+    """Deterministic split by `source_doc`: sha256(seed:doc) as a fraction picks few_shot / dev / test."""
+    f = int.from_bytes(hashlib.sha256(f"{seed}:{source_doc}".encode()).digest()[:8], "big") / 2**64
+    edge = 0.0
+    for name, share in SPLIT_FRACTIONS:
+        edge += share
+        if f < edge:
+            return name
+    return "test"
+
+
+@dataclass(frozen=True)
+class AnswerRecord:
+    item_id: str
+    answer: str
+    segments: tuple[SegmentView, ...] = ()
+    failed: bool = False
+
+
+def load_answers(path: str) -> list[AnswerRecord]:
+    """JSONL: {"item_id", "answer", "segments": [{"text", "passages": [...]}], "failed": bool}."""
+    out: list[AnswerRecord] = []
+    with open(path, encoding="utf-8") as f:
+        for ln in f:
+            if not ln.strip():
+                continue
+            r = json.loads(ln)
+            segs = tuple(SegmentView(s["text"], tuple(s.get("passages", ()))) for s in r.get("segments", []))
+            out.append(AnswerRecord(r["item_id"], r["answer"], segs, bool(r.get("failed", False))))
+    return out
+
+
+def _pair_id(rec: AnswerRecord) -> str:
+    return f"{rec.item_id}:{hashlib.sha256(rec.answer.encode()).hexdigest()[:8]}"
+
+
+def _rank(seed: int, key: str) -> str:
+    return hashlib.sha256(f"{seed}:{key}".encode()).hexdigest()
+
+
+def export_labels(
+    items: Mapping[str, GoldItemV2], answers: Sequence[AnswerRecord], n: int, seed: int = 0
+) -> LabelFile:
+    """Pick up to `n` pairs, about FAILURE_SHARE of them failures (all failures when fewer), in a seeded
+    hash order; every pair carries its source_doc split and null labels."""
+    usable = [
+        a
+        for a in answers
+        if a.item_id in items
+        and items[a.item_id].audit_status != "dropped"
+        and (items[a.item_id].required_claims or abstain_applicable(items[a.item_id]))
+    ]
+    uniq = list({_pair_id(a): a for a in usable}.values())
+    fails = sorted((a for a in uniq if a.failed), key=lambda a: _rank(seed, _pair_id(a)))
+    passes = sorted((a for a in uniq if not a.failed), key=lambda a: _rank(seed, _pair_id(a)))
+    want_fail = min(len(fails), math.ceil(n * FAILURE_SHARE))
+    take_pass = min(len(passes), n - want_fail)
+    take_fail = min(len(fails), n - take_pass)  # top up with failures when passes run short
+    chosen = fails[:take_fail] + passes[:take_pass]
+    pairs: list[LabeledPair] = []
+    for a in sorted(chosen, key=lambda a: _pair_id(a)):
+        it = items[a.item_id]
+        segs = [LabeledSegment(text=s.text, passages=list(s.passages)) for s in a.segments]
+        pairs.append(
+            LabeledPair(
+                pair_id=_pair_id(a),
+                item_id=it.id,
+                stratum=it.stratum,
+                source_doc=it.source_doc,
+                split=split_of_doc(it.source_doc, seed),  # type: ignore[arg-type]
+                failed=a.failed,
+                question=it.question,
+                answer=a.answer,
+                segments=segs,
+                required_claims=list(it.required_claims),
+                claim_labels=[None] * len(it.required_claims),
+                support_labels=[None] * len(segs),
+                abstain_label=None,
+            )
+        )
+    return LabelFile(seed=seed, pairs=pairs)
+
+
+def dump_labels(lf: LabelFile, path: str) -> None:
+    with open(path, "w", encoding="utf-8") as f:
+        yaml.safe_dump(lf.model_dump(mode="json"), f, sort_keys=False, allow_unicode=True, width=100)
+
+
+def load_labels(path: str) -> LabelFile:
+    with open(path, encoding="utf-8") as f:
+        return LabelFile.model_validate(yaml.safe_load(f) or {})
+
+
+# --- calibration run ----------------------------------------------------------------------------------
+
+
+async def calibrate(
+    gw: LlmGateway,
+    labels: LabelFile,
+    items: Mapping[str, GoldItemV2],
+    *,
+    split: str = "test",
+    route: str | None = None,
+    guard: SpendGuard | None = None,
+) -> dict[str, Confusion]:
+    """Run each judge on the labeled pairs of `split` and compare with the human labels, per decision."""
+    pairs = [p for p in labels.pairs if p.split == split and p.item_id in items]
+
+    async def claims(p: LabeledPair) -> list[tuple[bool, bool]]:
+        if not any(x is not None for x in p.claim_labels):
+            return []
+        j = await judge_claims(gw, items[p.item_id], p.answer, route=route, guard=guard)
+        return [(h, e) for h, e in zip(p.claim_labels, j.entailed, strict=True) if h is not None]
+
+    async def support(p: LabeledPair) -> list[tuple[bool, bool]]:
+        if not any(x is not None for x in p.support_labels):
+            return []
+        segs = [SegmentView(s.text, tuple(s.passages)) for s in p.segments]
+        j = await judge_support(gw, segs, route=route, guard=guard)
+        return [(h, bool(s)) for h, s in zip(p.support_labels, j.supported, strict=True) if h is not None]
+
+    async def abstain(p: LabeledPair) -> list[tuple[bool, bool]]:
+        if p.abstain_label is None:
+            return []
+        j = await judge_abstention(gw, items[p.item_id], p.answer, route=route, guard=guard)
+        return [(p.abstain_label, j.correct)]
+
+    out: dict[str, Confusion] = {}
+    for name, fn in (("claims", claims), ("support", support), ("abstain", abstain)):
+        rows: list[list[tuple[bool, bool]]] = await gather_bounded([fn(p) for p in pairs])
+        out[name] = confusion([r for rs in rows for r in rs])
+    return out
+
+
+def format_calibration(res: Mapping[str, Confusion], *, route: str | None) -> str:
+    def f(x: float) -> str:
+        return "n/a" if math.isnan(x) else f"{x:.3f}"
+
+    lines = [f"{'judge':8s} {'n':>4s} {'TPR':>6s} {'TNR':>6s} {'kappa':>6s}  target (kappa>=0.75, TNR>=0.90)"]
+    for k, c in res.items():
+        lines.append(
+            f"{k:8s} {c.n:4d} {f(c.tpr):>6s} {f(c.tnr):>6s} {f(c.kappa):>6s}  "
+            f"{'OK' if meets_targets(c) else 'BELOW'}"
+        )
+    lines.append(
+        f"judge role: {route or 'deep'} (same vendor as the generator: agreement with humans is the only "
+        "external check; a cross-family judge needs the Anthropic adapter and a key)"
+    )
+    return "\n".join(lines)
+
+
 # --- CLI ------------------------------------------------------------------------------------------------
 
 
@@ -650,6 +1109,29 @@ async def _inter_judge_cli(sample: int, split: str, gw: LlmGateway, guard: Spend
     return 0 if worst else 1
 
 
+async def _calibrate_cli(path: str, split: str, route: str | None, gw: LlmGateway, guard: SpendGuard) -> int:
+    from eval.loader import load_dataset_v2
+
+    items = load_dataset_v2().by_id()
+    res = await calibrate(gw, load_labels(path), items, split=split, route=route, guard=guard)
+    print(format_calibration(res, route=route))
+    print(f"spent ${guard.spent} of cap ${guard.cap}")
+    return 0 if all(meets_targets(c) for c in res.values()) else 1
+
+
+def _export_cli(n: int, answers: str, out: str, seed: int) -> int:
+    from eval.loader import load_dataset_v2
+
+    lf = export_labels(load_dataset_v2().by_id(), load_answers(answers), n, seed)
+    dump_labels(lf, out)
+    by_split = {s: sum(p.split == s for p in lf.pairs) for s, _ in SPLIT_FRACTIONS}
+    print(
+        f"wrote {len(lf.pairs)} pairs ({sum(p.failed for p in lf.pairs)} failures) to {out}; "
+        f"splits {by_split}"
+    )
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="eval.judge")
     ap.add_argument(
@@ -659,19 +1141,34 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--split", default="train", choices=["train", "test", "smoke", "all"])
     ap.add_argument("--max-usd", type=Decimal, default=None, help="spend cap (mandatory for live calls)")
     ap.add_argument("--dry-run", action="store_true", help="scripted FakeProvider replies, no network")
+    ap.add_argument("--export-labels", type=int, metavar="N", help="write N (item, answer) pairs to label")
+    ap.add_argument("--answers", help="JSONL of answers for --export-labels (see eval/labels/README.md)")
+    ap.add_argument("--out", default="eval/labels/labeled.yaml", help="--export-labels output file")
+    ap.add_argument("--seed", type=int, default=0, help="--export-labels seed (selection and split)")
+    ap.add_argument("--calibrate", metavar="LABELED_YAML", help="TPR / TNR / kappa per judge vs human labels")
+    ap.add_argument("--label-split", default="test", choices=["few_shot", "dev", "test"])
+    ap.add_argument("--judge-route", default=None, choices=["flagship"], help="calibrate on role flagship")
     a = ap.parse_args(argv)
-    if not a.inter_judge:
-        ap.error("nothing to do: pass --inter-judge")
+    if a.export_labels is not None:
+        if a.export_labels < 1 or not a.answers:
+            ap.error("--export-labels needs N >= 1 and --answers")
+        return _export_cli(a.export_labels, a.answers, a.out, a.seed)
+    if not a.inter_judge and not a.calibrate:
+        ap.error("nothing to do: pass --inter-judge, --calibrate or --export-labels")
     if a.sample < 1:
         ap.error("--sample must be >= 1")
     if not a.dry_run and a.max_usd is None:
         print("refusing live calls without an explicit --max-usd cap", file=sys.stderr)
         return 2
+    if a.calibrate and a.dry_run:
+        ap.error("--calibrate has no dry run: it compares live judge output with human labels")
     ledger = MemoryLedger()
     gw = _dry_gateway(ledger) if a.dry_run else _live_gateway(ledger)
     guard = SpendGuard(ledger, a.max_usd if a.max_usd is not None else Decimal(1000))  # dry run: no spend
     try:
         check_tiers(gw.router)
+        if a.calibrate:
+            return asyncio.run(_calibrate_cli(a.calibrate, a.label_split, a.judge_route, gw, guard))
         return asyncio.run(_inter_judge_cli(a.sample, a.split, gw, guard))
     except SpendCapReached as e:
         print(f"stopped: {e}", file=sys.stderr)
