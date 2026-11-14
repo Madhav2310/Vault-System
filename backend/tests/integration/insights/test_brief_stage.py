@@ -26,7 +26,7 @@ from tests.support.brief_seed import (
 from tests.support.embed import add_chunks
 from tests.support.jobs import job_row, make_job, version_status
 
-EXTRACT = default_registry().get("brief_extract", 2).body
+EXTRACT = default_registry().get("brief_extract", 3).body
 MERGE = default_registry().get("brief_merge", 2).body
 
 

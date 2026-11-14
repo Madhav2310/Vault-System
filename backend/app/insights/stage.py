@@ -61,7 +61,9 @@ from app.llm.errors import LlmError
 from app.llm.gateway import LlmGateway
 from app.retrieval.load import load_evidence_chunks
 
-EXTRACT_PROMPT: tuple[str, int] = ("brief_extract", PROMPT_VERSION)
+# brief_extract@3 is the output-trimmed @2 (fewer, shorter facts; shorter summary and questions): same stored
+# shape, so PROMPT_VERSION (the insight key readers filter on) stays 2. @2 stays loadable.
+EXTRACT_PROMPT: tuple[str, int] = ("brief_extract", 3)
 MERGE_PROMPT: tuple[str, int] = ("brief_merge", PROMPT_VERSION)
 MAX_MERGE_FACTS_PER_PART = 60
 MAX_MERGE_VALUE_CHARS = 200
