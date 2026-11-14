@@ -6,6 +6,7 @@ items:
     data breach?
   source_doc: dpa_cloudlane
   answer_type: answer
+  audit_status: verified
   required_claims:
   - Cloudlane's DPA allows 72 hours.
   - The Northwind MSA allows 48 hours.
@@ -25,6 +26,7 @@ items:
   question: Which of the Fibrenet line, the Northwind platform and the Quill subscription promises the highest uptime?
   source_doc: sla_fibrenet
   answer_type: answer
+  audit_status: verified
   required_claims:
   - Fibrenet commits to 99.95% monthly availability.
   - The Northwind platform commits to 99.5%.
@@ -44,6 +46,7 @@ items:
   - sla_fibrenet
   - msa_northwind_v2
   - order_quill_v2
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c0,c3; the strong model entails it from the gold evidence; gold kept.'
 - id: s21-cmp-03
   stratum: compare_docs
   question: How do the Helios licence and the Cloudlane addendum differ on checking up on the other party?
@@ -184,6 +187,7 @@ items:
   question: Do Fibrenet and Cloudlane each put a maximum repair time on an outage?
   source_doc: sla_fibrenet
   answer_type: partial
+  audit_status: verified
   required_claims:
   - Fibrenet commits to restore a total loss of service within four hours in business hours and eight hours otherwise.
   - The Cloudlane addendum states no repair or recovery time.
@@ -194,7 +198,8 @@ items:
   doc_ids:
   - sla_fibrenet
   - dpa_cloudlane
-  audit_note: 'One side absent: dpa_cloudlane covers data processing only.'
+  audit_note: 'One side absent: dpa_cloudlane covers data processing only. [S21.05 audit: system_wrong] strong model misses
+    c1 (Vault states it); gold kept.'
 - id: s21-cmp-11
   stratum: compare_docs
   question: Which encryption protocol versions are named for data moving over the network in the Sensor Hub and
@@ -275,6 +280,7 @@ items:
   question: How does Plover's database failover time compare with Fibrenet's promised fault repair time?
   source_doc: runbook_db
   answer_type: answer
+  audit_status: verified
   required_claims:
   - Plover expects recovery of about eight minutes after failover.
   - Fibrenet commits to restoring total loss of service within four hours during business hours.

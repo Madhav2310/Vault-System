@@ -37,6 +37,7 @@ items:
   question: Sorry, I meant new subcontractors, not breaches.
   source_doc: dpa_cloudlane
   answer_type: answer
+  audit_status: verified
   required_claims:
   - Cloudlane must give thirty days' notice of any new sub-processor.
   - The Controller may object on reasonable grounds within that period.
@@ -48,12 +49,15 @@ items:
   - dpa_cloudlane
   prior_turns:
   - How soon must Cloudlane tell Yarrow about a data breach?
-  audit_note: 'Correction turn: the user redirects from breach notice to sub-processors.'
+  audit_note: 'Correction turn: the user redirects from breach notice to sub-processors. [S21.05 audit: system_wrong] The corrected
+    question is specifically about new sub-processors. Both the 30-day notice and the Controller''s right to object on reasonable
+    grounds are required and stated by Vault.'
 - id: s21-mul-04
   stratum: multi_turn
   question: No, I meant the amendment.
   source_doc: consulting_vantage
   answer_type: answer
+  audit_status: verified
   required_claims:
   - Amendment No. 1 sets the rate at USD 165 per hour from 1 February 2026.
   gold_evidence:
@@ -88,6 +92,7 @@ items:
   question: What if it is above that?
   source_doc: runbook_db
   answer_type: answer
+  audit_status: verified
   required_claims:
   - If replica lag is higher than five seconds, the incident commander must approve the failover.
   gold_evidence:

@@ -1002,7 +1002,7 @@ documents:
     sha256: a45fd0f5892c5be0170099e909f7ca58ff3733e28d9a4c0f8d85f8a657c87137
 splits:
   train:
-    items: 123
+    items: 118
     source_docs:
     - auth_amendment
     - consulting_vantage
@@ -1015,7 +1015,6 @@ splits:
     - cuad_hubeiminkangpharmaceuticalltd_09_19_2006_de6706
     - cuad_hyperionsoftwarecorp_09_28_1994_ex_10_47_3ecdec
     - cuad_idreamskytechnologyltd_07_03_2014_ex_10__03b2e9
-    - cuad_ingevitycorp_05_16_2016_ex_10_5_intellec_40eb5b
     - cuad_innerscopehearingtechnologiesinc_2018110_1b80f0
     - cuad_microgenics_corporation_collaborative_de_9dd6aa
     - cuad_ominto_inc_03_29_2004_ex_10_reseller_agr_ecce4d
@@ -1034,7 +1033,6 @@ splits:
     - fb_amd_2015_10k
     - fb_bestbuy_2024q2_10q
     - fb_boeing_2018_10k
-    - fb_cocacola_2017_10k
     - fb_cvshealth_2018_10k
     - fb_ebay_2023q2_10q
     - fb_jpmorgan_2022q2_10q
@@ -1042,7 +1040,6 @@ splits:
     - fb_netflix_2015_10k
     - fb_paypal_2023q2_10q
     - fb_pepsico_2021_10k
-    - fb_pepsico_2022_10k
     - fb_pepsico_2023_8k_dated_2023_05_05
     - fb_ulta_q4
     - inj_candidate_summary
@@ -1089,7 +1086,6 @@ splits:
     - cuad_hubeiminkangpharmaceuticalltd_09_19_2006_de6706
     - cuad_hyperionsoftwarecorp_09_28_1994_ex_10_47_3ecdec
     - cuad_idreamskytechnologyltd_07_03_2014_ex_10__03b2e9
-    - cuad_ingevitycorp_05_16_2016_ex_10_5_intellec_40eb5b
     - cuad_innerscopehearingtechnologiesinc_2018110_1b80f0
     - cuad_microgenics_corporation_collaborative_de_9dd6aa
     - cuad_ominto_inc_03_29_2004_ex_10_reseller_agr_ecce4d
@@ -1108,7 +1104,6 @@ splits:
     - fb_amd_2015_10k
     - fb_bestbuy_2024q2_10q
     - fb_boeing_2018_10k
-    - fb_cocacola_2017_10k
     - fb_cvshealth_2018_10k
     - fb_ebay_2023q2_10q
     - fb_jpmorgan_2022q2_10q
@@ -1116,7 +1111,6 @@ splits:
     - fb_netflix_2015_10k
     - fb_paypal_2023q2_10q
     - fb_pepsico_2021_10k
-    - fb_pepsico_2022_10k
     - fb_pepsico_2023_8k_dated_2023_05_05
     - fb_ulta_q4
     - inj_candidate_summary

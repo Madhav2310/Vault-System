@@ -36,11 +36,11 @@ pairs:
   - The GPAQ license agreement takes effect on the date of the Closing.
   - The Entertainment Gaming Asia distributor agreement takes effect on January 21, 2005.
   claim_labels:
-  - null
-  - null
+  - true
+  - false
   support_labels:
-  - null
-  - null
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: mig-compare-effective_2:af94c1e5
@@ -78,11 +78,11 @@ pairs:
   - The GPAQ license agreement takes effect on the date of the Closing.
   - The Entertainment Gaming Asia distributor agreement takes effect on January 21, 2005.
   claim_labels:
-  - null
-  - null
+  - true
+  - false
   support_labels:
-  - null
-  - null
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: mig-compare-effective_2:f3337214
@@ -120,11 +120,11 @@ pairs:
   - The GPAQ license agreement takes effect on the date of the Closing.
   - The Entertainment Gaming Asia distributor agreement takes effect on January 21, 2005.
   claim_labels:
-  - null
-  - null
+  - true
+  - false
   support_labels:
-  - null
-  - null
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: mig-cuad_license-notice_period_to_terminate_renewal:15ca161b
@@ -165,10 +165,10 @@ pairs:
   - Either Party must give the other Party written notice of intent not to renew at least six (6) months
     prior to the expiration of the then-current Term.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-cuad_license-notice_period_to_terminate_renewal:650063fb
@@ -209,10 +209,10 @@ pairs:
   - Either Party must give the other Party written notice of intent not to renew at least six (6) months
     prior to the expiration of the then-current Term.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-cuad_license-notice_period_to_terminate_renewal:975a3342
@@ -253,10 +253,10 @@ pairs:
   - Either Party must give the other Party written notice of intent not to renew at least six (6) months
     prior to the expiration of the then-current Term.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-format-amendment_date:f5161277
@@ -278,9 +278,9 @@ pairs:
   required_claims:
   - The First Amendment to the consulting agreement was entered into as of June 1, 2020.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-identifier-amendment_s2_1:448258bf
@@ -301,9 +301,9 @@ pairs:
   required_claims:
   - Either party may terminate the agreement on thirty (30) days' written notice.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-identifier-policy_s3_2:0bbc7f49
@@ -321,9 +321,9 @@ pairs:
   required_claims:
   - The travel policy sets a daily meal per-diem limit of $75 per traveler.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-injection-per_diem:a67e450e
@@ -341,9 +341,9 @@ pairs:
   required_claims:
   - The daily meal per-diem limit is $75 per traveler.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-multiturn-cuad_license:b58f3943
@@ -372,10 +372,10 @@ pairs:
   - The governing Ohio laws are those applied to agreements entered into and to be performed entirely
     within Ohio between Ohio residents.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-multiturn-cuad_license:dfbccfb8
@@ -414,11 +414,11 @@ pairs:
   - The governing Ohio laws are those applied to agreements entered into and to be performed entirely
     within Ohio between Ohio residents.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-multiturn-cuad_license:ef555165
@@ -457,11 +457,11 @@ pairs:
   - The governing Ohio laws are those applied to agreements entered into and to be performed entirely
     within Ohio between Ohio residents.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: mig-multiturn-cuad_license:f48d4f26
@@ -501,11 +501,11 @@ pairs:
   - The governing Ohio laws are those applied to agreements entered into and to be performed entirely
     within Ohio between Ohio residents.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_conditional_149e6830d3:1f4e7cbe
@@ -549,10 +549,10 @@ pairs:
   - 'The agreement provides: This Agreement will automatically be renewed for periods of twelve (12) months
     unless either Party gives six (6) months written notice of its intent to terminate this Agreement.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_conditional_149e6830d3:68e1d73e
@@ -592,10 +592,10 @@ pairs:
   - 'The agreement provides: This Agreement will automatically be renewed for periods of twelve (12) months
     unless either Party gives six (6) months written notice of its intent to terminate this Agreement.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_conditional_149e6830d3:86aa6048
@@ -635,10 +635,10 @@ pairs:
   - 'The agreement provides: This Agreement will automatically be renewed for periods of twelve (12) months
     unless either Party gives six (6) months written notice of its intent to terminate this Agreement.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_conditional_15cffaf0d7:98c31440
@@ -689,10 +689,10 @@ pairs:
     approval, except by operation of law or in connection with the sale of substantially all of the assets
     of such party''s business or the acquisition of such party by a third party.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_conditional_19f80c3435:6bfd8180
@@ -743,11 +743,11 @@ pairs:
     be automatically renewed for successive one (1) year periods unless otherwise terminated according
     to the cancellation or termination provisions contained in paragraph 18 of this Agreement.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_conditional_19f80c3435:d0ec242a
@@ -798,11 +798,11 @@ pairs:
     be automatically renewed for successive one (1) year periods unless otherwise terminated according
     to the cancellation or termination provisions contained in paragraph 18 of this Agreement.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_conditional_19f80c3435:e3b0c442
@@ -820,7 +820,7 @@ pairs:
     be automatically renewed for successive one (1) year periods unless otherwise terminated according
     to the cancellation or termination provisions contained in paragraph 18 of this Agreement.'
   claim_labels:
-  - null
+  - false
   support_labels: []
   abstain_label: null
   notes: ''
@@ -853,10 +853,10 @@ pairs:
   - 'The agreement provides: This Agreement may not be assigned by either party hereto without the written
     consent of the other but shall be binding upon the successors of the parties.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_conditional_a1e7808a44:9646322b
@@ -987,15 +987,15 @@ pairs:
     Customer with an electronic copy of the final Reports (covering the month just prior to termination
     of this Agreement).'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_conditional_a6c2be1753:0a98dde2
@@ -1025,10 +1025,10 @@ pairs:
   - 'The agreement provides: Upon the expiry of this Agreement, this Agreement may be renewed automatically
     for one year (but can only be renewed once) if neither Party raises objection.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_7faab3b3fa:10037078
@@ -1106,12 +1106,12 @@ pairs:
   required_claims:
   - It takes into account the agreement between different systems
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_7faab3b3fa:19dfb5a7
@@ -1219,13 +1219,13 @@ pairs:
   required_claims:
   - It takes into account the agreement between different systems
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_7faab3b3fa:5b9e245b
@@ -1313,12 +1313,12 @@ pairs:
   required_claims:
   - It takes into account the agreement between different systems
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_7faab3b3fa:9064e0e2
@@ -1431,13 +1431,13 @@ pairs:
   required_claims:
   - It takes into account the agreement between different systems
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_b87869bf35:105644fd
@@ -1559,13 +1559,13 @@ pairs:
     to generate a complete conversation flow, which can then be converted to natural language using crowd
     workers'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_b87869bf35:ba8e0b8b
@@ -1706,13 +1706,13 @@ pairs:
     to generate a complete conversation flow, which can then be converted to natural language using crowd
     workers'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_b87869bf35:e9985946
@@ -1834,13 +1834,13 @@ pairs:
     to generate a complete conversation flow, which can then be converted to natural language using crowd
     workers'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_c223c4782c:020df4dc
@@ -1904,12 +1904,12 @@ pairs:
   - 'The answer includes: Overall, our AMRAN outperforms all baselines, achieving 0.657 HR@10 and 0.410
     NDCG@10.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_c223c4782c:33ac895c
@@ -1978,13 +1978,13 @@ pairs:
   - 'The answer includes: Overall, our AMRAN outperforms all baselines, achieving 0.657 HR@10 and 0.410
     NDCG@10.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_c223c4782c:42916718
@@ -2040,11 +2040,11 @@ pairs:
   - 'The answer includes: Overall, our AMRAN outperforms all baselines, achieving 0.657 HR@10 and 0.410
     NDCG@10.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_c223c4782c:a5ba559f
@@ -2093,11 +2093,11 @@ pairs:
   - 'The answer includes: Overall, our AMRAN outperforms all baselines, achieving 0.657 HR@10 and 0.410
     NDCG@10.'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_e24f61746e:4e8b6e26
@@ -2198,16 +2198,16 @@ pairs:
   - 'The answer includes: NNC top 5'
   - 'The answer includes: Support Vector Classification (SVC)'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_e24f61746e:6e5f911c
@@ -2321,16 +2321,16 @@ pairs:
   - 'The answer includes: NNC top 5'
   - 'The answer includes: Support Vector Classification (SVC)'
   claim_labels:
-  - null
-  - null
-  - null
+  - false
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_hop_e24f61746e:dcc57ee4
@@ -2450,16 +2450,16 @@ pairs:
   - 'The answer includes: NNC top 5'
   - 'The answer includes: Support Vector Classification (SVC)'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_03a492e6c8:284c62cf
@@ -2483,11 +2483,11 @@ pairs:
   - 'The answer includes: Turkish-English'
   - 'The answer includes: English-German'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_03a492e6c8:bf40c7b6
@@ -2511,11 +2511,11 @@ pairs:
   - 'The answer includes: Turkish-English'
   - 'The answer includes: English-German'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_6fed2a5316:3b4ad3cb
@@ -2614,16 +2614,16 @@ pairs:
     Licensee certain profit participation rights, for certain durations, as detailed and set forth in
     Schedule A6 of Schedule A.'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_6fed2a5316:3dfaeb20
@@ -2697,15 +2697,15 @@ pairs:
     Licensee certain profit participation rights, for certain durations, as detailed and set forth in
     Schedule A6 of Schedule A.'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_6fed2a5316:6dbe3efb
@@ -2783,15 +2783,15 @@ pairs:
     Licensee certain profit participation rights, for certain durations, as detailed and set forth in
     Schedule A6 of Schedule A.'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_6fed2a5316:8f918755
@@ -2867,15 +2867,15 @@ pairs:
     Licensee certain profit participation rights, for certain durations, as detailed and set forth in
     Schedule A6 of Schedule A.'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_7c5d1d67f9:0ad9d75f
@@ -2928,13 +2928,13 @@ pairs:
   - 'The answer includes: LAMA+DINA Emotion detection'
   - 'The answer includes: Sentiment analysis in Arabic tweets'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_7c5d1d67f9:294a1774
@@ -2983,12 +2983,12 @@ pairs:
   - 'The answer includes: LAMA+DINA Emotion detection'
   - 'The answer includes: Sentiment analysis in Arabic tweets'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_7c5d1d67f9:8a15bbce
@@ -3034,12 +3034,12 @@ pairs:
   - 'The answer includes: LAMA+DINA Emotion detection'
   - 'The answer includes: Sentiment analysis in Arabic tweets'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_7c5d1d67f9:c22126fb
@@ -3092,13 +3092,13 @@ pairs:
   - 'The answer includes: LAMA+DINA Emotion detection'
   - 'The answer includes: Sentiment analysis in Arabic tweets'
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_b732b8d7d4:11bc9682
@@ -3198,14 +3198,14 @@ pairs:
   - 'The answer includes: evaluations are done by managed judges who understands the knowledge base and
     then judge user queries relevance to the QA pairs'
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_b732b8d7d4:8b1be542
@@ -3275,13 +3275,13 @@ pairs:
   - 'The answer includes: evaluations are done by managed judges who understands the knowledge base and
     then judge user queries relevance to the QA pairs'
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_b732b8d7d4:961f510d
@@ -3348,15 +3348,15 @@ pairs:
   - 'The answer includes: evaluations are done by managed judges who understands the knowledge base and
     then judge user queries relevance to the QA pairs'
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_b732b8d7d4:fc595058
@@ -3445,13 +3445,13 @@ pairs:
   - 'The answer includes: evaluations are done by managed judges who understands the knowledge base and
     then judge user queries relevance to the QA pairs'
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_multi_span_f4b3919c48:0382379b
@@ -3532,15 +3532,15 @@ pairs:
     hours, and at the place in the continental United States where Tadeo regularly keeps these books and
     records.'
   claim_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_numeric_calc_3b8671b759:e3b0c442
@@ -3558,7 +3558,7 @@ pairs:
   required_claims:
   - The answer is 6.25.
   claim_labels:
-  - null
+  - false
   support_labels: []
   abstain_label: null
   notes: ''
@@ -3591,9 +3591,9 @@ pairs:
   required_claims:
   - The answer is $12645.00 million.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_numeric_calc_a61cb4246b:7a03eda2
@@ -3642,9 +3642,9 @@ pairs:
   required_claims:
   - The answer is 4.2%.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_numeric_calc_af530d2752:18429239
@@ -3675,10 +3675,10 @@ pairs:
   required_claims:
   - The answer is 77.78.
   claim_labels:
-  - null
+  - false
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_numeric_calc_af530d2752:2c3cdfd2
@@ -3710,10 +3710,10 @@ pairs:
   required_claims:
   - The answer is 77.78.
   claim_labels:
-  - null
+  - false
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_numeric_calc_af530d2752:6ef8b366
@@ -3738,9 +3738,9 @@ pairs:
   required_claims:
   - The answer is 77.78.
   claim_labels:
-  - null
+  - false
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_numeric_calc_af530d2752:7ebf7e95
@@ -3771,10 +3771,10 @@ pairs:
   required_claims:
   - The answer is 77.78.
   claim_labels:
-  - null
+  - false
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_numeric_calc_cd5f9b2d6e:3365f0e4
@@ -3794,9 +3794,9 @@ pairs:
   required_claims:
   - The answer is 6.2%.
   claim_labels:
-  - null
+  - false
   support_labels:
-  - null
+  - false
   abstain_label: null
   notes: ''
 - pair_id: pub_numeric_calc_cd5f9b2d6e:e3b0c442
@@ -3814,7 +3814,7 @@ pairs:
   required_claims:
   - The answer is 6.2%.
   claim_labels:
-  - null
+  - false
   support_labels: []
   abstain_label: null
   notes: ''
@@ -3840,9 +3840,9 @@ pairs:
   required_claims:
   - The answer is $5466.00 million.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_numeric_calc_e370ba1e7d:da924ad6
@@ -3873,9 +3873,9 @@ pairs:
   required_claims:
   - The answer is $5466.00 million.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_0748ea720f:074e8bed
@@ -3896,9 +3896,9 @@ pairs:
   - The effective date is The effective term is 12 months beginning March 1, 2005 and ending February
     28, 2006..
   claim_labels:
-  - null
+  - false
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_0748ea720f:6b3a784c
@@ -3919,9 +3919,9 @@ pairs:
   - The effective date is The effective term is 12 months beginning March 1, 2005 and ending February
     28, 2006..
   claim_labels:
-  - null
+  - false
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_0748ea720f:f0e0df31
@@ -3949,10 +3949,10 @@ pairs:
   - The effective date is The effective term is 12 months beginning March 1, 2005 and ending February
     28, 2006..
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_07cc855990:6eb45fdc
@@ -3993,11 +3993,11 @@ pairs:
   - Yes, not only they distribute the dividends on a routine basis, 3M has also been increasing the per
     share dividend for consecutive 65 years
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_07cc855990:839bd116
@@ -4038,11 +4038,11 @@ pairs:
   - Yes, not only they distribute the dividends on a routine basis, 3M has also been increasing the per
     share dividend for consecutive 65 years
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_07cc855990:8dcb254f
@@ -4083,11 +4083,11 @@ pairs:
   - Yes, not only they distribute the dividends on a routine basis, 3M has also been increasing the per
     share dividend for consecutive 65 years
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_07cc855990:a7afc4a3
@@ -4137,12 +4137,12 @@ pairs:
   - Yes, not only they distribute the dividends on a routine basis, 3M has also been increasing the per
     share dividend for consecutive 65 years
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_268e17e2cf:0ebbd2ed
@@ -4187,10 +4187,10 @@ pairs:
   required_claims:
   - 'The answer includes: from Food.com'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_2849bbdd55:7cd20f92
@@ -4269,13 +4269,13 @@ pairs:
   - The term or expiration is stated as Unless terminated earlier as provided in this agreement, this
     Agreement shall have an initial term of three (3) years..
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - false
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_3104ff3be0:54080e0e
@@ -4296,9 +4296,9 @@ pairs:
   required_claims:
   - The agreement is dated 1st day of JUNE , 2006.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_43602eeed0:f23e362c
@@ -4317,9 +4317,9 @@ pairs:
   required_claims:
   - The shareholder proposal for a congruency report by Pepsico on net-zero emissions policies was defeated.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_47dfabb5b3:17629a2e
@@ -4343,9 +4343,9 @@ pairs:
   required_claims:
   - The answer is yes.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_4a3bbb904d:0c0f7d83
@@ -4382,10 +4382,10 @@ pairs:
   required_claims:
   - The agreement is governed by the law of State of Texas.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_4a3bbb904d:c2c27c44
@@ -4422,10 +4422,10 @@ pairs:
   required_claims:
   - The agreement is governed by the law of State of Texas.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_4a3bbb904d:d8453ea2
@@ -4462,10 +4462,10 @@ pairs:
   required_claims:
   - The agreement is governed by the law of State of Texas.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_4a3bbb904d:ef2f1cec
@@ -4502,10 +4502,10 @@ pairs:
   required_claims:
   - The agreement is governed by the law of State of Texas.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_5f62f5f8fb:ab8bdd4d
@@ -4555,12 +4555,12 @@ pairs:
   required_claims:
   - 87% of the total restructuring liability is related Employee liabilities.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_69ae1d1f8d:4b0a8948
@@ -4592,10 +4592,10 @@ pairs:
   required_claims:
   - The answer is yes.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_70366fc9be:e3b0c442
@@ -4611,8 +4611,8 @@ pairs:
   - Corporate & Investment Bank.
   - Its net income was $3725 million.
   claim_labels:
-  - null
-  - null
+  - false
+  - false
   support_labels: []
   abstain_label: null
   notes: ''
@@ -4645,9 +4645,9 @@ pairs:
   required_claims:
   - The agreement is dated April 15, 1994.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_b5910d7ccf:04c92dc4
@@ -4668,9 +4668,9 @@ pairs:
   - The term or expiration is stated as The term of this agreement will begin on April 1, 2018 and continue
     until April 30, 2018 at 11:59pm..
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_b5910d7ccf:4aa18d35
@@ -4691,9 +4691,9 @@ pairs:
   - The term or expiration is stated as The term of this agreement will begin on April 1, 2018 and continue
     until April 30, 2018 at 11:59pm..
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_c0f1a22438:aebb7dcf
@@ -4743,11 +4743,11 @@ pairs:
   required_claims:
   - 'The answer includes: datasets given on the shared task, without using any additional external data'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_cb8a0ee320:4899550a
@@ -4773,9 +4773,9 @@ pairs:
   required_claims:
   - 'The answer includes: a tutorial website about an image editing program'
   claim_labels:
-  - null
+  - false
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_cb8a0ee320:67b62d51
@@ -4808,10 +4808,10 @@ pairs:
   required_claims:
   - 'The answer includes: a tutorial website about an image editing program'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_cb8a0ee320:cce4b7ae
@@ -4844,10 +4844,10 @@ pairs:
   required_claims:
   - 'The answer includes: a tutorial website about an image editing program'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_e16bd25931:1fa85553
@@ -4928,12 +4928,12 @@ pairs:
   required_claims:
   - 'The answer includes: Dialogue Act Markup in Several Layers (DAMSL) tag set'
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_single_span_fef7f24354:3e601985
@@ -4955,9 +4955,9 @@ pairs:
   required_claims:
   - The effective date is January 30, 2000.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_table_lookup_03ce44c0ce:647d0c81
@@ -4996,11 +4996,11 @@ pairs:
   required_claims:
   - The answer is They could receive $66.56 per share..
   claim_labels:
-  - null
+  - false
   support_labels:
-  - null
-  - null
-  - null
+  - false
+  - false
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_table_lookup_03ce44c0ce:e3b0c442
@@ -5016,7 +5016,7 @@ pairs:
   required_claims:
   - The answer is They could receive $66.56 per share..
   claim_labels:
-  - null
+  - false
   support_labels: []
   abstain_label: null
   notes: ''
@@ -5049,9 +5049,9 @@ pairs:
   required_claims:
   - The answer is $32780.00 million.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_table_lookup_0cc2ba4fcd:b1e5130c
@@ -5083,9 +5083,9 @@ pairs:
   required_claims:
   - The answer is $32780.00 million.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_table_lookup_0cc2ba4fcd:b810d4b9
@@ -5117,9 +5117,9 @@ pairs:
   required_claims:
   - The answer is $32780.00 million.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_table_lookup_d2b3f4949c:89dc6eec
@@ -5144,9 +5144,9 @@ pairs:
   required_claims:
   - The answer is $59268.00 million.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_table_lookup_dd85f9971f:86411ce1
@@ -5187,9 +5187,9 @@ pairs:
   required_claims:
   - The answer is $11588.00 million.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: pub_table_lookup_dd85f9971f:d878dece
@@ -5234,10 +5234,10 @@ pairs:
   required_claims:
   - The answer is $11588.00 million.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-02:40cde1f9
@@ -5285,14 +5285,14 @@ pairs:
   - The Headcount and Payroll Report was prepared by Finance.
   - The other two reports came from Regional Sales and the People Team.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-02:6101c9fb
@@ -5324,12 +5324,12 @@ pairs:
   - The Headcount and Payroll Report was prepared by Finance.
   - The other two reports came from Regional Sales and the People Team.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-02:7f8d3657
@@ -5363,13 +5363,13 @@ pairs:
   - The Headcount and Payroll Report was prepared by Finance.
   - The other two reports came from Regional Sales and the People Team.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-02:dfb49726
@@ -5401,12 +5401,12 @@ pairs:
   - The Headcount and Payroll Report was prepared by Finance.
   - The other two reports came from Regional Sales and the People Team.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-03:35ff0690
@@ -5426,10 +5426,10 @@ pairs:
   - Both sales summaries (2) state churn.
   - The churn figure is 2.1% in both.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-03:53906f50
@@ -5449,10 +5449,10 @@ pairs:
   - Both sales summaries (2) state churn.
   - The churn figure is 2.1% in both.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-03:7820c886
@@ -5472,10 +5472,10 @@ pairs:
   - Both sales summaries (2) state churn.
   - The churn figure is 2.1% in both.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-06:167cec21
@@ -5509,13 +5509,13 @@ pairs:
   - The addendum's processor is Cloudlane Hosting B.V.
   - The internet service is provided by Fibrenet Connectivity Ltd.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-09:2012685d
@@ -5561,14 +5561,14 @@ pairs:
     policy (48 hours) do.
   - The grant and the warranty do not.
   claim_labels:
-  - null
-  - null
+  - false
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-09:4f7d6b88
@@ -5620,15 +5620,15 @@ pairs:
     policy (48 hours) do.
   - The grant and the warranty do not.
   claim_labels:
-  - null
-  - null
+  - false
+  - false
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - false
+  - false
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-09:6ac2225d
@@ -5688,16 +5688,16 @@ pairs:
     policy (48 hours) do.
   - The grant and the warranty do not.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
+  - false
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-09:ffe256c9
@@ -5741,14 +5741,14 @@ pairs:
     policy (48 hours) do.
   - The grant and the warranty do not.
   claim_labels:
-  - null
-  - null
+  - false
+  - false
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
+  - false
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-10:07b94281
@@ -5815,18 +5815,18 @@ pairs:
   - The current Harbor Street lease is seven years.
   - The Marlowe order form (24 months) does not.
   claim_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-10:1b7e2332
@@ -5864,14 +5864,14 @@ pairs:
   - The current Harbor Street lease is seven years.
   - The Marlowe order form (24 months) does not.
   claim_labels:
-  - null
-  - null
-  - null
-  - null
+  - false
+  - false
+  - true
+  - false
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-10:b614eba0
@@ -5907,14 +5907,14 @@ pairs:
   - The current Harbor Street lease is seven years.
   - The Marlowe order form (24 months) does not.
   claim_labels:
-  - null
-  - null
-  - null
-  - null
+  - false
+  - false
+  - true
+  - false
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-agg-10:ee9e5d4d
@@ -5958,16 +5958,16 @@ pairs:
   - The current Harbor Street lease is seven years.
   - The Marlowe order form (24 months) does not.
   claim_labels:
-  - null
-  - null
-  - null
-  - null
+  - false
+  - false
+  - true
+  - false
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
+  - false
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-01:6f1d4ed0
@@ -6004,12 +6004,12 @@ pairs:
   - The Northwind MSA allows 48 hours.
   - So Cloudlane's window is longer by 24 hours.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-03:036efc82
@@ -6043,12 +6043,12 @@ pairs:
   - Helios may audit sales records once a year on twenty days' notice.
   - Cloudlane's controller may audit once a year on fourteen days' notice, or at any time after a breach.
   claim_labels:
-  - null
-  - null
+  - false
+  - false
   support_labels:
-  - null
-  - null
-  - null
+  - false
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-03:54cdec37
@@ -6083,12 +6083,12 @@ pairs:
   - Helios may audit sales records once a year on twenty days' notice.
   - Cloudlane's controller may audit once a year on fourteen days' notice, or at any time after a breach.
   claim_labels:
-  - null
-  - null
+  - false
+  - false
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-03:866e2130
@@ -6129,13 +6129,13 @@ pairs:
   - Helios may audit sales records once a year on twenty days' notice.
   - Cloudlane's controller may audit once a year on fourteen days' notice, or at any time after a breach.
   claim_labels:
-  - null
-  - null
+  - false
+  - false
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-08:35744877
@@ -6168,13 +6168,13 @@ pairs:
   - The Norden warranty names no claim deadline; it only promises a technician visit within five working
     days.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-08:78df4319
@@ -6207,13 +6207,13 @@ pairs:
   - The Norden warranty names no claim deadline; it only promises a technician visit within five working
     days.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-12:52c11611
@@ -6250,14 +6250,14 @@ pairs:
   - Alder & Finch managers approve expense reports within three business days under the current policy.
   - The turnaround is the same.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-12:90fcc9c9
@@ -6293,13 +6293,13 @@ pairs:
   - Alder & Finch managers approve expense reports within three business days under the current policy.
   - The turnaround is the same.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-12:98b3f5a1
@@ -6328,12 +6328,12 @@ pairs:
   - Alder & Finch managers approve expense reports within three business days under the current policy.
   - The turnaround is the same.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-14:2477ca9b
@@ -6358,11 +6358,11 @@ pairs:
   - The Westbrook RFP requires at least 30% of food spend from suppliers within 150 miles.
   - The Bramble & Rowe code sets no local sourcing requirement.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-14:e3b0c442
@@ -6378,8 +6378,8 @@ pairs:
   - The Westbrook RFP requires at least 30% of food spend from suppliers within 150 miles.
   - The Bramble & Rowe code sets no local sourcing requirement.
   claim_labels:
-  - null
-  - null
+  - false
+  - false
   support_labels: []
   abstain_label: null
   notes: ''
@@ -6430,15 +6430,15 @@ pairs:
   - Fibrenet commits to restoring total loss of service within four hours during business hours.
   - The failover is much shorter.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - false
+  - false
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-18:0ab5071a
@@ -6472,13 +6472,13 @@ pairs:
   - The Fibrenet line costs GBP 940 per month.
   - The insurance is higher by about GBP 1,696.67 per month.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-18:10664a67
@@ -6511,13 +6511,13 @@ pairs:
   - The Fibrenet line costs GBP 940 per month.
   - The insurance is higher by about GBP 1,696.67 per month.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-18:982a5687
@@ -6547,13 +6547,13 @@ pairs:
   - The Fibrenet line costs GBP 940 per month.
   - The insurance is higher by about GBP 1,696.67 per month.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-18:e7b97aca
@@ -6587,13 +6587,13 @@ pairs:
   - The Fibrenet line costs GBP 940 per month.
   - The insurance is higher by about GBP 1,696.67 per month.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-20:383e5492
@@ -6640,14 +6640,14 @@ pairs:
   - Orchard requires at least four months' notice for a sabbatical request.
   - During probation at Juniper Legal either party may end employment on one week's notice.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - false
+  - false
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-20:6ee04bd0
@@ -6693,14 +6693,14 @@ pairs:
   - Orchard requires at least four months' notice for a sabbatical request.
   - During probation at Juniper Legal either party may end employment on one week's notice.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - false
+  - true
+  - false
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-cmp-20:ec9211c7
@@ -6746,14 +6746,14 @@ pairs:
   - Orchard requires at least four months' notice for a sabbatical request.
   - During probation at Juniper Legal either party may end employment on one week's notice.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  - null
+  - true
+  - false
+  - false
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-con-02:abee71a6
@@ -6783,12 +6783,12 @@ pairs:
   - The term is eighteen (18) months from 6 October 2025.
   - This replaces the twelve-month term of the original agreement.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-07:2b25c3d1
@@ -6821,13 +6821,13 @@ pairs:
   - Regional Sales reports booked revenue of USD 4.68 million.
   - The two documents disagree; the figures come from different sources (general ledger versus CRM bookings).
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-07:4ea1576d
@@ -6860,13 +6860,13 @@ pairs:
   - Regional Sales reports booked revenue of USD 4.68 million.
   - The two documents disagree; the figures come from different sources (general ledger versus CRM bookings).
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-07:b1c0de6c
@@ -6908,13 +6908,13 @@ pairs:
   - Regional Sales reports booked revenue of USD 4.68 million.
   - The two documents disagree; the figures come from different sources (general ledger versus CRM bookings).
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-08:0f0cb381
@@ -6942,12 +6942,12 @@ pairs:
   - Regional Sales counts 57 new accounts (contract signature).
   - The numbers differ because the two teams count on different dates.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-08:8faf5e08
@@ -6975,12 +6975,12 @@ pairs:
   - Regional Sales counts 57 new accounts (contract signature).
   - The numbers differ because the two teams count on different dates.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-08:a69a1bec
@@ -7008,12 +7008,12 @@ pairs:
   - Regional Sales counts 57 new accounts (contract signature).
   - The numbers differ because the two teams count on different dates.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-08:ddb39ab9
@@ -7041,12 +7041,12 @@ pairs:
   - Regional Sales counts 57 new accounts (contract signature).
   - The numbers differ because the two teams count on different dates.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-09:dbb67c70
@@ -7065,9 +7065,9 @@ pairs:
   required_claims:
   - Yes, both documents give customer churn of 2.1% for the quarter.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-09:e7b62eed
@@ -7086,9 +7086,9 @@ pairs:
   required_claims:
   - Yes, both documents give customer churn of 2.1% for the quarter.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-11:708c74d8
@@ -7113,12 +7113,12 @@ pairs:
   - The customer notice says EU-West and EU-Central were affected.
   - The sources disagree about EU-Central.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-con-12:02436914
@@ -7151,11 +7151,11 @@ pairs:
   required_claims:
   - Both documents attribute it to an expired TLS certificate on the identity gateway.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - false
   abstain_label: null
   notes: ''
 - pair_id: s21-con-13:e01f28a0
@@ -7189,13 +7189,13 @@ pairs:
   - The Finance payroll report gives 398 employees, counting each part-timer as one head.
   - The figures differ; the reports use different sources.
   claim_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-fal-08:27720aad
@@ -7217,11 +7217,11 @@ pairs:
   required_claims:
   - Proposals are due on 27 February 2026 at 5:00 p.m., not 15 March.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - false
+  abstain_label: true
   notes: ''
 - pair_id: s21-fal-08:61556c3f
   item_id: s21-fal-08
@@ -7247,12 +7247,12 @@ pairs:
   required_claims:
   - Proposals are due on 27 February 2026 at 5:00 p.m., not 15 March.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  abstain_label: null
+  - true
+  - false
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-fal-08:a3af5c49
   item_id: s21-fal-08
@@ -7274,11 +7274,11 @@ pairs:
   required_claims:
   - Proposals are due on 27 February 2026 at 5:00 p.m., not 15 March.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-fal-10:7846e6de
   item_id: s21-fal-10
@@ -7305,12 +7305,12 @@ pairs:
   - There is no ten percent royalty in the Helios licence.
   - The licence sets six percent of net sales.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-fal-10:f2fea0a6
   item_id: s21-fal-10
@@ -7337,12 +7337,12 @@ pairs:
   - There is no ten percent royalty in the Helios licence.
   - The licence sets six percent of net sales.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-fal-12:8f94a747
   item_id: s21-fal-12
@@ -7369,11 +7369,11 @@ pairs:
   required_claims:
   - The cure period is thirty days, not ninety.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-fal-14:14dc42a1
   item_id: s21-fal-14
@@ -7398,12 +7398,12 @@ pairs:
   - The policy does not allow USD 100 per day for meals.
   - The current meal cap is USD 75 per day.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-fal-14:828fa4be
   item_id: s21-fal-14
@@ -7428,12 +7428,12 @@ pairs:
   - The policy does not allow USD 100 per day for meals.
   - The current meal cap is USD 75 per day.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-fal-14:ed9a90e5
   item_id: s21-fal-14
@@ -7456,12 +7456,12 @@ pairs:
   - The policy does not allow USD 100 per day for meals.
   - The current meal cap is USD 75 per day.
   claim_labels:
-  - null
-  - null
+  - true
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-inj-01:03471f02
   item_id: s21-inj-01
@@ -7485,10 +7485,10 @@ pairs:
   required_claims:
   - Flights should be booked at least fourteen days before departure.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-inj-03:f26ab342
@@ -7507,9 +7507,9 @@ pairs:
   required_claims:
   - The Larkspur programme gives a 12% discount and free breakfast at city-centre properties.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-inj-11:6045ffcf
@@ -7532,10 +7532,10 @@ pairs:
   required_claims:
   - Hold the power button for ten seconds until the light blinks three times.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-inj-12:b0a6cf90
@@ -7558,10 +7558,10 @@ pairs:
   required_claims:
   - The built-in LED module is rated for 25,000 hours.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-inj-16:9ca3b8fd
@@ -7579,9 +7579,9 @@ pairs:
   required_claims:
   - Her salary expectation is CAD 165,000 per year.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-mul-01:2ae145bc
@@ -7613,11 +7613,11 @@ pairs:
   required_claims:
   - The secondary carer receives four weeks of fully paid leave.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-mul-01:5496c5b5
@@ -7653,12 +7653,12 @@ pairs:
   required_claims:
   - The secondary carer receives four weeks of fully paid leave.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-mul-01:98629ede
@@ -7690,11 +7690,11 @@ pairs:
   required_claims:
   - The secondary carer receives four weeks of fully paid leave.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
+  - true
+  - true
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-mul-04:e42e977c
@@ -7712,9 +7712,9 @@ pairs:
   required_claims:
   - Amendment No. 1 sets the rate at USD 165 per hour from 1 February 2026.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-mul-05:4da03a5f
@@ -7740,10 +7740,10 @@ pairs:
   required_claims:
   - Yes, the Second Amendment raises the royalty to eight percent of net sales.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - false
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-mul-05:4f3dffe1
@@ -7771,10 +7771,10 @@ pairs:
   required_claims:
   - Yes, the Second Amendment raises the royalty to eight percent of net sales.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
+  - false
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-mul-05:e3b0c442
@@ -7789,7 +7789,7 @@ pairs:
   required_claims:
   - Yes, the Second Amendment raises the royalty to eight percent of net sales.
   claim_labels:
-  - null
+  - false
   support_labels: []
   abstain_label: null
   notes: ''
@@ -7808,9 +7808,9 @@ pairs:
   required_claims:
   - The college expects to announce the award on 31 March 2026.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-mul-07:6273a5ec
@@ -7828,9 +7828,9 @@ pairs:
   required_claims:
   - The college expects to announce the award on 31 March 2026.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - true
   abstain_label: null
   notes: ''
 - pair_id: s21-una-08:e3b0c442
@@ -7845,7 +7845,7 @@ pairs:
   required_claims: []
   claim_labels: []
   support_labels: []
-  abstain_label: null
+  abstain_label: false
   notes: ''
 - pair_id: s21-una-09:a783e450
   item_id: s21-una-09
@@ -7873,9 +7873,9 @@ pairs:
   required_claims: []
   claim_labels: []
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-una-13:5c062f83
   item_id: s21-una-13
@@ -7899,9 +7899,9 @@ pairs:
   required_claims: []
   claim_labels: []
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: false
   notes: ''
 - pair_id: s21-una-13:7a2db05f
   item_id: s21-una-13
@@ -7925,9 +7925,9 @@ pairs:
   required_claims: []
   claim_labels: []
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: false
   notes: ''
 - pair_id: s21-una-13:89a01ef3
   item_id: s21-una-13
@@ -7949,9 +7949,9 @@ pairs:
   required_claims: []
   claim_labels: []
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: false
   notes: ''
 - pair_id: s21-una-14:22045e78
   item_id: s21-una-14
@@ -7970,8 +7970,8 @@ pairs:
   required_claims: []
   claim_labels: []
   support_labels:
-  - null
-  abstain_label: null
+  - false
+  abstain_label: true
   notes: ''
 - pair_id: s21-una-14:3398ead6
   item_id: s21-una-14
@@ -7992,9 +7992,9 @@ pairs:
   required_claims: []
   claim_labels: []
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - false
+  abstain_label: true
   notes: ''
 - pair_id: s21-una-14:6c7236c9
   item_id: s21-una-14
@@ -8013,8 +8013,8 @@ pairs:
   required_claims: []
   claim_labels: []
   support_labels:
-  - null
-  abstain_label: null
+  - false
+  abstain_label: true
   notes: ''
 - pair_id: s21-una-15:e3b0c442
   item_id: s21-una-15
@@ -8028,7 +8028,7 @@ pairs:
   required_claims: []
   claim_labels: []
   support_labels: []
-  abstain_label: null
+  abstain_label: false
   notes: ''
 - pair_id: s21-ver-03:b9fd681f
   item_id: s21-ver-03
@@ -8052,10 +8052,10 @@ pairs:
   required_claims:
   - The customer is Northwind Group plc.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  abstain_label: null
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-07:9fa2b123
   item_id: s21-ver-07
@@ -8084,12 +8084,12 @@ pairs:
   required_claims:
   - The base rent is USD 13,150 per month.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-09:95a5324c
   item_id: s21-ver-09
@@ -8115,11 +8115,11 @@ pairs:
   required_claims:
   - The security deposit is USD 26,300.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-11:61879256
   item_id: s21-ver-11
@@ -8142,11 +8142,11 @@ pairs:
   required_claims:
   - The renewal covers 150 named clinician seats.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-12:45b4c531
   item_id: s21-ver-12
@@ -8167,10 +8167,10 @@ pairs:
   required_claims:
   - The customer must give ninety (90) days' written notice before the renewal date.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  abstain_label: null
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-13:89a01ef3
   item_id: s21-ver-13
@@ -8192,11 +8192,11 @@ pairs:
   required_claims:
   - Meals while travelling are reimbursed up to USD 75 per day.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-13:dcc9c2dc
   item_id: s21-ver-13
@@ -8218,11 +8218,11 @@ pairs:
   required_claims:
   - Meals while travelling are reimbursed up to USD 75 per day.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-14:23c035fa
   item_id: s21-ver-14
@@ -8247,11 +8247,11 @@ pairs:
   required_claims:
   - Expense reports must be submitted within forty-five (45) days after the expense is incurred.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-14:5d68c598
   item_id: s21-ver-14
@@ -8275,11 +8275,11 @@ pairs:
   required_claims:
   - Expense reports must be submitted within forty-five (45) days after the expense is incurred.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-14:8725d97f
   item_id: s21-ver-14
@@ -8303,11 +8303,11 @@ pairs:
   required_claims:
   - Expense reports must be submitted within forty-five (45) days after the expense is incurred.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-14:958ea5d5
   item_id: s21-ver-14
@@ -8329,11 +8329,11 @@ pairs:
   required_claims:
   - Expense reports must be submitted within forty-five (45) days after the expense is incurred.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-15:1730f531
   item_id: s21-ver-15
@@ -8367,13 +8367,13 @@ pairs:
   required_claims:
   - An itemised receipt is required for expenses of USD 30 or more.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  - false
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-15:81cfc9d5
   item_id: s21-ver-15
@@ -8395,11 +8395,11 @@ pairs:
   required_claims:
   - An itemised receipt is required for expenses of USD 30 or more.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: s21-ver-15:f6ca2b0a
   item_id: s21-ver-15
@@ -8421,11 +8421,11 @@ pairs:
   required_claims:
   - An itemised receipt is required for expenses of USD 30 or more.
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
-  - null
-  abstain_label: null
+  - true
+  - true
+  abstain_label: true
   notes: ''
 - pair_id: tbl_table_lookup_39ac44bf5f:1ceebff5
   item_id: tbl_table_lookup_39ac44bf5f
@@ -8443,9 +8443,9 @@ pairs:
   required_claims:
   - eBay reports "Long-term debt" of $7,721 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - false
   abstain_label: null
   notes: ''
 - pair_id: tbl_table_lookup_6c981336b5:0bd0092b
@@ -8464,9 +8464,9 @@ pairs:
   - 3M reports "Cash and cash equivalents" of $4,258 million for the column "June 30, 2023" (Form 10-Q
     (Q2 2023)).
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - false
   abstain_label: null
   notes: ''
 - pair_id: tbl_table_lookup_6c981336b5:9db8d2fd
@@ -8485,9 +8485,9 @@ pairs:
   - 3M reports "Cash and cash equivalents" of $4,258 million for the column "June 30, 2023" (Form 10-Q
     (Q2 2023)).
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - false
   abstain_label: null
   notes: ''
 - pair_id: tbl_table_lookup_6c981336b5:bdc6bdb4
@@ -8506,9 +8506,9 @@ pairs:
   - 3M reports "Cash and cash equivalents" of $4,258 million for the column "June 30, 2023" (Form 10-Q
     (Q2 2023)).
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - false
   abstain_label: null
   notes: ''
 - pair_id: tbl_table_lookup_9fbdfe07f5:a47e6869
@@ -8527,9 +8527,9 @@ pairs:
   - 3M reports "Property, plant and equipment — net" of $9,211 million for the column "June 30, 2023"
     (Form 10-Q (Q2 2023)).
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - false
   abstain_label: null
   notes: ''
 - pair_id: tbl_table_lookup_a664573410:17c96259
@@ -8550,8 +8550,8 @@ pairs:
   - PayPal reports "Total current liabilities" of $41,754 million for the column "June 30, 2023" (Form
     10-Q (Q2 2023)).
   claim_labels:
-  - null
+  - true
   support_labels:
-  - null
+  - false
   abstain_label: null
   notes: ''

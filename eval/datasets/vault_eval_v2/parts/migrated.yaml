@@ -845,11 +845,10 @@ items:
   question: What activation function do they use in their model?
   source_doc: qasper_factweet
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - The model uses relu as an activation function.
-  - The model uses selu as an activation function.
-  - The model uses tanh as an activation function.
+  - The paper's hyperparameter search considered ReLU, SELU and tanh as candidate activation functions; the source does not
+    establish that the final model uses all three.
   gold_evidence:
   - doc: qasper_factweet
     sentence_start: 170
@@ -858,7 +857,8 @@ items:
   - qasper_factweet
   audit_note: 'migrated from v1 qasper_factweet:q1 (category=lookup, source=QASPER); stratum: lookup, no conditional or list
     cue; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from 1 v1 quote(s),
-    0 unmapped, 1 fuzzy, 0 ambiguous'
+    0 unmapped, 1 fuzzy, 0 ambiguous [S21.05 audit: gold_wrong] The gold incorrectly treats search candidates as the model''s
+    selected activation functions.'
 - id: mig-qasper_factweet-q2
   stratum: single_span
   question: What baselines do they compare to?
@@ -908,11 +908,12 @@ items:
   question: How many layers does their model have?
   source_doc: qasper_factweet
   answer_type: abstain
-  audit_status: draft
+  audit_status: verified
   doc_ids:
   - qasper_factweet
-  audit_note: 'migrated from v1 qasper_factweet:q5 (category=unanswerable, source=QASPER); stratum: category unanswerable;
-    absent in the document per v1: Not answerable from the paper (QASPER annotator label).'
+  audit_note: 'migrated from v1 qasper_factweet:q5 (category=unanswerable, source=QASPER); stratum: category unanswerable; absent
+    in the document per v1: Not answerable from the paper (QASPER annotator label). [S21.05 audit: system_wrong] Vault answers
+    where the gold expects abstention; the strong model abstains.'
 - id: mig-qasper_factweet-q6
   stratum: single_span
   question: Was the approach used in this work to detect fake news fully supervised?
@@ -932,7 +933,7 @@ items:
   question: What models do they propose?
   source_doc: qasper_hatespeech
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The proposed models include the Feature Concatenation Model (FCM).
   - The proposed models include the Spatial Concatenation Model (SCM).
@@ -943,25 +944,26 @@ items:
     sentence_end: 180
   doc_ids:
   - qasper_hatespeech
-  audit_note: 'migrated from v1 qasper_hatespeech:q0 (category=lookup, source=QASPER); stratum: lookup, no conditional or
-    list cue; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from 1 v1 quote(s),
-    0 unmapped, 1 fuzzy, 0 ambiguous'
+  audit_note: 'migrated from v1 qasper_hatespeech:q0 (category=lookup, source=QASPER); stratum: lookup, no conditional or list
+    cue; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from 1 v1 quote(s),
+    0 unmapped, 1 fuzzy, 0 ambiguous [S21.05 audit: system_wrong] strong model misses c0,c1,c2 (Vault states it); gold kept.'
 - id: mig-qasper_hatespeech-q1
   stratum: unanswerable
   question: Are all tweets in English?
   source_doc: qasper_hatespeech
   answer_type: abstain
-  audit_status: draft
+  audit_status: verified
   doc_ids:
   - qasper_hatespeech
   audit_note: 'migrated from v1 qasper_hatespeech:q1 (category=unanswerable, source=QASPER); stratum: category unanswerable;
-    absent in the document per v1: Not answerable from the paper (QASPER annotator label).'
+    absent in the document per v1: Not answerable from the paper (QASPER annotator label). [S21.05 audit: system_wrong] Vault
+    answers where the gold expects abstention; the strong model abstains.'
 - id: mig-qasper_hatespeech-q2
   stratum: single_span
   question: How large is the dataset?
   source_doc: qasper_hatespeech
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The dataset contains 150,000 tweets.
   alternates:
@@ -974,9 +976,9 @@ items:
     sentence_end: 116
   doc_ids:
   - qasper_hatespeech
-  audit_note: 'migrated from v1 qasper_hatespeech:q2 (category=lookup, source=QASPER); stratum: lookup, no conditional or
-    list cue; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from 1 v1 quote(s),
-    0 unmapped, 1 fuzzy, 0 ambiguous'
+  audit_note: 'migrated from v1 qasper_hatespeech:q2 (category=lookup, source=QASPER); stratum: lookup, no conditional or list
+    cue; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from 1 v1 quote(s),
+    0 unmapped, 1 fuzzy, 0 ambiguous [S21.05 audit: system_wrong] strong model misses c0 (Vault states it); gold kept.'
 - id: mig-qasper_hatespeech-q3
   stratum: single_span
   question: What is the results of multimodal compared to unimodal models?
@@ -1113,7 +1115,7 @@ items:
   question: What drove the reduction in SG&A expense as a percent of net sales in FY2023?
   source_doc: fb_ulta_q4
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - Lower marketing expenses drove the reduction in SG&A expense as a percent of net sales.
   - Leverage of incentive compensation due to higher sales drove the reduction in SG&A expense as a percent of net sales.
@@ -1125,15 +1127,17 @@ items:
     sentence_end: 80
   doc_ids:
   - fb_ulta_q4
-  audit_note: 'migrated from v1 fb_ulta_q4:financebench_id_00601 (category=lookup, source=FinanceBench); stratum: lookup,
-    no conditional or list cue; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s)
-    from 1 v1 quote(s), 0 unmapped, 0 fuzzy, 0 ambiguous'
+  audit_note: 'migrated from v1 fb_ulta_q4:financebench_id_00601 (category=lookup, source=FinanceBench); stratum: lookup, no
+    conditional or list cue; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s)
+    from 1 v1 quote(s), 0 unmapped, 0 fuzzy, 0 ambiguous [S21.05 audit: system_wrong] Both proposed gold claims are supported
+    by the full-year SG&A discussion; the supplied evidence pointer appears to stop before the relevant sentence. Vault answers
+    Q4 FY2022 rather than the FY2023 question.'
 - id: mig-fb_ulta_q4-financebench_id_00603
   stratum: table_lookup
   question: What drove the increase in Ulta Beauty's merchandise inventories balance at end of FY2023?
   source_doc: fb_ulta_q4
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The opening of 47 new stores drove the increase in Ulta Beauty's merchandise inventories balance.
   optional_claims:
@@ -1147,9 +1151,10 @@ items:
     sentence_end: 91
   doc_ids:
   - fb_ulta_q4
-  audit_note: 'migrated from v1 fb_ulta_q4:financebench_id_00603 (category=table, source=FinanceBench); stratum: category
-    table; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from 1 v1 quote(s),
-    0 unmapped, 0 fuzzy, 0 ambiguous'
+  audit_note: 'migrated from v1 fb_ulta_q4:financebench_id_00603 (category=table, source=FinanceBench); stratum: category table;
+    claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from 1 v1 quote(s), 0 unmapped,
+    0 fuzzy, 0 ambiguous [S21.05 audit: system_wrong] Vault misses c0; the strong model entails it from the gold evidence; gold
+    kept.'
 - id: mig-fb_ulta_q4-financebench_id_00605
   stratum: single_span
   question: What percent of Ulta Beauty's total spend on stock repurchases for FY 2023 occurred in Q4 of FY2023?
@@ -1258,7 +1263,7 @@ items:
     not relevant to measure liquidity, please state that and explain why.
   source_doc: fb_amd_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: dropped
   required_claims:
   - AMD had a reasonably healthy liquidity profile for FY22 based on its quick ratio.
   - AMD's FY22 quick ratio was 1.57.
@@ -1272,13 +1277,15 @@ items:
   - fb_amd_10k
   audit_note: 'migrated from v1 fb_amd_10k:financebench_id_00222 (category=table, source=FinanceBench); stratum: table + FinanceBench
     numerical-reasoning label; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s)
-    from 1 v1 quote(s), 0 unmapped, 0 fuzzy, 0 ambiguous'
+    from 1 v1 quote(s), 0 unmapped, 0 fuzzy, 0 ambiguous [S21.05 audit: ambiguous] The quick ratio is a relevant liquidity measure
+    and can be calculated from balance-sheet inputs, but ''reasonably healthy'' is a qualitative judgment without a defined
+    threshold. The cited evidence span is also unrelated to the ratio.'
 - id: mig-fb_amd_10k-financebench_id_00995
   stratum: multi_span
   question: What are the major products and services that AMD sells as of FY22?
   source_doc: fb_amd_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - AMD sells server microprocessors (CPUs), graphics processing units (GPUs), data processing units (DPUs), Field Programmable
     Gate Arrays (FPGAs), and Adaptive System-on-Chip (SoC) products for data centers.
@@ -1292,9 +1299,11 @@ items:
     sentence_end: 123
   doc_ids:
   - fb_amd_10k
-  audit_note: 'migrated from v1 fb_amd_10k:financebench_id_00995 (category=lookup, source=FinanceBench); stratum: lookup +
-    list cue in the question; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s)
-    from 1 v1 quote(s), 0 unmapped, 1 fuzzy, 0 ambiguous'
+  audit_note: 'migrated from v1 fb_amd_10k:financebench_id_00995 (category=lookup, source=FinanceBench); stratum: lookup + list
+    cue in the question; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from
+    1 v1 quote(s), 0 unmapped, 1 fuzzy, 0 ambiguous [S21.05 audit: system_wrong] The product categories and services are supported
+    by the FY22 overview; Vault covers the product/service list. The proposed fix drops valid claims, and the evidence excerpt
+    is too narrow.'
 - id: mig-fb_amd_10k-financebench_id_01198
   stratum: single_span
   question: What drove revenue change as of the FY22 for AMD?
@@ -1347,7 +1356,7 @@ items:
   question: From FY21 to FY22, excluding Embedded, in which AMD reporting segment did sales proportionally increase the most?
   source_doc: fb_amd_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - Excluding Embedded, AMD's Data Center segment had the largest proportional increase in sales from FY21 to FY22.
   gold_evidence:
@@ -1356,9 +1365,9 @@ items:
     sentence_end: 1318
   doc_ids:
   - fb_amd_10k
-  audit_note: 'migrated from v1 fb_amd_10k:financebench_id_00563 (category=table, source=FinanceBench); stratum: category
-    table; claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from 1 v1 quote(s),
-    0 unmapped, 0 fuzzy, 0 ambiguous'
+  audit_note: 'migrated from v1 fb_amd_10k:financebench_id_00563 (category=table, source=FinanceBench); stratum: category table;
+    claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 1 range(s) from 1 v1 quote(s), 0 unmapped,
+    0 fuzzy, 0 ambiguous [S21.05 audit: system_wrong] strong model misses c0 (Vault states it); gold kept.'
 - id: mig-fb_amd_10k-financebench_id_00757
   stratum: single_span
   question: Did AMD report customer concentration in FY22?
@@ -1909,7 +1918,7 @@ items:
   question: Summarize the FacTweet paper.
   source_doc: qasper_factweet
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - FacTweet aims to detect and profile fake-news Twitter accounts.
   - FacTweet analyzes sequences of tweet chunks using features such as emotions, sentiment and style.
@@ -1917,14 +1926,15 @@ items:
   doc_ids:
   - qasper_factweet
   audit_note: 'migrated from v1 summarize:qasper_factweet (category=summarize, source=authored); stratum: category summarize;
-    claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 0 range(s) from 0 v1 quote(s), 0
-    unmapped, 0 fuzzy, 0 ambiguous'
+    claims drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 0 range(s) from 0 v1 quote(s), 0 unmapped,
+    0 fuzzy, 0 ambiguous [S21.05 audit: system_wrong] The three claims capture the paper''s central aim, sequence-based method/features,
+    and baseline comparison. Vault states all three; the strong model''s abstention is not evidence that the gold is wrong.'
 - id: mig-summarize-fb_ulta_q4
   stratum: multi_span
   question: Summarize Ulta Beauty's fourth-quarter earnings release.
   source_doc: fb_ulta_q4
   answer_type: answer
-  audit_status: draft
+  audit_status: dropped
   required_claims:
   - The release reports Ulta Beauty's Q4 / fiscal 2022 results.
   - The release discusses Ulta Beauty's net sales performance.
@@ -1942,7 +1952,9 @@ items:
   - fb_ulta_q4
   audit_note: 'migrated from v1 summarize:fb_ulta_q4 (category=summarize, source=authored); stratum: category summarize; claims
     drafted by model (balanced, eval_migrate_claims@1), unaudited; gold_evidence: 0 range(s) from 0 v1 quote(s), 0 unmapped,
-    0 fuzzy, 0 ambiguous'
+    0 fuzzy, 0 ambiguous [S21.05 audit: ambiguous] An open-ended earnings-release summary has no unique exhaustive claim set.
+    The proposed gold mixes selected details from separate questions with broad summary claims; neither the proposed deletion
+    nor the existing list defines a uniquely required summary.'
 - id: mig-identifier-consulting_section8
   stratum: single_span
   question: What does Section 8 of the Medalist consulting agreement cover?
@@ -1990,7 +2002,7 @@ items:
   question: What does Section 2.1 of the First Amendment say?
   source_doc: auth_amendment
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - Either party may terminate the agreement on thirty (30) days' written notice.
   alternates:
@@ -2070,7 +2082,7 @@ items:
   question: When was the First Amendment to the consulting agreement entered into?
   source_doc: auth_amendment
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The First Amendment to the consulting agreement was entered into as of June 1, 2020.
   alternates:

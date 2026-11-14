@@ -6,6 +6,7 @@ items:
     carry out inspections?
   source_doc: dpa_cloudlane
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The Cloudlane DPA gives the controller audit rights.
   - The Bramble & Rowe supplier code lets the company audit any site.
@@ -21,6 +22,8 @@ items:
   - dpa_cloudlane
   - privacy_policy
   - supplier_code
+  audit_note: '[S21.05 audit: system_wrong] The Cloudlane DPA and supplier code expressly grant audit rights. The full Pinewood
+    privacy policy contains no audit right, so the negative comparison is also supported. Vault omits two relevant parts.'
 - id: s21-agg-02
   stratum: aggregation
   question: Which of the Q3 sales summary, the Q3 sales summary by region, the HR headcount report and the Finance
@@ -109,6 +112,7 @@ items:
   question: Name the supplier or provider in each of the order form, the data addendum and the internet agreement.
   source_doc: sla_fibrenet
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The order form's provider is Quill Practice Software, Inc.
   - The addendum's processor is Cloudlane Hosting B.V.
@@ -152,6 +156,7 @@ items:
     in hours?
   source_doc: safety_lab
   answer_type: answer
+  audit_status: verified
   required_claims:
   - 'Only the lab safety SOP does: incidents must be reported within twenty-four hours.'
   - The supplier code uses five days and the runbook uses five working days.
@@ -169,6 +174,9 @@ items:
   - safety_lab
   - supplier_code
   - runbook_db
+  audit_note: '[S21.05 audit: system_wrong] The lab SOP''s 24-hour incident-reporting deadline is the only deadline measured
+    in hours; the supplier code uses five days and the runbook uses five working days. Claim c1 is relevant supporting contrast,
+    not an unnecessary claim.'
 - id: s21-agg-09
   stratum: aggregation
   question: Which of the hosting addendum, the internet SLA, the research grant, the motor policy and the appliance

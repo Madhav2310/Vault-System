@@ -5,10 +5,9 @@ items:
   question: What hourly charge applies to Vantage's work from February 2026?
   source_doc: consulting_vantage_amend1
   answer_type: answer
+  audit_status: verified
   required_claims:
-  - From 1 February 2026 the rate is USD 165 per hour (Amendment No. 1).
-  - The original agreement's USD 140 per hour is replaced because the amendment states Section 1 replaces the corresponding
-    provision.
+  - From 1 February 2026, the applicable consulting rate is USD 165 per hour under Amendment No. 1.
   gold_evidence:
   - doc: consulting_vantage_amend1
     sentence_start: 3
@@ -22,13 +21,15 @@ items:
   doc_ids:
   - consulting_vantage
   - consulting_vantage_amend1
-  audit_note: Contract says USD 140; amendment sets USD 165 and states it replaces the corresponding provision,
-    so the later version wins explicitly.
+  audit_note: 'Contract says USD 140; amendment sets USD 165 and states it replaces the corresponding provision, so the later
+    version wins explicitly. [S21.05 audit: gold_wrong] The question asks only for the rate. The original-rate replacement explanation
+    is true context but not a required claim for this answer.'
 - id: s21-con-02
   stratum: conflict
   question: How long does the Pinecrest and Vantage engagement last once the first amendment is taken into account?
   source_doc: consulting_vantage_amend1
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The term is eighteen (18) months from 6 October 2025.
   - This replaces the twelve-month term of the original agreement.
@@ -52,6 +53,7 @@ items:
   question: What notice does either side have to give to end the Vantage consulting arrangement?
   source_doc: consulting_vantage_amend1
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The original agreement says thirty (30) days' written notice.
   - Amendment No. 1 says forty-five (45) days' written notice.
@@ -70,8 +72,9 @@ items:
   doc_ids:
   - consulting_vantage
   - consulting_vantage_amend1
-  audit_note: 'Genuine conflict: amendment section 3 says 45 days but section 5 names only sections 1 and 2 as replacing;
-    a good answer flags this rather than picking one.'
+  audit_note: 'Genuine conflict: amendment section 3 says 45 days but section 5 names only sections 1 and 2 as replacing; a
+    good answer flags this rather than picking one. [S21.05 audit: system_wrong] strong model misses c2 (Vault states it); gold
+    kept.'
 - id: s21-con-04
   stratum: conflict
   question: What percentage of net sales does Granite owe Helios as royalty today?
@@ -203,6 +206,7 @@ items:
   question: How long were people locked out of signing in on 9 September?
   source_doc: report_outage_customer_notice
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The engineering post-mortem says 47 minutes (09:12 to 09:59 UTC).
   - The customer notice says 62 minutes.
@@ -217,12 +221,15 @@ items:
   doc_ids:
   - report_outage_postmortem
   - report_outage_customer_notice
-  audit_note: 47 versus 62 minutes; neither document supersedes the other.
+  audit_note: '47 versus 62 minutes; neither document supersedes the other. [S21.05 audit: system_wrong] Both durations and
+    the fact that the sources conflict are essential to answer this question faithfully. Vault states all three; the proposed
+    fix wrongly drops the disagreement claim.'
 - id: s21-con-11
   stratum: conflict
   question: Which regions were hit by the 9 September login failure?
   source_doc: report_outage_customer_notice
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The post-mortem says only EU-West was affected.
   - The customer notice says EU-West and EU-Central were affected.
@@ -243,6 +250,7 @@ items:
   question: What was behind the 9 September sign-in failure, according to both write-ups?
   source_doc: report_outage_customer_notice
   answer_type: answer
+  audit_status: verified
   required_claims:
   - Both documents attribute it to an expired TLS certificate on the identity gateway.
   gold_evidence:
@@ -261,6 +269,7 @@ items:
   question: What was the employee count at the end of September?
   source_doc: report_headcount_finance
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The People Team report gives 412 employees, including 14 part-time staff.
   - The Finance payroll report gives 398 employees, counting each part-timer as one head.
@@ -281,6 +290,7 @@ items:
   question: How fast are staff leaving over the last twelve months?
   source_doc: report_headcount_finance
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The People Team reports annualised attrition of 9.4%.
   - Finance reports attrition of 11.0%.
@@ -295,12 +305,15 @@ items:
   doc_ids:
   - report_headcount_hr
   - report_headcount_finance
-  audit_note: 9.4% versus 11.0%; Finance's measure includes voluntary and involuntary leavers.
+  audit_note: '9.4% versus 11.0%; Finance''s measure includes voluntary and involuntary leavers. [S21.05 audit: system_wrong]
+    The two reports give different attrition figures and describe different measurement bases: HR annualised attrition versus
+    Finance voluntary and involuntary leavers. The disagreement/measurement claim is supported.'
 - id: s21-con-15
   stratum: conflict
   question: Do HR and Finance report the same number of open positions?
   source_doc: report_headcount_finance
   answer_type: answer
+  audit_status: verified
   required_claims:
   - Yes, both reports give 23 open requisitions.
   gold_evidence:

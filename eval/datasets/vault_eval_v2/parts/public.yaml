@@ -6,7 +6,7 @@ items:
   question: Has Pepsico reported any materially important ongoing legal battles from FY2022 and FY2021?
   source_doc: fb_pepsico_2022_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: dropped
   required_claims:
   - No, Pepsico is not involved in material legal battles.
   gold_evidence:
@@ -15,23 +15,28 @@ items:
     sentence_end: 583
   doc_ids:
   - fb_pepsico_2022_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+  audit_note: 'gold is page-level: FinanceBench evidence is a whole page [S21.05 audit: ambiguous] The claim that PepsiCo is
+    not involved in material legal battles is stronger than a disclosure that it is party to litigation but does not expect
+    a material adverse effect. The distinction between involvement in litigation and expected material financial impact is not
+    resolved by the supplied claim.'
 - id: pub_single_span_04e4b9e254
   stratum: single_span
   question: What was MGM's interest coverage ratio using FY2022 Adjusted EBIT as the numerator and annual Interest Expense
     as the denominator?
   source_doc: fb_mgmresorts_2022q4_earnings
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - As adjusted EBIT is negative, coverage ratio is zero
+  - The FY2022 interest coverage ratio is approximately -3.25x, using adjusted EBIT of approximately negative USD 1,935.362
+    million divided by annual interest expense of USD 594.954 million.
   gold_evidence:
   - doc: fb_mgmresorts_2022q4_earnings
     sentence_start: 342
     sentence_end: 367
   doc_ids:
   - fb_mgmresorts_2022q4_earnings
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+  audit_note: 'gold is page-level: FinanceBench evidence is a whole page [S21.05 audit: gold_wrong] A negative numerator does
+    not make the ratio zero. The supplied calculation yields approximately -3.25x.'
 - id: pub_single_span_0748ea720f
   stratum: single_span
   question: What is the effective date of the contract?
@@ -91,7 +96,7 @@ items:
   question: How did they obtain the interactions?
   source_doc: qasper_1909_00105
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: from Food.com'
   gold_evidence:
@@ -105,7 +110,7 @@ items:
   question: When does this agreement end?
   source_doc: cuad_innerscopehearingtechnologiesinc_2018110_1b80f0
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The term or expiration is stated as Unless terminated earlier as provided in this agreement, this Agreement shall have
     an initial term of three (3) years..
@@ -138,7 +143,7 @@ items:
   question: When was this contract entered into?
   source_doc: cuad_hubeiminkangpharmaceuticalltd_09_19_2006_de6706
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The agreement is dated 1st day of JUNE , 2006.
   gold_evidence:
@@ -196,7 +201,7 @@ items:
     for a congruency report by Pepsico on net-zero emissions policies?
   source_doc: fb_pepsico_2023_8k_dated_2023_05_05
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The shareholder proposal for a congruency report by Pepsico on net-zero emissions policies was defeated.
   gold_evidence:
@@ -211,7 +216,7 @@ items:
   question: What are the differences in the use of images between gang member and the rest of the Twitter population?
   source_doc: qasper_1610_09516
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: user holds or points weapons, is seen in a group fashion which displays a gangster culture, or is
     showing off graffiti, hand signs, tattoos and bulk cash'
@@ -221,12 +226,13 @@ items:
     sentence_end: 243
   doc_ids:
   - qasper_1610_09516
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c0; the strong model entails it from the gold evidence; gold kept.'
 - id: pub_single_span_47dfabb5b3
   stratum: single_span
   question: Is the data de-identified?
   source_doc: qasper_1912_04961
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The answer is yes.
   gold_evidence:
@@ -258,7 +264,7 @@ items:
   question: For how long does the agreement run, or on what date does it expire?
   source_doc: cuad_fibrogeninc_10_01_2014_ex_10_11_collabor_f92450
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The term or expiration is stated as This Agreement shall become effective as of the Effective Date and, shall continue
     in full force and effect until terminated pursuant to this Article 18..
@@ -287,7 +293,7 @@ items:
   question: What is the nature & purpose of AMCOR's restructuring liability as oF Q2 of FY2023 close?
   source_doc: fb_amcor_2023q2_10q
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 87% of the total restructuring liability is related Employee liabilities.
   gold_evidence:
@@ -330,7 +336,7 @@ items:
   question: Does the training dataset provide logical form supervision?
   source_doc: qasper_1909_00574
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The answer is yes.
   gold_evidence:
@@ -358,7 +364,7 @@ items:
   question: In 2022 Q2, which of JPM's business segments had the highest net income?
   source_doc: fb_jpmorgan_2022q2_10q
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - Corporate & Investment Bank.
   - Its net income was $3725 million.
@@ -388,7 +394,7 @@ items:
   question: How was the dataset collected?
   source_doc: qasper_1807_03367
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: crowd-sourced the collection of the dataset on Amazon Mechanical Turk (MTurk)'
   gold_evidence:
@@ -422,7 +428,7 @@ items:
   question: What is the stated term or expiration of the contract?
   source_doc: cuad_papajohnsinternationalinc_20190617_8_k_e_d6d30a
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The term or expiration is stated as Unless earlier terminated in accordance with the provisions hereof, the initial term
     of this Agreement ("Term") is the Effective Date through March 15, 2022..
@@ -439,6 +445,7 @@ items:
     sentence_end: 25
   doc_ids:
   - cuad_papajohnsinternationalinc_20190617_8_k_e_d6d30a
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c0; the strong model entails it from the gold evidence; gold kept.'
 - id: pub_single_span_b0ee069e4c
   stratum: single_span
   question: Where do they retrieve neighbor n-grams from in their approach?
@@ -477,7 +484,7 @@ items:
   question: When was this contract entered into?
   source_doc: cuad_hyperionsoftwarecorp_09_28_1994_ex_10_47_3ecdec
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The agreement is dated April 15, 1994.
   alternates:
@@ -533,7 +540,7 @@ items:
   question: What datasets were used?
   source_doc: qasper_1904_03339
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: datasets given on the shared task, without using any additional external data'
   gold_evidence:
@@ -591,7 +598,7 @@ items:
   question: How were dialogue act labels defined?
   source_doc: qasper_1912_00819
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: Dialogue Act Markup in Several Layers (DAMSL) tag set'
   gold_evidence:
@@ -605,7 +612,7 @@ items:
   question: Under the law of which state or country is this contract interpreted?
   source_doc: cuad_seaspineholdingscorp_10_10_2018_ex_10_1__305733
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The agreement is governed by the law of State of New Jersey.
   alternates:
@@ -657,7 +664,7 @@ items:
   question: What must a party do to terminate this agreement without alleging a breach?
   source_doc: cuad_microgenics_corporation_collaborative_de_9dd6aa
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: Achaogen may terminate this Agreement in its entirety, for any reason, by providing at least
     sixty (60) days prior written notice to Microgenics.'
@@ -672,17 +679,18 @@ items:
   question: What is the deadline for opting out of renewal?
   source_doc: cuad_vitalibisinc_20180316_8_k_ex_10_2_111001_120591
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - 'The agreement provides: This Agreement shall automatically renew beyond the Initial Term for successive one (I) year
-    terms (each, a "Renewal Term"), unless a Party provides the other with written notice of termination at least one hundred
-    eighty (180) days prior to the expiration of the Initial Term or the then-current Renewal Term.'
+  - A party must give the other party written notice of termination at least 180 days before the expiration of the initial term
+    or then-current renewal term to prevent automatic renewal.
   gold_evidence:
   - doc: cuad_vitalibisinc_20180316_8_k_ex_10_2_111001_120591
     sentence_start: 152
     sentence_end: 153
   doc_ids:
   - cuad_vitalibisinc_20180316_8_k_ex_10_2_111001_120591
+  audit_note: '[S21.05 audit: gold_wrong] The existing claim reproduces the entire renewal clause although the question asks
+    only for the opt-out deadline.'
 - id: pub_conditional_1461410e86
   stratum: conditional
   question: In what circumstances must a party pay a pre-agreed sum for breach?
@@ -722,7 +730,7 @@ items:
   question: Can a party hand its rights under the contract to someone else, and when?
   source_doc: cuad_beyondcomcorp_08_03_2000_ex_10_2_co_host_6be9a3
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: Neither party may assign this Agreement without the other''s prior written approval, except by
     operation of law or in connection with the sale of substantially all of the assets of such party''s business or the acquisition
@@ -772,7 +780,7 @@ items:
   question: How does the contract extend beyond its initial term?
   source_doc: cuad_womensgolfunlimitedinc_03_29_2000_ex_10__c0083f
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: The Company may renew this Agreement on the same terms and conditions for one (1) additional
     five year period that shall begin on January 1, 2005 and end on December 31, 2009, by providing a written notice of its
@@ -817,7 +825,7 @@ items:
   question: Under what conditions can a party end this agreement without cause?
   source_doc: cuad_xinhuasportsentertainmentltd_20070221_f__8cf725
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: XFN may terminate this Agreement by giving thirty (30) days written notice to the CEIS.'
   gold_evidence:
@@ -831,7 +839,7 @@ items:
   question: Which obligations survive termination or expiry of the contract?
   source_doc: cuad_ingevitycorp_05_16_2016_ex_10_5_intellec_40eb5b
   answer_type: answer
-  audit_status: draft
+  audit_status: dropped
   required_claims:
   - 'The agreement provides: Subject to subsections (i)-(iii) of this Section 5.1(a), each Party agrees that prior to the
     date that is six (6) months after the Effective Time ("Delivery Date"), it will deliver possession of any Tangible/Intangible
@@ -842,12 +850,14 @@ items:
     sentence_end: 167
   doc_ids:
   - cuad_ingevitycorp_05_16_2016_ex_10_5_intellec_40eb5b
+  audit_note: '[S21.05 audit: ambiguous] The quoted clause is a pre-Delivery-Date return obligation, not an obligation stated
+    to survive termination, so no claim answers the question as asked.'
 - id: pub_conditional_9959afee20
   stratum: conditional
   question: What restrictions apply to assigning this agreement, and are there exceptions?
   source_doc: cuad_on4communicationsinc_07_02_2009_ex_10_1__e2eb8c
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: This Agreement may not be assigned by either party hereto without the written consent of the
     other but shall be binding upon the successors of the parties.'
@@ -862,7 +872,7 @@ items:
   question: What must the parties still do after the agreement ends, and under what conditions?
   source_doc: cuad_webhelpcominc_03_22_2000_ex_10_8_hosting_ed9e45
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: Except in the event of termination for Customer''s breach, eGain shall provide Customer with
     an electronic copy of the final Reports (covering the month just prior to termination of this Agreement).'
@@ -877,7 +887,7 @@ items:
   question: Under what conditions does the agreement renew, and for how long?
   source_doc: cuad_idreamskytechnologyltd_07_03_2014_ex_10__03b2e9
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: Upon the expiry of this Agreement, this Agreement may be renewed automatically for one year (but
     can only be renewed once) if neither Party raises objection.'
@@ -892,19 +902,17 @@ items:
   question: Can a party hand its rights under the contract to someone else, and when?
   source_doc: cuad_reganholdingcorp_03_31_2008_ex_10_licens_b6da21
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - 'The agreement provides: This Agreement shall be binding on the parties and their respective successors in interest and
-    assigns, but neither party shall have the power to assign this Agreement without the prior written consent of the other
-    party.'
-  - 'The agreement provides: LMG may not subcontract or delegate any of its duties or obligations of performance in this Agreement
-    to any third party without the prior written consent of TAG.'
+  - Neither party may assign the agreement without the other party's prior written consent.
   gold_evidence:
   - doc: cuad_reganholdingcorp_03_31_2008_ex_10_licens_b6da21
     sentence_start: 262
     sentence_end: 264
   doc_ids:
   - cuad_reganholdingcorp_03_31_2008_ex_10_licens_b6da21
+  audit_note: '[S21.05 audit: gold_wrong] The subcontracting/delegation restriction is a separate restriction on duties, not
+    an additional rule about assigning contractual rights. The answer should address assignment.'
 - id: pub_conditional_e296ee00a7
   stratum: conditional
   question: When and how must a party give notice that it will not renew?
@@ -1125,27 +1133,18 @@ items:
     the perspective of an investment analyst who can only use the details shown within the statement of cash flows.
   source_doc: fb_pepsico_2021_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - The answer is $4.60 billion.
-  alternates:
-    The answer is $4.60 billion.:
-    - 4.6 billion
-    - $4.6 billion
-    - '4.6'
-    - $4.6
-    - 4.60 billion
-    - $4.60 billion
-    - '4.60'
-    - $4,600 million
+  - PepsiCo's FY2021 capital spending was USD 4.625 billion (USD 4,625 million).
   gold_evidence:
   - doc: fb_pepsico_2021_10k
     sentence_start: 1562
     sentence_end: 1602
   doc_ids:
   - fb_pepsico_2021_10k
-  audit_note: 'demoted from table_lookup: answer figure not verbatim in a gold-page row; gold is page-level: FinanceBench
-    evidence is a whole page'
+  audit_note: 'demoted from table_lookup: answer figure not verbatim in a gold-page row; gold is page-level: FinanceBench evidence
+    is a whole page [S21.05 audit: gold_wrong] The cash-flow statement gives USD 4,625 million. USD 4.60 billion is not the
+    correctly rounded amount to two decimal places; it is USD 4.63 billion.'
 - id: pub_numeric_calc_0f6ea79bf1
   stratum: numeric_calc
   question: Considering the data in the balance sheet, what is Block's (formerly known as Square) FY2016 working capital ratio?
@@ -1273,7 +1272,7 @@ items:
     Calculate unadjusted EBITDA using unadjusted operating income and D&A (from cash flow statement).'
   source_doc: fb_netflix_2015_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The answer is 5.4%.
   alternates:
@@ -1288,7 +1287,9 @@ items:
     sentence_end: 1628
   doc_ids:
   - fb_netflix_2015_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+  audit_note: 'gold is page-level: FinanceBench evidence is a whole page [S21.05 audit: system_wrong] Gold kept: (305,826 +
+    62,283) / 6,779,511 = 5.43% using the cash-flow line for depreciation and amortization of property, equipment and intangibles.
+    56.83% needs streaming-content and DVD-content amortization, which are content costs, not D&A.'
 - id: pub_numeric_calc_6d07d5cd41
   stratum: numeric_calc
   question: 'What is the FY2018 fixed asset turnover ratio for CVS Health? Fixed asset turnover ratio is defined as: FY2018
@@ -1296,7 +1297,7 @@ items:
     by utilizing the line items clearly shown in the P&L statement and the balance sheet.'
   source_doc: fb_cvshealth_2018_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The answer is 17.98.
   alternates:
@@ -1311,7 +1312,8 @@ items:
     sentence_end: 6708
   doc_ids:
   - fb_cvshealth_2018_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+  audit_note: 'gold is page-level: FinanceBench evidence is a whole page [S21.05 audit: system_wrong] Vault misses c0; the strong
+    model entails it from the gold evidence; gold kept.'
 - id: pub_numeric_calc_6d55f76ba0
   stratum: numeric_calc
   question: What is Coca Cola's FY2021 COGS % margin? Calculate what was asked by utilizing the line items clearly shown in
@@ -1339,7 +1341,7 @@ items:
     to two decimal places.'
   source_doc: fb_adobe_2015_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The answer is 0.66.
   alternates:
@@ -1354,14 +1356,15 @@ items:
     sentence_end: 2936
   doc_ids:
   - fb_adobe_2015_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+  audit_note: 'gold is page-level: FinanceBench evidence is a whole page [S21.05 audit: system_wrong] Vault misses c0; the strong
+    model entails it from the gold evidence; gold kept.'
 - id: pub_numeric_calc_90081dbb35
   stratum: numeric_calc
   question: 'We need to calculate a financial metric by using information only provided within the balance sheet. Please answer
     the following question: what is Boeing''s year end FY2018 net property, plant, and equipment (in USD millions)?'
   source_doc: fb_boeing_2018_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The answer is $12645.00 million.
   alternates:
@@ -1388,7 +1391,7 @@ items:
     on the details shown in the balance sheet and the P&L statement.'
   source_doc: fb_cocacola_2017_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: dropped
   required_claims:
   - The answer is 0.01.
   alternates:
@@ -1403,7 +1406,9 @@ items:
     sentence_end: 3105
   doc_ids:
   - fb_cocacola_2017_10k
-  audit_note: 'gold is page-level: FinanceBench evidence is a whole page'
+  audit_note: 'gold is page-level: FinanceBench evidence is a whole page [S21.05 audit: ambiguous] The calculation is approximately
+    0.01465 as a ratio, or 1.46% when expressed as a percentage. The question does not specify whether the requested two-decimal
+    answer should be a decimal ratio or a percentage; 0.01 and 1.46% reflect different formats.'
 - id: pub_numeric_calc_a61cb4246b
   stratum: numeric_calc
   question: Answer the following question as if you are an equity research analyst and have lost internet connection so you
@@ -1412,7 +1417,7 @@ items:
     for AMD?
   source_doc: fb_amd_2015_10k
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - The answer is 4.2%.
   alternates:
@@ -1625,7 +1630,7 @@ items:
   question: How are FHIR and RDF combined?
   source_doc: qasper_1912_00423
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: RDF was designed as an abstract information model and FHIR was designed for operational use in a
     healthcare setting'
@@ -1641,12 +1646,14 @@ items:
     sentence_end: 120
   doc_ids:
   - qasper_1912_00423
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold
+    kept. RCA lists this gold (GUESS): question "How are FHIR and RDF combined?"; claims are the mismatch caveats.'
 - id: pub_multi_span_35293edf6b
   stratum: multi_span
   question: What semi-supervised learning is applied?
   source_doc: qasper_1805_10824
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: first a model is trained on the training set and then this model is used to predict the labels of
     the silver data'
@@ -1657,19 +1664,16 @@ items:
     sentence_end: 221
   doc_ids:
   - qasper_1805_10824
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c0; the strong model entails it from the gold evidence; gold kept.'
 - id: pub_multi_span_56d1a931be
   stratum: multi_span
   question: Name every party that signed or is bound by this agreement.
   source_doc: cuad_energyxxiltd_05_08_2015_ex_10_13_transpo_742e32
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - 'The agreement provides: Shipper and Transporter may be referred to herein individually as a "Party" or collectively as
-    the "Parties".'
-  - 'The agreement provides: Shipper'
-  - 'The agreement provides: ENERGY XXI GULF COAST, INC.'
-  - 'The agreement provides: Transporter'
-  - 'The agreement provides: ENERGY XXI USA, INC.'
+  - The agreement is between ENERGY XXI GULF COAST, INC., as Shipper.
+  - The agreement is between ENERGY XXI USA, INC., as Transporter.
   gold_evidence:
   - doc: cuad_energyxxiltd_05_08_2015_ex_10_13_transpo_742e32
     sentence_start: 3
@@ -1682,7 +1686,8 @@ items:
     sentence_end: 30
   doc_ids:
   - cuad_energyxxiltd_05_08_2015_ex_10_13_transpo_742e32
-  audit_note: 'gold: first of several exact occurrences for 4 quote(s)'
+  audit_note: 'gold: first of several exact occurrences for 4 quote(s) [S21.05 audit: gold_wrong] The definitional sentence
+    saying Shipper and Transporter may be called Parties is not itself a party. Identify the two legal entities and their roles.'
 - id: pub_multi_span_6fed2a5316
   stratum: multi_span
   question: Which revenue-sharing or profit-sharing terms appear in the contract?
@@ -1814,7 +1819,7 @@ items:
   question: What improvement does the MOE model make over the SOTA on machine translation?
   source_doc: qasper_1701_06538
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: 1.34 and 1.12 BLEU score on top of the strong baselines in'
   - 'The answer includes: perplexity scores are also better'
@@ -1825,21 +1830,18 @@ items:
     sentence_end: 344
   doc_ids:
   - qasper_1701_06538
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c1; the strong model entails it from the gold evidence; gold kept.'
 - id: pub_multi_span_9748844d4e
   stratum: multi_span
   question: What ceilings on volume are set?
   source_doc: cuad_seaspineholdingscorp_10_10_2018_ex_10_1__305733
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
-  - 'The agreement provides: Changes to the *** Run Fee based on increased capacity will be determined upon completion of
-    the appropriate process validations.'
-  - 'The agreement provides: PcoMed will not charge *** Run Fees for reasonable quantities, not to exceed *** units or four
-    *** Runs, of Treated Integra Products or Partially Treated Integra Product and test samples required to complete US Marketing
-    Clearance and/or EU Marketing Clearance testing and validations.'
-  - 'The agreement provides: Integra shall pay PcoMed a flat *** Run Fee of $*** (*** US dollars) for each *** Run in which
-    a maximum of one hundred (100) Non-Treated Integra Product are converted by PcoMed to Treated Integra Product or Partially
-    Treated Integra Product.'
+  - Each fee-bearing Run is limited to a maximum of 100 Non-Treated Integra Products converted into Treated or Partially Treated
+    Integra Products.
+  - Run fees are waived for reasonable quantities of products and test samples for US/EU marketing-clearance testing, capped
+    at a redacted unit limit or four redacted Runs.
   gold_evidence:
   - doc: cuad_seaspineholdingscorp_10_10_2018_ex_10_1__305733
     sentence_start: 85
@@ -1852,12 +1854,14 @@ items:
     sentence_end: 90
   doc_ids:
   - cuad_seaspineholdingscorp_10_10_2018_ex_10_1__305733
+  audit_note: '[S21.05 audit: gold_wrong] The question asks for volume ceilings. The capacity-validation fee-change clause (c0)
+    is not a ceiling; c1 and c2 are the actual volume limits.'
 - id: pub_multi_span_9d7cee8f65
   stratum: multi_span
   question: List all parties to this agreement.
   source_doc: cuad_ominto_inc_03_29_2004_ex_10_reseller_agr_ecce4d
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: International Direct Response, Inc.'
   - 'The agreement provides: MEDIANET GROUP TECHNOLOGIES'
@@ -1869,7 +1873,8 @@ items:
     sentence_end: 2
   doc_ids:
   - cuad_ominto_inc_03_29_2004_ex_10_reseller_agr_ecce4d
-  audit_note: 'gold: first of several exact occurrences for 3 quote(s)'
+  audit_note: 'gold: first of several exact occurrences for 3 quote(s) [S21.05 audit: system_wrong] Vault misses c0; the strong
+    model entails it from the gold evidence; gold kept.'
 - id: pub_multi_span_a65f8060bd
   stratum: multi_span
   question: What share of income does each party receive?
@@ -1924,7 +1929,7 @@ items:
   question: What dataset do they use?
   source_doc: qasper_1910_10408
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: English$\rightarrow $Italian/German portions of the MuST-C corpus'
   - 'The answer includes: As additional data, we use a mix of public and proprietary data for about 16 million sentence pairs
@@ -1935,12 +1940,13 @@ items:
     sentence_end: 185
   doc_ids:
   - qasper_1910_10408
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c1; the strong model entails it from the gold evidence; gold kept.'
 - id: pub_multi_span_d466b3b7bd
   stratum: multi_span
   question: What insurance obligations does each party carry?
   source_doc: cuad_curaegistechnologies_inc_05_26_2010_ex_1_269c35
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: CGL coverages shall be written on ISO occurrence form CG 00 01 or a substitute form providing
     equivalent coverage and shall cover liabilities arising from events, premises, operations, independent contractors, products-completed
@@ -1960,6 +1966,7 @@ items:
     sentence_end: 64
   doc_ids:
   - cuad_curaegistechnologies_inc_05_26_2010_ex_1_269c35
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c0; the strong model entails it from the gold evidence; gold kept.'
 - id: pub_multi_span_d78cf76244
   stratum: multi_span
   question: What are bottleneck features?
@@ -1984,7 +1991,7 @@ items:
   question: List every audit or inspection right in this agreement.
   source_doc: cuad_dyntekinc_07_30_1999_ex_10_online_hostin_278d53
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The agreement provides: Diplomat will be required to notify Tadeo at least five business days before the date of planned
     examination.'
@@ -2008,7 +2015,7 @@ items:
   question: How are the two different models trained?
   source_doc: qasper_1905_01962
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - They pre-train the models using 600000 articles as an unsupervised dataset and then fine-tune the models on small training
     set.
@@ -2021,6 +2028,7 @@ items:
     sentence_end: 139
   doc_ids:
   - qasper_1905_01962
+  audit_note: '[S21.05 audit: system_wrong] strong model misses c0 (Vault states it); gold kept.'
 - id: pub_multi_hop_195e93dde5
   stratum: multi_hop
   question: Are agglutinative languages used in the prediction of both prefixing and suffixing languages?
@@ -2099,7 +2107,7 @@ items:
   question: What different approaches of encoding syntactic information authors present?
   source_doc: qasper_1910_11204
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: dependency head and dependency relation label, denoted as Dep and Rel for short'
   - 'The answer includes: Tree-based Position Feature (TPF) as Dependency Path (DepPath)'
@@ -2113,6 +2121,8 @@ items:
     sentence_end: 166
   doc_ids:
   - qasper_1910_11204
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold
+    kept.'
 - id: pub_multi_hop_52f882faa1
   stratum: multi_hop
   question: How much data is needed to train the task-specific encoder?
@@ -2135,7 +2145,7 @@ items:
   question: How does the model recognize entities and their relation to answers at inference time when answers are not accessible?
   source_doc: qasper_1707_07922
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - 'The answer includes: gating function'
   - 'The answer includes: Dynamic Memory'
@@ -2151,6 +2161,8 @@ items:
     sentence_end: 741
   doc_ids:
   - qasper_1707_07922
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c1; the strong model entails it from the gold evidence; gold kept.
+    RCA lists this gold (GUESS): two-word claims `gating function`, `Dynamic Memory`.'
 - id: pub_multi_hop_6d2b7cfbab
   stratum: multi_hop
   question: How much bigger is Switchboard-2000 than Switchboard-300 database?
@@ -2173,7 +2185,7 @@ items:
   question: What supplemental tasks are used for multitask learning?
   source_doc: qasper_1603_07044
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - Multitask learning is used for the task of predicting relevance of a comment on a different question to a given question,
     where the supplemental tasks are predicting relevance between the questions, and between the comment and the corresponding
@@ -2190,6 +2202,7 @@ items:
     sentence_end: 183
   doc_ids:
   - qasper_1603_07044
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c0; the strong model entails it from the gold evidence; gold kept.'
 - id: pub_multi_hop_7faab3b3fa
   stratum: multi_hop
   question: What makes it a more reliable metric?
@@ -2341,7 +2354,7 @@ items:
   question: What are the tasks that this method has shown improvements?
   source_doc: qasper_1808_08780
   answer_type: answer
-  audit_status: draft
+  audit_status: verified
   required_claims:
   - bilingual dictionary induction, monolingual and cross-lingual word similarity, and cross-lingual hypernym discovery
   gold_evidence:
@@ -2359,6 +2372,7 @@ items:
     sentence_end: 346
   doc_ids:
   - qasper_1808_08780
+  audit_note: '[S21.05 audit: system_wrong] Vault misses c0; the strong model entails it from the gold evidence; gold kept.'
 - id: pub_multi_hop_e24f61746e
   stratum: multi_hop
   question: What classification approaches were experimented for this task?

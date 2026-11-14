@@ -197,9 +197,11 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
-  fix: null
-  note: null
+  decision: gold_wrong
+  fix:
+  - The paper's hyperparameter search considered ReLU, SELU and tanh as candidate activation functions; the source does not
+    establish that the final model uses all three.
+  note: The gold incorrectly treats search candidates as the model's selected activation functions.
   proposed_decision: system_wrong
   proposed_reason: 'Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold kept. RCA lists this gold
     (CONFIDENT): claims treat hyperparameter-search candidates as the model''s activation functions.'
@@ -227,9 +229,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -250,9 +252,10 @@ queue:
     sentences: 179-180
     text: 4.2. multimodal architectures the objective of this work is to build a hate speech de- tector that leverages both
       textual and visual data and detects hate speech publications based on the context given by both data modalities.
-  vault_answer: |-
-    They propose three multimodal models: the Feature Concatenation Model (FCM), Spatial Concatenation Model (SCM), and Textual Kernels Model (TKM).
-    All three combine CNN and RNN components and take the tweet image, tweet text and any text appearing in the image as inputs.
+  vault_answer: 'They propose three multimodal models: the Feature Concatenation Model (FCM), Spatial Concatenation Model
+    (SCM), and Textual Kernels Model (TKM).
+
+    All three combine CNN and RNN components and take the tweet image, tweet text and any text appearing in the image as inputs.'
   strong_answer: They propose multimodal hate speech detection architectures that combine textual and visual data to detect
     hateful publications using context from both modalities. The passage does not specify individual models or their names.
   reasons:
@@ -271,9 +274,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c0,c1,c2 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c0,c1,c2 (Vault states it); gold kept.
   proposed_fix: null
@@ -299,9 +302,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -335,9 +338,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c0 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c0 (Vault states it); gold kept.
   proposed_fix: null
@@ -361,9 +364,11 @@ queue:
       to fiscal 2021. comparable sales increased 15.6% compared to an increase of 37.9% in fiscal 2021, driven by a 10.8%
       increase in transactions and a 4.3% increase in average ticket. gross profit increased 20.1% to $4.0 billion compared
       to $3.4 billion in fiscal 2021.
-  vault_answer: |-
-    For the fourth quarter of fiscal 2022, SG&A expense as a percentage of net sales fell primarily because of leverage of marketing expenses and incentive compensation due to higher sales. This was partially offset by deleverage of store payroll and benefits due to wage investments and corporate overhead due to strategic investments.
-    The documents provided do not state what drove the reduction for the full year of fiscal 2023.
+  vault_answer: 'For the fourth quarter of fiscal 2022, SG&A expense as a percentage of net sales fell primarily because of
+    leverage of marketing expenses and incentive compensation due to higher sales. This was partially offset by deleverage
+    of store payroll and benefits due to wage investments and corporate overhead due to strategic investments.
+
+    The documents provided do not state what drove the reduction for the full year of fiscal 2023.'
   strong_answer: The documents do not state what drove a reduction in SG&A expense as a percent of net sales in FY2023; the
     provided passage covers fiscal 2022 net sales, comparable sales, and gross profit, but not SG&A expenses.
   reasons:
@@ -381,9 +386,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Both proposed gold claims are supported by the full-year SG&A discussion; the supplied evidence pointer appears to
+    stop before the relevant sentence. Vault answers Q4 FY2022 rather than the FY2023 question.
   proposed_decision: gold_wrong
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; fix drops it. RCA lists this gold
     (CONFIDENT): evidence range 76-80 is net-sales text; the full-year SG&A sentence is 82.'
@@ -425,9 +431,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -474,9 +480,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: ambiguous
   fix: null
-  note: null
+  note: The quick ratio is a relevant liquidity measure and can be calculated from balance-sheet inputs, but 'reasonably healthy'
+    is a qualitative judgment without a defined threshold. The cited evidence span is also unrelated to the ratio.
   proposed_decision: ambiguous
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0,c1,c2; no claim survives. RCA lists
     this gold (CONFIDENT): evidence range 1475-1480 is the interest-rate-risk paragraph; the quick-ratio inputs are the balance
@@ -505,12 +512,18 @@ queue:
       processing units (gpus), data processing units (dpus), field programmable gate arrays (fpgas), and adaptive system-on-chip
       (soc) products for data centers; • cpus, accelerated processing units (apus) that integrate cpus and gpus, and chipsets
       for desktop and notebook personal computers;'
-  vault_answer: |-
-    In FY22, AMD’s major offerings included CPUs, GPUs, APUs, chipsets, FPGAs, Adaptive SoCs, DPUs and semi-custom SoCs, alongside development services.
-    Data center products included EPYC server CPUs, Instinct GPU accelerators, Pensando DPUs, FPGAs, Adaptive SoCs and Alveo accelerator cards.
+  vault_answer: 'In FY22, AMD’s major offerings included CPUs, GPUs, APUs, chipsets, FPGAs, Adaptive SoCs, DPUs and semi-custom
+    SoCs, alongside development services.
+
+    Data center products included EPYC server CPUs, Instinct GPU accelerators, Pensando DPUs, FPGAs, Adaptive SoCs and Alveo
+    accelerator cards.
+
     Client and gaming products included Ryzen and other PC processors, Radeon graphics, chipsets and semi-custom SoCs.
+
     Embedded offerings included EPYC CPUs, Ryzen APUs, CPUs and SoCs, as well as embedded GPUs, FPGAs and Adaptive SoCs.
-    AMD also provided design and development services, development kits and software platforms. It sometimes sold or licensed portions of its intellectual property portfolio.
+
+    AMD also provided design and development services, development kits and software platforms. It sometimes sold or licensed
+    portions of its intellectual property portfolio.'
   strong_answer: AMD’s major products listed are server microprocessors (CPUs), graphics processing units (GPUs), data processing
     units (DPUs), field programmable gate arrays (FPGAs), and adaptive system-on-chip (SoC) products for data centers; and
     CPUs, accelerated processing units (APUs) that integrate CPUs and GPUs, and chipsets for desktop and notebook personal
@@ -532,9 +545,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: The product categories and services are supported by the FY22 overview; Vault covers the product/service list. The
+    proposed fix drops valid claims, and the evidence excerpt is too narrow.
   proposed_decision: gold_incomplete
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c2; fix drops it.
   proposed_fix:
@@ -583,9 +597,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c0 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c0 (Vault states it); gold kept.
   proposed_fix: null
@@ -602,13 +616,21 @@ queue:
   - FacTweet analyzes sequences of tweet chunks using features such as emotions, sentiment and style.
   - The FacTweet approach outperforms baselines.
   gold_evidence: []
-  vault_answer: |-
-    FacTweet detects non-factual Twitter news accounts by modeling sequences of tweets and their semantic and stylistic features.
-    The paper’s premise is that suspicious accounts mix real and misleading news, but may exhibit detectable patterns across their tweet sequences.
-    The method sorts tweets by date, divides them into chunks and uses an LSTM with attention to classify them. An account’s label is the majority class of its chunks.
+  vault_answer: 'FacTweet detects non-factual Twitter news accounts by modeling sequences of tweets and their semantic and
+    stylistic features.
+
+    The paper’s premise is that suspicious accounts mix real and misleading news, but may exhibit detectable patterns across
+    their tweet sequences.
+
+    The method sorts tweets by date, divides them into chunks and uses an LSTM with attention to classify them. An account’s
+    label is the majority class of its chunks.
+
     Its features include emotion, sentiment, morality, style and word embeddings.
-    FacTweet achieved 0.74 accuracy and 0.565 macro-F1, outperforming the proposed baselines. Ablation tests found that word embeddings, style and morality contributed most to performance.
-    The authors identify temporal information and a multilingual version as directions for future work.
+
+    FacTweet achieved 0.74 accuracy and 0.565 macro-F1, outperforming the proposed baselines. Ablation tests found that word
+    embeddings, style and morality contributed most to performance.
+
+    The authors identify temporal information and a multilingual version as directions for future work.'
   strong_answer: The documents do not contain the FacTweet paper or information about it, so I cannot summarize it.
   reasons:
   - vault_fails_gold
@@ -627,9 +649,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: The three claims capture the paper's central aim, sequence-based method/features, and baseline comparison. Vault states
+    all three; the strong model's abstention is not evidence that the gold is wrong.
   proposed_decision: gold_incomplete
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; fix drops it. RCA lists this gold
     (GUESS): open-ended summary with three narrow claims; completeness 0.67 on an answer that states all three.'
@@ -653,12 +676,16 @@ queue:
   - Ulta Beauty had leverage of incentive compensation due to higher sales.
   - The increase in Ulta Beauty's merchandise inventories balance was driven by the opening of 47 new stores.
   gold_evidence: []
-  vault_answer: |-
-    Ulta Beauty reported fourth-quarter fiscal 2022 net sales of $3.2 billion, up 18.2%, and net income of $340.8 million, up 17.8%.
+  vault_answer: 'Ulta Beauty reported fourth-quarter fiscal 2022 net sales of $3.2 billion, up 18.2%, and net income of $340.8
+    million, up 17.8%.
+
     Comparable sales rose 15.6%, driven by a 13.6% increase in transactions and a 1.8% increase in average ticket.
+
     Gross profit was 37.6% of net sales, flat year over year, while SG&A expenses fell to 23.6% of sales from 23.8%.
+
     Operating income increased 19.2% to $447.6 million, and diluted earnings per share increased 23.5% to $6.68.
-    For the full fiscal year, net sales reached $10.2 billion, up 18.3%, and net income increased 26.0% to $1.2 billion.
+
+    For the full fiscal year, net sales reached $10.2 billion, up 18.3%, and net income increased 26.0% to $1.2 billion.'
   strong_answer: The documents do not contain Ulta Beauty's fourth-quarter earnings release, so I cannot summarize it.
   reasons:
   - vault_fails_gold
@@ -681,9 +708,11 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: ambiguous
   fix: null
-  note: null
+  note: An open-ended earnings-release summary has no unique exhaustive claim set. The proposed gold mixes selected details
+    from separate questions with broad summary claims; neither the proposed deletion nor the existing list defines a uniquely
+    required summary.
   proposed_decision: gold_wrong
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c2,c3,c4; fix drops it. RCA lists this
     gold (CONFIDENT): summary item requires fragments from other questions (47 new stores, marketing).'
@@ -727,9 +756,11 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: ambiguous
   fix: null
-  note: null
+  note: The claim that PepsiCo is not involved in material legal battles is stronger than a disclosure that it is party to
+    litigation but does not expect a material adverse effect. The distinction between involvement in litigation and expected
+    material financial impact is not resolved by the supplied claim.
   proposed_decision: system_wrong
   proposed_reason: 'Vault misses c0; the strong model entails it from the gold evidence; gold kept. RCA lists this gold (GUESS):
     claim "No, Pepsico is not involved in material legal battles" overstates "party to a variety of litigation".'
@@ -777,9 +808,11 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
-  fix: null
-  note: null
+  decision: gold_wrong
+  fix:
+  - The FY2022 interest coverage ratio is approximately -3.25x, using adjusted EBIT of approximately negative USD 1,935.362
+    million divided by annual interest expense of USD 594.954 million.
+  note: A negative numerator does not make the ratio zero. The supplied calculation yields approximately -3.25x.
   proposed_decision: ambiguous
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; no claim survives. RCA lists this
     gold (GUESS): claim presupposes an "Adjusted EBIT" the release does not define; 25-sentence page evidence.'
@@ -803,9 +836,11 @@ queue:
       representative of gang culture. some examples of these profile pictures are shown in figure 7, where the user holds
       or points weapons, is seen in a group fashion which displays a gangster culture, or is showing off graffiti, hand signs,
       tattoos and bulk cash.'
-  vault_answer: |-
-    In the study, gang member profile images often depicted weapons, groups displaying gang culture, graffiti, hand signs, tattoos or bulk cash. Non-gang images received distinctive tags associated with beaches, wildlife and pets.
-    Image tags distinctive to gang member profiles included trigger, bullet and worship; those distinctive to non-gang profiles included beach, seashore, dawn, wildlife, sand and pet.
+  vault_answer: 'In the study, gang member profile images often depicted weapons, groups displaying gang culture, graffiti,
+    hand signs, tattoos or bulk cash. Non-gang images received distinctive tags associated with beaches, wildlife and pets.
+
+    Image tags distinctive to gang member profiles included trigger, bullet and worship; those distinctive to non-gang profiles
+    included beach, seashore, dawn, wildlife, sand and pet.'
   strong_answer: The documents do not describe image use by the rest of the Twitter population, so they do not establish a
     comparison. They state that most gang member profiles portray gang culture, with profile images showing weapons, groups
     displaying gangster culture, graffiti, hand signs, tattoos, and bulk cash.
@@ -821,9 +856,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -858,9 +893,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -898,9 +933,11 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
-  fix: null
-  note: null
+  decision: gold_wrong
+  fix:
+  - A party must give the other party written notice of termination at least 180 days before the expiration of the initial
+    term or then-current renewal term to prevent automatic renewal.
+  note: The existing claim reproduces the entire renewal clause although the question asks only for the opt-out deadline.
   proposed_decision: ambiguous
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; no claim survives. RCA lists this
     gold (GUESS): claim is the whole auto-renew clause; question asks the opt-out deadline.'
@@ -940,9 +977,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: ambiguous
   fix: null
-  note: null
+  note: The quoted clause is a pre-Delivery-Date return obligation, not an obligation stated to survive termination, so no
+    claim answers the question as asked.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -967,10 +1005,14 @@ queue:
       party shall have the power to assign this agreement without the prior written consent of the other party. lmg may not
       subcontract or delegate any of its duties or obligations of performance in this agreement to any third party without
       the prior written consent of tag.
-  vault_answer: |-
-    The documents provided do not state a general rule allowing either party to assign its contractual rights.
-    As part of termination assistance, at TAG’s request, LMG must use commercially reasonable efforts to assign its CSC Software and Other Third Party Software licenses to TAG. TAG must assume obligations under those licenses relating to periods after the assignment.
-    At TAG’s request, LMG must also assign leases and other contracts for some or all leased equipment used in the hosting environment or to provide LMG Services; TAG must assume obligations relating to periods after the assignment.
+  vault_answer: 'The documents provided do not state a general rule allowing either party to assign its contractual rights.
+
+    As part of termination assistance, at TAG’s request, LMG must use commercially reasonable efforts to assign its CSC Software
+    and Other Third Party Software licenses to TAG. TAG must assume obligations under those licenses relating to periods after
+    the assignment.
+
+    At TAG’s request, LMG must also assign leases and other contracts for some or all leased equipment used in the hosting
+    environment or to provide LMG Services; TAG must assume obligations relating to periods after the assignment.'
   strong_answer: A party may assign the agreement to someone else only with the other party’s prior written consent. The agreement
     is binding on the parties and their respective successors in interest and assigns.
   reasons:
@@ -988,9 +1030,11 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
-  fix: null
-  note: null
+  decision: gold_wrong
+  fix:
+  - Neither party may assign the agreement without the other party's prior written consent.
+  note: The subcontracting/delegation restriction is a separate restriction on duties, not an additional rule about assigning
+    contractual rights. The answer should address assignment.
   proposed_decision: gold_incomplete
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c1; fix drops it.
   proposed_fix:
@@ -1044,9 +1088,11 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
-  fix: null
-  note: null
+  decision: gold_wrong
+  fix:
+  - PepsiCo's FY2021 capital spending was USD 4.625 billion (USD 4,625 million).
+  note: The cash-flow statement gives USD 4,625 million. USD 4.60 billion is not the correctly rounded amount to two decimal
+    places; it is USD 4.63 billion.
   proposed_decision: ambiguous
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
   proposed_fix: null
@@ -1099,9 +1145,11 @@ queue:
       of year 1,113,608 604,965 290,291 cash and cash equivalents, end of year $ 1,809,330 $ 1,113,608 $ 604,965 supplemental
       disclosure: income taxes paid $ 27,658 $ 50,573 $ 7,465 interest paid 111,761 41,085 19,114 investing activities included
       in liabilities 18,824 23,802 11,508 see accompanying notes to consolidated financial statements. 40'
-  vault_answer: |-
-    Netflix’s FY2015 unadjusted EBITDA margin was approximately 57.9%.
-    The calculation is operating income of $305.826 million plus cash-flow-statement amortization of streaming content assets of $3,405.382 million, DVD content assets of $79.380 million, and property, equipment and intangibles D&A of $62.283 million, divided by revenue of $6,779.511 million.
+  vault_answer: 'Netflix’s FY2015 unadjusted EBITDA margin was approximately 57.9%.
+
+    The calculation is operating income of $305.826 million plus cash-flow-statement amortization of streaming content assets
+    of $3,405.382 million, DVD content assets of $79.380 million, and property, equipment and intangibles D&A of $62.283 million,
+    divided by revenue of $6,779.511 million.'
   strong_answer: Netflix’s FY2015 unadjusted EBITDA margin was 56.83%. Using figures in thousands, D&A was $3,405,382 + $79,380
     + $62,283 = $3,547,045, including streaming content amortization, DVD content amortization, and depreciation and amortization
     of property, equipment and intangibles. Unadjusted EBITDA was operating income of $305,826 + D&A of $3,547,045 = $3,852,871;
@@ -1118,9 +1166,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: 'Gold kept: (305,826 + 62,283) / 6,779,511 = 5.43% using the cash-flow line for depreciation and amortization of property,
+    equipment and intangibles. 56.83% needs streaming-content and DVD-content amortization, which are content costs, not D&A.'
   proposed_decision: ambiguous
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
   proposed_fix: null
@@ -1189,9 +1238,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -1313,9 +1362,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -1385,9 +1434,11 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: ambiguous
   fix: null
-  note: null
+  note: The calculation is approximately 0.01465 as a ratio, or 1.46% when expressed as a percentage. The question does not
+    specify whether the requested two-decimal answer should be a decimal ratio or a percentage; 0.01 and 1.46% reflect different
+    formats.
   proposed_decision: ambiguous
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
   proposed_fix: null
@@ -1416,9 +1467,11 @@ queue:
     sentences: 119-120
     text: two, rdf is intended to have the property of monotonicity, meaning that previous facts cannot be invalidated by
       new facts.
-  vault_answer: |-
-    FHIR healthcare resources are serialized as RDF, combining a common healthcare representation with RDF’s query and inference capabilities.
-    The engine parses incoming messages into common domain objects, transforms them into RDF graphs of FHIR resources, and stores the statements in a triplestore for querying.
+  vault_answer: 'FHIR healthcare resources are serialized as RDF, combining a common healthcare representation with RDF’s
+    query and inference capabilities.
+
+    The engine parses incoming messages into common domain objects, transforms them into RDF graphs of FHIR resources, and
+    stores the statements in a triplestore for querying.'
   strong_answer: 'FHIR can be serialized in RDF. However, the models may not align perfectly: RDF was designed as an abstract
     information model that states facts, while FHIR was designed for operational healthcare use and records events; RDF also
     intends monotonicity, meaning new facts cannot invalidate previous facts.'
@@ -1438,9 +1491,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: 'Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold kept. RCA lists this gold (GUESS):
+    question "How are FHIR and RDF combined?"; claims are the mismatch caveats.'
   proposed_decision: system_wrong
   proposed_reason: 'Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold kept. RCA lists this gold
     (GUESS): question "How are FHIR and RDF combined?"; claims are the mismatch caveats.'
@@ -1465,11 +1519,16 @@ queue:
       this model is used to predict the labels of the silver data. this silver data is then simply added to our training set,
       after which the model is retrained. however, an extra step is applied to en- sure that the silver data is of reasonable
       quality.'
-  vault_answer: |-
-    The study uses a semi-supervised approach in which models label silver data, which is then added to the training set before retraining.
+  vault_answer: 'The study uses a semi-supervised approach in which models label silver data, which is then added to the training
+    set before retraining.
+
     The silver data comes from DISC tweets assigned to emotions when they contain an annotated emotion word.
-    To filter for quality, ten models predict each silver instance’s label; the instance is retained only if the highest and lowest predictions differ by no more than a threshold.
-    The method applies to the LSTM and feed-forward networks and, because only emotions were annotated, to the emotion-intensity tasks.
+
+    To filter for quality, ten models predict each silver instance’s label; the instance is retained only if the highest and
+    lowest predictions differ by no more than a threshold.
+
+    The method applies to the LSTM and feed-forward networks and, because only emotions were annotated, to the emotion-intensity
+    tasks.'
   strong_answer: The approach trains a model on the training set, uses it to predict labels for silver data, adds that silver
     data to the training set, and retrains the model. An additional, unspecified step ensures that the silver data is of reasonable
     quality.
@@ -1485,9 +1544,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -1534,9 +1593,12 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
-  fix: null
-  note: null
+  decision: gold_wrong
+  fix:
+  - The agreement is between ENERGY XXI GULF COAST, INC., as Shipper.
+  - The agreement is between ENERGY XXI USA, INC., as Transporter.
+  note: The definitional sentence saying Shipper and Transporter may be called Parties is not itself a party. Identify the
+    two legal entities and their roles.
   proposed_decision: gold_wrong
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; fix drops it. RCA lists this gold
     (CONFIDENT): fragment claims `Shipper`, `Transporter`, `ENERGY XXI USA, INC.`, and a definitional "Party" claim.'
@@ -1564,9 +1626,11 @@ queue:
     text: as our models did not use rl refinement, these results constitute significant gains of 1.34 and 1.12 bleu score
       on top of the strong baselines in (wu et al., 2016). the perplexity scores are also better.2 on the google production
       dataset, our model achieved 1.01 higher test bleu score even after training for only one sixth of the time.
-  vault_answer: |-
-    On WMT’14 machine translation, the MoE model improved BLEU by 1.34 points for English–French and 1.12 points for English–German over the strong GNMT baselines.
-    On the Google Production dataset, it achieved a test BLEU score 1.01 points higher after training for one sixth of the time.
+  vault_answer: 'On WMT’14 machine translation, the MoE model improved BLEU by 1.34 points for English–French and 1.12 points
+    for English–German over the strong GNMT baselines.
+
+    On the Google Production dataset, it achieved a test BLEU score 1.01 points higher after training for one sixth of the
+    time.'
   strong_answer: The MOE model improves BLEU scores by 1.34 and 1.12 over the strong baselines in Wu et al. (2016), without
     RL refinement, and also achieves better perplexity scores. On the Google production dataset, it achieves a 1.01-point
     higher test BLEU score after training for only one sixth of the time.
@@ -1582,9 +1646,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c1; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c1; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -1620,9 +1684,11 @@ queue:
     text: pcomed will not charge *** run fees for reasonable quantities, not to exceed *** units or four *** runs, of treated
       integra products or partially treated integra product and test samples required to complete us marketing clearance and/or
       eu marketing clearance testing and validations.
-  vault_answer: |-
-    For distribution, each run covers a maximum of 100 Non-Treated Integra Products converted by PcoMed to Treated or Partially Treated Integra Products.
-    For regulatory testing and validations, PcoMed charges no run fees for reasonable quantities not exceeding a redacted unit limit or four runs.
+  vault_answer: 'For distribution, each run covers a maximum of 100 Non-Treated Integra Products converted by PcoMed to Treated
+    or Partially Treated Integra Products.
+
+    For regulatory testing and validations, PcoMed charges no run fees for reasonable quantities not exceeding a redacted
+    unit limit or four runs.'
   strong_answer: Each run covered by the flat run fee is limited to a maximum of one hundred (100) non-treated Integra products.
     The run-fee waiver for products and test samples needed for US and/or EU marketing clearance testing and validations is
     capped at *** units or four *** runs; the unit ceiling is redacted. Changes to the run fee for increased capacity will
@@ -1644,9 +1710,14 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
-  fix: null
-  note: null
+  decision: gold_wrong
+  fix:
+  - Each fee-bearing Run is limited to a maximum of 100 Non-Treated Integra Products converted into Treated or Partially Treated
+    Integra Products.
+  - Run fees are waived for reasonable quantities of products and test samples for US/EU marketing-clearance testing, capped
+    at a redacted unit limit or four redacted Runs.
+  note: The question asks for volume ceilings. The capacity-validation fee-change clause (c0) is not a ceiling; c1 and c2
+    are the actual volume limits.
   proposed_decision: gold_incomplete
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c1,c2; fix drops it. RCA lists this gold
     (GUESS): verbatim fee clauses for "ceilings on volume".'
@@ -1694,9 +1765,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -1719,9 +1790,10 @@ queue:
       from ted talks, using the same train/validation/test split as pro- vided with the corpus (see table 1). as additional
       data, we use a mix of public and proprietary data for about 16 mil- lion sentence pairs for english-italian (en-it)
       and 4.4 mil- lion wmt14 sentence pairs for the english-german (en- de).
-  vault_answer: |-
-    They use the English–Italian and English–German portions of the MuST-C corpus, extracted from TED talks.
-    For the large-data condition, they add a mix of public and proprietary data for English–Italian and WMT14 sentence pairs for English–German.
+  vault_answer: 'They use the English–Italian and English–German portions of the MuST-C corpus, extracted from TED talks.
+
+    For the large-data condition, they add a mix of public and proprietary data for English–Italian and WMT14 sentence pairs
+    for English–German.'
   strong_answer: They use the English–Italian and English–German portions of the MuST-C corpus, extracted from TED talks,
     with the corpus-provided train/validation/test split. Additional data consists of about 16 million public and proprietary
     sentence pairs for English–Italian and 4.4 million WMT14 sentence pairs for English–German.
@@ -1737,9 +1809,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c1; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c1; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -1774,11 +1846,16 @@ queue:
       products-completed operations, personal injury and advertising injury, and liability assumed under an insured contract.
       subaru of america, inc., its parent and subsidiaries shall be included as additional insureds under the cgl using iso
       additional insured endorsement cg 20 10 or a substitute providing equivalent coverage.'
-  vault_answer: |-
-    Phoenix Performance, the Vendor, must maintain insurance with duly licensed insurers rated A.M. Best A-, X or better, covering its normal operations and all activities and events described in the agreement.
-    The Vendor must maintain commercial general liability insurance of at least $1 million per occurrence, on ISO occurrence form CG 00 01 or an equivalent form, covering the specified liabilities.
-    Subaru of America, Inc., its parent and subsidiaries must be included as additional insureds under the CGL using ISO endorsement CG 20 10 or an equivalent.
-    The documents provided do not state any insurance obligation for Torvec.
+  vault_answer: 'Phoenix Performance, the Vendor, must maintain insurance with duly licensed insurers rated A.M. Best A-,
+    X or better, covering its normal operations and all activities and events described in the agreement.
+
+    The Vendor must maintain commercial general liability insurance of at least $1 million per occurrence, on ISO occurrence
+    form CG 00 01 or an equivalent form, covering the specified liabilities.
+
+    Subaru of America, Inc., its parent and subsidiaries must be included as additional insureds under the CGL using ISO endorsement
+    CG 20 10 or an equivalent.
+
+    The documents provided do not state any insurance obligation for Torvec.'
   strong_answer: The vendor must maintain commercial general liability insurance with a limit of at least $1 million each
     occurrence through duly licensed insurers with an A.M. Best rating of A-, X or better. Coverage must use ISO occurrence
     form CG 00 01 or an equivalent and cover events, premises, operations, independent contractors, products-completed operations,
@@ -1797,9 +1874,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -1823,11 +1900,16 @@ queue:
     sentences: 138-139
     text: on the same computer, fine tuning the model on the small train- ing set took only about 35 minutes for sequence
       length 100.
-  vault_answer: |-
-    BERT-BASE and BERT-LARGE use pretrained BERT models, with additional unsupervised training on 600,000 publisher-labeled articles and supervised training on hand-labeled articles.
+  vault_answer: 'BERT-BASE and BERT-LARGE use pretrained BERT models, with additional unsupervised training on 600,000 publisher-labeled
+    articles and supervised training on hand-labeled articles.
+
     The authors used the first 80% of the 645 hand-labeled articles for training and the last 20% for validation.
-    For BERT-BASE, they used the articles without labels for Cloze-task pre-training, then trained on sequence lengths of 100, 250 and 500 word pieces.
-    For BERT-LARGE, they performed a grid search over sequence length and learning rate; it consistently performed best at a sequence length of 100.
+
+    For BERT-BASE, they used the articles without labels for Cloze-task pre-training, then trained on sequence lengths of
+    100, 250 and 500 word pieces.
+
+    For BERT-LARGE, they performed a grid search over sequence length and learning rate; it consistently performed best at
+    a sequence length of 100.'
   strong_answer: The passages do not identify two distinct models or fully describe their training. They state that BERT is
     further trained using an additional 600,000 articles labeled by publisher as an unsupervised dataset, and that fine-tuning
     the model on the small training set took about 35 minutes for sequence length 100.
@@ -1843,9 +1925,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c0 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c0 (Vault states it); gold kept.
   proposed_fix: null
@@ -1873,11 +1955,16 @@ queue:
       as possible, we take the syntactic path between candidate arguments and predicates in dependency trees as linguistic
       knowl- edge. referring to xia et al. (2019), we use the tree-based position feature (tpf) as dependency path (deppath)
       and use the shortest dependency path (sdp) as relation path (relpath).
-  vault_answer: |-
-    The authors present four representations of syntactic dependencies: DEP, REL, DEPPATH and RELPATH.
-    DEPPATH and RELPATH capture more structural information from dependency trees than DEP and REL, but that structural information is more sensitive to tree quality because of error propagation.
-    They compare three ways to incorporate syntax into the SRL model: concatenating it to the input embedding, LISA, and their proposed relation-aware method.
-    LISA replaces an attention head with syntactic dependency information; the relation-aware method provides a softer way to encode richer structural information.
+  vault_answer: 'The authors present four representations of syntactic dependencies: DEP, REL, DEPPATH and RELPATH.
+
+    DEPPATH and RELPATH capture more structural information from dependency trees than DEP and REL, but that structural information
+    is more sensitive to tree quality because of error propagation.
+
+    They compare three ways to incorporate syntax into the SRL model: concatenating it to the input embedding, LISA, and their
+    proposed relation-aware method.
+
+    LISA replaces an attention head with syntactic dependency information; the relation-aware method provides a softer way
+    to encode richer structural information.'
   strong_answer: 'The authors present four representations of syntactic information: dependency head (dep), dependency relation
     label (rel), dependency path (deppath), and relation path (relpath). For paths between candidate arguments and predicates
     in dependency trees, they use the tree-based position feature (TPF) as the dependency path and the shortest dependency
@@ -1898,9 +1985,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -1927,10 +2014,12 @@ queue:
   - doc: qasper_1707_07922
     sentences: 740-741
     text: this model uses a particu- lar rnn cell in order to store just relevant information about the given question.
-  vault_answer: |-
-    QDREN uses the question during memorization to focus on relevant entities and facts; it does not need the answer as an input to that process.
+  vault_answer: 'QDREN uses the question during memorization to focus on relevant entities and facts; it does not need the
+    answer as an input to that process.
+
     For example, when the question asks where Mary is, the model opens its gates when Mary appears in an input sentence.
-    The provided documents do not explain how the model determines an entity’s relation to the final answer at inference time.
+
+    The provided documents do not explain how the model determines an entity’s relation to the final answer at inference time.'
   strong_answer: The passages do not explain how the model recognizes entities or links them to answers at inference time
     when answers are unavailable. They state that dynamic memory stores entity information in a GRU-like hidden state divided
     into blocks, while a question-dependent term in the gating function focuses attention on input sentences to retain information
@@ -1947,9 +2036,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: 'Vault misses c1; the strong model entails it from the gold evidence; gold kept. RCA lists this gold (GUESS): two-word
+    claims `gating function`, `Dynamic Memory`.'
   proposed_decision: system_wrong
   proposed_reason: 'Vault misses c1; the strong model entails it from the gold evidence; gold kept. RCA lists this gold (GUESS):
     two-word claims `gating function`, `Dynamic Memory`.'
@@ -1982,9 +2072,10 @@ queue:
       (relc), the question which relc commented on is also given (relq). to incor- porate this extra information, we consider
       a multi- task learning framework which jointly learns to pre- dict the relationships of the three pairs (oriq/relq,
       oriq/relc, relq/relc).
-  vault_answer: |-
-    The multitask framework uses Task A and Task B as auxiliary tasks for Task C: predicting the related question–comment and original question–related question relationships, respectively.
-    The authors assigned a weight of 0.8 to Task C and 0.1 to each auxiliary task.
+  vault_answer: 'The multitask framework uses Task A and Task B as auxiliary tasks for Task C: predicting the related question–comment
+    and original question–related question relationships, respectively.
+
+    The authors assigned a weight of 0.8 to Task C and 0.1 to each auxiliary task.'
   strong_answer: For the main question–external comment relevance task (Task C), the supplemental tasks are question–question
     relevance (Task B; oriq/relq) and question–comment relevance (Task A; relq/relc). The multitask framework jointly predicts
     these relationships alongside the original question–external comment relationship (oriq/relc).
@@ -2000,9 +2091,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -2034,11 +2125,15 @@ queue:
     text: 'table 4: results on the hypernym discovery task. model-wise comparisons, we observe that our pro- posed alterations
       of both vecmap and muse im- prove their quality in a consistent manner, across most metrics and data configurations.
       in italian our proposed model shows an improvement across all configurations.'
-  vault_answer: |-
-    The method showed improvements on bilingual dictionary induction, word similarity and cross-lingual hypernym discovery.
+  vault_answer: 'The method showed improvements on bilingual dictionary induction, word similarity and cross-lingual hypernym
+    discovery.
+
     For bilingual dictionary induction, it consistently improved on VecMap and MUSE across all tested language pairs and metrics.
+
     For word similarity, substantial gains were especially notable on English WordSim and SimLex in the monolingual setting.
-    For cross-lingual hypernym discovery, improvements were consistent across most metrics and data configurations, though VecMap remained competitive in Spanish.
+
+    For cross-lingual hypernym discovery, improvements were consistent across most metrics and data configurations, though
+    VecMap remained competitive in Spanish.'
   strong_answer: The method showed improvements in bilingual dictionary induction, monolingual word similarity, cross-lingual
     word similarity, and cross-lingual hypernym discovery.
   reasons:
@@ -2053,9 +2148,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -2089,9 +2184,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c0 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c0 (Vault states it); gold kept.
   proposed_fix: null
@@ -2124,9 +2219,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c0 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c0 (Vault states it); gold kept.
   proposed_fix: null
@@ -2160,9 +2255,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c0 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c0 (Vault states it); gold kept.
   proposed_fix: null
@@ -2195,9 +2290,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: The table row gives 1,227 and 1,238 in adjacent reporting columns; the requested June 30, 2023 value is 1,227 million.
+    The answer should not infer that the table lacks dates or units merely because the excerpt omits its column header.
   proposed_decision: ambiguous
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
   proposed_fix: null
@@ -2229,9 +2325,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -2266,9 +2362,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c0 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c0 (Vault states it); gold kept.
   proposed_fix: null
@@ -2301,9 +2397,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c0 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c0 (Vault states it); gold kept.
   proposed_fix: null
@@ -2347,9 +2443,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: The Cloudlane DPA and supplier code expressly grant audit rights. The full Pinewood privacy policy contains no audit
+    right, so the negative comparison is also supported. Vault omits two relevant parts.
   proposed_decision: gold_incomplete
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c2; fix drops it.
   proposed_fix:
@@ -2394,9 +2491,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: The lab SOP's 24-hour incident-reporting deadline is the only deadline measured in hours; the supplier code uses five
+    days and the runbook uses five working days. Claim c1 is relevant supporting contrast, not an unnecessary claim.
   proposed_decision: gold_incomplete
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c1; fix drops it.
   proposed_fix:
@@ -2426,9 +2524,11 @@ queue:
     sentences: 22-23
     text: The Provider targets 99.9% monthly uptime and credits 10% of one month's fees for each month in which uptime falls
       below 99.0%.
-  vault_answer: |-
-    The documents do not state an uptime promise for the Fibrenet line, so the highest across all three cannot be determined.
-    Of the two with stated availability figures, Quill has the higher figure: a 99.9% monthly uptime target, compared with Northwind’s minimum 99.5% monthly availability excluding scheduled maintenance.
+  vault_answer: 'The documents do not state an uptime promise for the Fibrenet line, so the highest across all three cannot
+    be determined.
+
+    Of the two with stated availability figures, Quill has the higher figure: a 99.9% monthly uptime target, compared with
+    Northwind’s minimum 99.5% monthly availability excluding scheduled maintenance.'
   strong_answer: The Fibrenet line promises the highest uptime at 99.95% monthly availability, compared with the Quill subscription’s
     99.9% monthly uptime target and the Northwind platform’s 99.5% calendar-month availability commitment.
   reasons:
@@ -2445,9 +2545,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0,c3; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0,c3; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -2467,9 +2567,10 @@ queue:
     sentences: 13-14
     text: Fibrenet shall restore a total loss of service within four hours of a fault report during business hours and within
       eight hours outside them.
-  vault_answer: |-
-    In the Fibrenet Business Internet Service Level Agreement, a total loss of service must be restored within four hours of a fault report during business hours and within eight hours outside them.
-    Nothing was found about a maximum repair time for an outage in the Cloudlane Data Processing Addendum.
+  vault_answer: 'In the Fibrenet Business Internet Service Level Agreement, a total loss of service must be restored within
+    four hours of a fault report during business hours and within eight hours outside them.
+
+    Nothing was found about a maximum repair time for an outage in the Cloudlane Data Processing Addendum.'
   strong_answer: Fibrenet sets a maximum restoration time for a total loss of service of four hours from a fault report during
     business hours and eight hours outside business hours. The documents do not state whether Cloudlane sets a maximum repair
     time for an outage.
@@ -2485,9 +2586,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c1 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c1 (Vault states it); gold kept.
   proposed_fix: null
@@ -2528,9 +2629,11 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
-  fix: null
-  note: null
+  decision: gold_wrong
+  fix:
+  - From 1 February 2026, the applicable consulting rate is USD 165 per hour under Amendment No. 1.
+  note: The question asks only for the rate. The original-rate replacement explanation is true context but not a required
+    claim for this answer.
   proposed_decision: gold_incomplete
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c1; fix drops it. RCA lists this gold
     (GUESS): claim 2 requires explaining the replacement; question asks only for the rate.'
@@ -2561,10 +2664,13 @@ queue:
     sentences: 11-13
     text: Sections 1 and 2 of this Amendment replace the corresponding provisions of the Agreement. All other provisions of
       the Agreement continue unchanged except as the parties agree in writing.
-  vault_answer: |-
-    The sources disagree on the written notice required to end the arrangement. The original Consulting Services Agreement says either party may terminate it with 30 days’ notice.
+  vault_answer: 'The sources disagree on the written notice required to end the arrangement. The original Consulting Services
+    Agreement says either party may terminate it with 30 days’ notice.
+
     Amendment No. 1 says either party may end the Agreement with 45 days’ written notice.
-    The amendment says its sections 1 and 2 replace the corresponding Agreement provisions, and all other provisions continue unchanged except as agreed in writing.
+
+    The amendment says its sections 1 and 2 replace the corresponding Agreement provisions, and all other provisions continue
+    unchanged except as agreed in writing.'
   strong_answer: Either party must give forty-five (45) days’ written notice to end the Vantage consulting arrangement under
     the amendment, replacing the original thirty (30) days’ notice requirement.
   reasons:
@@ -2579,9 +2685,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c2 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c2 (Vault states it); gold kept.
   proposed_fix: null
@@ -2604,9 +2710,9 @@ queue:
   - doc: report_outage_customer_notice
     sentences: 2-3
     text: Some customers were unable to sign in for 62 minutes on the morning of 9 September.
-  vault_answer: |-
-    The sources disagree: the customer notice says some customers were unable to sign in for 62 minutes.
-    The post-mortem says customers could not sign in for 47 minutes, from 09:12 to 09:59 UTC.
+  vault_answer: 'The sources disagree: the customer notice says some customers were unable to sign in for 62 minutes.
+
+    The post-mortem says customers could not sign in for 47 minutes, from 09:12 to 09:59 UTC.'
   strong_answer: The customer notice says some customers could not sign in for 62 minutes on the morning of 9 September. The
     postmortem gives a conflicting duration of 47 minutes, from 09:12 to 09:59 UTC.
   reasons:
@@ -2621,9 +2727,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Both durations and the fact that the sources conflict are essential to answer this question faithfully. Vault states
+    all three; the proposed fix wrongly drops the disagreement claim.
   proposed_decision: gold_incomplete
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c2; fix drops it.
   proposed_fix:
@@ -2648,9 +2755,10 @@ queue:
   - doc: report_headcount_finance
     sentences: 3-4
     text: Attrition for the trailing twelve months was 11.0%, measured on voluntary and involuntary leavers.
-  vault_answer: |-
-    The reports disagree on attrition over the last twelve months. The People Team reports annualised attrition of 9.4%.
-    Finance reports attrition of 11.0%, measured on voluntary and involuntary leavers.
+  vault_answer: 'The reports disagree on attrition over the last twelve months. The People Team reports annualised attrition
+    of 9.4%.
+
+    Finance reports attrition of 11.0%, measured on voluntary and involuntary leavers.'
   strong_answer: HR reports annualised attrition of 9.4% for the trailing twelve months, while Finance reports 11.0% for the
     same period, including voluntary and involuntary leavers.
   reasons:
@@ -2665,9 +2773,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: 'The two reports give different attrition figures and describe different measurement bases: HR annualised attrition
+    versus Finance voluntary and involuntary leavers. The disagreement/measurement claim is supported.'
   proposed_decision: gold_incomplete
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c2; fix drops it.
   proposed_fix:
@@ -2688,9 +2797,9 @@ queue:
   - doc: consulting_vantage
     sentences: 5-6
     text: The term of this Agreement is twelve (12) months from the date above.
-  vault_answer: |-
-    The agreement states a twelve-month term from 6 October 2025, not a twenty-four-month term.
-    Either party may terminate the agreement by giving thirty days’ written notice.
+  vault_answer: 'The agreement states a twelve-month term from 6 October 2025, not a twenty-four-month term.
+
+    Either party may terminate the agreement by giving thirty days’ written notice.'
   strong_answer: The stated term is twelve (12) months, not twenty-four months, so Vantage's engagement ends twelve months
     from the agreement's “date above.” The provided passage does not include that date, so an exact end date cannot be determined.
   reasons:
@@ -2705,9 +2814,9 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: strong model misses c1 (Vault states it); gold kept.
   proposed_decision: system_wrong
   proposed_reason: strong model misses c1 (Vault states it); gold kept.
   proposed_fix: null
@@ -2743,9 +2852,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0,c1; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0,c1; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null
@@ -2778,9 +2887,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: The answer identifies who pays but omits the precise 24-hour cutoff. The gold claim correctly requires both the timing
+    and the matter-code charge.
   proposed_decision: ambiguous
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
   proposed_fix: null
@@ -2813,9 +2923,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
-  fix: null
-  note: null
+  decision: gold_wrong
+  fix:
+  - The candidate received her master's degree from the University of Toronto.
+  note: The question asks which university, not the degree subject. The existing gold claim is more specific than necessary.
   proposed_decision: ambiguous
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
   proposed_fix: null
@@ -2835,9 +2946,10 @@ queue:
     sentences: 8-10
     text: The Processor may engage sub-processors listed in Annex 1. It shall give the Controller thirty days' notice of any
       new sub-processor, and the Controller may object on reasonable grounds within that period.
-  vault_answer: |-
-    Cloudlane must give Yarrow thirty days’ notice of any new sub-processor. Yarrow may object on reasonable grounds within that period.
-    Cloudlane may engage the sub-processors listed in Annex 1.
+  vault_answer: 'Cloudlane must give Yarrow thirty days’ notice of any new sub-processor. Yarrow may object on reasonable
+    grounds within that period.
+
+    Cloudlane may engage the sub-processors listed in Annex 1.'
   strong_answer: Cloudlane must give Yarrow thirty days’ notice of any new sub-processor; Yarrow may object on reasonable
     grounds within that period.
   reasons:
@@ -2852,9 +2964,10 @@ queue:
     vault_abstain_wrong: false
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: The corrected question is specifically about new sub-processors. Both the 30-day notice and the Controller's right
+    to object on reasonable grounds are required and stated by Vault.
   proposed_decision: gold_incomplete
   proposed_reason: neither Vault nor the strong model (gold evidence only) entails c1; fix drops it.
   proposed_fix:
@@ -2881,9 +2994,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -2909,9 +3022,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -2937,9 +3050,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -2965,9 +3078,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -2993,9 +3106,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -3022,9 +3135,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -3050,9 +3163,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -3078,9 +3191,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -3106,9 +3219,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_decision: system_wrong
   proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
   proposed_fix: null
@@ -3127,9 +3240,10 @@ queue:
   - doc: msa_northwind_v2
     sentences: 12-13
     text: The Supplier may raise the platform fee once per contract year by no more than 4%, with sixty days' notice.
-  vault_answer: |-
-    The sources disagree on the monthly platform fee. The amended and restated Northwind–Tessellate agreement states USD 19,400 per month, invoiced in advance.
-    The original Northwind–Tessellate agreement states USD 18,500 per month, invoiced in advance.
+  vault_answer: 'The sources disagree on the monthly platform fee. The amended and restated Northwind–Tessellate agreement
+    states USD 19,400 per month, invoiced in advance.
+
+    The original Northwind–Tessellate agreement states USD 18,500 per month, invoiced in advance.'
   strong_answer: The documents do not state the customer’s current monthly platform fee. They state only that the Supplier
     may raise the platform fee once per contract year by no more than 4%, with sixty days’ notice.
   reasons:
@@ -3145,9 +3259,10 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: true
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: 'strong model misses c0 (Vault states it); gold kept. RCA lists this gold (CONFIDENT): evidence range 12-13 is the
+    fee-escalation sentence; the fee is sentence 9.'
   proposed_decision: system_wrong
   proposed_reason: 'strong model misses c0 (Vault states it); gold kept. RCA lists this gold (CONFIDENT): evidence range 12-13
     is the fee-escalation sentence; the fee is sentence 9.'
@@ -3182,9 +3297,10 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: true
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: 'Claim kept: the latest version (msa_northwind_v2, Amended and Restated, 3 March 2026) states 36 months; the 24-month
+    text is the superseded version. The gold evidence range pointed at the Fees heading and is corrected separately.'
   proposed_decision: ambiguous
   proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; no claim survives. RCA lists this
     gold (CONFIDENT): evidence range 8-9 is the heading `## 3. Fees and Payment`; the 36-month term is sentence 6.'
@@ -3218,9 +3334,9 @@ queue:
     vault_abstain_wrong: true
     strong_abstain_wrong: false
   errors: []
-  decision: null
+  decision: system_wrong
   fix: null
-  note: null
+  note: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_decision: system_wrong
   proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
   proposed_fix: null

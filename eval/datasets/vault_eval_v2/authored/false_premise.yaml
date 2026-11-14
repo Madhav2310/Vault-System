@@ -126,6 +126,7 @@ items:
   question: Why does Plover require the incident commander to approve every database failover?
   source_doc: runbook_db
   answer_type: partial
+  audit_status: verified
   required_claims:
   - Approval is not required in every case.
   - The on-call engineer may start failover alone when replica lag is under five seconds; the commander approves
@@ -157,6 +158,7 @@ items:
   question: When does Vantage's engagement end under its twenty-four-month term?
   source_doc: consulting_vantage
   answer_type: partial
+  audit_status: verified
   required_claims:
   - The agreement does not have a twenty-four-month term.
   - The original term is twelve months from 6 October 2025.
@@ -166,12 +168,14 @@ items:
     sentence_end: 6
   doc_ids:
   - consulting_vantage
-  audit_note: 'False premise: the original term is 12 months (18 after the amendment).'
+  audit_note: 'False premise: the original term is 12 months (18 after the amendment). [S21.05 audit: system_wrong] strong model
+    misses c1 (Vault states it); gold kept.'
 - id: s21-fal-12
   stratum: false_premise
   question: Within the ninety-day cure period for material breach, what must the Northwind supplier fix?
   source_doc: msa_northwind
   answer_type: partial
+  audit_status: verified
   required_claims:
   - The cure period is thirty days, not ninety.
   gold_evidence:
@@ -186,6 +190,7 @@ items:
   question: Under which section can Corvane end the Brightwater NDA early?
   source_doc: nda_brightwater
   answer_type: partial
+  audit_status: verified
   required_claims:
   - The NDA has no section allowing early termination.
   - Confidentiality obligations run for a fixed period from the last disclosure.
@@ -195,7 +200,8 @@ items:
     sentence_end: 13
   doc_ids:
   - nda_brightwater_v2
-  audit_note: 'False premise: there is no early termination clause.'
+  audit_note: 'False premise: there is no early termination clause. [S21.05 audit: system_wrong] Vault misses c0,c1; the strong
+    model entails it from the gold evidence; gold kept.'
 - id: s21-fal-14
   stratum: false_premise
   question: What is the one-hundred-dollar daily meal allowance in the expense policy?

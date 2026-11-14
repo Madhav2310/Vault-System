@@ -6,6 +6,7 @@ items:
     software deal?
   source_doc: msa_northwind_v2
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The current monthly platform fee is USD 19,400.
   alternates:
@@ -18,13 +19,15 @@ items:
     sentence_end: 13
   must_not_contain:
   - 18,500
-  audit_note: Current version is the Amended and Restated MSA of 3 March 2026 (msa_northwind_v2); the superseded
-    2025 text says USD 18,500.
+  audit_note: 'Current version is the Amended and Restated MSA of 3 March 2026 (msa_northwind_v2); the superseded 2025 text
+    says USD 18,500. [S21.05 audit: system_wrong] strong model misses c0 (Vault states it); gold kept. RCA lists this gold (CONFIDENT):
+    evidence range 12-13 is the fee-escalation sentence; the fee is sentence 9.'
 - id: s21-ver-02
   stratum: versioned
   question: For how many months does the Tessellate services contract run initially, in its latest form?
   source_doc: msa_northwind_v2
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The initial term is thirty-six (36) months.
   alternates:
@@ -33,17 +36,20 @@ items:
     - three years
   gold_evidence:
   - doc: msa_northwind_v2
-    sentence_start: 8
-    sentence_end: 9
+    sentence_start: 6
+    sentence_end: 7
   must_not_contain:
   - twenty-four
   - 24 months
-  audit_note: 'Stale v1 value: twenty-four (24) months.'
+  audit_note: 'Stale v1 value: twenty-four (24) months. [S21.05 audit: system_wrong] Claim kept: the latest version (msa_northwind_v2,
+    Amended and Restated, 3 March 2026) states 36 months; the 24-month text is the superseded version. The gold evidence range
+    pointed at the Fees heading and is corrected separately.'
 - id: s21-ver-03
   stratum: versioned
   question: Which company is the customer in the current Tessellate platform contract?
   source_doc: msa_northwind_v2
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The customer is Northwind Group plc.
   gold_evidence:
@@ -105,6 +111,7 @@ items:
   question: What monthly base rent does Suite 410 on Harbor Street carry under the restated lease?
   source_doc: lease_harbor_v2
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The base rent is USD 13,150 per month.
   alternates:
@@ -123,6 +130,7 @@ items:
   question: How many years does the restated Harbor Street office lease last?
   source_doc: lease_harbor_v2
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The term is seven (7) years, beginning 1 September 2025.
   alternates:
@@ -135,12 +143,14 @@ items:
     sentence_end: 5
   must_not_contain:
   - five (5) years
-  audit_note: 'Stale v1 value: five (5) years from 1 September 2023.'
+  audit_note: 'Stale v1 value: five (5) years from 1 September 2023. [S21.05 audit: system_wrong] Vault misses c0; the strong
+    model entails it from the gold evidence; gold kept.'
 - id: s21-ver-09
   stratum: versioned
   question: What security deposit has the tenant of Suite 410 put down according to the amended and restated lease?
   source_doc: lease_harbor_v2
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The security deposit is USD 26,300.
   gold_evidence:
@@ -155,6 +165,7 @@ items:
   question: What yearly subscription charge applies to Marlowe Dental's renewal order with Quill?
   source_doc: order_quill_v2
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The annual subscription fee is USD 64,800.
   alternates:
@@ -173,6 +184,7 @@ items:
   question: How many clinician seats does the renewal order form for Marlowe cover?
   source_doc: order_quill_v2
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The renewal covers 150 named clinician seats.
   gold_evidence:
@@ -189,6 +201,7 @@ items:
     order?
   source_doc: order_quill_v2
   answer_type: answer
+  audit_status: verified
   required_claims:
   - The customer must give ninety (90) days' written notice before the renewal date.
   alternates:

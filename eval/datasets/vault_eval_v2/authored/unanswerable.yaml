@@ -5,26 +5,31 @@ items:
   question: What does a double plot cost for a season at the Riverside community garden?
   source_doc: newsletter_twocol
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - newsletter_twocol
-  audit_note: 'Absent: the newsletter gives fees only for a standard plot (45 dollars, 20 reduced); no double plot
-    is mentioned.'
+  audit_note: 'Absent: the newsletter gives fees only for a standard plot (45 dollars, 20 reduced); no double plot is mentioned.
+    [S21.05 audit: system_wrong] Vault answers where the gold expects abstention; the strong model abstains.'
 - id: s21-una-02
   stratum: unanswerable
   question: Who serves as treasurer of the Riverside garden committee?
   source_doc: newsletter_twocol
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - newsletter_twocol
-  audit_note: 'Absent: only the coordinator (Leila Haddad) and Marcus Bell (tools) are named; no treasurer.'
+  audit_note: 'Absent: only the coordinator (Leila Haddad) and Marcus Bell (tools) are named; no treasurer. [S21.05 audit: system_wrong]
+    Vault answers where the gold expects abstention; the strong model abstains.'
 - id: s21-una-03
   stratum: unanswerable
   question: When does the autumn planting season open at the Riverside garden?
   source_doc: newsletter_twocol
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - newsletter_twocol
-  audit_note: 'Right topic, wrong season: the newsletter covers only the spring season opening on 12 April.'
+  audit_note: 'Right topic, wrong season: the newsletter covers only the spring season opening on 12 April. [S21.05 audit: system_wrong]
+    Vault answers where the gold expects abstention; the strong model abstains.'
 - id: s21-una-04
   stratum: unanswerable
   question: How many customers were affected by the 9 September sign-in outage?
@@ -72,6 +77,7 @@ items:
   question: What is the ceiling on Tessellate's liability if it breaches confidentiality?
   source_doc: msa_northwind
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - msa_northwind_v2
   audit_note: 'Right clause, absent value: section 8 states the confidentiality breach is excepted from the cap
@@ -81,25 +87,31 @@ items:
   question: What discount does Northwind receive on the platform fee for prepaying a full year?
   source_doc: msa_northwind
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - msa_northwind_v2
-  audit_note: 'Absent: fees are monthly in advance; no prepayment discount appears in either version.'
+  audit_note: 'Absent: fees are monthly in advance; no prepayment discount appears in either version. [S21.05 audit: system_wrong]
+    Vault answers where the gold expects abstention; the strong model abstains.'
 - id: s21-una-11
   stratum: unanswerable
   question: What fixed damages must a party pay if it leaks information under the Brightwater NDA?
   source_doc: nda_brightwater
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - nda_brightwater_v2
-  audit_note: 'Absent: the remedies clause allows an injunction but sets no liquidated damages.'
+  audit_note: 'Absent: the remedies clause allows an injunction but sets no liquidated damages. [S21.05 audit: system_wrong]
+    Vault answers where the gold expects abstention; the strong model abstains.'
 - id: s21-una-12
   stratum: unanswerable
   question: What notice must be given to cancel the Brightwater and Corvane non-disclosure agreement before it expires?
   source_doc: nda_brightwater
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - nda_brightwater_v2
-  audit_note: 'Absent: the NDA has no early-termination clause, only a confidentiality survival period.'
+  audit_note: 'Absent: the NDA has no early-termination clause, only a confidentiality survival period. [S21.05 audit: system_wrong]
+    Vault answers where the gold expects abstention; the strong model abstains.'
 - id: s21-una-13
   stratum: unanswerable
   question: What daily meal allowance applies to a trip to Tokyo under the Alder & Finch policy?
@@ -137,10 +149,12 @@ items:
   question: What premium rate does Vantage charge for weekend consulting work?
   source_doc: consulting_vantage
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - consulting_vantage
   - consulting_vantage_amend1
-  audit_note: 'Absent: only a flat hourly rate (USD 140, later 165) is given; no weekend premium.'
+  audit_note: 'Absent: only a flat hourly rate (USD 140, later 165) is given; no weekend premium. [S21.05 audit: system_wrong]
+    Vault answers where the gold expects abstention; the strong model abstains.'
 - id: s21-una-18
   stratum: unanswerable
   question: What was Tidewater's profit after tax for 2024?
@@ -163,17 +177,21 @@ items:
   question: What is the largest volume of acid allowed in the yellow cabinet?
   source_doc: safety_lab
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - safety_lab
-  audit_note: 'Near miss: the SOP caps flammable solvents at fifty litres but gives no acid quantity limit.'
+  audit_note: 'Near miss: the SOP caps flammable solvents at fifty litres but gives no acid quantity limit. [S21.05 audit: system_wrong]
+    Vault answers where the gold expects abstention; the strong model abstains.'
 - id: s21-una-21
   stratum: unanswerable
   question: Who is deputy safety officer at Kestrel Materials?
   source_doc: safety_lab
   answer_type: abstain
+  audit_status: verified
   doc_ids:
   - safety_lab
-  audit_note: 'Absent: only the safety officer (Nadia Petrov) is named.'
+  audit_note: 'Absent: only the safety officer (Nadia Petrov) is named. [S21.05 audit: system_wrong] Vault answers where the
+    gold expects abstention; the strong model abstains.'
 - id: s21-una-22
   stratum: unanswerable
   question: What did the Mill Lane site cost the housing association?
