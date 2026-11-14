@@ -105,7 +105,9 @@ async def setup(
     if reused is None:
         key, uid = new_api_key(), uuid.uuid4()
         async with sm() as s:
-            s.add(User(id=uid, email=f"eval-{uid}@vault.local", api_key_hash=hash_api_key(key)))
+            s.add(  # admin: exempt from the daily cost quota, which a benchmark run would exhaust
+                User(id=uid, email=f"eval-{uid}@vault.local", api_key_hash=hash_api_key(key), is_admin=True)
+            )
             await s.commit()
         http = httpx.AsyncClient(base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=180)
         for k, meta in documents.items():
