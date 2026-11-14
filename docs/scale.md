@@ -18,7 +18,8 @@ Rules for this page:
 | Page cap | 600 pages, then `unsupported/too_many_pages` | `docs/progress.md` ("S16.05 extraction time and memory") |
 | Embed batches in flight per document | 4 (`embed_concurrency`); 8 batches of 0.5 s finish in 2.0 s or less against 4 s or more sequential | `docs/progress.md` ("S16.08 ingestion concurrency"), test `backend/tests/integration/ingestion/test_ingest_concurrency.py` |
 | Brief map calls in flight per document | 3 (`brief_concurrency`) | `docs/progress.md` ("S16.08 ingestion concurrency") |
-| AMD 10-K time to `ready`, before and after S16.08 | TBD (S16.08 AC5 pending) | `docs/plan/S16.md` task S16.08 AC5 |
+| AMD 10-K time to `ready` (searchable), sequential vs parallel embedding (S16.08) | 28.8 s vs 20.2 s (-30%); time to `enriched` (brief done) 57.6 s vs 57.4 s (one brief call, so map concurrency does not apply) | 2026-11-14, `make up-rerank`, upload `eval/sources/fb_pdfs/AMD_2022_10K.pdf` with `EMBED_CONCURRENCY=1 BRIEF_CONCURRENCY=1` vs defaults (4/3), poll `GET /v1/documents/{id}` |
+| Ingestion stage time, 45 real documents (where time goes) | brief 16.7 s p50 / 52 s p95 (80% of stage time, runs after the document is searchable); embed 1.7 / 5.4 s; extract 0.7 / 13.8 s; chunk, quality, index < 0.03 s | `job_events` table: `select stage, percentile_cont(0.5) within group (order by duration_ms) from job_events group by stage` |
 | Documents per hour per `worker-ingest` | TBD (not measured; needs a corpus run on `make up`) | none yet |
 
 Derived estimate, extraction only: one ingest worker at the measured 0.093 s/page needs about 9,300 s (2.6 h) for 1,000 documents of 100 pages each, ignoring embed and brief (which run on the separate `ai` queue and overlap). This is arithmetic on the row above, not a measurement; `worker-ingest` runs one process (`-c 1`), so two workers halve it.
