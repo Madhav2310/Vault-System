@@ -99,7 +99,7 @@ A Postman collection is in `docs/api/vault.postman_collection.json`.
 
 ## Architecture
 
-Diagrams and legends: `docs/architecture.md` (sources in `docs/img/*.mmd`; `make diagrams` renders the SVGs). The authoritative design is `docs/design.md`.
+Full architecture, models, explainability and decisions: `ARCHITECTURE.md` (diagram sources in `docs/img/*.mmd`; `make diagrams` renders the SVGs). The original design specification is `docs/design.md`.
 
 - **Topology.** An API (FastAPI) accepts uploads and chat and does no CPU-heavy work. Celery workers extract, chunk, embed and summarize. PostgreSQL with pgvector is the single source of truth (metadata, vectors, full-text, the turn ledger). Redis carries queues, rate-limit buckets and caches. OpenAI models are called only through one gateway. The reranker and observability are optional sidecars the system survives losing.
 - **Ingestion.** An upload is sniffed, deduplicated by owner and hash, stored by content hash, and recorded with a job row in one transaction. Six stages (extract, quality, chunk, embed, index, brief) each claim the job with a lease and commit once, so redelivery is harmless. Permanent errors end immediately; retryable ones back off and then fail with a retry action. A failed brief never blocks chat.

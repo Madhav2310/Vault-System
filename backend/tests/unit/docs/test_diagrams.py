@@ -17,8 +17,10 @@ def test_turn_nodes_match_steps() -> None:
 
 
 def test_architecture_doc_links_diagrams() -> None:
-    text = (ROOT / "docs" / "architecture.md").read_text()
+    text = (ROOT / "ARCHITECTURE.md").read_text()
     for name in ("topology", "ingestion", "chat_turn"):
-        assert f"img/{name}.svg" in text and f"img/{name}.mmd" in text
+        assert f"docs/img/{name}.mmd" in text
         assert (IMG / f"{name}.mmd").exists()
-    assert len(re.findall(r"^Legend:", text, re.M)) == 3
+    blocks = re.findall(r"```mermaid\n(.*?)```", text, re.S)
+    committed = (IMG / "chat_turn.mmd").read_text().strip()
+    assert any(b.strip() == committed for b in blocks), "ARCHITECTURE.md turn diagram is stale"
