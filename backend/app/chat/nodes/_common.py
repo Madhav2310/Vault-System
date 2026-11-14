@@ -7,14 +7,14 @@ from app.chat.citations import Resolution, ResolvedSegment
 from app.chat.events import segment_event
 from app.chat.followups import brief_questions
 from app.chat.nodes.generate import GenerateResult
+from app.explain.templates import ERROR_TEXT as ERROR_TEXT
+from app.explain.templates import NO_DOCUMENTS_TEXT as NO_DOCUMENTS_TEXT
+from app.explain.templates import NO_EVIDENCE_TEXT as NO_EVIDENCE_TEXT
 from app.llm.types import Usage
 
 NO_DOCUMENTS = "SCOPE_EMPTY"
 NO_EVIDENCE = "NO_EVIDENCE"
 TARGET_IGNORED = "TARGET_IGNORED"
-NO_DOCUMENTS_TEXT = "No ready documents are in scope. Upload a document or wait for processing to finish."
-NO_EVIDENCE_TEXT = "I could not find anything in your documents that answers this."
-ERROR_TEXT = "Something went wrong while answering. Please try again."
 
 
 async def abstain_followups(state: Any, ctx: Any) -> tuple[str, ...]:

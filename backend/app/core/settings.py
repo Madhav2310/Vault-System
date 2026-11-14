@@ -109,6 +109,9 @@ class Settings(BaseSettings):
     # --- plan-first answers (S22.04): answer_rag@4 + coverage plan; off until the A/B decides ---
     chat_plan_first: bool = False
 
+    # --- warm voice (S23.01): appends prompts/voice@1.md to the answer prompts; off until the A/B decides ---
+    chat_voice: bool = False
+
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"

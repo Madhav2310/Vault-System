@@ -16,6 +16,7 @@ from typing import Any
 
 from app.chat.citations import Resolution, ResolvedSegment
 from app.chat.evidence import EvidenceSet
+from app.explain.templates import not_found_text
 
 ELEMENT_NOT_FOUND = "ELEMENT_NOT_FOUND"
 PLAN_PROMPT: tuple[str, int] = ("answer_rag", 4)
@@ -68,10 +69,6 @@ def check_plan(plan: Any, elements: Sequence[str], evidence: EvidenceSet) -> Pla
     for key, element in zip(ids, elements, strict=False):  # an element the plan omits counts as not found
         (covered if any(h in evidence.manifest for h in handles.get(key, ())) else missing).append(element)
     return PlanCheck(tuple(covered), tuple(missing))
-
-
-def not_found_text(element: str) -> str:
-    return f"The documents provided do not state an answer to: {element}."
 
 
 def apply_plan(resolution: Resolution, check: PlanCheck) -> tuple[Resolution, tuple[str, ...]]:

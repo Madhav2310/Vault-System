@@ -27,6 +27,7 @@ from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 from app.core.logging import get_logger
 from app.core.settings import Settings, get_settings
+from app.explain.templates import RATE_LIMITED
 
 Bucket = Literal["chat_post", "upload", "default"]
 # (method, route template) -> bucket. Anything not listed is `default`.
@@ -152,7 +153,7 @@ async def enforce_rate_limit(
     if not d.allowed:
         raise DomainError(
             ErrorCode.RATE_LIMITED,
-            f"Too many requests; retry in {d.retry_after_s} s",
+            RATE_LIMITED.format(retry=d.retry_after_s),
             headers={"Retry-After": str(d.retry_after_s)},
         )
 

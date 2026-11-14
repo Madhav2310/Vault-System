@@ -11,6 +11,7 @@ from app.chat.followups import clean_followups
 from app.chat.graph import TURN_ERROR, TurnCtx, TurnState
 from app.chat.nodes._common import ERROR_TEXT, abstain_followups, emit_segment, flush_segments, plain
 from app.chat.nodes.generate import generate as generate_answer
+from app.chat.voice import generate_call as voice_call
 from app.llm.errors import LlmError
 
 
@@ -27,6 +28,7 @@ async def generate(state: TurnState, ctx: TurnCtx) -> TurnState:
         call: dict[str, Any] = {"route": state.analysis.intent if full else "qa"}
         call.update(compare_call(state) if state.compare else {})  # S18.06: route, prompt, coverage
         call.update(plan_call(state, ctx.deps.gateway.settings, full))  # S22.04: empty unless switched on
+        call.update(voice_call(ctx.deps.gateway.settings))  # S23.01: empty unless switched on
         gen = await generate_answer(
             ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
             question=state.analysis.standalone_query, **call,

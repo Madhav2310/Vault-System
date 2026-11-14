@@ -435,13 +435,15 @@ class LlmGateway:
         run_id: uuid.UUID | None = None,
         job_id: uuid.UUID | None = None,
         budget: Budget | None = None,
+        system_suffix: str | None = None,
     ) -> AsyncIterator[TextDelta | CitationDelta | Final]:
         """Yields TextDelta | CitationDelta, then Final. With `schema`, the deltas are fragments of the strict
         JSON document and the consumer parses them incrementally. Retries only before the first event was
         yielded; refusal / max_tokens raise typed errors after the row is written."""
         p, req, res = self._prepare(
-            prompt, purpose, model, route, mode, inputs, messages, schema, search_results, cache_mode
-        )
+            prompt, purpose, model, route, mode, inputs, messages, schema, search_results, cache_mode,
+            system_suffix,
+        )  # fmt: skip
         meta = self._meta(purpose, lane, self.chat.name, req, p, res.role, owner_id, run_id, job_id)
         self._admit(meta, budget)
         ids: list[uuid.UUID] = []
@@ -568,6 +570,7 @@ class LlmGateway:
         schema: type[BaseModel] | None,
         search_results: Sequence[SearchResult],
         cache_mode: CacheMode | None = None,
+        system_suffix: str | None = None,
     ) -> tuple[Prompt, ChatRequest, Resolved]:
         p = self.prompts.get(*prompt)
         if schema is not None and search_results:
@@ -589,7 +592,7 @@ class LlmGateway:
         res = self.router.resolve(node, route, mode, default=Route(p.role, p.effort))
         req = ChatRequest(
             model=model or res.model,  # an explicit `model` pins the call and bypasses role fallback
-            system=p.body,
+            system=p.body + (system_suffix or ""),
             messages=msgs,
             max_tokens=p.max_tokens,
             effort=res.effort,
