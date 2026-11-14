@@ -1,4 +1,4 @@
-"""S0.15 AC4: send a request carrying a known trace id to the API, then find that trace in Tempo.
+"""Send a request carrying a known trace id to the API, then find that trace in Tempo.
 
 Run: cd backend && uv run --frozen python ../scripts/check_trace.py   (stack must be up: make up)
 """

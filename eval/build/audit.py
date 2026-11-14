@@ -1,4 +1,4 @@
-"""S21.05: cross-model gold audit (the "Platinum" method), tool only.
+"""Cross-model gold audit (the "Platinum" method), tool only.
 
 For every live v2 item two answers are collected: Vault's (read from an answers file of an earlier run, never
 re-run here) and a strong model's (`flagship` through `app.llm.gateway`, prompt `eval_audit_gold@1`), the

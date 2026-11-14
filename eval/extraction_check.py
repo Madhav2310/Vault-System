@@ -1,4 +1,4 @@
-"""Gold-quote locatability with the production PDF extractor (S1.13 AC8; zero LLM cost).
+"""Gold-quote locatability with the production PDF extractor (zero LLM cost).
 
 Same scoring as the extraction sweep (eval/build/extraction_sweep.py): a quote counts as located when its
 normalized text has partial_ratio >= FUZZ_MIN against some normalized page text. The difference is that page

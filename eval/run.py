@@ -1,4 +1,4 @@
-"""Eval runner (plan S2.12). Iterates golden items, calls a pluggable pipeline, grades deterministically,
+"""Eval runner. Iterates golden items, calls a pluggable pipeline, grades deterministically,
 writes `eval_runs` / `eval_results` (one row per item per metric) and `eval/reports/<run_id>.md`.
 
 PIPELINE PROTOCOL (the real RAG pipeline plugs in here; tests use a scripted toy):

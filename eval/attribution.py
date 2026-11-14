@@ -1,4 +1,4 @@
-"""Stage attribution (S21.08): assign every failed item exactly one earliest faulty stage, by code.
+"""Stage attribution: assign every failed item exactly one earliest faulty stage, by code.
 
 `python -m eval.attribution <run>.json [--vs other.json]` prints the stage table (and a run diff).
 Unknown (None) signals are skipped, never guessed; a failure with no positive signal is `unknown_stage`.

@@ -1,4 +1,4 @@
-"""Generate the Postman collection from the app's OpenAPI schema (S18.11).
+"""Generate the Postman collection from the app's OpenAPI schema.
 
     cd backend && uv run --frozen python ../scripts/export_postman.py   # -> docs/api/
     cd backend && uv run --frozen python ../scripts/export_postman.py --out -    # stdout

@@ -1,4 +1,4 @@
-"""Answer-eval runner for the v2 dataset (S21.10a): `python -m eval.run --dataset v2 ...` lands here.
+"""Answer-eval runner for the v2 dataset: `python -m eval.run --dataset v2 ...` lands here.
 
 Flow, per run:
 
@@ -116,7 +116,7 @@ class ItemOutputV2(ItemOutput):
     """`ItemOutput` plus the chunk ids the generator was given (selected candidates and citations)."""
 
     evidence: list[str] | None = None
-    # S22.07 calibration inputs read back from the run record (`candidates`, `run`); see answers_dump.abstain_row
+    # Calibration inputs read back from the run record (`candidates`, `run`); see answers_dump.abstain_row
     abstain_inputs: dict[str, Any] | None = None
 
 

@@ -1,4 +1,4 @@
-"""Generate `eval/datasets/vault_eval_v2/documents.yaml`: the v2 document map and the split lists (S21.10a).
+"""Generate `eval/datasets/vault_eval_v2/documents.yaml`: the v2 document map and the split lists.
 
 $0, no model calls. Maps every document key the v2 items mention (`source_doc`, `doc_ids`,
 `gold_evidence.doc`) to its file:

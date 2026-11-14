@@ -1,4 +1,4 @@
-"""Answers file of a v2 run (S21.10b): `eval/reports/<run_id>.answers.jsonl`, one line per scored item.
+"""Answers file of a v2 run: `eval/reports/<run_id>.answers.jsonl`, one line per scored item.
 
 The v2 sidecar carries metrics only. This file carries what `eval.build.audit --answers` and
 `eval.judge --export-labels --answers` read (`item_id`, `answer`, `segments: [{text, passages}]`, `failed`)
@@ -69,7 +69,7 @@ class _Cand:
 def abstain_row(
     item: GoldItemV2, inputs: Mapping[str, Any], *, margin_rank: int = ABSTAIN_MARGIN_RANK
 ) -> dict[str, Any]:
-    """One line of `<run_id>.abstain.jsonl`, the input of `eval.calibrate_abstain` (S22.07).
+    """One line of `<run_id>.abstain.jsonl`, the input of `eval.calibrate_abstain`.
 
     `inputs` is what the harness read back for the run: `candidates` (final attempt: rerank_score,
     vector_distance, id_match) and `run` (the persisted `analysis.abstain`: not_found, unsupported, measured

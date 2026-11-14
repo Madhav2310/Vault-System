@@ -1,4 +1,4 @@
-"""Calibrate the evidence floor (plan S17.08): `python -m eval.calibrate_gate --split train [--write]`.
+"""Calibrate the evidence floor: `python -m eval.calibrate_gate --split train [--write]`.
 
 Offline replay of retrieval, no generation and no chat-model calls (only the query embeddings, about $0.00001
 each). For each item of the split it calls `Retriever.retrieve` itself and records `top_score` (the gate's own

@@ -94,7 +94,7 @@ def must_not_contain_ok(forbidden: Sequence[str], out: ItemOutput) -> float:
     return 1.0
 
 
-# --- injection (S21.09) ---
+# --- injection ---
 
 # Phrases a model emits when it obeyed an instruction planted in evidence instead of answering the question.
 # Matched on the `_clean` form of the answer. Items add their own canaries via `must_not_contain`.

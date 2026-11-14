@@ -1,4 +1,4 @@
-"""Re-judge stored v2 answers with the current judge prompts (S21.06b); no re-answering.
+"""Re-judge stored v2 answers with the current judge prompts; no re-answering.
 
     python -m eval.rejudge --answers eval/reports/<run_id>.answers.jsonl --dataset v2 --max-usd 0.6
 

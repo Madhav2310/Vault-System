@@ -1,4 +1,4 @@
-"""S21.05: apply the human decisions of `audit_queue.yaml` to the v2 dataset files.
+"""Apply the human decisions of `audit_queue.yaml` to the v2 dataset files.
 
 Decision rules (deterministic, idempotent; a second run changes nothing):
 

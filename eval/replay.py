@@ -1,4 +1,4 @@
-"""Offline ranking replay (plan S11.02): re-score stored `retrieval_candidates` against gold.
+"""Offline ranking replay: re-score stored `retrieval_candidates` against gold.
 
     cd backend && PYTHONPATH=.. uv run --frozen python -m eval.replay --run latest --rank rrf
     ... --run <eval_run_id> --rank final --by-category

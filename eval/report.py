@@ -31,9 +31,9 @@ class ItemResult:
     turns: list[ItemResult] = field(default_factory=list)  # multi-turn: one per turn, ids `<id>#t<n>`
     quote_hits: list[bool] | None = None  # per mapped gold quote: hit in the top 8 (paired tests)
     degraded: tuple[str, ...] = ()
-    source_doc: str | None = None  # cluster key (S21.07); None = singleton cluster
+    source_doc: str | None = None  # cluster key; None = singleton cluster
     stratum: str | None = None
-    attribution: dict[str, Any] | None = None  # S21.08 signals the runner recorded (None = not recorded)
+    attribution: dict[str, Any] | None = None  # signals the runner recorded (None = not recorded)
 
 
 @dataclass
@@ -135,7 +135,7 @@ def write_sidecar(run: RunResult, directory: pathlib.Path = REPORTS_DIR) -> path
     return path
 
 
-# --- Statistics (S21.07): cluster bootstrap, design effect, MDE, Clopper-Pearson --------------------------
+# --- Statistics: cluster bootstrap, design effect, MDE, Clopper-Pearson --------------------------
 Z_ALPHA_2 = 1.959964  # two-sided 5%
 Z_POWER_80 = 0.841621
 Z_SUM = Z_ALPHA_2 + Z_POWER_80  # ~2.80

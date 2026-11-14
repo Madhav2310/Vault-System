@@ -1,4 +1,4 @@
-"""Answer-quality metrics (plan S17.12): binary judge scores, support-check rate, totals with bootstrap CIs.
+"""Answer-quality metrics: binary judge scores, support-check rate, totals with bootstrap CIs.
 
 Per item (added to the deterministic metrics of `eval.graders.grade_item`):
   answer_pass        completeness judge: pass -> 1, partial/fail -> 0 (deterministic verdicts count too)

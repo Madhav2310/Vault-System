@@ -1,4 +1,4 @@
-"""Migrate the 122 v1 golden items to gold schema v2 (plan S21.02).
+"""Migrate the 122 v1 golden items to gold schema v2.
 
     python -m eval.build.migrate_v1 --max-usd 0.5   # live: cap mandatory (from backend/, PYTHONPATH=..)
     python -m eval.build.migrate_v1 --dry-run            # scripted FakeProvider, no network, writes nothing
@@ -30,7 +30,7 @@ Rules
   number of sentences on earlier pages, giving a document-level half-open range. This is a
   chunker-independent approximation: re-map against ingested chunks before relying on it (UNVERIFIED).
 - Every item is written with `audit_status: draft` (or `dropped`) and an `audit_note`; claim quality is
-  unaudited until S21.05.
+  unaudited until the gold audit.
 """
 
 from __future__ import annotations

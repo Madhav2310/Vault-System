@@ -1,4 +1,4 @@
-"""Vault-Eval schema (design section 18, plan S2.12/S2.13): golden items and the pipeline I/O types.
+"""Vault-Eval schema: golden items and the pipeline I/O types.
 
 Golden items are validated strictly: unknown keys are rejected (a misspelled `must_not_contian` must not
 silently disable a grader), required fields are enforced per category and per grading mode.
@@ -179,7 +179,7 @@ class GoldenItem(BaseModel):
         )
 
 
-# --- gold schema v2 (plan S21.01): atomic claims, evidence as sentence ranges ---
+# --- gold schema v2: atomic claims, evidence as sentence ranges ---
 
 Stratum = Literal[
     "single_span",

@@ -1,4 +1,4 @@
-"""Coverage check for the v2 gold set (plan S21.03): items per stratum vs the matrix target, per document.
+"""Coverage check for the v2 gold set: items per stratum vs the matrix target, per document.
 
     python -m eval.build.check_coverage eval/datasets/vault_eval_v2 [--require-all]
 

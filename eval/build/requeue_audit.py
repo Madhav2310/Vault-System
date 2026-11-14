@@ -1,4 +1,4 @@
-"""S21.05b: requeue the stored gold-audit queue with the current judges; no new answering.
+"""Requeue the stored gold-audit queue with the current judges; no new answering.
 
 The first audit queue (`audit_queue.yaml`) was produced with the over-strict v1 claim judge (RCA
 `docs/evidence/train_v2_rca.md`: 24 of 51 train failures were grader or gold artifacts). Both answers (Vault's

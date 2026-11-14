@@ -1,5 +1,5 @@
 # ruff: noqa: S324, S311 (sha1 = stable item ids; seeded random = reproducible sampling)
-"""Fill the `table_lookup` stratum of the v2 golden set from real FinanceBench 10-Q tables (plan S21.04b).
+"""Fill the `table_lookup` stratum of the v2 golden set from real FinanceBench 10-Q tables.
 
 Code decides everything that is gold; the model only paraphrases a question.
 

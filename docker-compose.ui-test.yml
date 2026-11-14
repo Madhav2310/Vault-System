@@ -1,4 +1,4 @@
-# UI test profile (S19.02): the default stack with a scripted fake model (no provider key, no spend).
+# UI test profile: the default stack with a scripted fake model (no provider key, no spend).
 # Used by `make ui-e2e` as project `vault-uitest` on its own ports, so a running dev stack is untouched:
 #   docker compose -p vault-uitest -f docker-compose.yml -f docker-compose.ui-test.yml up -d
 # TEST ONLY: `ENVIRONMENT=prod` + `LLM_PROVIDER=fake` refuses to start (Settings validator).

@@ -1,6 +1,6 @@
 # vault_eval_v2
 
-Gold set v2 (plan S21): about 300 items, atomic claims. `golden.yaml` has a top-level `items:` list; load it with
+Gold set v2: about 300 items, atomic claims. `golden.yaml` has a top-level `items:` list; load it with
 `eval.loader.load_dataset_v2()` (schema: `eval.schema.GoldItemV2`). v1 (`../vault_eval_v1`) stays loadable with
 `eval.loader.load_dataset()` for old reports.
 
@@ -32,7 +32,7 @@ Gold set v2 (plan S21): about 300 items, atomic claims. `golden.yaml` has a top-
 
 Check: `cd backend && uv run pytest tests/unit/eval/test_schema_v2.py`
 
-## Appendix: authored strata 7-14 (S21.03)
+## Appendix: authored strata 7-14
 
 Files: `authored/{compare_docs,conflict,aggregation,unanswerable,false_premise,versioned,injection,multi_turn}.yaml`; fixtures in `docs/` (all CC0, authored; keys and titles in `docs/manifest.yaml`). Check: `python -m eval.build.check_coverage eval/datasets/vault_eval_v2 [--require-all]`.
 

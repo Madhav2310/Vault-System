@@ -1,4 +1,4 @@
-"""Retrieval-only harness for `eval.run` (plan S11.01): no analyze, no generation, no chat-model calls.
+"""Retrieval-only harness for `eval.run`: no analyze, no generation, no chat-model calls.
 
 `python -m eval.run --suite retrieval --config retrieval@1 --pipeline eval.pipeline_retrieval:setup`
 answers each item by calling `Retriever.retrieve` in process against the dev database, for a stable eval user
@@ -215,7 +215,7 @@ async def setup(config: str) -> Harness:
     gw = get_gateway()
     rds = aioredis.from_url(settings.redis_url)
     retriever = Retriever(QueryEmbedder(gw, rds), RerankClient.from_settings(settings), None, cfg)
-    await retriever.warm_up()  # model load must not count against the first item (S16.04)
+    await retriever.warm_up()  # model load must not count against the first item
     return Harness(
         make_pipeline(sm, retriever, uid, doc_ids),
         chunks,

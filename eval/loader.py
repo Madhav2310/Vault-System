@@ -20,7 +20,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATASET_DIR = ROOT / "eval" / "datasets" / "vault_eval_v1"
 EXPECTED_ITEMS = 122
 DATASET_V2_DIR = ROOT / "eval" / "datasets" / "vault_eval_v2"
-MAX_ITEMS_PER_DOC = 3  # plan S21: design effect about 1.6
+MAX_ITEMS_PER_DOC = 3  # design effect about 1.6
 SPLITS: tuple[Split, ...] = ("train", "test", "smoke")
 
 

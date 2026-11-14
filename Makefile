@@ -1,4 +1,4 @@
-# Vault — developer entry points. Python runs only from backend/.venv (uv-managed 3.12).
+# Vault developer entry points. Python runs only from backend/.venv (uv-managed 3.12). `make` lists the targets.
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 COMPOSE := docker compose
@@ -8,123 +8,80 @@ HOST_ENV := TIKTOKEN_CACHE_DIR=$(HOME)/.cache/tiktoken DATABASE_URL=postgresql+a
             RERANKER_URL=http://localhost:$${RERANKER_PORT:-8180} \
             API_BASE_URL=http://localhost:$${API_PORT:-8100}
 UV := cd backend && $(HOST_ENV) UV_PYTHON_PREFERENCE=only-managed uv run --frozen
+EVAL_PY := $(UV) --group eval python
+CONFIG ?= ops/otel/collector.yaml
+UI_OPENAPI := $(CURDIR)/frontend/.openapi.json
+UI_E2E_ENV := COMPOSE_PROJECT_NAME=vault-uitest COMPOSE_FILE=docker-compose.yml:docker-compose.ui-test.yml \
+              API_PORT=8190 POSTGRES_PORT=5542 REDIS_PORT=6489 RERANKER_PORT=8280
 
-define not_implemented
-	@echo "make $@: not implemented yet ($(1))"; exit 1
-endef
+.PHONY: help up up-test up-rerank up-full down logs migrate seed seed-users \
+        ci lint fmt typecheck test test-unit test-integration test-e2e smoke-providers \
+        ui ui-types ui-types-check ui-check ui-e2e demo-record diagrams otel-validate \
+        eval-retrieval eval-retrieval-fast eval-answers eval-answers-v2 eval-smoke eval-diagnose eval-gate \
+        eval-gate-t0 eval-audit eval-audit-apply eval-labels eval-v2-docs eval-fetch eval-build eval-extraction c1-check
 
-.PHONY: help up down logs test test-unit test-integration test-e2e lint fmt typecheck migrate seed \
-        seed-users up-test up-rerank up-full eval eval-retrieval eval-retrieval-fast eval-answers eval-answers-v2 eval-diagnose eval-audit eval-audit-apply eval-labels eval-v2-docs eval-smoke loadtest ci
+help:  ## list the targets
+	@awk 'BEGIN {FS = ":.*## "} /^##@/ {printf "\n%s\n", substr($$0, 5)} /^[a-z0-9-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 
-help:
-	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | tr '\n' ' '; echo
-
-up:
+##@ Stack
+up:  ## build and start the default stack, wait until healthy
 	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) up -d --build
 	scripts/wait_healthy.sh 180
-up-test:  ## Postgres + Redis only (integration tests need nothing else)
+up-test:  ## Postgres and Redis only (integration tests need nothing else)
 	$(COMPOSE) up -d postgres redis
 	scripts/wait_healthy.sh 120 postgres redis
-up-rerank:  ## default stack + the reranker
+up-rerank:  ## default stack plus the cross-encoder reranker service
 	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) --profile rerank up -d --build
 	COMPOSE_PROFILES=rerank scripts/wait_healthy.sh 240
-up-full:  ## default stack + reranker + observability (heavy)
+up-full:  ## default stack plus reranker and observability (heavy)
 	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) --profile full up -d --build
 	COMPOSE_PROFILES=full scripts/wait_healthy.sh 240
-down:
+down:  ## stop every service of every profile
 	$(COMPOSE) --profile '*' down
-logs:
+logs:  ## follow the logs of the running services
 	$(COMPOSE) logs -f --tail=200
+migrate:  ## apply database migrations
+	$(COMPOSE) run --rm --no-deps api alembic upgrade head
+seed: seed-users  ## seed the demo users
+seed-users:  ## create the demo users and print their API keys
+	$(COMPOSE) exec -T api python -m app.db.seed users
 
-test:
-	$(UV) pytest tests/unit tests/integration tests/e2e
-test-e2e:
-	$(UV) pytest tests/e2e
-test-unit:
-	$(UV) pytest tests/unit
-test-integration:
-	$(UV) pytest tests/integration
-
-lint:
+##@ Quality
+ci: lint typecheck test-unit ui-check  ## lint, types, unit tests and frontend checks (no Docker)
+lint:  ## ruff lint and format check
 	$(UV) ruff check .
 	$(UV) ruff format --check .
-fmt:
+fmt:  ## format and auto-fix
 	$(UV) ruff format .
 	$(UV) ruff check --fix .
-typecheck:
+typecheck:  ## mypy (strict on backend/app)
 	$(UV) mypy
+test:  ## unit, integration and e2e tests (needs `make up`)
+	$(UV) pytest tests/unit tests/integration tests/e2e
+test-unit:  ## unit tests
+	$(UV) pytest tests/unit
+test-integration:  ## integration tests (needs `make up-test`)
+	$(UV) pytest tests/integration
+test-e2e:  ## end-to-end API tests
+	$(UV) pytest tests/e2e
+smoke-providers:  ## one live model call and one live embedding call (needs OPENAI_API_KEY; under $$0.001)
+	$(UV) pytest -m live tests/live -s
 
-migrate:
-	$(COMPOSE) run --rm --no-deps api alembic upgrade head
-seed: seed-users
-seed-users:
-	$(COMPOSE) exec -T api python -m app.db.seed users
-eval:
-	$(call not_implemented,S2.14)
-eval-retrieval:
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config retrieval --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
-eval-retrieval-fast:
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config $(or $(RETR_CONFIG),retrieval@1) --split $(or $(SPLIT),all) --pipeline eval.pipeline_retrieval:setup $(EVAL_ARGS)
-eval-answers:  ## full answers with judges: make eval-answers SPLIT=train MAX_USD=3 [FILTER=scope_docs=1] [DATASET=v2]
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite full --config answers --split $(or $(SPLIT),train) --max-usd $(or $(MAX_USD),3) $(if $(DATASET),--dataset $(DATASET)) $(if $(FILTER),--filter $(FILTER)) --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
-eval-answers-v2:  ## v2 gold set: make eval-answers-v2 SPLIT=dev MAX_USD=3 [FILTER=stratum=injection] [EVAL_ARGS="--freeze answer_v2"]
-	@grep -qiE '^BRIEF_ENABLED=false' .env 2>/dev/null || [ "$${BRIEF_ENABLED:-}" = false ] || echo "reminder: BRIEF_ENABLED=false must be set in the WORKER env (.env, then recreate the worker) or uploads pay for briefs"
-	$(MAKE) eval-answers DATASET=v2
-eval-diagnose:  ## where a run's gold passages were lost, offline: make eval-diagnose RUN=<run_id>
-	@test -n "$(RUN)" || { echo "usage: make eval-diagnose RUN=<run_id>"; exit 2; }
-	VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) $(UV) env PYTHONPATH=.. python -m eval.diagnose --run $(RUN) $(DIAG_ARGS)
-eval-audit:  ## S21.05 audit of a run's answers: make eval-audit ANSWERS=eval/reports/<run_id>.answers.jsonl [MAX_USD=2]
-	@test -n "$(ANSWERS)" || { echo "usage: make eval-audit ANSWERS=eval/reports/<run_id>.answers.jsonl [MAX_USD=2]"; exit 2; }
-	$(UV) env PYTHONPATH=.. python -m eval.build.audit --answers ../$(ANSWERS) --max-usd $(or $(MAX_USD),2) $(AUDIT_ARGS)
-eval-audit-apply:  ## apply the human decisions of audit_queue.yaml to the v2 dataset: [APPLY_ARGS=--check]
-	$(UV) env PYTHONPATH=.. python -m eval.build.apply_audit $(APPLY_ARGS)
-eval-labels:  ## export label pairs from a run's answers: make eval-labels ANSWERS=eval/reports/<run_id>.answers.jsonl [N=200]
-	@test -n "$(ANSWERS)" || { echo "usage: make eval-labels ANSWERS=eval/reports/<run_id>.answers.jsonl [N=200]"; exit 2; }
-	$(UV) env PYTHONPATH=.. python -m eval.judge --export-labels $(or $(N),200) --answers ../$(ANSWERS) --out ../eval/labels/labeled.yaml
-eval-v2-docs:  ## regenerate vault_eval_v2/documents.yaml ($0): make eval-v2-docs [ARGS=--download|--check]
-	cd backend && VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) UV_PYTHON_PREFERENCE=only-managed uv run --frozen python ../eval/build/build_v2_docs.py $(ARGS)
-eval-gate:  ## Tier 1 gate, no model call: make eval-gate BASE=eval/baselines/answer_v2.json CAND=eval/reports/<run_id>.json [GATE_ARGS=--strict-power]
-	@test -n "$(CAND)" || { echo "usage: make eval-gate [BASE=eval/baselines/answer_v2.json] CAND=eval/reports/<run_id>.json (docs/eval/eval_gates.md)"; exit 2; }
-	$(UV) env PYTHONPATH=.. python -m eval.gate compare ../$(or $(BASE),eval/baselines/answer_v2.json) ../$(CAND) $(GATE_ARGS)
-eval-gate-t0:  ## Tier 0 gate ($0, every PR): schema, documents map, citation integrity, replay, retrieval-only vs baseline, security tests
-	$(UV) env PYTHONPATH=.. python -m eval.gate schema
-	$(MAKE) eval-v2-docs ARGS=--check
-	$(UV) env PYTHONPATH=.. python -m eval.gate citations $(RUNS)
-	$(UV) env PYTHONPATH=.. python -m eval.replay --run $(or $(RUN),latest)
-	$(MAKE) eval-retrieval-fast EVAL_ARGS="--compare retrieval"
-	$(UV) pytest tests/integration/security
-eval-smoke:
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite smoke --config smoke --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
-loadtest:
-	$(call not_implemented,S5.12)
-
-# Fails on the first error: lint → typecheck → unit tests; the frontend checks run only when installed.
-ci: lint typecheck test-unit ui-check
-
-# --- Web UI (S19.01): Vite + React + TS in frontend/, served by the api at /app ---
-.PHONY: ui ui-types ui-types-check ui-check
-UI_OPENAPI := $(CURDIR)/frontend/.openapi.json
+##@ Frontend and docs
 define ui_dump_openapi
 	$(UV) python -c "import json,sys; from app.main import create_app; json.dump(create_app().openapi(), open(sys.argv[1], 'w'), indent=1, sort_keys=True)" $(UI_OPENAPI)
 endef
-ui:
+ui:  ## build the web UI served by the API at /app
 	cd frontend && npm ci && npm run build
-ui-types:  ## regenerate frontend/src/api/schema.gen.ts from the API's OpenAPI document
+ui-types:  ## regenerate frontend/src/api/schema.gen.ts from the OpenAPI document
 	$(ui_dump_openapi)
 	cd frontend && npx openapi-typescript .openapi.json -o src/api/schema.gen.ts; rc=$$?; rm -f .openapi.json; exit $$rc
-ui-types-check:  ## non-zero when the committed generated types are stale
+ui-types-check:  ## fail when the committed generated types are stale
 	$(ui_dump_openapi)
 	cd frontend && npx openapi-typescript .openapi.json -o /tmp/vault-schema.gen.ts; rc=$$?; rm -f .openapi.json; [ $$rc -eq 0 ] && diff -u src/api/schema.gen.ts /tmp/vault-schema.gen.ts || { echo "ui types are stale: run make ui-types"; exit 1; }
-ui-check:
+ui-check:  ## frontend typecheck and lint (skipped without node_modules)
 	@if [ -d frontend/node_modules ]; then cd frontend && npm run typecheck && npm run lint; else echo "frontend skipped (no frontend/node_modules)"; fi
-
-# S19.02: UI e2e against the fake-model stack (project vault-uitest on its own ports; the dev stack is untouched).
-# Starts the stack with docker-compose.ui-test.yml, seeds a user, uploads frontend/e2e/fixtures, runs headless
-# Chromium with one worker, then tears the stack (and its volumes) down whatever the outcome.
-.PHONY: ui-e2e
-UI_E2E_ENV := COMPOSE_PROJECT_NAME=vault-uitest COMPOSE_FILE=docker-compose.yml:docker-compose.ui-test.yml \
-              API_PORT=8190 POSTGRES_PORT=5542 REDIS_PORT=6489 RERANKER_PORT=8280
-ui-e2e:
+ui-e2e:  ## Playwright e2e against a fake-model stack on its own ports, torn down afterwards
 	@set -euo pipefail; export $(UI_E2E_ENV); base=http://localhost:8190; \
 	trap 'docker compose --profile "*" down -v' EXIT; \
 	docker compose --profile "*" down -v >/dev/null 2>&1 || true; \
@@ -146,43 +103,58 @@ ui-e2e:
 	[ "$$ready" -ge "$$n" ] || { echo "ui-e2e: fixtures not enriched ($$ready/$$n)"; exit 1; }; \
 	cd frontend && { [ -d node_modules ] || npm ci --no-audit --no-fund; } && npx playwright install chromium \
 	  && UI_BASE_URL=$$base UI_API_KEY=$$key npx playwright test
-
-# Records the scripted demo (frontend/e2e/demo.spec.ts) as video against the running stack (`make up`, localhost
-# sign-in). Output: frontend/test-results/**/video.webm. A real key spends a few cents; the fake-model stack works too.
-.PHONY: demo-record
-demo-record:
+demo-record:  ## record the scripted demo as video against the running stack
 	cd frontend && { [ -d node_modules ] || npm ci --no-audit --no-fund; } && npx playwright install chromium \
 	  && DEMO_RECORD=1 UI_BASE_URL=http://localhost:$${API_PORT:-8100} npx playwright test e2e/demo.spec.ts
-
-# --- Eval corpus (S0.18): third-party sources -> eval/sources/ (gitignored); rebuild the golden set ---
-.PHONY: eval-fetch eval-build eval-extraction c1-check
-EVAL_PY := $(UV) --group eval python
-eval-fetch:
-	eval/build/fetch_sources.sh
-eval-build:
-	$(EVAL_PY) ../eval/build/build_external.py
-	$(EVAL_PY) ../eval/build/build_authored.py
-# C1 checkpoint: every corpus document through the real stages (FakeProvider embeddings, no API cost)
-c1-check:
-	export VAULT_CORPUS=1; $(UV) pytest tests/integration/ingestion/test_corpus_pipeline.py -s -q
-# S1.13 AC8: gold-quote locatability with the production PDF extractor (no LLM calls)
-eval-extraction:
-	$(EVAL_PY) ../eval/extraction_check.py
-
-# --- OpenTelemetry collector (S0.15 / S0.22) ---
-CONFIG ?= ops/otel/collector.yaml
-otel-validate:
+diagrams:  ## regenerate the chat-turn diagram source and render docs/img/*.mmd to SVG
+	$(UV) python ../scripts/gen_turn_diagram.py
+	for f in docs/img/*.mmd; do npx -y @mermaid-js/mermaid-cli@11.4.2 -i $$f -o $${f%.mmd}.svg || exit 1; done
+otel-validate:  ## validate the OpenTelemetry collector config
 	docker run --rm --entrypoint /otel-lgtm/otelcol-contrib/otelcol-contrib \
 	  -v "$(abspath $(CONFIG))":/cfg/config.yaml:ro grafana/otel-lgtm:0.38.1 \
 	  validate --feature-gates service.profilesSupport --config=file:/cfg/config.yaml
 
-# S0.13 AC13: one live Haiku call + one live embedding call (needs ANTHROPIC_API_KEY, OPENAI_API_KEY; <$0.001).
-.PHONY: smoke-providers
-smoke-providers:
-	$(UV) pytest -m live tests/live -s
-
-# S20.02: regenerate the chat-turn source from GRAPH.describe(), then render docs/img/*.mmd to SVG (heavy: run once).
-.PHONY: diagrams
-diagrams:
-	$(UV) python ../scripts/gen_turn_diagram.py
-	for f in docs/img/*.mmd; do npx -y @mermaid-js/mermaid-cli@11.4.2 -i $$f -o $${f%.mmd}.svg || exit 1; done
+##@ Evaluation
+eval-retrieval:  ## retrieval suite through the API
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config retrieval --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
+eval-retrieval-fast:  ## retrieval-only suite in process: [RETR_CONFIG=retrieval@N] [SPLIT=dev]
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config $(or $(RETR_CONFIG),retrieval@1) --split $(or $(SPLIT),all) --pipeline eval.pipeline_retrieval:setup $(EVAL_ARGS)
+eval-answers:  ## answers with judges: SPLIT=train MAX_USD=3 [FILTER=scope_docs=1] [DATASET=v2]
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite full --config answers --split $(or $(SPLIT),train) --max-usd $(or $(MAX_USD),3) $(if $(DATASET),--dataset $(DATASET)) $(if $(FILTER),--filter $(FILTER)) --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
+eval-answers-v2:  ## v2 gold set: SPLIT=dev MAX_USD=3 [FILTER=stratum=injection] [EVAL_ARGS=...]
+	@grep -qiE '^BRIEF_ENABLED=false' .env 2>/dev/null || [ "$${BRIEF_ENABLED:-}" = false ] || echo "reminder: BRIEF_ENABLED=false must be set in the WORKER env (.env, then recreate the worker) or uploads pay for briefs"
+	$(MAKE) eval-answers DATASET=v2
+eval-smoke:  ## smoke suite through the API
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite smoke --config smoke --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
+eval-diagnose:  ## where a run's gold passages were lost, offline: RUN=<run_id>
+	@test -n "$(RUN)" || { echo "usage: make eval-diagnose RUN=<run_id>"; exit 2; }
+	VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) $(UV) env PYTHONPATH=.. python -m eval.diagnose --run $(RUN) $(DIAG_ARGS)
+eval-gate:  ## Tier 1 gate, no model call: CAND=eval/reports/<run_id>.json [BASE=...]
+	@test -n "$(CAND)" || { echo "usage: make eval-gate [BASE=eval/baselines/answer_v2.json] CAND=eval/reports/<run_id>.json (docs/evaluation.md)"; exit 2; }
+	$(UV) env PYTHONPATH=.. python -m eval.gate compare ../$(or $(BASE),eval/baselines/answer_v2.json) ../$(CAND) $(GATE_ARGS)
+eval-gate-t0:  ## Tier 0 gate: schema, documents map, citations, replay, retrieval vs baseline, security
+	$(UV) env PYTHONPATH=.. python -m eval.gate schema
+	$(MAKE) eval-v2-docs ARGS=--check
+	$(UV) env PYTHONPATH=.. python -m eval.gate citations $(RUNS)
+	$(UV) env PYTHONPATH=.. python -m eval.replay --run $(or $(RUN),latest)
+	$(MAKE) eval-retrieval-fast EVAL_ARGS="--compare retrieval"
+	$(UV) pytest tests/integration/security
+eval-audit:  ## gold audit of a run's answers: ANSWERS=eval/reports/<run_id>.answers.jsonl [MAX_USD=2]
+	@test -n "$(ANSWERS)" || { echo "usage: make eval-audit ANSWERS=eval/reports/<run_id>.answers.jsonl [MAX_USD=2]"; exit 2; }
+	$(UV) env PYTHONPATH=.. python -m eval.build.audit --answers ../$(ANSWERS) --max-usd $(or $(MAX_USD),2) $(AUDIT_ARGS)
+eval-audit-apply:  ## apply audit_queue.yaml decisions to the v2 dataset [APPLY_ARGS=--check]
+	$(UV) env PYTHONPATH=.. python -m eval.build.apply_audit $(APPLY_ARGS)
+eval-labels:  ## export judge-calibration label pairs: ANSWERS=... [N=200]
+	@test -n "$(ANSWERS)" || { echo "usage: make eval-labels ANSWERS=eval/reports/<run_id>.answers.jsonl [N=200]"; exit 2; }
+	$(UV) env PYTHONPATH=.. python -m eval.judge --export-labels $(or $(N),200) --answers ../$(ANSWERS) --out ../eval/labels/labeled.yaml
+eval-v2-docs:  ## regenerate vault_eval_v2/documents.yaml [ARGS=--download|--check]
+	cd backend && VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) UV_PYTHON_PREFERENCE=only-managed uv run --frozen python ../eval/build/build_v2_docs.py $(ARGS)
+eval-fetch:  ## download the third-party sources into eval/sources/
+	eval/build/fetch_sources.sh
+eval-build:  ## rebuild the external and authored gold items
+	$(EVAL_PY) ../eval/build/build_external.py
+	$(EVAL_PY) ../eval/build/build_authored.py
+eval-extraction:  ## gold-quote locatability with the production PDF extractor (no model calls)
+	$(EVAL_PY) ../eval/extraction_check.py
+c1-check:  ## every corpus document through the real ingestion stages (fake embeddings, no cost)
+	export VAULT_CORPUS=1; $(UV) pytest tests/integration/ingestion/test_corpus_pipeline.py -s -q

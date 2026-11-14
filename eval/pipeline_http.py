@@ -261,7 +261,7 @@ async def setup(
         last = max((r[1] for r in cand_rows), default=0)  # the final attempt's selected chunks + cited ones
         picked = {str(r[0]) for r in cand_rows if r[2] and r[1] == last}
         picked |= {c.chunk_id for sg in segs for c in sg.citations}
-        inputs = {  # S22.07: the final attempt's scores and the features the turn recorded
+        inputs = {  # the final attempt's scores and the features the turn recorded
             "candidates": [
                 {"rerank_score": r[3], "vector_distance": r[4], "id_match": bool(r[5])}
                 for r in cand_rows

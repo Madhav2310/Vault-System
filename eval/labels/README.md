@@ -1,4 +1,4 @@
-# Judge calibration labels (S21.06)
+# Judge calibration labels
 
 `labeled.yaml` holds human labels for (item, answer) pairs. Schema: `schema.py`.
 

@@ -1,4 +1,4 @@
-"""Brief quality evaluation (plan S12.07, design section 18).
+"""Brief quality evaluation.
 
 For the train documents of Vault-Eval (holdout documents never), the brief is generated in memory through the
 production code path (`app.insights.stage.generate_brief` over chunks cut by the production extractor and

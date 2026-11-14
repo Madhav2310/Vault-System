@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Full product demo (S20.06): upload 3 documents -> live status -> source guides -> streamed lookup -> follow-up
+# Full product demo: upload 3 documents -> live status -> source guides -> streamed lookup -> follow-up
 # -> compare (multi-document question) -> meta question -> why panel -> new version and stale marker -> metrics -> spend.
 # Everything is plain curl against the running stack (`make up`); a fresh throwaway user is created.
 #

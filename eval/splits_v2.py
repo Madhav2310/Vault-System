@@ -1,4 +1,4 @@
-"""Deterministic v2 splits (S21.10a): train / dev / test by a hash of `source_doc`, 40 / 20 / 40.
+"""Deterministic v2 splits: train / dev / test by a hash of `source_doc`, 40 / 20 / 40.
 
 The unit of assignment is the cluster key (`source_doc`), so no document is in two splits and every item of a
 document travels together. The hash is sha256 of the key (no salt, no randomness): the same key lands in the

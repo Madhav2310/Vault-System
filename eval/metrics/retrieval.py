@@ -1,4 +1,4 @@
-"""Retrieval metrics (plan S2.17): recall@k for k in (8, 20, 40) and MRR@40 over mapped gold quotes.
+"""Retrieval metrics: recall@k for k in (8, 20, 40) and MRR@40 over mapped gold quotes.
 
 A gold quote is a hit at k when any chunk acceptable for it (`GoldTarget.hits`) is in the top k retrieved ids.
 The runner's per-item metric is `recall@8` / `mrr@40` from `eval.graders.retrieval_metrics`; this module adds the

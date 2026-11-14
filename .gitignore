@@ -40,8 +40,8 @@ eval/reports/*
 !eval/reports/.gitkeep
 eval/.reuse*.json
 
-# local working notes (plans, scratch)
+# Local scratch space
 .work/
 
-# local audit workbook (your answers)
+# Gold-audit workbook rendered by eval/build/audit_workbook.py
 AUDIT.md

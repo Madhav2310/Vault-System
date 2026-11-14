@@ -1,4 +1,4 @@
-"""Calibrate scored abstention (plan S22.07): `python -m eval.calibrate_abstain --split dev [--run FILE] [--write]`.
+"""Calibrate scored abstention: `python -m eval.calibrate_abstain --split dev [--run FILE] [--write]`.
 
 Offline and free: it reads a features file, calls no model and no database. Weights are fitted on the train
 split, both thresholds are picked on dev from the coverage-accuracy curve, and the chosen config is scored on
@@ -10,7 +10,7 @@ Input (`--run`, default: the newest `eval/reports/*.abstain.jsonl`), one JSON ob
   item_id, stratum, source_doc (the split is derived with `eval.splits_v2.split_of`; a `split` field wins),
   top, margin (retrieval features, margin to rank `--margin-rank`), not_found (plan elements without a valid
   handle), unsupported (share of unsupported segments before removal); null/absent = not computed.
-A v2 run does not write this file yet: see the S22.07 report for the fields it needs.
+A v2 run writes it next to its report as `<run_id>.abstain.jsonl`.
 
 Run from backend/ with PYTHONPATH=..:
     python -m eval.calibrate_abstain --split dev --run eval/reports/<run_id>.abstain.jsonl

@@ -1,4 +1,4 @@
-"""Calibration of the support check (plan S17.09 AC7): `support_check@1` (role fast) against the
+"""Calibration of the support check: `support_check@1` (role fast) against the
 `eval_judge_faithfulness@1` judge (role deep) on the same segment and the same cited text.
 
 Both verdicts are binarized: supported vs not (fast: `supported`; judge: `pass`). Reports the raw agreement and

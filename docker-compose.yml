@@ -1,4 +1,4 @@
-# Vault dev/demo topology (design §3, §20.1). All images pinned; host ports overridable via .env.
+# Vault dev and demo topology. All images pinned; host ports overridable via .env.
 name: vault
 
 x-app: &app
@@ -13,7 +13,7 @@ x-app: &app
   environment: &app-env
     DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-vault}:${POSTGRES_PASSWORD:-vault}@postgres:5432/${POSTGRES_DB:-vault}
     REDIS_URL: redis://redis:6379/0
-    RERANKER_URL: http://reranker:8080  # optional (profile `rerank`): retrieval degrades without it
+    RERANKER_URL: http://reranker:8080  # optional cross-encoder (profile `rerank`); the default reranker is the LLM
     OBJECT_STORE_ROOT: /data/blobs
     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
     OTEL_RESOURCE_ATTRIBUTES: deployment.environment=dev,service.version=${GIT_SHA:-dev}
@@ -53,7 +53,7 @@ services:
     build: ./reranker
     image: vault-reranker:0.1.0
     environment:
-      RERANKER_THREADS: "3"  # = cpus; S16.02 (os.cpu_count() inside a container reports the VM)
+      RERANKER_THREADS: "3"  # = cpus (os.cpu_count() inside a container reports the VM)
     ports: ["127.0.0.1:${RERANKER_PORT:-8180}:8080"]
     healthcheck:
       test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=3)"]
@@ -96,7 +96,7 @@ services:
       OTEL_SERVICE_NAME: vault-beat
     command: ["celery", "-A", "app.worker.celery_app", "beat", "-s", "/tmp/celerybeat-schedule", "--loglevel", "INFO"]
     deploy:
-      replicas: 1  # exactly one scheduler (design §3)
+      replicas: 1  # exactly one scheduler
     healthcheck:
       test: ["CMD", "python", "-c", "import sys; sys.exit(0 if b'beat' in open('/proc/1/cmdline','rb').read() else 1)"]
       interval: 30s
@@ -128,7 +128,7 @@ services:
     mem_limit: 256m
     cpus: 0.5
     image: redis:7.4.9-alpine
-    command: ["redis-server", "--appendonly", "no", "--save", ""]  # rebuildable state only (design §3)
+    command: ["redis-server", "--appendonly", "no", "--save", ""]  # rebuildable state only
     ports: ["127.0.0.1:${REDIS_PORT:-6389}:6379"]
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
@@ -158,34 +158,7 @@ services:
       start_period: 30s
     restart: unless-stopped
 
-  # ---- optional profiles (filled by later tasks) ----
-  minio:  # S0.12 [OPT]. MinIO images are no longer on Docker Hub; SeaweedFS provides the S3 API (followups F-003).
-    mem_limit: 512m
-    cpus: 0.5
-    profiles: ["minio"]
-    image: chrislusf/seaweedfs:4.50
-    command: ["server", "-s3", "-dir=/data"]
-    ports: ["127.0.0.1:${S3_PORT:-8333}:8333"]
-    volumes:
-      - s3data:/data
-
-  phoenix:  # S7.13 [OPT]
-    mem_limit: 512m
-    cpus: 0.5
-    profiles: ["phoenix"]
-    image: arizephoenix/phoenix:version-21.0.0
-    ports: ["127.0.0.1:${PHOENIX_PORT:-6006}:6006"]
-
-  pgexporter:  # S7.13 [OPT]
-    mem_limit: 128m
-    cpus: 0.25
-    profiles: ["pgexporter"]
-    image: prometheuscommunity/postgres-exporter:v0.20.1
-    environment:
-      DATA_SOURCE_NAME: postgresql://${POSTGRES_USER:-vault}:${POSTGRES_PASSWORD:-vault}@postgres:5432/${POSTGRES_DB:-vault}?sslmode=disable
-    depends_on: [postgres]
-
-  pgbouncer:  # design §20.2 (scale topology); not used in dev
+  pgbouncer:  # connection pooling for the scale topology (docs/operations.md); not used in dev
     mem_limit: 128m
     cpus: 0.25
     profiles: ["pgbouncer"]
@@ -200,4 +173,3 @@ volumes:
   pgdata:
   blobs:
   lgtm:
-  s3data:

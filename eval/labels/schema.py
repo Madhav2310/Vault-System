@@ -1,4 +1,4 @@
-"""Schema of the human-label file used to calibrate the claim, support and abstention judges (S21.06)."""
+"""Schema of the human-label file used to calibrate the claim, support and abstention judges."""
 
 from __future__ import annotations
 

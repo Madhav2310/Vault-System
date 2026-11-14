@@ -1,4 +1,4 @@
-"""Eval inbox (design 9.6, plan S18.10): export down-rated answers as golden-schema `draft` items.
+"""Eval inbox: export down-rated answers as golden-schema `draft` items.
 
     cd backend && PYTHONPATH=.. uv run --frozen python -m eval.inbox --since 2026-11-01T00:00:00+00:00
 

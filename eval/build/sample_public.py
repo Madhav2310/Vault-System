@@ -1,5 +1,5 @@
 # ruff: noqa: S324, S311, S310, S603 (sha1 = stable ids, seeded random = reproducible sampling, fixed https URLs)
-"""Sample strata 1-6 of the v2 golden set from the public sets (plan S21.04): FinanceBench, QASPER, CUAD.
+"""Sample strata 1-6 of the v2 golden set from the public sets: FinanceBench, QASPER, CUAD.
 
 $0: no model calls. Everything here is rule-based and seeded.
 

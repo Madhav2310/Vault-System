@@ -1,7 +1,7 @@
-"""Paired A/B comparison of two eval runs (plan S17.01).
+"""Paired A/B comparison of two eval runs.
 
     cd backend && PYTHONPATH=.. uv run --frozen python -m eval.paired A.json B.json \
-        --metric recall@8 [--seed 7] [--allow FIELD ...] [--legacy]
+        --metric recall@8 [--seed 7] [--allow FIELD ...] [--legacy] [--ledger]
 
 Items are paired by id (items present in only one run are excluded and counted). Prints the means, the
 delta (B - A) with a 95% paired-bootstrap CI over items (10,000 resamples, fixed seed), a p-value and a
@@ -13,6 +13,9 @@ metrics it is the two-sided bootstrap sign p-value. Verdict: `B better` when CI_
 Both sidecars carry a `fingerprint` (eval.fingerprint): the comparison is refused (exit 2, with a field diff)
 when anything differs except the fields named by `--allow` (dotted paths or their parents: `answer.prompts`,
 `answer`, `judge`, `code`, `items`, ...). Sidecars without one need `--legacy` (warns).
+
+`--ledger` also lists, item by item, what changed between the runs for a 0/1 metric such as `answer_pass`:
+the items that went from fail to pass and from pass to fail, with their stratum.
 """
 
 from __future__ import annotations
@@ -46,7 +49,7 @@ class Comparison:
     p_value: float
     p_kind: str
     verdict: str
-    # S21.07 additions (defaulted so existing constructions keep working)
+    # Defaulted so existing constructions keep working
     mean_diff: float = 0.0
     cluster_ci_low: float = 0.0
     cluster_ci_high: float = 0.0
@@ -159,6 +162,30 @@ def render(c: Comparison) -> str:
     )
 
 
+def ledger(a: Sidecar, b: Sidecar, metric: str) -> tuple[list[tuple[str, str]], list[tuple[str, str]]]:
+    """(gained, lost): `(item_id, stratum)` pairs whose metric went 0 -> 1 and 1 -> 0, in id order."""
+    ia, ib = {i.item_id: i for i in a.items}, {i.item_id: i for i in b.items}
+    gained: list[tuple[str, str]] = []
+    lost: list[tuple[str, str]] = []
+    for iid in sorted(set(ia) & set(ib)):
+        va, vb = ia[iid].metrics.get(metric), ib[iid].metrics.get(metric)
+        if va is None or vb is None or va == vb:
+            continue
+        row = (iid, getattr(ib[iid], "stratum", None) or getattr(ia[iid], "stratum", None) or "")
+        if va == 0 and vb == 1:
+            gained.append(row)
+        elif va == 1 and vb == 0:
+            lost.append(row)
+    return gained, lost
+
+
+def render_ledger(gained: Sequence[tuple[str, str]], lost: Sequence[tuple[str, str]]) -> str:
+    lines = [f"ledger: gained {len(gained)}, lost {len(lost)}"]
+    lines += [f"  gained  {iid}  {stratum}" for iid, stratum in gained]
+    lines += [f"  lost    {iid}  {stratum}" for iid, stratum in lost]
+    return "\n".join(lines)
+
+
 def load(path: str) -> Sidecar:
     return Sidecar.model_validate(json.loads(pathlib.Path(path).read_text()))
 
@@ -214,6 +241,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         action="store_true",
         help="compare sidecars that carry no fingerprint",
     )
+    ap.add_argument("--ledger", action="store_true", help="list the items that changed, in each direction")
     args = ap.parse_args(argv)
     sa, sb = load(args.a), load(args.b)
     refusals, warnings = check_fingerprints(sa, sb, args.allow, args.legacy)
@@ -224,6 +252,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"refusing to compare: {r}", file=sys.stderr)
         return 2
     print(render(compare(sa, sb, args.metric, args.seed)))
+    if args.ledger:
+        print(render_ledger(*ledger(sa, sb, args.metric)))
     return 0
 
 

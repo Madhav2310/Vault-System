@@ -1,4 +1,4 @@
-"""LLM judges for Vault-Eval (plan S2.18, design section 18): four judge types, each a versioned prompt with a
+"""LLM judges for Vault-Eval: four judge types, each a versioned prompt with a
 strict structured verdict, run on role `deep` (primary) and, on a stable hash-selected subset, `flagship`
 (secondary).
 
@@ -582,7 +582,7 @@ def sample_cases(items: Sequence[GoldenItem], jt: JudgeType, n: int) -> list[Jud
     return cases
 
 
-# --- v2 claim-level judges (S21.06) -------------------------------------------------------------------
+# --- v2 claim-level judges -------------------------------------------------------------------
 #
 # Three narrow judges, each a binary decision per unit: claim entailed by the answer (completeness), segment
 # entailed by its own cited sentences (support), answer behaved correctly on an unanswerable / false-premise /
@@ -704,7 +704,7 @@ def _complete_indices(got: Sequence[int], n: int, what: str) -> None:
 
 @dataclass(frozen=True)
 class Verdict2:
-    """One judged unit (claim or segment) as the model said it and as code applied it (S21.06b)."""
+    """One judged unit (claim or segment) as the model said it and as code applied it."""
 
     index: int
     decision: bool  # after the verbatim-quote check: what the metric uses

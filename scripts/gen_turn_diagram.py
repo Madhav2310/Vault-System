@@ -1,4 +1,4 @@
-"""Write the chat-turn Mermaid source from the real turn graph (S20.02).
+"""Write the chat-turn Mermaid source from the real turn graph.
 
 Run through the backend venv: `make diagrams`, or
 `cd backend && uv run --frozen python ../scripts/gen_turn_diagram.py`. The output is
