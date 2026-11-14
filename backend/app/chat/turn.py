@@ -27,6 +27,7 @@ from app.chat.nodes._common import ERROR_TEXT, NO_DOCUMENTS, NO_EVIDENCE, flush_
 from app.chat.nodes.compare_retrieve import compare_retrieve
 from app.chat.nodes.gate import gate
 from app.chat.nodes.load_context import load_context
+from app.chat.nodes.locate import locate
 from app.chat.nodes.meta import meta
 from app.chat.nodes.plan_context import plan_context
 from app.chat.nodes.retrieve import retrieve
@@ -54,6 +55,8 @@ def _analysis_record(state: TurnState) -> dict[str, Any] | None:
     rec: dict[str, Any] = {"intent": a.intent, "dimensions": list(a.dimensions)}
     if state.abstain_features:  # S22.07: calibration inputs and the decision, only with `chat_abstain_scored`
         rec["abstain"] = state.abstain_features
+    if state.locate_log:  # S22.10: typed actions, digests and counts only
+        rec["locate"] = state.locate_log
     if state.clarification is not None:  # the options, so history can show the chips again
         rec["clarify"] = state.clarification.to_json()
     if state.pick_document_id is not None:
@@ -115,8 +118,15 @@ def after_retrieve(s: TurnState) -> str:
 
 
 @router("abstain_no_evidence", "generate")
-def after_gate(s: TurnState) -> str:
+def after_locate(s: TurnState) -> str:
     return "abstain_no_evidence" if s.gate_abstain else "generate"
+
+
+@router("abstain_no_evidence", "generate", "locate")
+def after_gate(s: TurnState) -> str:
+    if s.locate_on and not s.locate_done and not s.compare and len(s.scope.entries) == 1:  # S22.10
+        return "locate"  # the node itself checks length and confidence, and may skip
+    return after_locate(s)
 
 
 @router("verify", "persist")
@@ -201,7 +211,7 @@ def build_graph() -> Graph:
         nodes={
             "load_context": load_context, "route_question": route_question, "analyze": analyze,
             "plan_context": plan_context, "retrieve": retrieve, "compare_retrieve": compare_retrieve,
-            "gate": gate, "generate": generate,
+            "gate": gate, "locate": locate, "generate": generate,
             "verify": verify,
             "clarify": clarify, "meta": meta, "abstain_no_documents": abstain_no_documents,
             "abstain_no_evidence": abstain_no_evidence, "persist": persist,
@@ -210,7 +220,7 @@ def build_graph() -> Graph:
             "load_context": after_load_context, "route_question": after_route_question,
             "analyze": after_analyze, "plan_context": after_plan_context, "retrieve": after_retrieve,
             "compare_retrieve": after_retrieve,
-            "gate": after_gate,
+            "gate": after_gate, "locate": after_locate,
             "generate": after_generate, "verify": "persist", "clarify": "persist", "meta": "persist",
             "abstain_no_documents": "persist", "abstain_no_evidence": "persist", "persist": END,
         },
@@ -236,7 +246,9 @@ async def _run_turn(
         deps, owner_id, session_id, run_id, user_message_id, TurnBudget(DEFAULT_LIMITS),
         sink=current_sink.get() or NullSink(),
     )  # fmt: skip
-    state = await GRAPH.run(TurnState(question=question, mode=mode), ctx)
+    state = await GRAPH.run(
+        TurnState(question=question, mode=mode, locate_on=deps.gateway.settings.chat_locate), ctx
+    )
     assert state.persisted is not None
     result: PersistedTurn = state.persisted
     return result

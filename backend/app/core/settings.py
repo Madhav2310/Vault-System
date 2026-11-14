@@ -122,6 +122,12 @@ class Settings(BaseSettings):
     # --- typed calculation segments (S22.08): answer_rag@5, code computes numbers; off until A/B decides ---
     chat_calc: bool = False
 
+    # --- routed locate loop for long filings (S22.10): bounded search/find/open steps when the first pass
+    # over one long document is low-confidence; off until the paired A/B decides ---
+    chat_locate: bool = False
+    chat_locate_min_chunks: int = 150  # "long" = at least this many chunks ...
+    chat_locate_min_pages: int = 60  # ... or at least this many pages
+
     # --- warm voice (S23.01): appends prompts/voice@1.md to the answer prompts; off until the A/B decides ---
     chat_voice: bool = False
 

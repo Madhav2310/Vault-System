@@ -125,6 +125,11 @@ class TurnState:
         False  # set by `analyze`: the model hinted at a document ambiguity (code still decides)
     )
     clarification: Clarification | None = None  # set by a code rule; sends the turn to `clarify`
+    locate_on: bool = (
+        False  # flag `chat_locate` (S22.10): `gate` may route to `locate`; set once by the runner
+    )
+    locate_done: bool = False  # set by `locate`: it runs at most once per turn
+    locate_log: list[dict[str, Any]] = field(default_factory=list)  # {step, action, arg_digest, new_chunks}
 
     def fail(self, *codes: str | None) -> None:
         self.status = "failed"
