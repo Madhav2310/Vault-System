@@ -189,7 +189,8 @@ class ChunkStage:
                     {"v": ctx.job.version_id, "o": ctx.job.owner_id},
                 )
             ).one()
-        drafts = await asyncio.to_thread(chunk_document, doc, title.title)
+        chunker_version = getattr(ctx.services.get("settings"), "chunker_version", CHUNKER_VERSION)
+        drafts = await asyncio.to_thread(chunk_document, doc, title.title, chunker_version)
         job = ctx.job
         rows = [
             {
@@ -233,7 +234,7 @@ class ChunkStage:
                 )
             await s.execute(
                 text("UPDATE document_versions SET chunker_version = :cv, token_count = :t WHERE id = :v"),
-                {"cv": CHUNKER_VERSION, "t": tokens, "v": job.version_id},
+                {"cv": chunker_version, "t": tokens, "v": job.version_id},
             )
 
         return StageResult(write=write, detail={"chunks": len(rows), "tokens": tokens})
