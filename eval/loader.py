@@ -156,7 +156,7 @@ def load_dataset_v2(root: pathlib.Path = DATASET_V2_DIR) -> DatasetV2:
         *sorted((root / "parts").glob("*.yaml")),
         *sorted((root / "authored").glob("*.yaml")),
     ]
-    raw: list[dict] = []
+    raw: list[dict[str, Any]] = []
     for f in files:
         if f.exists():
             raw += (yaml.safe_load(f.read_text()) or {}).get("items", [])
