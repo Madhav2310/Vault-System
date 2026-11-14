@@ -102,3 +102,18 @@ def test_run_id_and_old_metrics_loading(tmp_path: Any) -> None:
     )
     assert R.load_old_metrics(tmp_path / "abc.json") == {"a": {"answer_pass": 1.0}}
     assert R.load_old_metrics(tmp_path / "missing.json") == {}
+
+
+def test_output_defaults_to_the_answers_folder(tmp_path: Any) -> None:
+    answers = tmp_path / "run1.answers.jsonl"
+    assert R.output_path(answers, None) == tmp_path / "run1.rejudged.json"
+    assert R.output_path(answers, str(tmp_path / "out")) == tmp_path / "out" / "run1.rejudged.json"
+
+
+def test_refuses_to_overwrite_an_existing_result(tmp_path: Any, capsys: Any) -> None:
+    answers = tmp_path / "run1.answers.jsonl"
+    answers.write_text("", "utf-8")
+    (tmp_path / "run1.rejudged.json").write_text("{}", "utf-8")
+    assert R.main(["--answers", str(answers), "--max-usd", "0.1"]) == 2
+    assert "refusing to overwrite" in capsys.readouterr().err
+    assert (tmp_path / "run1.rejudged.json").read_text("utf-8") == "{}"

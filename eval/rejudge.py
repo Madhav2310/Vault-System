@@ -38,7 +38,6 @@ from eval.judge import (
     overrules,
     verdict_record,
 )
-from eval.report import REPORTS_DIR
 from eval.schema import GoldItemV2
 
 METRICS = ("answer_pass", "claim_completeness", "support_rate", "abstention_correct")
@@ -46,6 +45,11 @@ METRICS = ("answer_pass", "claim_completeness", "support_rate", "abstention_corr
 
 def load_rows(path: pathlib.Path) -> list[dict[str, Any]]:
     return [json.loads(ln) for ln in path.read_text("utf-8").splitlines() if ln.strip()]
+
+
+def output_path(answers: pathlib.Path, out_dir: str | None) -> pathlib.Path:
+    """`<run_id>.rejudged.json` beside the answers file, or in `out_dir` when one is named."""
+    return (pathlib.Path(out_dir) if out_dir else answers.parent) / f"{run_id_of(answers)}.rejudged.json"
 
 
 def run_id_of(path: pathlib.Path) -> str:
@@ -238,7 +242,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument(
         "--old", default=None, help="sidecar of the original run (default: <run_id>.json beside --answers)"
     )
-    ap.add_argument("--out-dir", default=str(REPORTS_DIR))
+    ap.add_argument("--out-dir", default=None, help="where to write (default: the folder of --answers)")
+    ap.add_argument("--overwrite", action="store_true", help="replace an existing rejudged result")
     ap.add_argument(
         "--write-sidecar",
         action="store_true",
@@ -254,6 +259,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     from eval.loader import load_dataset_v2
 
     path = pathlib.Path(a.answers)
+    out = output_path(path, a.out_dir)
+    sc_out = out.with_name(f"{run_id_of(path)}.rejudged.sidecar.json")
+    clash = [p for p in (out, sc_out if a.write_sidecar else None) if p is not None and p.exists()]
+    if clash and not a.overwrite:
+        print(f"refusing to overwrite {', '.join(map(str, clash))} (pass --overwrite)", file=sys.stderr)
+        return 2
     rows = load_rows(path)
     if a.limit:
         rows = rows[: a.limit]
@@ -265,7 +276,6 @@ def main(argv: Sequence[str] | None = None) -> int:
     res = asyncio.run(rejudge(gw, rows, load_dataset_v2().by_id(), guard, old=old))
     res["run_id"] = run_id_of(path)
     res["spent_usd"] = float(guard.spent)
-    out = pathlib.Path(a.out_dir) / f"{run_id_of(path)}.rejudged.json"
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(res, indent=1, ensure_ascii=False, sort_keys=True), "utf-8")
     nm = {k: (v["mean"], v["n"]) for k, v in res["means_new"].items()}
@@ -284,7 +294,6 @@ def main(argv: Sequence[str] | None = None) -> int:
         if old_sc.get("fingerprint") is None:
             print("note: the original sidecar has no fingerprint; the written sidecar needs --legacy")
         sc = rejudged_sidecar(old_sc, res, fingerprint.judge_versions(PROMPTS_V2), fingerprint.code_version())
-        sc_out = out.with_name(f"{run_id_of(path)}.rejudged.sidecar.json")
         sc_out.write_text(json.dumps(sc, indent=1, ensure_ascii=False), "utf-8")
         print(f"wrote {sc_out}")
     return 0 if res["stopped"] is None else 3

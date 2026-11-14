@@ -28,7 +28,7 @@ OUT: dict[str, Any] = {
 
 def test_default_version_unchanged() -> None:
     s = Settings(_env_file=None, database_url="postgresql+asyncpg://x/y", redis_url="redis://x")  # type: ignore[call-arg]
-    assert s.chat_analyze_version == 2
+    assert s.chat_analyze_version == 4
 
 
 def test_v3_frontmatter_compatible_with_v2() -> None:

@@ -341,12 +341,12 @@ Legend: rectangles are nodes (async functions over the typed `TurnState`), and d
 |---|---|---|
 | `load_context` | Session, scope, memory and document titles in one short DB session. An empty scope goes to `abstain_no_documents`. | none |
 | `route_question` | Fast-path rules (`backend/app/chat/routing_rules.py`): a self-contained question with no pronoun, comparison or meta cue skips the analysis call. Any doubt means analyze. | none |
-| `analyze` | `analyze_query@2` (`fast`). Returns the intent, standalone query, dimensions, an optional document narrowing, an optional `meta_op` and a clarification hint. Code drops unknown or foreign document refs, caps free text, and on any failure falls back to the raw question (`ANALYZE_FALLBACK`). The query embedding and speculative retrieval run at the same time. | 1, or 0 on the fast path |
+| `analyze` | `analyze_query@4` (`fast`). Returns the intent, standalone query, dimensions, an optional document narrowing, an optional `meta_op` and a clarification hint. Code drops unknown or foreign document refs, caps free text, and on any failure falls back to the raw question (`ANALYZE_FALLBACK`). The query embedding and speculative retrieval run at the same time. | 1, or 0 on the fast path |
 | `plan_context` | Chooses RAG or full context (`backend/app/chat/full_context.py`). Full context loads every chunk in order if the prompt fits `FULL_CONTEXT_MAX_TOKENS` (50,000) plus 4,000. Otherwise it falls back to RAG (`FULL_CONTEXT_TOO_LARGE`). | none |
 | `retrieve` / `compare_retrieve` | Hybrid retrieval, or for a compare intent over 2 to 5 documents, per-document retrieval with `max(3, 8 // n)` passages each, so one document cannot crowd out the others (`backend/app/chat/compare.py`). | embeddings only |
 | `gate` | The no-LLM evidence floor on `top_score`, off in `retrieval@5`. With `CHAT_ABSTAIN_SCORED` and a fitted `backend/config/abstain@1.yaml`, a logistic combiner decides instead (`backend/app/chat/abstain.py`). | none |
 | `locate` | Behind `CHAT_LOCATE`. A bounded in-document loop for one long document (at least 150 chunks or 60 pages) when the first pass is low-confidence. `locate_step@1` returns `search`/`find`/`open`/`done`, and code validates and runs each step. | up to the step cap |
-| `generate` | Builds the evidence set with handles and calls `answer_rag@10` (or `answer_compare@1` for compare), streaming. Resolves citations in code, validates conflicts and follow-ups, and runs the calc and coverage checks when their flags are on. | 1 |
+| `generate` | Builds the evidence set with handles and calls `answer_rag@12` (or `answer_compare@3` for compare), streaming. Resolves citations in code, validates conflicts and follow-ups, and runs the calc and coverage checks when their flags are on. | 1 |
 | `verify` | The support check (`support_check@1`, `fast`) over cited segments. Version 1 is advisory: it annotates verdicts and adds reason codes. Version 2 (`CHAT_SUPPORT_VERSION=2`) also prunes, removes unsupported segments, and regenerates once. | 1 |
 | `clarify` | A code-written question with option chips (`backend/app/chat/clarify.py`, behind `CHAT_CLARIFY`). The model never decides to ask and never writes the options. | none |
 | `meta` | Questions about the library ("how many documents...") answered by one allowlisted, parameterized, owner-scoped query per op (`backend/app/chat/meta.py`). The model never writes SQL and never sees rows. | none |
@@ -396,15 +396,15 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 
 | Prompt | Role | Purpose | Selected when |
 |---|---|---|---|
-| `analyze_query@2` | fast | Intent, standalone query, dimensions, optional document narrowing, optional meta operation, clarification hint | Default (`backend/app/chat/nodes/analyze.py`) |
+| `analyze_query@4` | fast | Intent, standalone query, dimensions, optional document narrowing, optional meta operation, clarification hint | Default (`backend/app/chat/nodes/analyze.py`) |
 | `analyze_query@3` | fast | The same job in a shorter prompt (about 25% fewer tokens, question last, 500 max tokens) | Switch `CHAT_ANALYZE_VERSION=3` |
-| `answer_rag@10` | balanced | Segments with evidence handles, conflicts and follow-ups; answers every part the question asks, keeps qualifiers and every cited detail, names a document that has no such statement and gives what it does say on the point, stays within the version or document the question names (latest version for current-terms questions), and states no label, superlative, unit, count or figure the cited sentences do not contain | Default (`CHAT_ANSWER_VERSION=10`, `backend/app/chat/nodes/generate.py`) |
+| `answer_rag@12` | balanced | Segments with evidence handles, conflicts and follow-ups; answers every part the question asks, keeps qualifiers and every cited detail, names a document that has no such statement and gives what it does say on the point, stays within the version or document the question names (latest version for current-terms questions), and states no label, superlative, unit, count or figure the cited sentences do not contain | Default (`CHAT_ANSWER_VERSION=12`, `backend/app/chat/nodes/generate.py`) |
 | `answer_rag@7` | balanced | The completeness-first rules without the detail rules; its example sentence repeats an evaluation item's wording, so `answer_rag@11` is the same prompt with a neutral example | `CHAT_ANSWER_VERSION=7` or `11` |
 | `answer_rag@8` | balanced | `answer_rag@7` plus one rule: when the evidence states what the question asks under its own period label (the question says FY2023, the text says fiscal 2022), the model states the label difference in an uncited segment and answers under the evidence's label instead of abstaining | Switch `CHAT_ANSWER_VERSION=8` |
 | `answer_rag@3` | balanced | The short-answer wording ("as short as the question allows"); the plan and calc prompts below build on it | `CHAT_ANSWER_VERSION=3` |
 | `answer_rag@4` | balanced | `answer_rag@3` plus a `plan` of required elements; code decides coverage | Switch `CHAT_PLAN_FIRST` |
 | `answer_rag@5` | balanced | `answer_rag@4` plus typed calculation segments; code does the arithmetic | Switch `CHAT_CALC` |
-| `answer_compare@1` | balanced, routed to `deep` | Per-document comparison answer | Default for compare turns |
+| `answer_compare@3` | balanced, routed to `deep` | Per-document comparison answer | Default for compare turns |
 | `answer_compare@2` | balanced, routed to `deep` | Comparison with a per-document coverage rule and one repair | Switch `CHAT_COMPARE_QUOTA` |
 | `support_check@1` | fast | Per-segment support verdict; advisory | Default |
 | `support_check@2` | fast | Verdict plus the minimal handles needed; code repairs the answer | Switch `CHAT_SUPPORT_VERSION=2` |
@@ -415,7 +415,7 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 | `brief_merge@2` | fast | Merge of map-step briefs, with tone | Default |
 | `summary_custom@1` | balanced | Custom summaries (`POST /v1/documents/{id}/summaries`) | Default (`backend/app/insights/summaries.py`) |
 | `chunk_context@1` | fast | Index-only chunk header | `INDEX_CONTEXT=llm` or `CONTEXTUALIZE_VARIANT=llm` |
-| `eval_judge_claims@2`, `eval_judge_support@2`, `eval_judge_abstain@1` | deep | Claim-level answer, support and abstention judges | Evaluation default |
+| `eval_judge_claims@4`, `eval_judge_support@3`, `eval_judge_abstain@1` | deep | Claim-level answer, support and abstention judges | Evaluation default |
 | `eval_judge_faithfulness@1`, `eval_judge_citation@1`, `eval_judge_completeness@1`, `eval_judge_rubric@1` | deep | Binary judges of the legacy golden set | Legacy evaluation |
 | `eval_migrate_claims@1`, `eval_draft_table_q@1`, `eval_audit_gold@1` | balanced, balanced, flagship | Dataset construction: claim migration, table-question drafting, independent gold audit | Dataset build scripts |
 | `_example@1` | fast | Template for a new prompt | Not used |
@@ -434,8 +434,8 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 | `CHAT_SCOPE_FLOOR` | `false` | Plain qa turns over 2-5 scoped documents: a document with fewer than two selected chunks is topped up from its own best candidates | Paired dev evaluation on aggregation and compare strata |
 | `CHAT_NAMED_DOCS` | `false` | A question that names 2-5 scoped documents (matched in code against titles and opening text, no model call) also retrieves inside each named document and tops each up to `CHAT_NAMED_DOCS_K` (3) chunks in the global selection | Paired dev evaluation on compare, aggregation and conflict strata |
 | `CHAT_SUPPORT_VERSION` | `1` | `2` selects `support_check@2`: prune, remove unsupported segments and regenerate once | Paired dev evaluation |
-| `CHAT_ANSWER_VERSION` | `10` | `10` completeness-first answers with detail discipline; `7` without the detail rules (`11` is `7` with a neutral example); `9` is `10` without the derived-count and keep-every-detail rules; `3` the short-answer wording (`6` is `7` without the scope rule); `8` is `7` plus answering under the evidence's own period label instead of abstaining | Paired runs against `7` with `retrieval@5`: support_rate +4.5 (train) and +2.7 (dev), answer_pass -0.8 and +1.7 (no detectable difference), injection 0, citation integrity 1.00, must_not_contain 22/22 |
-| `CHAT_ANALYZE_VERSION` | `2` | `3` selects the shorter `analyze_query@3` | Paired dev evaluation plus a live time-to-first-token measurement |
+| `CHAT_ANSWER_VERSION` | `12` | `12` completeness-first answers with detail discipline (`10` is the same prompt with example names taken from the evaluation set); `7` without the detail rules (`11` is `7` with a neutral example); `9` is `10` without the derived-count and keep-every-detail rules; `3` the short-answer wording (`6` is `7` without the scope rule); `8` is `7` plus answering under the evidence's own period label instead of abstaining | Paired runs against `7` with `retrieval@5`: support_rate +4.5 (train) and +2.7 (dev), answer_pass -0.8 and +1.7 (no detectable difference), injection 0, citation integrity 1.00, must_not_contain 22/22 |
+| `CHAT_ANALYZE_VERSION` | `4` | `3` selects the shorter `analyze_query@3`; `2` is `4` with example document names taken from the evaluation set | Paired dev evaluation plus a live time-to-first-token measurement |
 | `CHAT_ABSTAIN_SCORED` | `false` | Logistic abstention (`backend/config/abstain@1.yaml`, `fitted: false`) in place of the floor gate | Calibration on the train split, then a paired dev evaluation |
 | `CHAT_LOCATE` (+ `CHAT_LOCATE_MIN_CHUNKS` 150, `CHAT_LOCATE_MIN_PAGES` 60) | `false` | Locate loop for long single documents | Paired dev evaluation on long-filing strata |
 | `CHAT_VOICE` | `false` | Appends `voice@1` to answer prompts | Paired dev evaluation (faithfulness non-inferior) and review of `docs/voice.md` |
@@ -487,7 +487,7 @@ This is an illustrative turn, not a recorded run. The field names and template s
 3. `generate` sends lines like `E3.1 Either party may terminate on thirty days written notice.` and receives `{"status":"answer","segments":[{"text":"Either party can end the agreement with 30 days' written notice.","evidence":["E3.1"]}], ...}`.
 4. `citations.resolve` maps `E3.1` through the manifest to `(chunk_id, sentence 1)` and writes `segment_evidence(chunk_id, sentence_start=1, sentence_end=2, cited_text=<copied from chunks.original_text>)`. `answer_segments.support = 'cited'`.
 5. `verify` runs `support_check@1` on that segment and its `cited_text` only, and writes `answer_segments.verification = 'supported'`.
-6. `persist` writes `rag_runs` with `route='qa'`, `mode='rag'`, `reason_codes=['FAST_PATH']`, `config.prompts=['analyze_query@2','answer_rag@10','support_check@1']`, `config.retrieval='retrieval@5'`, plus `llm_calls_used`, `cost_usd`, `latency_ms` and `ttft_ms`.
+6. `persist` writes `rag_runs` with `route='qa'`, `mode='rag'`, `reason_codes=['FAST_PATH']`, `config.prompts=['analyze_query@4','answer_rag@12','support_check@1']`, `config.retrieval='retrieval@5'`, plus `llm_calls_used`, `cost_usd`, `latency_ms` and `ttft_ms`.
 7. `GET /v1/runs/{id}` computes `sources` from `segment_evidence` joined to chunks, versions and documents, giving one document with `chunks_used: 1` and its pages. `_explain` renders `ANSWERED_ONE_DOC`: **"Answered from 1 passage in 'Services Agreement' v2."** If the check had returned `unsupported`, the view would add **"One sentence is not backed up by its citation, so read it with care."** (`UNSUPPORTED_ONE`). If the reranker had been configured and timed out, it would add **"Passage ranking was not available, so passages are shown in search order."**
 8. In the UI, hovering the citation shows `cited_text`. Clicking it opens the source viewer, which turns the sentence offsets, then `spans`, then the page character range, then glyph boxes from the version's layout file (`GET /v1/versions/{id}/pages/{page}/layout`) into a highlight.
 9. When version 3 of the document reaches `ready`, `stale_since` is set on this message and the UI shows **"A newer version of this document was added after this answer. Ask again to see if anything changed."**
@@ -514,7 +514,7 @@ This is an illustrative turn, not a recorded run. The field names and template s
 ### 9.2 Prompt-injection defenses
 
 The chat path has no tools and no side effects, so the worst case is a wrong answer, and citations make a wrong answer visible.
-- **Untrusted-data rule** in every answer and analysis prompt, for example `backend/prompts/answer_rag@10.md`: evidence, history and question are data and never instructions.
+- **Untrusted-data rule** in every answer and analysis prompt, for example `backend/prompts/answer_rag@12.md`: evidence, history and question are data and never instructions.
 - **Delimiter defusing**: `backend/app/chat/nodes_common.py::defuse` replaces tag-like strings (`</evidence>` and similar) in untrusted text before it is shown to the model. Stored and cited text is never altered.
 - **Handles only**: the strict schema fixes the output shape, and quotes come from storage, so an injected "reply only with X" cannot fabricate a citation.
 - **Scope check**: the analysis can only narrow scope, and the ledger refuses chunks outside the version snapshot.

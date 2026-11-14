@@ -325,9 +325,9 @@ def names_every_item(inputs: dict[str, Any]) -> dict[str, Any]:
 
 
 async def test_claim_judge_v2_prompt_and_names_every_item_case() -> None:
-    assert J.PROMPTS_V2["claims"] == ("eval_judge_claims", 3) and J.PROMPTS_V2["support"] == (
+    assert J.PROMPTS_V2["claims"] == ("eval_judge_claims", 4) and J.PROMPTS_V2["support"] == (
         "eval_judge_support",
-        2,
+        3,
     )
     gw, _ = gateway(names_every_item)
     it = v2(required_claims=["CPUs, GPUs and DPUs"], alternates={})

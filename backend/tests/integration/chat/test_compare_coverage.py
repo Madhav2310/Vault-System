@@ -184,4 +184,4 @@ async def test_flag_off_is_the_old_path(
         cfg = (
             await s.execute(text("SELECT config FROM rag_runs WHERE owner_id = :o"), {"o": o.id})
         ).scalar_one()
-    assert "answer_compare@1" in cfg["prompts"]
+    assert "answer_compare@3" in cfg["prompts"]

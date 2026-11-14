@@ -24,7 +24,7 @@ from app.llm.gateway import Budget, LlmGateway
 
 _log = get_logger("vault.chat.analyze")
 
-PROMPT: tuple[str, int] = ("analyze_query", 2)  # the default; `chat_analyze_version` selects @3 (S22.09)
+PROMPT: tuple[str, int] = ("analyze_query", 4)  # the default; `chat_analyze_version` selects another
 
 # Static first (S22.09): what rarely changes within a session comes first and the question last, so the
 # provider's prompt cache covers the system prompt plus the documents/summary/history prefix.

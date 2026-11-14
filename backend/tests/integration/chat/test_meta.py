@@ -54,7 +54,7 @@ async def test_count(
                 text("SELECT route, reason_codes, config FROM rag_runs WHERE owner_id = :o"), {"o": o.id}
             )
         ).one()
-    assert run[0] == "meta" and "META_COUNT_DOCUMENTS" in run[1] and "analyze_query@2" in run[2]["prompts"]
+    assert run[0] == "meta" and "META_COUNT_DOCUMENTS" in run[1] and "analyze_query@4" in run[2]["prompts"]
 
 
 async def test_mentioning(

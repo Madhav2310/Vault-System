@@ -35,13 +35,13 @@ GENERATION_INVALID = "GENERATION_INVALID"
 PROMPT = ("answer_rag", 3)
 COMPLETE_PROMPT = (
     "answer_rag",
-    10,
+    12,
 )  # completeness-first with detail discipline (`chat_answer_version`)
 
 
 def answer_prompt(settings: Any) -> tuple[str, int]:
     version = getattr(settings, "chat_answer_version", 3)
-    return ("answer_rag", version) if version in (6, 7, 8, 9, 10, 11) else PROMPT
+    return ("answer_rag", version) if version in (6, 7, 8, 9, 10, 11, 12) else PROMPT
 
 
 @dataclass(frozen=True)
