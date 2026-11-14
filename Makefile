@@ -14,7 +14,7 @@ define not_implemented
 endef
 
 .PHONY: help up down logs test test-unit test-integration test-e2e lint fmt typecheck migrate seed \
-        seed-users up-test up-rerank up-full eval eval-retrieval eval-retrieval-fast eval-answers eval-answers-v2 eval-audit eval-audit-apply eval-labels eval-v2-docs eval-smoke loadtest ci
+        seed-users up-test up-rerank up-full eval eval-retrieval eval-retrieval-fast eval-answers eval-answers-v2 eval-diagnose eval-audit eval-audit-apply eval-labels eval-v2-docs eval-smoke loadtest ci
 
 help:
 	@grep -E '^[a-z-]+:' Makefile | cut -d: -f1 | tr '\n' ' '; echo
@@ -70,6 +70,9 @@ eval-answers:  ## full answers with judges: make eval-answers SPLIT=train MAX_US
 eval-answers-v2:  ## v2 gold set: make eval-answers-v2 SPLIT=dev MAX_USD=3 [FILTER=stratum=injection] [EVAL_ARGS="--freeze answer_v2"]
 	@grep -qiE '^BRIEF_ENABLED=false' .env 2>/dev/null || [ "$${BRIEF_ENABLED:-}" = false ] || echo "reminder: BRIEF_ENABLED=false must be set in the WORKER env (.env, then recreate the worker) or uploads pay for briefs"
 	$(MAKE) eval-answers DATASET=v2
+eval-diagnose:  ## where a run's gold passages were lost, offline: make eval-diagnose RUN=<run_id>
+	@test -n "$(RUN)" || { echo "usage: make eval-diagnose RUN=<run_id>"; exit 2; }
+	VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) $(UV) env PYTHONPATH=.. python -m eval.diagnose --run $(RUN) $(DIAG_ARGS)
 eval-audit:  ## S21.05 audit of a run's answers: make eval-audit ANSWERS=eval/reports/<run_id>.answers.jsonl [MAX_USD=2]
 	@test -n "$(ANSWERS)" || { echo "usage: make eval-audit ANSWERS=eval/reports/<run_id>.answers.jsonl [MAX_USD=2]"; exit 2; }
 	$(UV) env PYTHONPATH=.. python -m eval.build.audit --answers ../$(ANSWERS) --max-usd $(or $(MAX_USD),2) $(AUDIT_ARGS)

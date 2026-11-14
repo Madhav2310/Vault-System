@@ -594,8 +594,8 @@ def sample_cases(items: Sequence[GoldenItem], jt: JudgeType, n: int) -> list[Jud
 PROMPTS_V2: dict[str, tuple[str, int]] = {
     "claims": (
         "eval_judge_claims",
-        2,
-    ),  # @1 ("read on its own", no naming rule) stays on disk for old reports
+        3,
+    ),  # @3 compares numbers as quantities, accepts value lists and stated aliases; @1/@2 stay for old reports
     "support": ("eval_judge_support", 2),
     "abstain": ("eval_judge_abstain", 1),
 }

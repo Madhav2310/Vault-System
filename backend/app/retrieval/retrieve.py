@@ -28,6 +28,7 @@ from app.retrieval.expand import expand_neighbors
 from app.retrieval.fusion import FusedCandidate, Ranked, fuse
 from app.retrieval.lexical import LexicalHit, lexical_search
 from app.retrieval.listwise import LlmReranker
+from app.retrieval.per_doc import add_per_document
 from app.retrieval.query_embed import QueryEmbedder, QueryEmbedding, normalize_query
 from app.retrieval.rerank import RerankClient, RerankedItem, RerankPassage, RerankResult
 from app.retrieval.scope import Scope
@@ -259,7 +260,9 @@ class Retriever:
         if rr.degraded and rr.degraded_reason:
             degraded.append(rr.degraded_reason)
         scores = {c.chunk_id: rr.scores[i] for i, c in enumerate(pool)} if rr.scores else {}
-        top_ids = [it.chunk_id for it in rr.items]
+        top_ids = add_per_document(
+            [it.chunk_id for it in rr.items], fused, cfg.per_doc_evidence, len(set(version_ids))
+        )
 
         t = time.monotonic()
         final: list[tuple[uuid.UUID, uuid.UUID | None]] = [(cid, None) for cid in top_ids]
