@@ -421,3 +421,7 @@ AC1-4,6-8 ticked on lane tests; AC5 (make test on merged tree) pending the next 
 - Retrieval A/B, gate calibration, answer baseline (frozen), whole-document A/B, support-check calibration: see docs/evidence/{retrieval_ab,reranker_decision,answer_ab}.md.
 - AMD 10-K time to ready 28.8 s -> 20.2 s (S16.08 AC5). Stack memory after demo_core: 1.96 GB incl. reranker (S16.07 AC2, target <= 3.5 GB). make ci 483 passed; make test 905 passed + F-048 flaky (passes alone).
 - Tidy-up: parked .old.nosync copy, stale-worktrees and 24 merged lane worktrees removed after checking nothing unique.
+
+## 2026-11-14 plan v4 build (S21 evaluation rebuild, S22 accuracy/speed, S23 voice and chat)
+- Merged (all behaviour changes off by default until a paired A/B accepts them): golden set v2 (316 live items, 15 strata, claim gold), claim/support/abstention judges, clustered CIs/MDE, stage attribution, injection graders and security suite, gate tiers; chunker@2, contextual index text, lexical v2, plan-first, compare quotas, verify-and-repair, scored abstention, calculation segments, analyze_query@3, locate loop; httpOnly session cookie + CSRF + CSP; warm voice, clarify, chat polish. Gates: make ci 728, make test 1289 + F-048 flaky.
+- Live: first v2 train run ($1.23, answer_pass 0.642), gold audit ($1.88), judge fixes and re-judge ($0.51). Findings: `docs/evidence/train_v2_rca.md`. Total and what is left: `docs/TOTAL_PROGRESS.md`.
