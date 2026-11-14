@@ -35,8 +35,8 @@ GENERATION_INVALID = "GENERATION_INVALID"
 PROMPT = ("answer_rag", 3)
 COMPLETE_PROMPT = (
     "answer_rag",
-    7,
-)  # completeness-first, scope rule (`chat_answer_version`)
+    10,
+)  # completeness-first with detail discipline (`chat_answer_version`)
 
 
 def answer_prompt(settings: Any) -> tuple[str, int]:

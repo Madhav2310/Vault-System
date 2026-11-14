@@ -146,4 +146,4 @@ async def test_too_many_falls_back(
     assert r.status_code == 200
     run = await _run(sm, o.id)
     assert run.route == "qa" and COMPARE_TOO_MANY in run.reason_codes
-    assert "answer_rag@7" in run.config["prompts"] and "answer_compare@1" not in run.config["prompts"]
+    assert "answer_rag@10" in run.config["prompts"] and "answer_compare@1" not in run.config["prompts"]

@@ -125,12 +125,13 @@ class Settings(BaseSettings):
     # --- support check (S22.06): 2 = support_check@2 (prunes unneeded citations, removes unsupported
     # segments, one regeneration if every segment fails); 1 until the paired A/B accepts it ---
     chat_support_version: Literal[1, 2] = 1
-    # --- answer prompt: 7 = answer_rag@7 (completeness-first, scope rule; accepted by the paired dev A/B);
+    # --- answer prompt: 10 = answer_rag@10 (the default: @7's completeness-first rules plus detail
+    # discipline, accepted by paired train and dev runs); 7 = completeness-first with a scope rule;
     # 3 = the previous short-answer wording; 6 = @7 without the scope rule; 8 = @7 plus answering under the
     # evidence's own period label instead of abstaining (not adopted); 9 = @7 plus: no detail the cited
     # sentence lacks, latest version only for current-terms questions, what an uncovered document does say;
     # 10 = @9 plus: no derived counts, keep every cited detail; 11 = @7 with a neutral example ---
-    chat_answer_version: Literal[3, 6, 7, 8, 9, 10, 11] = 7
+    chat_answer_version: Literal[3, 6, 7, 8, 9, 10, 11] = 10
     # --- analysis prompt (S22.09): 3 = analyze_query@3 (shorter prompt and output budget); 2 until A/B ---
     chat_analyze_version: Literal[2, 3] = 2
     # --- compare quotas + coverage gate (S22.05): answer_compare@2 + repair; off until the A/B decides ---

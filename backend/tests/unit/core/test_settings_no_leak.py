@@ -53,7 +53,7 @@ def test_answer_version_8_is_selectable_and_only_adds_the_relabel_rule(
     monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://u:p@h/db")
     monkeypatch.setenv("REDIS_URL", "redis://h/0")
     monkeypatch.delenv("CHAT_ANSWER_VERSION", raising=False)
-    assert Settings(_env_file=None).chat_answer_version == 7  # type: ignore[call-arg]
+    assert Settings(_env_file=None).chat_answer_version == 10  # type: ignore[call-arg]
     assert answer_prompt(Settings(_env_file=None)) == COMPLETE_PROMPT  # type: ignore[call-arg]
     monkeypatch.setenv("CHAT_ANSWER_VERSION", "8")
     s = Settings(_env_file=None)  # type: ignore[call-arg]
