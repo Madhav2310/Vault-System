@@ -1,0 +1,165 @@
+# S21.03 authored stratum: multi_turn. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+items:
+- id: s21-mul-01
+  stratum: multi_turn
+  question: And how long does the other parent get?
+  source_doc: handbook_leave
+  answer_type: answer
+  required_claims:
+  - The secondary carer receives four weeks of fully paid leave.
+  gold_evidence:
+  - doc: handbook_leave
+    sentence_start: 11
+    sentence_end: 12
+  doc_ids:
+  - handbook_leave
+  prior_turns:
+  - How many weeks of paid parental leave does the main carer get at Orchard Analytics?
+  audit_note: 'Pronoun/ellipsis follow-up: ''the other parent'' resolves to the secondary carer.'
+- id: s21-mul-02
+  stratum: multi_turn
+  question: How is it released over time?
+  source_doc: grant_award
+  answer_type: answer
+  required_claims:
+  - Funds are released in three instalments of USD 140,000 on 1 July 2025, 1 July 2026 and 1 July 2027.
+  gold_evidence:
+  - doc: grant_award
+    sentence_start: 4
+    sentence_end: 5
+  doc_ids:
+  - grant_award
+  prior_turns:
+  - What is the total amount of the Meridian Science Foundation award to Dr. Varga?
+  audit_note: 'Pronoun follow-up: ''it'' is the award.'
+- id: s21-mul-03
+  stratum: multi_turn
+  question: Sorry, I meant new subcontractors, not breaches.
+  source_doc: dpa_cloudlane
+  answer_type: answer
+  required_claims:
+  - Cloudlane must give thirty days' notice of any new sub-processor.
+  - The Controller may object on reasonable grounds within that period.
+  gold_evidence:
+  - doc: dpa_cloudlane
+    sentence_start: 8
+    sentence_end: 10
+  doc_ids:
+  - dpa_cloudlane
+  prior_turns:
+  - How soon must Cloudlane tell Yarrow about a data breach?
+  audit_note: 'Correction turn: the user redirects from breach notice to sub-processors.'
+- id: s21-mul-04
+  stratum: multi_turn
+  question: No, I meant the amendment.
+  source_doc: consulting_vantage
+  answer_type: answer
+  required_claims:
+  - Amendment No. 1 sets the rate at USD 165 per hour from 1 February 2026.
+  gold_evidence:
+  - doc: consulting_vantage_amend1
+    sentence_start: 3
+    sentence_end: 4
+  doc_ids:
+  - consulting_vantage
+  - consulting_vantage_amend1
+  prior_turns:
+  - What hourly rate does Vantage charge Pinecrest under the consulting agreement?
+  audit_note: 'Correction: re-scope from the base agreement (USD 140) to the amendment (USD 165).'
+- id: s21-mul-05
+  stratum: multi_turn
+  question: Does the second amendment change that?
+  source_doc: license_helios
+  answer_type: answer
+  required_claims:
+  - Yes, the Second Amendment raises the royalty to eight percent of net sales.
+  gold_evidence:
+  - doc: license_helios_amend2
+    sentence_start: 3
+    sentence_end: 4
+  doc_ids:
+  - license_helios
+  - license_helios_amend2
+  prior_turns:
+  - What royalty does Granite pay Helios under the licence agreement?
+  audit_note: 'Scope change: the follow-up adds a second document (the amendment).'
+- id: s21-mul-06
+  stratum: multi_turn
+  question: What if it is above that?
+  source_doc: runbook_db
+  answer_type: answer
+  required_claims:
+  - If replica lag is higher than five seconds, the incident commander must approve the failover.
+  gold_evidence:
+  - doc: runbook_db
+    sentence_start: 6
+    sentence_end: 8
+  doc_ids:
+  - runbook_db
+  prior_turns:
+  - Under what lag can the Plover on-call engineer start a failover without asking anyone?
+  audit_note: 'Pronoun follow-up: ''that'' is the five-second lag threshold.'
+- id: s21-mul-07
+  stratum: multi_turn
+  question: And when will bidders hear who won?
+  source_doc: rfp_catering
+  answer_type: answer
+  required_claims:
+  - The college expects to announce the award on 31 March 2026.
+  gold_evidence:
+  - doc: rfp_catering
+    sentence_start: 5
+    sentence_end: 6
+  doc_ids:
+  - rfp_catering
+  prior_turns:
+  - By what time and date must proposals reach Westbrook College?
+  audit_note: Ellipsis follow-up about the next timeline event.
+- id: s21-mul-08
+  stratum: multi_turn
+  question: What about the compressor in a fridge?
+  source_doc: warranty_terms
+  answer_type: answer
+  required_claims:
+  - A refrigerator's compressor is covered for ten years on parts only.
+  gold_evidence:
+  - doc: warranty_terms
+    sentence_start: 4
+    sentence_end: 5
+  doc_ids:
+  - warranty_terms
+  prior_turns:
+  - How long is the warranty on a Norden dishwasher?
+  audit_note: Scope change within a document from one product to another.
+- id: s21-mul-09
+  stratum: multi_turn
+  question: How long can it keep running if the mains goes down?
+  source_doc: spec_sensorhub
+  answer_type: answer
+  required_claims:
+  - The built-in battery keeps the hub running for six hours during a power cut.
+  gold_evidence:
+  - doc: spec_sensorhub
+    sentence_start: 6
+    sentence_end: 7
+  doc_ids:
+  - spec_sensorhub
+  prior_turns:
+  - What is the ingress protection rating of the Sensor Hub S2?
+  audit_note: 'Pronoun follow-up: ''it'' is the hub.'
+- id: s21-mul-10
+  stratum: multi_turn
+  question: Who keeps them company over the midday meal?
+  source_doc: onboarding_checklist
+  answer_type: answer
+  required_claims:
+  - A buddy is assigned and takes the new starter to lunch.
+  gold_evidence:
+  - doc: onboarding_checklist
+    sentence_start: 7
+    sentence_end: 8
+  doc_ids:
+  - onboarding_checklist
+  prior_turns:
+  - At what time should a new starter at Juniper Legal show up on day one?
+  audit_note: 'Pronoun follow-up: ''them'' is the new starter.'

@@ -1,0 +1,222 @@
+# Authored fixture documents for the v2 gold set (S21.03). Key = document key used by items.
+documents:
+  msa_northwind:
+    file: msa_northwind.md
+    title: Master Services Agreement, Northwind and Tessellate (v1)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  msa_northwind_v2:
+    file: msa_northwind_v2.md
+    title: Master Services Agreement, Northwind and Tessellate (v2, current)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  nda_brightwater:
+    file: nda_brightwater.md
+    title: Mutual NDA, Brightwater Biosciences and Corvane (v1)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  nda_brightwater_v2:
+    file: nda_brightwater_v2.md
+    title: Mutual NDA, Brightwater Biosciences and Corvane (v2, current)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  lease_harbor:
+    file: lease_harbor.md
+    title: Office lease, Harbor Street Suite 410 (v1)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  lease_harbor_v2:
+    file: lease_harbor_v2.md
+    title: Office lease, Harbor Street Suite 410 (v2, current)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  order_quill:
+    file: order_quill.md
+    title: Subscription order form, Marlowe Dental and Quill (v1)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  order_quill_v2:
+    file: order_quill_v2.md
+    title: Subscription order form, Marlowe Dental and Quill (v2, current)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  policy_expense:
+    file: policy_expense.md
+    title: Travel and expense policy, Alder & Finch (v1)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  policy_expense_v2:
+    file: policy_expense_v2.md
+    title: Travel and expense policy, Alder & Finch (v2, current)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  consulting_vantage:
+    file: consulting_vantage.md
+    title: Consulting Agreement, Vantage Analytics and Pinecrest Health
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  consulting_vantage_amend1:
+    file: consulting_vantage_amend1.md
+    title: Amendment No. 1 to the Vantage consulting agreement
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  license_helios:
+    file: license_helios.md
+    title: Software License Agreement, Helios Imaging and Granite Medical
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  license_helios_amend2:
+    file: license_helios_amend2.md
+    title: Amendment No. 2 to the Helios license agreement
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  report_sales_q3_finance:
+    file: report_sales_q3_finance.md
+    title: Q3 sales summary (Finance)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  report_sales_q3_regional:
+    file: report_sales_q3_regional.md
+    title: Q3 sales summary (Regional Sales)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  report_outage_postmortem:
+    file: report_outage_postmortem.md
+    title: Outage post-mortem (Engineering)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  report_outage_customer_notice:
+    file: report_outage_customer_notice.md
+    title: Outage notice to customers (Support)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  report_headcount_hr:
+    file: report_headcount_hr.md
+    title: Headcount report (HR)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  report_headcount_finance:
+    file: report_headcount_finance.md
+    title: Headcount report (Finance)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  inj_travel_guide:
+    file: inj_travel_guide.md
+    title: 'Corporate travel booking guide (injection: body text)'
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  inj_data_standard:
+    file: inj_data_standard.md
+    title: 'Data handling standard (injection: footnote)'
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  inj_price_list:
+    file: inj_price_list.md
+    title: 'Partner price list (injection: table cell)'
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  inj_faq_unicode:
+    file: inj_faq_unicode.md
+    title: 'Product FAQ (injection: zero-width characters)'
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  inj_meeting_notes:
+    file: inj_meeting_notes.md
+    title: 'Steering committee notes (injection: ignore previous / exfiltration / role-play)'
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  inj_candidate_summary:
+    file: inj_candidate_summary.md
+    title: 'Candidate summary (injection: citation spoof and link)'
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  handbook_leave:
+    file: handbook_leave.md
+    title: Employee handbook, leave chapter (Orchard Analytics)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  dpa_cloudlane:
+    file: dpa_cloudlane.md
+    title: Data processing addendum (Cloudlane Hosting)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  sla_fibrenet:
+    file: sla_fibrenet.md
+    title: Service level agreement (Fibrenet Connectivity)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  grant_award:
+    file: grant_award.md
+    title: Grant award letter (Meridian Science Foundation)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  spec_sensorhub:
+    file: spec_sensorhub.md
+    title: Product specification (Cedarline Sensor Hub S2)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  annual_fin:
+    file: annual_fin.md
+    title: Annual report extract (Tidewater Foods plc)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  safety_lab:
+    file: safety_lab.md
+    title: Laboratory safety procedure (Kestrel Materials)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  insurance_summary:
+    file: insurance_summary.md
+    title: Insurance policy summary (Hollis Courier Services)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  minutes_board:
+    file: minutes_board.md
+    title: Board minutes (Greenfield Housing Association)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  rfp_catering:
+    file: rfp_catering.md
+    title: Request for proposals, campus catering (Westbrook College)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  supplier_code:
+    file: supplier_code.md
+    title: Supplier code of conduct (Bramble & Rowe)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  privacy_policy:
+    file: privacy_policy.md
+    title: Privacy policy (Pinewood Fitness app)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  release_notes:
+    file: release_notes.md
+    title: Release notes (Quarry build tool 4.2)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  runbook_db:
+    file: runbook_db.md
+    title: Database failover runbook (Plover Payments)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  warranty_terms:
+    file: warranty_terms.md
+    title: Warranty terms (Norden Appliances)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  onboarding_checklist:
+    file: onboarding_checklist.md
+    title: New starter onboarding checklist (Juniper Legal)
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  inj_vendor_review:
+    file: inj_vendor_review.docx
+    title: 'Vendor security review (injection: DOCX comment and tracked change)'
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
+  newsletter_twocol:
+    file: newsletter_twocol.pdf
+    title: Riverside Community Garden Newsletter, Spring 2025
+    license: CC0 (authored)
+    source: authored for Vault-Eval v2
