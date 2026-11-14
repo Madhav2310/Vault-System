@@ -1,6 +1,6 @@
 # Voice
 
-How Vault talks. It reads like a calm, kind colleague who has read your documents. Applies to the chat answers (via the `voice@1` prompt fragment, switch `CHAT_VOICE`), every code-written message (`backend/app/explain/templates.py`, always on) and the UI microcopy.
+How Vault talks. It reads like a calm, kind colleague who has read your documents. Applies to every code-written message (`backend/app/explain/templates.py`, always on) and the UI microcopy.
 
 ## Rules
 
@@ -45,6 +45,5 @@ How Vault talks. It reads like a calm, kind colleague who has read your document
 
 | Surface | Mechanism | Test |
 | --- | --- | --- |
-| Model-written answers | `backend/prompts/voice@1.md` appended by `app/chat/voice.py`; disabled by default (`CHAT_VOICE`; see the behaviour switches in `ARCHITECTURE.md`) | `tests/unit/chat/test_voice.py` |
 | Abstain, not found, quota, rate limit, stale, errors, reason lines | `app/explain/templates.py` (deterministic, always on) | `tests/unit/explain/test_voice_templates.py` |
 | UI microcopy | follows this page | UI e2e |

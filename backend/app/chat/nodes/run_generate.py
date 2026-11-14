@@ -14,7 +14,6 @@ from app.chat.graph import TURN_ERROR, TurnCtx, TurnState
 from app.chat.nodes._common import ERROR_TEXT, abstain_followups, emit_segment, flush_segments, plain
 from app.chat.nodes.generate import GenerateResult, answer_prompt
 from app.chat.nodes.generate import generate as generate_answer
-from app.chat.voice import generate_call as voice_call
 from app.llm.errors import LlmError
 
 
@@ -29,7 +28,6 @@ def generate_kwargs(state: TurnState, ctx: TurnCtx) -> dict[str, Any]:
     )  # S18.06: route, prompt, coverage (S22.05: quota prompt when switched on)
     call.update(plan_call(state, ctx.deps.gateway.settings, full))  # S22.04: empty unless switched on
     call.update(calc_call(state, ctx.deps.gateway.settings, full))  # S22.08: empty unless switched on
-    call.update(voice_call(ctx.deps.gateway.settings))  # S23.01: empty unless switched on
     return dict(
         gateway=ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
         question=state.analysis.standalone_query, **call,

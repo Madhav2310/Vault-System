@@ -408,7 +408,6 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 | `answer_compare@2` | balanced, routed to `deep` | Comparison with a per-document coverage rule and one repair | Switch `CHAT_COMPARE_QUOTA` |
 | `support_check@1` | fast | Per-segment support verdict; advisory | Default |
 | `support_check@2` | fast | Verdict plus the minimal handles needed; code repairs the answer | Switch `CHAT_SUPPORT_VERSION=2` |
-| `voice@1` | balanced | Tone-only fragment appended to answer prompts | Switch `CHAT_VOICE` |
 | `locate_step@1` | fast | Typed next move of the locate loop | Switch `CHAT_LOCATE` |
 | `rerank_listwise@1` | fast | LLM listwise rerank | Retrieval config `retrieval@2-llm` only |
 | `brief_extract@3` | balanced | Document brief: summary, facts with handles, tags, category (1,800 max tokens) | Default (`backend/app/insights/stage.py`) |
@@ -438,7 +437,6 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 | `CHAT_ANALYZE_VERSION` | `4` | `3` selects the shorter `analyze_query@3`; `2` is `4` with example document names taken from the evaluation set | Paired dev evaluation plus a live time-to-first-token measurement |
 | `CHAT_ABSTAIN_SCORED` | `false` | Logistic abstention (`backend/config/abstain@1.yaml`, `fitted: false`) in place of the floor gate | Calibration on the train split, then a paired dev evaluation |
 | `CHAT_LOCATE` (+ `CHAT_LOCATE_MIN_CHUNKS` 150, `CHAT_LOCATE_MIN_PAGES` 60) | `false` | Locate loop for long single documents | Paired dev evaluation on long-filing strata |
-| `CHAT_VOICE` | `false` | Appends `voice@1` to answer prompts | Paired dev evaluation (faithfulness non-inferior) and review of `docs/voice.md` |
 | `CHAT_CLARIFY` | `false` | Code-decided clarification chips | Review of the interaction in the UI |
 | `FULL_CONTEXT_AUTO` (+ `FULL_CONTEXT_MAX_DOCS` 3, `FULL_CONTEXT_MAX_TOKENS` 50,000) | `false` | Automatic whole-document mode | Measured: no gain at twice the cost, so it stays off (`docs/evaluation.md` section 4) |
 | `CHUNKER_VERSION` | `chunker@1` | `chunker@2`, `chunker@2-overlap25` | Retrieval-only paired evaluation after a re-ingest |
@@ -494,7 +492,7 @@ This is an illustrative turn, not a recorded run. The field names and template s
 
 ### 8.3 Voice
 
-`docs/voice.md` sets how Vault talks: calm, warm, direct, answer first, never blaming the user, no filler, no exclamation marks. Numbers, names and dates stay exact, and there is always a gentle next step when Vault cannot answer. **Warmth never loosens grounding**: the voice changes wording only, never citations or abstention. Code-written messages in `backend/app/explain/templates.py` follow it always (tested by `backend/tests/unit/explain/test_voice_templates.py`). Model-written answers follow it only with `CHAT_VOICE` (`voice@1`, appended after the answer prompt so its citation rules and schema are untouched, tested by `backend/tests/unit/chat/test_voice.py`).
+`docs/voice.md` sets how Vault talks: calm, warm, direct, answer first, never blaming the user, no filler, no exclamation marks. Numbers, names and dates stay exact, and there is always a gentle next step when Vault cannot answer. **Warmth never loosens grounding**: the voice changes wording only, never citations or abstention. Code-written messages in `backend/app/explain/templates.py` follow it always (tested by `backend/tests/unit/explain/test_voice_templates.py`).
 
 ---
 

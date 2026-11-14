@@ -157,8 +157,6 @@ class Settings(BaseSettings):
     chat_locate_min_chunks: int = 150  # "long" = at least this many chunks ...
     chat_locate_min_pages: int = 60  # ... or at least this many pages
 
-    # --- warm voice (S23.01): appends prompts/voice@1.md to the answer prompts; off until the A/B decides ---
-    chat_voice: bool = False
 
     # --- clarify when ambiguous (S23.02): code-checked ambiguity gives option chips; off until reviewed ---
     chat_clarify: bool = False
