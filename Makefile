@@ -147,6 +147,13 @@ ui-e2e:
 	cd frontend && { [ -d node_modules ] || npm ci --no-audit --no-fund; } && npx playwright install chromium \
 	  && UI_BASE_URL=$$base UI_API_KEY=$$key npx playwright test
 
+# Records the scripted demo (frontend/e2e/demo.spec.ts) as video against the running stack (`make up`, localhost
+# sign-in). Output: frontend/test-results/**/video.webm. A real key spends a few cents; the fake-model stack works too.
+.PHONY: demo-record
+demo-record:
+	cd frontend && { [ -d node_modules ] || npm ci --no-audit --no-fund; } && npx playwright install chromium \
+	  && DEMO_RECORD=1 UI_BASE_URL=http://localhost:$${API_PORT:-8100} npx playwright test e2e/demo.spec.ts
+
 # --- Eval corpus (S0.18): third-party sources -> eval/sources/ (gitignored); rebuild the golden set ---
 .PHONY: eval-fetch eval-build eval-extraction c1-check
 EVAL_PY := $(UV) --group eval python

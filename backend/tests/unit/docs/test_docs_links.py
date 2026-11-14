@@ -46,7 +46,7 @@ def _repo_paths(text: str) -> set[str]:
 
 def test_documentation_set_is_the_expected_one() -> None:
     names = sorted(p.name for p in (ROOT / "docs").glob("*.md"))
-    assert names == ["README.md", "evaluation.md", "operations.md", "voice.md"]
+    assert names == ["README.md", "demo.md", "evaluation.md", "operations.md", "voice.md"]
     assert sorted(p.name for p in (ROOT / "docs").iterdir() if p.is_dir()) == ["api", "img", "spec"]
 
 

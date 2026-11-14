@@ -23,8 +23,11 @@ The screenshots are captured by `frontend/e2e/screenshots.spec.ts` against a scr
 
 ## Quickstart
 
+Prerequisites: Docker running, and an OpenAI API key. `make ci` also needs [uv](https://docs.astral.sh/uv/).
+
 ```bash
-scripts/quickstart.sh     # needs Docker running and OPENAI_API_KEY in .env; prints your API key once
+cp .env.example .env      # then set OPENAI_API_KEY in .env; the key stays in this ignored file
+scripts/quickstart.sh     # builds and starts the stack, migrates, prints your API key once
 open http://localhost:8100/app
 scripts/demo.sh           # the full story with curl: upload, status, guides, streamed chat, why panel, stale marker, metrics
 scripts/demo_core.sh      # shorter smoke: upload, ready, one cited answer, history, metrics
@@ -110,7 +113,7 @@ Source: `docs/spec/case-study.pdf`. Status is one of **built**, **built, switche
 | Working backend | Built | `backend/` |
 | README with setup, architecture, assumptions, scale | Built | this file, `ARCHITECTURE.md`, `docs/operations.md` |
 | AI usage log and prompt engineering | Built | `AI_USAGE.md`; the prompts are `backend/prompts/<id>@<version>.md` |
-| Demo of document chat | Script built, recording not included | `scripts/demo.sh`, `scripts/demo_core.sh`, and the narration script in `docs/operations.md` section 7 |
+| Demo of document chat | Script built, recording not included | `scripts/demo.sh`, `scripts/demo_core.sh`, the narration script `docs/demo.md`, and `make demo-record`, which records the walk-through as video |
 
 ## API quick tour
 
@@ -210,6 +213,7 @@ Targets that are not met: answer pass 0.80, faithfulness 0.90, citation precisio
 | Suite | Command |
 |---|---|
 | Lint, types, unit, frontend checks (no Docker) | `make ci` |
+| Reviewer path from a fresh clone (add `--stack` for the stack and smoke) | `scripts/fresh_clone_check.sh` |
 | Unit, integration, end to end (needs `make up`) | `make test` |
 | Integration only (Postgres and Redis only) | `make up-test` then `make test-integration` |
 | Corpus ingestion | `make c1-check` |
@@ -249,7 +253,8 @@ Live and evaluation commands always run on samples with a spend cap, never on th
 |---|---|
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System design: components, data model, pipelines, models, explainability, decisions and limits |
 | [`docs/evaluation.md`](docs/evaluation.md) | How quality is measured, current numbers, decisions from measurements, the runbook |
-| [`docs/operations.md`](docs/operations.md) | Dev environment, scale and cost, observability, demo script |
+| [`docs/operations.md`](docs/operations.md) | Dev environment, fresh-clone check, scale and cost, observability |
+| [`docs/demo.md`](docs/demo.md) | The 3 to 4 minute demo script: what to click and say |
 | [`docs/voice.md`](docs/voice.md) | How Vault talks |
 | [`docs/README.md`](docs/README.md) | Index of the documentation tree |
 | [`CLAUDE.md`](CLAUDE.md) | Rules and conventions for contributors and coding agents |

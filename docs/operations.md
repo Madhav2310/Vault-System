@@ -27,6 +27,8 @@ Every service has `mem_limit` and `cpus` in `docker-compose.yml`: api 1.5 CPU an
 
 Working rules: Docker stays off unless a task needs it; run one heavy command at a time; check `uptime` first and wait if the load average is above about 8; use targeted tests (`pytest path::test`) while developing and the full gates once per change set; stop optional containers when idle (`docker compose stop otel-lgtm reranker`; retrieval keeps fusion order without the reranker).
 
+**Fresh-clone check.** `scripts/fresh_clone_check.sh [--no-stack|--stack] [PATH_OR_URL]` clones the repository (committed files only) into a temp dir and runs the reviewer path there: prerequisites (git, make, uv; with `--stack` also Docker and curl), `.env` from `.env.example`, `make ci`. It prints a pass/fail table and exits non-zero on any failure. `--no-stack` is the default and needs no Docker. `--stack` also runs `make up`, waits for `/readyz`, runs `scripts/demo_core.sh` and runs `make down`; stop your own stack first (shared ports), and export `OPENAI_API_KEY` for the smoke step (it is written to the clone's `.env`, never printed; without it the step is reported as SKIP). The frontend checks inside `make ci` are skipped in a clone, because the frontend dependencies are not installed there.
+
 Without an OpenAI key, `make ui-e2e` runs the UI tests against a scripted fake model on its own ports, and `scripts/demo.sh` runs against that stack with `LLM_PROVIDER=fake` (instructions at the top of the script).
 
 ---
@@ -158,22 +160,4 @@ A deployment sketch for roughly 1,000 daily users and 100 concurrent turns. It i
 
 ## 7. Demo script
 
-A 3 to 5 minute screen recording of the web UI at `http://localhost:8100/app`. It follows the same story as `scripts/demo.sh`, which performs each step with curl and prints the spend. `scripts/demo_core.sh` is a shorter smoke version.
-
-**Before recording.** Start fresh: `make down`, then `scripts/quickstart.sh`; paste the printed API key into `/app`. Documents to upload: `frontend/e2e/fixtures/services-agreement.txt` (the contract), `frontend/e2e/fixtures/pricing-memo.txt` (a memo that changes the commercial terms) and `eval/datasets/vault_eval_v1/docs/amendment_consulting.md` (an amendment). For the new-version step keep a copy of the contract with one extra line, saved under the same file name elsewhere; it must differ in bytes or it is deduplicated. Without a model key, start the fake-model stack from the top of `scripts/demo.sh` and use only the scripted questions (the meta question is not scripted). Zoom the browser to 125 percent so citations are legible.
-
-| Time | Step | What to show and say |
-|---|---|---|
-| 0:00 | The idea | The empty library. "You upload documents and chat with them. Every claim points at the exact sentence it came from, and the code copies that sentence, so the model cannot invent a quote." |
-| 0:15 | Upload and live status | Drag in the three files and point at the status chips. Processing is background work: extract, chunk, embed, index, then a summary. |
-| 0:45 | Source guide | Open the contract. Each document gets a summary, key facts and suggested questions, and every fact is checked against the text. Click a fact to open the source viewer at the cited sentence. |
-| 1:15 | A lookup, streamed | Ask "What is the notice period for termination?" Watch the stages: analyzing, retrieving, checking evidence, writing. Hover a citation, then click it: the quote is the stored sentence, with document, version and page. |
-| 1:55 | A follow-up | "And which law governs it?" The session remembers what "it" refers to. |
-| 2:20 | Compare and conflict | Ask for the monthly fee (live: "Compare the monthly fee in the services agreement and the pricing memo."). Two documents give different fees, and the answer shows both with citations in a "Sources disagree" callout instead of one confident number. |
-| 2:55 | A library question | Live key only: "How many documents do I have, and which are ready?" Answered from library metadata by a fixed, owner-scoped query, so it cannot leak other users' data. |
-| 3:10 | Why this answer | Open "Why this answer?". The explanation is built from reason codes and templates, never by asking the model, and shows the route, sources and steps. |
-| 3:35 | New version and the stale marker | Upload the changed contract as a new version. Answers that cited the old one show a banner; click "Re-ask" to ask again against the latest version. |
-| 4:05 | Metrics and cost | In a terminal, run the two metrics calls from the README. The whole demo is a few cents on a real key. |
-| 4:35 | Close | "One command runs everything. The README lists what is built, what is measured and what is not." |
-
-If something goes wrong on camera: a document stuck before ready, wait for the status to change and cut the pause; an answer that declines, say that it declines when the documents do not support an answer, then ask the suggested question; a rate or quota error, wait a minute (limits are per user).
+The demo script, with what to click and say at each step, is [`demo.md`](demo.md). `make demo-record` records the scripted walk-through as video against the running stack (`frontend/e2e/demo.spec.ts`). `scripts/demo.sh` performs the same story with curl and prints the spend; `scripts/demo_core.sh` is a shorter smoke version.
