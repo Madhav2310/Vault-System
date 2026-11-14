@@ -19,6 +19,7 @@ from app.chat.full_context import (
 )
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.nodes.generate import compose_user_message
+from app.chat.speculative import cancel
 from app.ingestion.chunk import count_tokens
 from app.retrieval.retrieve import Candidate, RetrievalResult
 
@@ -42,6 +43,8 @@ async def plan_context(state: TurnState, ctx: TurnCtx) -> TurnState:
         decision["reason"] = plan.reason
     if plan.mode != "full_context":
         return state
+    spec, state.spec_retrieval = state.spec_retrieval, None  # full context does not retrieve
+    await cancel(spec.task if spec else None)
 
     async with deps.sm() as s:
         chunks = await load_scope_chunks(s, ctx.owner_id, state.scope)

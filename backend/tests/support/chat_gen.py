@@ -2,6 +2,7 @@
 resolves), and small evidence sets."""
 
 import uuid
+from typing import Any
 
 from app.chat.evidence import EvidenceChunk, EvidenceSet, build_evidence
 from app.core.settings import Settings
@@ -29,7 +30,10 @@ def evidence() -> EvidenceSet:
 
 
 def fake_gateway(
-    script: list[Step] | None = None, ledger: LedgerWriter | None = None, fast_path: bool = False
+    script: list[Step] | None = None,
+    ledger: LedgerWriter | None = None,
+    fast_path: bool = False,
+    **settings: Any,
 ) -> tuple[LlmGateway, FakeProvider]:
     """`fast_path=False` keeps the scripted analysis call of every turn; S17.10 tests pass True."""
     fake = FakeProvider(script=script or [])
@@ -38,6 +42,7 @@ def fake_gateway(
         database_url="postgresql+asyncpg://x/y",
         redis_url="redis://x",
         chat_fast_path=fast_path,
+        **settings,
     )
     gw = LlmGateway(
         chat=fake,

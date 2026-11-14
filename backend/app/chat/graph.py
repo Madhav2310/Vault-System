@@ -32,6 +32,7 @@ from app.retrieval.scope import Scope
 if TYPE_CHECKING:  # node modules import this module; keep the runtime import graph acyclic
     from app.chat.nodes.analyze import AnalyzeResult, ScopeDoc
     from app.chat.nodes.generate import GenerateResult
+    from app.chat.speculative import SpeculativeRetrieval
 
 _log = get_logger("vault.chat.graph")
 _tracer = trace.get_tracer("app.chat.graph")
@@ -92,6 +93,7 @@ class TurnState:
     scope: Scope = Scope.empty
     analysis: AnalyzeResult | None = None
     embedding: QueryEmbedding | None = None  # speculative embedding of the raw question
+    spec_retrieval: SpeculativeRetrieval | None = None  # retrieval of the raw question, run during analyze
     retrieval: RetrievalResult | None = None
     chunks: list[Any] = field(default_factory=list)
     evidence: Any = None

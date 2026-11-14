@@ -33,6 +33,7 @@ from app.chat.nodes.run_analyze import analyze
 from app.chat.nodes.run_generate import generate
 from app.chat.nodes.terminal import abstain_no_documents, abstain_no_evidence, clarify
 from app.chat.nodes.verify import verify
+from app.chat.speculative import cancel_all
 from app.core.logging import get_logger
 from app.llm.gateway import LlmGateway
 from app.retrieval.retrieve import RetrievalResult
@@ -107,6 +108,7 @@ def after_generate(s: TurnState) -> str:
 async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
     """Write the turn's ledger record in one transaction; a failure retries a minimal error record."""
     deps, owner_id = ctx.deps, ctx.owner_id
+    await cancel_all(state)  # speculative work nobody used (a failed or short-circuited turn)
     gen = state.generation
     if state.failure or gen is None:
         gen = plain("error", ERROR_TEXT, state.failure or (TURN_ERROR,))
