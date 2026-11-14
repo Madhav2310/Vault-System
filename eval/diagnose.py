@@ -6,6 +6,11 @@ would have kept. The failure of each failed item is attributed to one stage: gol
 retrieval miss, evidence cut, abstention, or generation/judge (gold was in the evidence).
 
     make eval-diagnose RUN=<run_id> [REUSE=eval/.reuse_dev.json]
+
+It also builds one record per required gold claim of every answerable item (`--json`), with the stages
+extracted, chunked, retrieved, selected, generated and supported (each true, false or unknown, with a reason).
+Gold evidence is linked to an item, not to a claim, so the first four stages are item-level (every gold range
+of the item must pass); `attribution` says so per record.
 """
 
 import argparse
@@ -14,10 +19,13 @@ import collections
 import datetime as dt
 import json
 import pathlib
+import re
 import statistics
 import sys
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+
+from rapidfuzz import fuzz
 
 REPORTS = pathlib.Path(__file__).resolve().parent / "reports"
 DEFAULT_REUSE = pathlib.Path(__file__).resolve().parent / ".reuse_dev.json"
@@ -110,6 +118,174 @@ def summarize(rows: Sequence[dict]) -> list[str]:
     return lines
 
 
+STAGES = ("extracted", "chunked", "retrieved", "selected", "generated", "supported")
+GOLD_SUSPECT_WORDS = 45  # a claim this long is a whole verbatim clause, not an atomic claim
+NEAR_VERBATIM = 92  # partial-ratio of the claim text inside the answer
+NUMBER_RECALL = 0.5  # share of a claim's content words the answer must share when it repeats all numbers
+
+
+def _norm(t: str) -> str:
+    return " ".join(re.sub(r"[^a-z0-9]+", " ", t.lower()).split())
+
+
+def _numbers(t: str) -> set[str]:
+    return {n.replace(",", "") for n in re.findall(r"\d+(?:[.,]\d+)*", t)}
+
+
+def _st(ok: bool | None, reason: str = "") -> dict:
+    return {"ok": ok, "reason": reason}
+
+
+def _stated_in_answer(claim: str, answer: str) -> bool:
+    c, a = _norm(claim), _norm(answer)
+    if not c or not a:
+        return False
+    if c in a or fuzz.partial_ratio(c, a) >= NEAR_VERBATIM:
+        return True
+    nums = _numbers(claim)
+    words = {w for w in c.split() if len(w) > 3 and not w.isdigit()}
+    return bool(nums) and nums <= _numbers(answer) and (
+        not words or len(words & set(a.split())) / len(words) >= NUMBER_RECALL
+    )
+
+
+def _evidence_stages(
+    targets: Sequence[dict], has_run: bool, ranks: Sequence[int | None], selected: Sequence[bool]
+) -> list[dict]:
+    """extracted, chunked, retrieved, selected: item-level, every gold range of the item must pass."""
+    if not targets:
+        return [_st(None, "the item has no gold evidence")] * 4
+    if any(t["extracted"] is False for t in targets):
+        extracted = _st(False, "gold text not found in the document's chunk text")
+    elif any(t["extracted"] is None for t in targets):
+        extracted = _st(None, "gold text or the document's chunks unavailable")
+    else:
+        extracted = _st(True)
+    unmapped = [t for t in targets if not t["mapped"]]
+    chunked = _st(False, unmapped[0]["reason"] or "unmapped") if unmapped else _st(True)
+    if unmapped:
+        return [extracted, chunked, _st(None, "gold not chunked"), _st(None, "gold not chunked")]
+    if not has_run:
+        return [extracted, chunked, _st(None, "no stored run matched the question"), _st(None, "no stored run")]
+    lost = sum(r is None for r in ranks)
+    cut = sum(not s for s in selected)
+    return [
+        extracted,
+        chunked,
+        _st(False, f"{lost} of {len(ranks)} gold ranges not in the candidate pool") if lost else _st(True),
+        _st(False, f"{cut} of {len(selected)} gold ranges not selected") if cut else _st(True),
+    ]
+
+
+def claim_records(
+    *,
+    claims: Sequence[str],
+    targets: Sequence[dict],
+    has_run: bool,
+    ranks: Sequence[int | None],
+    selected: Sequence[bool],
+    answer: str,
+    segments: Sequence[dict],
+    judge: dict,
+    gold_texts: Sequence[str],
+) -> list[dict]:
+    """One record per required claim. `generated` is the claims judge's decision; `supported` is the support
+    verdict of the answer segment(s) whose text contains the judge's verified quote for the claim (unknown when
+    that quote is missing or matches no segment); `cites_gold_chunk` says whether those segments' passages lie
+    in the item's gold chunks. Judge-uncertainty flags: `possible_judge_error`, `gold_suspect`."""
+    ev = _evidence_stages(targets, has_run, ranks, selected)
+    jc = {c["index"]: c for c in judge.get("claims") or [] if c}
+    js = {s["index"]: s for s in judge.get("segments") or [] if s}
+    gold = [_norm(g) for g in gold_texts if g]
+    out = []
+    for i, claim in enumerate(claims):
+        c = jc.get(i)
+        if c is None:
+            gen = _st(None, "no claims-judge decision stored")
+        else:
+            gen = _st(bool(c.get("decision")), "entailed" if c.get("decision") else "judged not entailed")
+        quote = _norm((c or {}).get("quote") or "")
+        seg_ix = (
+            [k for k, sg in enumerate(segments) if quote in _norm(sg.get("text") or "")]
+            if gen["ok"] and quote
+            else []
+        )
+        sup, cites = _st(None, "claim not entailed, so no answer segment states it"), None
+        if gen["ok"]:
+            if not seg_ix:
+                sup = _st(None, "no answer segment matches the judge's quote for the claim")
+            elif any(k not in js for k in seg_ix):
+                sup = _st(None, "no support verdict stored for the segment")
+            else:
+                ok = all(bool(js[k].get("decision")) for k in seg_ix)
+                sup = _st(ok, f"segments {seg_ix}: " + ("judged supported" if ok else "judged unsupported"))
+                if gold:
+                    passages = [_norm(p) for k in seg_ix for p in segments[k].get("passages") or []]
+                    cites = any(p and (p in g or g in p) for p in passages for g in gold)
+        rec = {
+            "index": i,
+            "claim": claim,
+            "attribution": "single-range" if len(targets) == 1 else f"item-level ({len(targets)} gold ranges)",
+            **dict(zip(STAGES[:4], ev, strict=True)),
+            "generated": gen,
+            "supported": sup,
+            "segments": seg_ix,
+            "cites_gold_chunk": cites,
+            "possible_judge_error": bool(
+                gen["ok"] is False and ((c or {}).get("overruled") or _stated_in_answer(claim, answer))
+            ),
+            "gold_suspect": len(claim.split()) >= GOLD_SUSPECT_WORDS,
+        }
+        rec["first_failing_stage"] = next((s for s in STAGES if rec[s]["ok"] is False), None)
+        out.append(rec)
+    return out
+
+
+def _utilisation(recs: Sequence[dict]) -> str:
+    sel = [r for r in recs if r["selected"]["ok"]]
+    known = [r for r in sel if r["generated"]["ok"] is not None]
+    gen = sum(bool(r["generated"]["ok"]) for r in known)
+    pct = f" ({gen / len(known):.0%})" if known else ""
+    unk = f", {len(sel) - len(known)} unknown" if len(sel) > len(known) else ""
+    return f"{gen}/{len(known)}{pct}{unk}"
+
+
+def claim_summary(recs: Sequence[dict]) -> list[str]:
+    """Counts per first-failing stage, and the evidence utilisation rate (claims whose evidence was selected
+    that the judge found entailed), overall and for judge-confident claims only."""
+    conf = [r for r in recs if not r["possible_judge_error"] and not r["gold_suspect"]]
+    none = "none (no stage failed)"
+    cnt = collections.Counter(r["first_failing_stage"] or none for r in recs)
+    cnt_c = collections.Counter(r["first_failing_stage"] or none for r in conf)
+    lines = [
+        f"required claims of answerable items: {len(recs)}; judge-confident: {len(conf)}; "
+        f"possible_judge_error: {sum(r['possible_judge_error'] for r in recs)}; "
+        f"gold_suspect: {sum(r['gold_suspect'] for r in recs)}",
+        "",
+        "| first failing stage | all claims | judge-confident |",
+        "|---|---|---|",
+    ]
+    lines += [f"| {st} | {cnt.get(st, 0)} | {cnt_c.get(st, 0)} |" for st in (*STAGES, none)]
+    lines += [
+        "",
+        f"evidence utilisation, all claims: {_utilisation(recs)}",
+        f"evidence utilisation, judge-confident claims: {_utilisation(conf)}",
+    ]
+    return lines
+
+
+def _target_facts(t, doc_text: dict[str, str]) -> dict:  # t: eval.mapping.GoldTarget
+    """`extracted`: the gold text is in the document's chunk text (mapped, or present across chunk boundaries)."""
+    if t.mapped:
+        ext: bool | None = True
+    elif t.reason == "document sentences unavailable" or not doc_text.get(t.doc_id):
+        ext = None
+    else:
+        q, d = _norm(t.quote), _norm(doc_text[t.doc_id])
+        ext = bool(q) and (q in d or fuzz.partial_ratio(q, d) >= 90)
+    return {"extracted": ext, "mapped": t.mapped, "reason": t.reason, "quote": t.quote}
+
+
 async def _load(run: str, cache: dict, until: dt.datetime) -> list[dict]:
     from sqlalchemy import text
 
@@ -147,6 +323,11 @@ async def _load(run: str, cache: dict, until: dt.datetime) -> list[dict]:
         )
         tok = {str(r["id"]): r["token_count"] for r in rows}
         doc_of = {str(r["id"]): by_id.get(str(r["document_id"])) for r in rows}
+        text_of = {str(r["id"]): r["original_text"] or "" for r in rows}
+        doc_text: dict[str, str] = collections.defaultdict(str)
+        for r in sorted(rows, key=lambda r: (str(r["document_id"]), r["ordinal"])):
+            if str(r["document_id"]) in by_id:
+                doc_text[by_id[str(r["document_id"])]] += " " + (r["original_text"] or "")
         chunks = chunks_from_rows([dict(r) for r in rows if str(r["document_id"]) in by_id], by_id)
         by_doc: dict[str, list] = collections.defaultdict(list)
         for c in chunks:
@@ -220,6 +401,21 @@ async def _load(run: str, cache: dict, until: dt.datetime) -> list[dict]:
             for c in judge.get("claims") or []
             if not c.get("decision") and c["index"] < len(it.required_claims)
         ]
+        if it.answer_type != "abstain":
+            rec["claims"] = [
+                {"item_id": iid, "stratum": it.stratum, **c}
+                for c in claim_records(
+                    claims=it.required_claims,
+                    targets=[_target_facts(t, doc_text) for t in targets],
+                    has_run=rec["has_run"],
+                    ranks=rec.get("ranks", []),
+                    selected=rec.get("selected", []),
+                    answer=a.get("answer") or "",
+                    segments=a.get("segments") or [],
+                    judge=judge,
+                    gold_texts=[text_of.get(c, "") for t in mapped for c in sorted(t.chunk_ids)],
+                )
+            ]
         out.append(rec)
     return out
 
@@ -246,6 +442,7 @@ def report_lines(rows: list[dict]) -> list[str]:
     ]
     lines += [*summarize(rows), "", "failed items by stage:"]
     lines += [f"  {n:3d}  {stage}" for stage, n in stages.most_common()]
+    lines += ["", *claim_summary([c for r in rows for c in r.get("claims", [])])]
     return lines
 
 
@@ -258,7 +455,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="ISO time: use each question's latest stored run at or before it "
         "(default: the answers file's modified time + 20 seconds)",
     )
-    ap.add_argument("--json", type=pathlib.Path, help="write the per-item rows here")
+    ap.add_argument("--json", type=pathlib.Path, help="write the per-item rows (each with its per-claim records)")
     args = ap.parse_args(argv)
     mtime = dt.datetime.fromtimestamp((REPORTS / f"{args.run}.answers.jsonl").stat().st_mtime, dt.UTC)
     until = dt.datetime.fromisoformat(args.until) if args.until else mtime + dt.timedelta(seconds=20)
