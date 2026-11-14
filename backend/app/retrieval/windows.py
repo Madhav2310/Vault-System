@@ -37,17 +37,61 @@ def _cap(s: str, max_chars: int) -> str:
     return s[: cut if cut > 0 else max_chars]
 
 
+_LEADER = re.compile(r"[ \t]*(?:\.{4,}|(?:\.[ \t]){3,}\.?|…{2,})[ \t]*")
+LEADER_MARKER = " … "
+_LETTERS = re.compile(r"[A-Za-z]{2}")
+
+
+def collapse_leaders(text: str, sentences: Sequence[tuple[int, int]]) -> tuple[str, list[tuple[int, int]]]:
+    """Replace each dot-leader run (4+ dots, ". . . ." sequences, repeated ellipses) with one short marker and
+    return the new text with the sentence spans remapped to it.
+
+    Reranker copy only: evidence, citations and `original_text` are never touched (I1)."""
+    pieces: list[str] = []
+    runs: list[tuple[int, int, int]] = []  # (old start, old end, new start) of each replaced run
+    pos = new_pos = 0
+    for m in _LEADER.finditer(text):
+        pieces.append(text[pos : m.start()])
+        new_pos += m.start() - pos
+        runs.append((m.start(), m.end(), new_pos))
+        pieces.append(LEADER_MARKER)
+        new_pos += len(LEADER_MARKER)
+        pos = m.end()
+    pieces.append(text[pos:])
+    new_text = "".join(pieces)
+
+    def remap(off: int, is_end: bool) -> int:
+        shift = 0
+        for old_start, old_end, new_start in runs:
+            if off <= old_start:
+                break
+            if off < old_end:  # inside a run: land on the marker's ellipsis
+                return new_start + (2 if is_end else 1)
+            shift = new_start + len(LEADER_MARKER) - old_end
+        return min(off + shift, len(new_text))
+
+    return new_text, [(remap(a, False), remap(b, True)) for a, b in sentences]
+
+
 def focus_window(
     text: str,
     sentences: Sequence[tuple[int, int]],
     query: str,
     max_words: int = DEFAULT_WINDOW_WORDS,
     max_chars: int = 1050,
+    collapse: bool = False,
 ) -> str:
     """The contiguous run of whole sentences (<= max_words) with the most distinct query stems.
 
     Ties go to the earliest window; no overlap -> the first `max_words` words; one over-long sentence is cut
-    at the word limit. The result is also capped at `max_chars` (word boundary): the reranker input limit."""
+    at the word limit. The result is also capped at `max_chars` (word boundary): the reranker input limit.
+
+    `collapse` first collapses dot leaders (see `collapse_leaders`) so the character budget goes to labels and
+    numbers, and the window then also takes the number-only sentences that follow its last sentence (the row's
+    values: they add no query stem, so the stem count alone never reaches them); off, the output is unchanged.
+    Reranker input only, never evidence (I1)."""
+    if collapse:
+        text, sentences = collapse_leaders(text, sentences)
     if _words(text) <= max_words and len(text) <= max_chars:
         return text
     q = stems(query)
@@ -71,6 +115,11 @@ def focus_window(
     assert best is not None
     score, neg_i, j = best
     i = -neg_i
+    while collapse and j + 1 < len(spans) and not _LETTERS.search(text[spans[j + 1][0] : spans[j + 1][1]]):
+        grown = text[spans[i][0] : spans[j + 1][1]]  # numeric-only sentences are the cells of the last row
+        if _words(grown) > max_words or len(grown) > max_chars:
+            break
+        j += 1
     if score == 0 or not any(hits):
         return _cap(" ".join(text.split()[:max_words]), max_chars)
     window = text[spans[i][0] : spans[j][1]]

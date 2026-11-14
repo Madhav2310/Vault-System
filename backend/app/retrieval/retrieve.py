@@ -334,7 +334,13 @@ class Retriever:
         )
         out: dict[uuid.UUID, str] = {}
         for cid, original, sents, title, section in rows:
-            window = focus_window(original, _sentence_spans(sents), query, self._cfg.rerank.window_words)
+            window = focus_window(
+                original,
+                _sentence_spans(sents),
+                query,
+                self._cfg.rerank.window_words,
+                collapse=self._cfg.rerank.collapse_leaders,
+            )
             head = f"{title} | {section[-1]}" if section else title
             out[cid] = f"{head[:120]}\n{window}"
         return out
