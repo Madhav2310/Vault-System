@@ -88,6 +88,7 @@ class Settings(BaseSettings):
 
     # --- document brief (design §9.1) ---
     brief_max_evidence_tokens: int = 12_000  # above this the brief maps over section groups, then merges
+    brief_enabled: bool = True  # False skips the brief stage (eval uploads: no enrichment spend); version stays `ready`
     brief_max_usd: float = 0.05  # per document; reaching it stops further map calls (BRIEF_PARTIAL_BUDGET)
 
     # --- contextual chunk headers, index side only (design §6.5, S17.05); off until the A/B decides ---
