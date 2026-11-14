@@ -403,10 +403,20 @@ documents:
     ref: fb:AMD_2015_10K
     file: eval/sources/_v2_cache/pdfs/fb/AMD_2015_10K.pdf
     sha256: null
+  fb_apple_2023q3_10q:
+    kind: public
+    ref: fb:APPLE_2023Q3_10Q
+    file: eval/sources/_v2_cache/pdfs/fb/APPLE_2023Q3_10Q.pdf
+    sha256: null
   fb_bestbuy_2019_10k:
     kind: public
     ref: fb:BESTBUY_2019_10K
     file: eval/sources/_v2_cache/pdfs/fb/BESTBUY_2019_10K.pdf
+    sha256: null
+  fb_bestbuy_2024q2_10q:
+    kind: public
+    ref: fb:BESTBUY_2024Q2_10Q
+    file: eval/sources/_v2_cache/pdfs/fb/BESTBUY_2024Q2_10Q.pdf
     sha256: null
   fb_block_2016_10k:
     kind: public
@@ -442,6 +452,11 @@ documents:
     kind: public
     ref: fb:CVSHEALTH_2018_10K
     file: eval/sources/_v2_cache/pdfs/fb/CVSHEALTH_2018_10K.pdf
+    sha256: null
+  fb_ebay_2023q2_10q:
+    kind: public
+    ref: fb:EBAY_2023Q2_10Q
+    file: eval/sources/_v2_cache/pdfs/fb/EBAY_2023Q2_10Q.pdf
     sha256: null
   fb_generalmills_2020_10k:
     kind: public
@@ -497,6 +512,16 @@ documents:
     kind: public
     ref: fb:NETFLIX_2017_10K
     file: eval/sources/_v2_cache/pdfs/fb/NETFLIX_2017_10K.pdf
+    sha256: null
+  fb_netflix_2023q2_10q:
+    kind: public
+    ref: fb:NETFLIX_2023Q2_10Q
+    file: eval/sources/_v2_cache/pdfs/fb/NETFLIX_2023Q2_10Q.pdf
+    sha256: null
+  fb_paypal_2023q2_10q:
+    kind: public
+    ref: fb:PAYPAL_2023Q2_10Q
+    file: eval/sources/_v2_cache/pdfs/fb/PAYPAL_2023Q2_10Q.pdf
     sha256: null
   fb_pepsico_2021_10k:
     kind: public
@@ -977,7 +1002,7 @@ documents:
     sha256: a45fd0f5892c5be0170099e909f7ca58ff3733e28d9a4c0f8d85f8a657c87137
 splits:
   train:
-    items: 114
+    items: 123
     source_docs:
     - auth_amendment
     - consulting_vantage
@@ -1007,12 +1032,15 @@ splits:
     - fb_amcor_2023q2_10q
     - fb_amd_10k
     - fb_amd_2015_10k
+    - fb_bestbuy_2024q2_10q
     - fb_boeing_2018_10k
     - fb_cocacola_2017_10k
     - fb_cvshealth_2018_10k
+    - fb_ebay_2023q2_10q
     - fb_jpmorgan_2022q2_10q
     - fb_mgmresorts_2022q4_earnings
     - fb_netflix_2015_10k
+    - fb_paypal_2023q2_10q
     - fb_pepsico_2021_10k
     - fb_pepsico_2022_10k
     - fb_pepsico_2023_8k_dated_2023_05_05
@@ -1078,12 +1106,15 @@ splits:
     - fb_amcor_2023q2_10q
     - fb_amd_10k
     - fb_amd_2015_10k
+    - fb_bestbuy_2024q2_10q
     - fb_boeing_2018_10k
     - fb_cocacola_2017_10k
     - fb_cvshealth_2018_10k
+    - fb_ebay_2023q2_10q
     - fb_jpmorgan_2022q2_10q
     - fb_mgmresorts_2022q4_earnings
     - fb_netflix_2015_10k
+    - fb_paypal_2023q2_10q
     - fb_pepsico_2021_10k
     - fb_pepsico_2022_10k
     - fb_pepsico_2023_8k_dated_2023_05_05
@@ -1126,7 +1157,7 @@ splits:
     - sla_fibrenet
     - supplier_code
   dev:
-    items: 57
+    items: 59
     source_docs:
     - auth_travel_policy
     - cuad_apollo_endosurgery_manufacturing_and_sup_847299
@@ -1215,7 +1246,7 @@ splits:
     - supplier_code
     - warranty_terms
   test:
-    items: 129
+    items: 134
     source_docs:
     - annual_fin
     - auth_side_letter
@@ -1246,6 +1277,7 @@ splits:
     - fb_adobe_2017_10k
     - fb_amcor_2020_10k
     - fb_amcor_2023q4_earnings
+    - fb_apple_2023q3_10q
     - fb_bestbuy_2019_10k
     - fb_block_2016_10k
     - fb_cocacola_2021_10k
@@ -1254,6 +1286,7 @@ splits:
     - fb_jpmorgan_2023q2_10q
     - fb_lockheedmartin_2020_10k
     - fb_mgmresorts_2020_10k
+    - fb_netflix_2023q2_10q
     - grant_award
     - inj_data_standard
     - inj_meeting_notes
@@ -1327,6 +1360,7 @@ splits:
     - fb_adobe_2017_10k
     - fb_amcor_2020_10k
     - fb_amcor_2023q4_earnings
+    - fb_apple_2023q3_10q
     - fb_bestbuy_2019_10k
     - fb_block_2016_10k
     - fb_cocacola_2021_10k
@@ -1335,6 +1369,7 @@ splits:
     - fb_jpmorgan_2023q2_10q
     - fb_lockheedmartin_2020_10k
     - fb_mgmresorts_2020_10k
+    - fb_netflix_2023q2_10q
     - grant_award
     - inj_data_standard
     - inj_meeting_notes
