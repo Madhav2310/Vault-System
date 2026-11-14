@@ -1,0 +1,6 @@
+# Scored abstention (S22.07). `fitted: false` until `python -m eval.calibrate_abstain --write` fits it on
+# the train split and picks thresholds on dev; with CHAT_ABSTAIN_SCORED on and this file unfitted, the old
+# evidence gate runs instead. Never edit weights by hand and never fit on test content.
+version: 1
+fitted: false
+margin_rank: 3
