@@ -250,7 +250,7 @@ flowchart LR
 | Step | Detail (from `backend/config/retrieval@2.yaml` and module docstrings) |
 |---|---|
 | Scope (`scope.py`) | The latest `ready`/`enriched` version of each document in the session scope, owned by the caller and not deleted. The analysis may narrow it but never widen it. Every SQL statement filters `owner_id` and `version_id = ANY(...)`. |
-| Vector (`vector.py`) | Exact, brute-force cosine search over one owner's chunks, `k_vec` 40. Hash partitioning prunes the query to 1 of 32 partitions. There is no ANN index. HNSW is the escape hatch above about 100,000 chunks in one scope, designed but **not built**. |
+| Vector (`vector.py`) | Exact, brute-force cosine search over one owner's chunks, `k_vec` 40. `per_doc_quota` 12 caps the hits per document, which balances documents in a cross-document scope but also caps a one-document scope at 12 hits (`retrieval@2-fullk` lifts it there). Hash partitioning prunes the query to 1 of 32 partitions. There is no ANN index. HNSW is the escape hatch above about 100,000 chunks in one scope, designed but **not built**. |
 | Lexical (`lexical.py`, `numbers.py`) | An **OR** tsquery of the query's English lexemes, ranked by `ts_rank_cd`, `k_lex` 40, plus an identifier query on `tsv_ids` for clause numbers, IDs, amounts and dates. `retrieval@2-lexical2` adds number and unit variants. |
 | Fusion (`fusion.py`) | Reciprocal rank fusion, `rrf_k` 60, identifier matches weighted 2. |
 | Rerank (`rerank.py`, `listwise.py`, `windows.py`) | `kind: none` by default. The alternatives are `retrieval@2-rerank` (MiniLM cross-encoder in the `reranker` service, query-focused 180-word windows) and `retrieval@2-llm` (`rerank_listwise@1` on `fast`). On a reranker timeout or failure, the turn keeps fusion order and records `degraded=no_rerank`. |
@@ -441,7 +441,7 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 | `CHUNKER_VERSION` | `chunker@1` | `chunker@2`, `chunker@2-overlap25` | Retrieval-only paired evaluation after a re-ingest |
 | `INDEX_CONTEXT` | `none` | `deterministic` or `llm` index-only headers | Retrieval-only paired evaluation after a re-ingest |
 | `CONTEXTUALIZE_VARIANT` (+ `CONTEXTUALIZE_MAX_USD` $0.02) | `off` | Alias for the same stage as `INDEX_CONTEXT`; `INDEX_CONTEXT` wins when both are set | As `INDEX_CONTEXT` |
-| `RETRIEVAL_CONFIG` | `retrieval@2` | `retrieval@2-rerank`, `-llm`, `-lexical2`, `-norerank`, `retrieval@1` | Retrieval-only paired evaluation (section 5) |
+| `RETRIEVAL_CONFIG` | `retrieval@2` | `retrieval@2-rerank`, `-llm`, `-lexical2`, `-norerank`, `-fullk` (a one-document scope drops the per-document vector quota, so its vector list is `k_vec` long instead of 12), `retrieval@1` | Retrieval-only paired evaluation (section 5) |
 
 Operational settings that are not behaviour experiments:
 

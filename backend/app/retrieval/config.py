@@ -50,12 +50,18 @@ class RetrievalConfig(BaseModel):
     gate: GateCfg
     per_doc_evidence: int = Field(default=0, ge=0, le=20)  # multi-document: per-document top chunks
     lexical: Literal["v1", "v2"] = "v1"  # v2 = S22.03: length-normalised rank_cd, number/unit variants
+    single_doc_full_k: bool = False  # one-document scope: no per_doc_quota (it caps the list below k_vec)
 
     def model_post_init(self, _ctx: Any) -> None:
         if self.id_boost != ID_BOOST:
             raise ValueError(f"id_boost {self.id_boost} does not match the fusion weight {ID_BOOST}")
         if self.rrf_k != fusion.RRF_K:
             raise ValueError(f"rrf_k {self.rrf_k} does not match fusion.RRF_K {fusion.RRF_K}")
+
+
+def vector_quota(cfg: RetrievalConfig, n_versions: int) -> int | None:
+    """The per-document vector quota for a scope of `n_versions` documents (None = no quota)."""
+    return None if cfg.single_doc_full_k and n_versions <= 1 else cfg.per_doc_quota
 
 
 def load_config(path: pathlib.Path) -> RetrievalConfig:
