@@ -115,6 +115,13 @@ REASON_TEMPLATES: dict[str, str] = {
         "Part of the question had no supporting passage, and the answer says so. "
         "Try a document that covers it."
     ),
+    "CALC_CORRECTED": (
+        "A figure was recalculated from the numbers in the cited passages, and the answer shows the rechecked result."
+    ),
+    "CALC_OPERAND_UNVERIFIED": (
+        "I could not match every number in a calculation to its cited passage, so that figure is not shown as checked. "
+        "Check the passages yourself."
+    ),
     "FAST_PATH": "",
     "LOOP_GUARD": "",
     "BAD_ROUTE": "",
@@ -132,6 +139,22 @@ DEGRADED_TEMPLATES: dict[str, str] = {
 
 def not_found_text(element: str) -> str:
     return NOT_FOUND_ELEMENT.format(element=element)
+
+
+CALC_TEXTS = {  # S22.08: the segment text of a checked calculation (code-written; the number is the computed one)
+    "add": "Adding {operands} gives {result}.",
+    "sum": "Adding {operands} gives {result}.",
+    "subtract": "{first} minus {second} is {result}.",
+    "ratio": "{first} divided by {second} is {result}.",
+    "percent_change": "The change from {first} to {second} is {result}.",
+    "average": "The average of {operands} is {result}.",
+}
+
+
+def calc_text(op: str, operands: list[str], result: str) -> str:
+    joined = operands[0] if len(operands) == 1 else ", ".join(operands[:-1]) + " and " + operands[-1]
+    first, second = [*operands, "", ""][:2]
+    return CALC_TEXTS[op].format(operands=joined, first=first, second=second, result=result)
 
 
 def side_not_found_text(title: str) -> str:

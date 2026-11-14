@@ -119,6 +119,8 @@ class Settings(BaseSettings):
     # --- scored abstention (S22.07): logistic combiner (config/abstain@1.yaml) replaces the binary gate;
     # off until calibrated on a v2 run and the paired A/B accepts it ---
     chat_abstain_scored: bool = False
+    # --- typed calculation segments (S22.08): answer_rag@5, code computes numbers; off until A/B decides ---
+    chat_calc: bool = False
 
     # --- warm voice (S23.01): appends prompts/voice@1.md to the answer prompts; off until the A/B decides ---
     chat_voice: bool = False

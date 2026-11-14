@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model
 from app.chat.nodes_common import defuse
 
 MAX_ENUM_HANDLES = 1000
+CALC_OPS = ("add", "subtract", "ratio", "percent_change", "sum", "average")  # S22.08 (see `calc.py`)
 HEADER_SEP = " · "  # middle dot, as in the design's header format
 
 Mode = Literal["rag", "full_context"]
@@ -107,16 +108,32 @@ def build_evidence(chunks: Sequence[EvidenceChunk]) -> EvidenceSet:
 
 
 def answer_schema(
-    evidence: EvidenceSet | None, mode: Mode = "rag", plan_ids: Sequence[str] = ()
+    evidence: EvidenceSet | None, mode: Mode = "rag", plan_ids: Sequence[str] = (), calc: bool = False
 ) -> type[BaseModel]:
     """Strict answer schema. RAG mode with an enum-sized evidence set: handle enum; else plain strings.
-    `plan_ids` (S22.04, e.g. `("R1", "R2")`) adds a `plan` field before the segments; empty = unchanged."""
+    `plan_ids` (S22.04, e.g. `("R1", "R2")`) adds a `plan` field before the segments; empty = unchanged.
+    `calc` (S22.08) adds a nullable `calc` object to each segment; False = unchanged."""
     cfg = ConfigDict(extra="forbid")
     item: Any = str
     if mode == "rag" and evidence is not None and evidence.enum_ok and evidence.handles:
         item = Literal[evidence.handles]
     status: Any = Literal["answer", "abstain"]
-    segment: Any = create_model("Segment", __config__=cfg, text=(str, ...), evidence=(list[item], ...))
+    extra: dict[str, Any] = {}
+    if calc:
+        operand: Any = create_model("CalcOperand", __config__=cfg, handle=(item, ...), value_text=(str, ...))
+        op_type: Any = Literal[CALC_OPS]
+        calc_model: Any = create_model(
+            "Calc",
+            __config__=cfg,
+            op=(op_type, ...),
+            operands=(list[operand], ...),
+            unit=(str, ...),
+            stated_result=(str, ...),
+        )
+        extra = {"calc": (calc_model | None, ...)}
+    segment: Any = create_model(
+        "Segment", __config__=cfg, text=(str, ...), evidence=(list[item], ...), **extra
+    )
     plan: dict[str, Any] = {}
     element_type: Any = Literal[tuple(plan_ids)] if plan_ids else str
     if plan_ids:
