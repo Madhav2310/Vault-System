@@ -49,3 +49,18 @@ def test_turn_state_remembers_the_scope_before_narrowing() -> None:
     from app.chat.graph import TurnState
 
     assert TurnState.__dataclass_fields__["scope_unnarrowed"].default is None
+
+
+def test_scope_gains_only_the_versions_of_carried_chunks() -> None:
+    from app.retrieval.scope import Scope
+
+    d1, d2, d3 = (uuid.UUID(int=2000 + i) for i in range(3))
+    v3 = uuid.UUID(int=903)
+    narrowed = Scope(entries=((d2, V2),))
+    wider = Scope(entries=tuple(sorted(((d1, V1), (d2, V2), (d3, v3)))))
+    from app.chat.memory import scope_with_carried
+
+    out = scope_with_carried(narrowed, wider, [chunk(5, V1)])
+    assert set(out.version_ids) == {V1, V2}  # v3 was not carried, so it stays out
+    assert scope_with_carried(narrowed, wider, []) == narrowed
+    assert scope_with_carried(narrowed, None, [chunk(5, V1)]) == narrowed

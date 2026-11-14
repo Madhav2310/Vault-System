@@ -1,5 +1,6 @@
 """Working memory window (design §8.8): newest whole turns within a token budget, plus session memory."""
 
+import dataclasses
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -10,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.chat.evidence import EvidenceChunk
 from app.ingestion.chunk import count_tokens
+from app.retrieval.scope import Scope
 
 WINDOW_TOKENS = 3000
 _FETCH_LIMIT = 200
@@ -119,6 +121,17 @@ def merge_carried(
         seen.add(c.chunk_id)
         added.append(c)
     return [*current, *added]
+
+
+def scope_with_carried(scope: Scope, unnarrowed: Scope | None, carried: Sequence[EvidenceChunk]) -> Scope:
+    """`scope` plus the entries of the versions that carried chunks came from, so the run's version snapshot
+    names every version its evidence and citations use. Only versions of the session scope are added."""
+    if unnarrowed is None or not carried:
+        return scope
+    have = set(scope.version_ids)
+    wanted = {c.version_id for c in carried} - have
+    extra = tuple(e for e in unnarrowed.entries if e[1] in wanted)
+    return dataclasses.replace(scope, entries=tuple(sorted((*scope.entries, *extra)))) if extra else scope
 
 
 async def previous_selected_chunk_ids(

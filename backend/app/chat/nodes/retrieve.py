@@ -11,7 +11,7 @@ import uuid
 from app.chat.clarify import near_tie
 from app.chat.compare import floor_on, floor_per_doc
 from app.chat.graph import TurnCtx, TurnState
-from app.chat.memory import merge_carried, previous_selected_chunk_ids
+from app.chat.memory import merge_carried, previous_selected_chunk_ids, scope_with_carried
 from app.chat.nodes.run_analyze import clarify_ok
 from app.chat.speculative import HIT, MISS, cancel
 from app.retrieval.load import load_evidence_chunks
@@ -80,6 +80,7 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
             before = len(state.chunks)
             allowed = set((state.scope_unnarrowed or state.scope).version_ids)  # still in the session scope
             state.chunks = merge_carried(state.chunks, carried, allowed, limit=carry)
+            state.scope = scope_with_carried(state.scope, state.scope_unnarrowed, state.chunks[before:])
             carry_info = {
                 "carry_prior": len(prior),
                 "carry_loaded": len(carried),
