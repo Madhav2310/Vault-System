@@ -23,6 +23,12 @@ class Settings(BaseSettings):
     db_pool_size: int = 10
     db_max_overflow: int = 5
 
+    # --- UI session cookie (S22.11) ---
+    session_ttl_s: int = 28800  # lifetime of a /v1/session cookie
+    session_secret: SecretStr | None = (
+        None  # optional extra HMAC key; tokens are always bound to the user's key hash
+    )
+
     # --- object store ---
     object_store_backend: Literal["local", "s3"] = "local"
     object_store_root: str = "/data/blobs"

@@ -233,6 +233,7 @@ async def test_every_post(
 ) -> None:
     spec = (await api.get("/openapi.json")).json()
     posts = {f"POST {p}" for p, ops in spec["paths"].items() if "post" in ops}
+    posts.discard("POST /v1/session")  # creates no resource: a stateless signed cookie, replay-safe by design
     assert posts == set(CASES), (
         f"POST routes without a replay case: {sorted(posts - set(CASES))}; "
         f"cases for routes that no longer exist: {sorted(set(CASES) - posts)}"

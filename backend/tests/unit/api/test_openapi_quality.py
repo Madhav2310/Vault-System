@@ -95,7 +95,11 @@ def test_security_scheme(spec: dict[str, Any]) -> None:
     problems: list[str] = []
     for method, path, op in _ops(spec):
         health = path in ("/healthz", "/readyz")
-        want: list[Any] = [] if health else [{"ApiKey": []}]
+        want: list[Any] = (
+            []
+            if health or (method, path) == ("POST", "/v1/session")
+            else [{"ApiKey": []}, {"SessionCookie": []}]
+        )
         if op.get("security") != want:
             problems.append(f"{method} {path}: security={op.get('security')}")
         if not health and "401" not in op["responses"]:
@@ -111,6 +115,7 @@ def test_tag_order(spec: dict[str, Any]) -> None:
         "Chat",
         "Runs",
         "Metrics",
+        "Session",
         "Health",
     ]
     used = {t for _, _, op in _ops(spec) for t in op["tags"]}

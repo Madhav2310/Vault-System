@@ -6,7 +6,10 @@ const API_KEY = process.env.UI_API_KEY ?? "vk_test_demo";
 const QUESTION = "What is the notice period for termination?"; // scripted in backend/tests/fixtures/ui_script.yaml
 
 async function signIn(page: Page) {
-  await page.addInitScript((k) => localStorage.setItem("vault.apiKey", k), API_KEY);
+  await page.request.post("/v1/session", {
+    data: { api_key: API_KEY },
+    headers: { "X-Requested-With": "vault-ui" },
+  });
 }
 
 /** Run axe (WCAG 2.x A/AA + best practices) and return the serious/critical violations. */

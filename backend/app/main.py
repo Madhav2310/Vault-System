@@ -8,7 +8,7 @@ from fastapi import Depends, FastAPI
 from fastapi.responses import FileResponse
 
 from app import __version__
-from app.api import chat, chunks, documents, feedback, health, metrics, runs, versions
+from app.api import chat, chunks, documents, feedback, health, metrics, runs, session, versions
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.api.openapi import install_openapi
@@ -24,6 +24,19 @@ _UI_CANDIDATES = (
 )
 
 
+# Strict policy for the Vite build: no inline script/eval, same-origin API, Google Fonts only (index.html).
+_UI_HEADERS = {
+    "Content-Security-Policy": (
+        "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; "
+        "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; "
+        "base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
+    ),
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "X-Frame-Options": "DENY",
+}
+
+
 def _mount_ui(app: FastAPI, dist: Path | None) -> None:
     """Serve the built SPA at /app, falling back to index.html. Without a build, nothing is registered."""
     root = dist or next((c for c in _UI_CANDIDATES if (c / "index.html").is_file()), None)
@@ -37,8 +50,8 @@ def _mount_ui(app: FastAPI, dist: Path | None) -> None:
     async def spa(path: str = "") -> FileResponse:
         target = (root / path).resolve()
         if path and target.is_file() and target.is_relative_to(root):
-            return FileResponse(target)
-        return FileResponse(index)
+            return FileResponse(target, headers=_UI_HEADERS)
+        return FileResponse(index, headers=_UI_HEADERS)
 
 
 def create_app(*, telemetry: bool = False, ui_dist: Path | None = None) -> FastAPI:
@@ -62,6 +75,7 @@ def create_app(*, telemetry: bool = False, ui_dist: Path | None = None) -> FastA
     app.add_middleware(RequestContextMiddleware)
     limited = [Depends(enforce_rate_limit)]  # per-user token bucket on every authenticated router (S14.01)
     app.include_router(health.router)
+    app.include_router(session.router)
     app.include_router(documents.router, dependencies=limited)
     app.include_router(versions.router, dependencies=limited)
     app.include_router(chunks.router, dependencies=limited)

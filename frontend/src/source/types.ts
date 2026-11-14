@@ -1,4 +1,4 @@
-import { ApiError, getApiKey, NetworkError } from "../api/client";
+import { ApiError, CSRF_HEADERS, NetworkError } from "../api/client";
 import type { ErrorResponse } from "../api/types";
 
 /** A citation as the API returns it (brief facts, custom summaries, chat segments). `cited_text` is stored text. */
@@ -47,15 +47,14 @@ async function toError(res: Response): Promise<ApiError> {
   );
 }
 
-/** JSON request with the bearer key. Returns the status too, since summaries use 200 vs 202. */
+/** JSON request authenticated by the session cookie. Returns the status too, since summaries use 200 vs 202. */
 export async function getJson<T>(
   path: string,
   init: { method?: string; body?: unknown; signal?: AbortSignal } = {},
 ): Promise<{ status: number; data: T }> {
-  const key = getApiKey();
-  const headers: Record<string, string> = key ? { Authorization: `Bearer ${key}` } : {};
+  const headers: Record<string, string> = { ...CSRF_HEADERS };
   if (init.body !== undefined) headers["Content-Type"] = "application/json";
-  const req: RequestInit = { method: init.method ?? "GET", headers };
+  const req: RequestInit = { method: init.method ?? "GET", headers, credentials: "same-origin" };
   if (init.body !== undefined) req.body = JSON.stringify(init.body);
   if (init.signal) req.signal = init.signal;
   let res: Response;

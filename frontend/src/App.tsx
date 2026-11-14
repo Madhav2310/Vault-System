@@ -1,12 +1,12 @@
-import { useCallback, useState } from "react";
-import { api, ApiError, getApiKey, setApiKey } from "./api/client";
+import { useCallback, useEffect, useState } from "react";
+import { api, ApiError } from "./api/client";
 import { ChatPage } from "./chat/ChatPage";
 import { DocumentPage } from "./document/DocumentPage";
 import { hrefFor, linkClick, useRoute } from "./document/nav";
 import { Library } from "./library/Library";
 import { MetricsPage } from "./metrics/MetricsPage";
 
-/** Demo auth assumption (S19): the API key is typed here and kept in localStorage. */
+/** The API key is typed once and exchanged for an httpOnly session cookie; the page never stores it. */
 function KeyScreen({ onSaved }: { onSaved: () => void }) {
   const [value, setValue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -16,13 +16,11 @@ function KeyScreen({ onSaved }: { onSaved: () => void }) {
     e.preventDefault();
     setBusy(true);
     setError(null);
-    const previous = getApiKey();
-    setApiKey(value.trim());
     try {
-      await api.ping();
+      await api.login(value.trim());
+      setValue("");
       onSaved();
     } catch (err) {
-      setApiKey(previous);
       setError(
         err instanceof ApiError && err.status === 401
           ? "That key was not accepted."
@@ -36,7 +34,7 @@ function KeyScreen({ onSaved }: { onSaved: () => void }) {
   return (
     <form onSubmit={save} style={{ maxWidth: 420 }}>
       <h1>Enter your API key</h1>
-      <p className="hint">Stored in this browser only. It is sent as a bearer token to this server.</p>
+      <p className="hint">Exchanged for a secure session cookie; this page does not keep the key.</p>
       <label className="field">
         API key
         <input
@@ -62,7 +60,17 @@ function KeyScreen({ onSaved }: { onSaved: () => void }) {
 }
 
 export function App() {
-  const [hasKey, setHasKey] = useState(() => getApiKey() !== "");
+  const [hasKey, setHasKey] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    api
+      .hasSession()
+      .then((ok) => live && setHasKey(ok))
+      .catch(() => live && setHasKey(false));
+    return () => {
+      live = false;
+    };
+  }, []);
   const route = useRoute();
   const onUnauth = useCallback(() => setHasKey(false), []);
 
@@ -103,7 +111,7 @@ export function App() {
             <button
               className="btn btn-quiet"
               onClick={() => {
-                setApiKey("");
+                void api.logout().catch(() => undefined);
                 setHasKey(false);
               }}
             >
@@ -112,7 +120,7 @@ export function App() {
           )}
         </header>
         <main id="main">
-          {!hasKey ? (
+          {hasKey === null ? null : !hasKey ? (
             <KeyScreen onSaved={() => setHasKey(true)} />
           ) : route.name === "document" && route.id ? (
             <DocumentPage id={route.id} onUnauthenticated={onUnauth} />

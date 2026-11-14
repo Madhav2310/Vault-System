@@ -4,7 +4,10 @@ import { expect, test, type Page } from "@playwright/test";
 const API_KEY = process.env.UI_API_KEY ?? "vk_test_demo";
 
 async function signIn(page: Page) {
-  await page.addInitScript((k) => localStorage.setItem("vault.apiKey", k), API_KEY);
+  await page.request.post("/v1/session", {
+    data: { api_key: API_KEY },
+    headers: { "X-Requested-With": "vault-ui" },
+  });
   await page.goto("/app/");
 }
 
