@@ -70,3 +70,6 @@ Facts kept from the deleted HANDOFF, PRIORITY and REMAINING status docs (superse
 - User stop points: every slice gate (S16.07, S17.13, S18.12, S19.07, S20.08); a missed [T] target (record the value and stop); a fix that fails twice (write the root-cause analysis and stop); any live spend above the cap written in the task.
 - Cut order if time runs short: S17.03 (LLM listwise rerank, can ship as "tried, not adopted"), S17.05 (contextual chunk headers), S18.06/07, then S19.06 (accessibility pass); S20.07 judge calibration is optional and needs the user's 40 labels (now 200, S21.06).
 - Never overlap test runs against the shared test DB (one heavy command at a time); also in CLAUDE.md "Machine hygiene".
+
+## F-ab-env-switch-bug (2026-11-14, found by the A/B round)
+`CHAT_SUPPORT_VERSION` and `CHAT_ANALYZE_VERSION` were `Literal[int]` settings, which cannot be set from an environment variable (strings): the switch crashed the process on start. Unit tests set them in Python and missed it. Fixed with a before-validator and `test_version_switches_read_from_env`. Lesson: every behaviour flag needs one test that sets it through the environment, the way a deployment does.
