@@ -12,6 +12,7 @@ Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector (
 `make up` / `down` · `make ci` (lint, types, unit, frontend checks; no Docker) · `make test` (needs `make up`) · `make test-integration` (after `make up-test`) · `make ui-e2e` (fake model) · `make migrate` · `make diagrams` · `make eval-retrieval-fast`, `make eval-answers-v2 SPLIT=dev MAX_USD=1`, `make eval-gate`, `make eval-gate-t0`. Targeted tests while developing: `cd backend && uv run pytest path::test`.
 
 ## Hard rules
+- **Root cause first.** At every failure, regression, timeout or inefficiency, find the cause from evidence (logs, rows, step timings, stored runs, paired comparisons) and rule out the alternatives before changing anything. No fix or explanation rests on an assumption; state what the data shows.
 - Every model call goes through `app.llm.gateway`. Never instantiate provider clients elsewhere.
 - Citations are application-managed: evidence sentences get handles (`E3.1`), the model returns handles in a strict schema, and code validates them and copies `cited_text` from the stored sentences. Never trust model-written quotes; an unknown handle is dropped (`CITATION_UNRESOLVED`).
 - Model choice is code: only `app/llm/routing.py` and settings name models; nodes request a role (`fast`, `balanced`, `deep`, `flagship`). The LLM never picks its own model. Check effort support per model (`gpt-6.1-sol` rejects `none`).

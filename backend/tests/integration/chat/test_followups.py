@@ -66,7 +66,7 @@ async def test_stored_and_returned(
         used = (
             await s.execute(text("SELECT config FROM rag_runs WHERE owner_id = :o"), {"o": o.id})
         ).scalar_one()
-    assert stored == KEPT and "answer_rag@3" in used["prompts"]
+    assert stored == KEPT and "answer_rag@7" in used["prompts"]
 
 
 async def test_sse_event(
