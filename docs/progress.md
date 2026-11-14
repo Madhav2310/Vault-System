@@ -416,3 +416,8 @@ S16.02 AC6 RCA: 2 CPUs/2 threads gave p50 462 ms; 3 CPUs/3 threads gives p50 350
 
 ## S17.14 turn graph merged (lane A)
 AC1-4,6-8 ticked on lane tests; AC5 (make test on merged tree) pending the next full gate. Follow-up: move summaries.retriever_select and worker task to sessionmaker for concurrent retrieval.
+
+## 2026-11-14 measurements, decisions, S16 gate
+- Retrieval A/B, gate calibration, answer baseline (frozen), whole-document A/B, support-check calibration: see docs/evidence/{retrieval_ab,reranker_decision,answer_ab}.md.
+- AMD 10-K time to ready 28.8 s -> 20.2 s (S16.08 AC5). Stack memory after demo_core: 1.96 GB incl. reranker (S16.07 AC2, target <= 3.5 GB). make ci 483 passed; make test 905 passed + F-048 flaky (passes alone).
+- Tidy-up: parked .old.nosync copy, stale-worktrees and 24 merged lane worktrees removed after checking nothing unique.
