@@ -18,16 +18,20 @@ quotes of 25+ characters). An item is kept only when every gold quote maps (`gol
 
 Classification rules (deterministic; one stratum per candidate):
 
-FinanceBench (`fb_stratum`), with `short_numeric` = the answer has a digit and is under 40 characters:
-  - metrics-generated + "Information extraction" + short_numeric      -> table_lookup
-  - metrics-generated + "Numerical reasoning" + short_numeric          -> numeric_calc
-  - other types, reasoning only "Numerical reasoning" + short_numeric  -> numeric_calc
-  - other types, reasoning "Information extraction" (no "logical") + short_numeric -> table_lookup
-  - otherwise a short prose answer (<= 2 sentences, <= 240 chars), one evidence page, no numerical
-    reasoning                                                         -> single_span
-  A table_lookup item is kept only if a *table* sentence of the mapped page contains the answer figure; its
-  gold is narrowed to those rows (cell-level). numeric_calc / single_span gold stays page-level because
-  FinanceBench evidence is a whole page (noted in `audit_note`).
+FinanceBench (`fb_stratum`, then confirmed against the gold page), `short_numeric` = the answer has a digit
+and is under 40 characters, `COMPUTE` = the question contains a computation word (ratio, change,
+difference, growth, percent, average, sum of, total of, margin, turnover, year-over-year, increase,
+decrease, calculate, "defined as", "%", ...):
+  - short_numeric, reasoning not "logical", question has a COMPUTE word      -> numeric_calc
+  - short_numeric, reasoning not "logical", no COMPUTE word                  -> table_lookup candidate,
+    kept only if the answer figure appears verbatim (number-bounded: 8.7 does not match 18.75; "1577.00"
+    matches "1,577") in a unit of the gold page; its gold is then narrowed to those units (up to 3, table
+    rows first). A candidate whose figure is not verbatim on the page is a derived value and is DEMOTED to
+    numeric_calc (`Cand.demote`), never padded into table_lookup.
+  - not short_numeric, not metrics-generated, no numerical/logical reasoning, one evidence page,
+    answer <= 2 sentences and <= 240 chars                                  -> single_span
+  numeric_calc / single_span gold stays page-level because FinanceBench evidence is a whole page
+  (noted in `audit_note`).
 QASPER (`qasper_stratum`), first answer, highlighted evidence (table/figure "FLOAT SELECTED" skipped):
   - evidence in >= 2 distinct sections (abstract counts as one)        -> multi_hop
   - else >= 2 extractive spans                                         -> multi_span
@@ -115,6 +119,7 @@ class Cand:
     note: str | None = None
     figures: list[str] = field(default_factory=list)  # FinanceBench table_lookup: figure strings to find
     narrow: bool = False
+    demote: Callable[[], Cand | None] | None = None  # table_lookup whose gold has no such row -> numeric_calc
     ref: str = ""  # "fb:<doc_name>" | "qasper:<arxiv id>" | "cuad:<title>": what a warm worker resolves
 
 
@@ -206,25 +211,27 @@ def figure_forms(answer: str) -> list[str]:
 # -- FinanceBench ----------------------------------------------------------------------------------------
 
 
+COMPUTE = re.compile(
+    r"\b(ratio|change|changed|difference|differ|growth|grew|percent|percentage|average|avg|sum of|total of|"
+    r"combined|margin|turnover|yoy|year-over-year|increase|decrease|decline|calculate|compute|"
+    r"defined as|conversion|per share growth|cagr|compared? (?:to|with)|less|more than)\b|%",
+    re.I,
+)
+
+
 def fb_stratum(row: dict[str, Any]) -> str | None:
-    qt, ans = row["question_type"], row["answer"].strip()
+    """table_lookup needs a verified gold row, so the classifier only proposes it; `map_cand` confirms that
+    the answer figure appears verbatim in a unit of the gold page, else the candidate is demoted to
+    numeric_calc (`Cand.demote`)."""
+    ans = row["answer"].strip()
     r = (row.get("question_reasoning") or "").lower()
     short_numeric = bool(re.search(r"\d", ans)) and len(ans) < 40
-    numerical = "numerical reasoning" in r
     logical = "logical" in r
-    extraction = "information extraction" in r
-    if qt == "metrics-generated":
-        if r == "information extraction" and short_numeric:
-            return "table_lookup"
-        if r.startswith("numerical reasoning") and short_numeric:
-            return "numeric_calc"
-        return None
-    if short_numeric and numerical and not extraction and not logical:
-        return "numeric_calc"
-    if short_numeric and extraction and not logical and not numerical:
-        return "table_lookup"
+    if short_numeric and not logical:
+        return "numeric_calc" if COMPUTE.search(row.get("question", "")) else "table_lookup"
     if (
-        not numerical
+        row["question_type"] != "metrics-generated"
+        and "numerical reasoning" not in r
         and not logical
         and len(row["evidence"]) == 1
         and len(ans) <= 240
@@ -284,6 +291,7 @@ def fb_cand(row: dict[str, Any], stratum: str, pdf_for: Callable[[str], pathlib.
         note=note,
         figures=figures,
         narrow=stratum == "table_lookup",
+        demote=(lambda: fb_cand(row, "numeric_calc", pdf_for)) if stratum == "table_lookup" else None,
     )
 
 
@@ -888,6 +896,7 @@ def sample_stratum(
     max_per_doc: int = MAX_PER_DOC,
     quotas: dict[str, int] | None = None,
     stats: Counter[str] | None = None,
+    rejected: list[tuple[Cand, str]] | None = None,
 ) -> list[tuple[Cand, Any]]:
     """Seeded, stratified across documents: documents are shuffled, then taken round-robin (one candidate per
     document per pass), skipping documents at the global cap. `mapper` returns a rejection string or the
@@ -917,6 +926,8 @@ def sample_stratum(
             res = mapper(c)
             if isinstance(res, str):
                 stats[res] += 1
+                if rejected is not None:
+                    rejected.append((c, res))
                 continue
             kept.append((c, res))
             used[d] += 1
@@ -1122,7 +1133,18 @@ def run(
         return map_cand(c, st)
 
     items: list[dict[str, Any]] = []
+    demoted: list[tuple[Cand, str]] = []
     for stratum in ORDER:
+        if (
+            stratum == "numeric_calc"
+        ):  # table_lookup ran first: its figure-not-in-row rejects are calculations
+            for c, why in demoted:
+                d = c.demote() if why == "figure_not_in_row" and c.demote else None
+                if d:
+                    d.note = "demoted from table_lookup: answer figure not verbatim in a gold-page row; " + (
+                        d.note or ""
+                    )
+                    cands.append(d)
         stats[stratum] = Counter()
         kept = sample_stratum(
             cands,
@@ -1133,6 +1155,7 @@ def run(
             mapper,
             quotas=QUOTAS.get(stratum),
             stats=stats[stratum],
+            rejected=demoted if stratum == "table_lookup" else None,
         )
         stats[stratum]["candidates"] = sum(c.stratum == stratum for c in cands)
         items += [to_item(c, *res) for c, res in kept]
