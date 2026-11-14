@@ -179,6 +179,100 @@ class GoldenItem(BaseModel):
         )
 
 
+# --- gold schema v2 (plan S21.01): atomic claims, evidence as sentence ranges ---
+
+Stratum = Literal[
+    "single_span",
+    "conditional",
+    "table_lookup",
+    "numeric_calc",
+    "multi_span",
+    "multi_hop",
+    "compare_docs",
+    "conflict",
+    "aggregation",
+    "unanswerable",
+    "false_premise",
+    "versioned",
+    "injection",
+    "multi_turn",
+    "formatting",
+]
+AnswerType = Literal["answer", "abstain", "partial"]
+AuditStatus = Literal["draft", "verified", "dropped"]
+MAX_REQUIRED_CLAIMS = 6
+
+
+class GoldEvidence(BaseModel):
+    """Gold evidence: document sentences [sentence_start, sentence_end), half-open like `CitedRange`."""
+
+    model_config = ConfigDict(extra="forbid")
+    doc: str = Field(min_length=1)
+    sentence_start: int = Field(ge=0)
+    sentence_end: int = Field(ge=1)
+
+    @model_validator(mode="after")
+    def _range(self) -> Self:
+        if self.sentence_end <= self.sentence_start:
+            raise ValueError("sentence_end must be greater than sentence_start (half-open range)")
+        return self
+
+
+class GoldItemV2(BaseModel):
+    """A v2 golden item. Unknown keys are rejected; the per-document cap is a dataset-level check (loader)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str = Field(min_length=1)
+    stratum: Stratum
+    question: str = Field(min_length=1)
+    source_doc: str = Field(min_length=1)  # clustering key for the per-document cap and clustered statistics
+    answer_type: AnswerType
+    audit_status: AuditStatus = "draft"
+    required_claims: list[str] = Field(default_factory=list)  # each checkable alone
+    optional_claims: list[str] = Field(default_factory=list)
+    alternates: dict[str, list[str]] = Field(default_factory=dict)  # claim text -> accepted variants
+    gold_evidence: list[GoldEvidence] = Field(default_factory=list)
+    must_not_contain: list[str] = Field(default_factory=list)
+    doc_ids: list[str] | None = None  # scope; None = whole vault
+    prior_turns: list[str] = Field(default_factory=list)  # earlier user turns of a multi_turn item
+    audit_note: str | None = None
+
+    @model_validator(mode="after")
+    def _consistent(self) -> Self:
+        e: list[str] = []
+        n = len(self.required_claims)
+        if self.answer_type == "abstain":
+            if n:
+                e.append("abstain items must have no required_claims")
+            if self.gold_evidence:
+                e.append("abstain items carry no gold_evidence")
+        elif not 1 <= n <= MAX_REQUIRED_CLAIMS:
+            e.append(f"{self.answer_type} items need 1 to {MAX_REQUIRED_CLAIMS} required_claims, found {n}")
+        if self.stratum == "unanswerable" and self.answer_type != "abstain":
+            e.append("unanswerable stratum requires answer_type abstain")
+        if self.stratum == "injection" and not self.must_not_contain:
+            e.append("injection items require must_not_contain")
+        if self.stratum == "multi_turn" and not self.prior_turns:
+            e.append("multi_turn items require prior_turns")
+        if self.stratum != "multi_turn" and self.prior_turns:
+            e.append("prior_turns only for multi_turn items")
+        if self.audit_status == "dropped" and not self.audit_note:
+            e.append("dropped items require an audit_note giving the reason")
+        for name in ("required_claims", "optional_claims", "must_not_contain", "prior_turns"):
+            if any(not s.strip() for s in getattr(self, name)):
+                e.append(f"{name} entries must be non-blank")
+        known = set(self.required_claims) | set(self.optional_claims)
+        e += [
+            f"alternates key {k!r} is not one of the item's claims" for k in self.alternates if k not in known
+        ]
+        if any(not v or any(not a.strip() for a in v) for v in self.alternates.values()):
+            e.append("alternates need non-blank variant lists")
+        if e:
+            raise ValueError(f"{self.id}: " + "; ".join(e))
+        return self
+
+
 # --- pipeline I/O (protocol documented in eval.run) ---
 
 

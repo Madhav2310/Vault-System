@@ -14,11 +14,13 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from eval.schema import GoldenItem, Split
+from eval.schema import GoldenItem, GoldItemV2, Split
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 DATASET_DIR = ROOT / "eval" / "datasets" / "vault_eval_v1"
 EXPECTED_ITEMS = 122
+DATASET_V2_DIR = ROOT / "eval" / "datasets" / "vault_eval_v2"
+MAX_ITEMS_PER_DOC = 3  # plan S21: design effect about 1.6
 SPLITS: tuple[Split, ...] = ("train", "test", "smoke")
 
 
@@ -106,3 +108,46 @@ def holdout_violations(ds: Dataset) -> list[str]:
     out += [f"holdout document {d} appears in train items" for d in sorted(train_docs & ds.holdout_docs)]
     out += [f"holdout document {d} is not used by any test item" for d in sorted(ds.holdout_docs - test_docs)]
     return out
+
+
+@dataclass(frozen=True)
+class DatasetV2:
+    items: tuple[GoldItemV2, ...]
+
+    def by_id(self) -> dict[str, GoldItemV2]:
+        return {i.id: i for i in self.items}
+
+
+def validate_items_v2(raw: list[Any]) -> DatasetV2:
+    """Validate raw v2 items; raises `DatasetError` listing every problem (item level, then dataset level).
+
+    The per-document cap counts every item with its `source_doc` except `audit_status: dropped` ones."""
+    problems: list[str] = []
+    items: list[GoldItemV2] = []
+    for n, r in enumerate(raw):
+        try:
+            items.append(GoldItemV2.model_validate(r))
+        except ValidationError as e:
+            name = r.get("id", f"#{n}") if isinstance(r, dict) else f"#{n}"
+            problems.append(
+                f"{name}: " + "; ".join(f"{'.'.join(map(str, x['loc']))}: {x['msg']}" for x in e.errors())
+            )
+    problems += [f"duplicate item id {k}" for k, c in Counter(i.id for i in items).items() if c > 1]
+    per_doc: dict[str, list[str]] = {}
+    for i in items:
+        if i.audit_status != "dropped":
+            per_doc.setdefault(i.source_doc, []).append(i.id)
+    for doc, ids in sorted(per_doc.items()):
+        if len(ids) > MAX_ITEMS_PER_DOC:
+            problems.append(
+                f"source_doc {doc} has {len(ids)} items (max {MAX_ITEMS_PER_DOC}): "
+                f"{', '.join(ids[MAX_ITEMS_PER_DOC:])} exceed the cap"
+            )
+    if problems:
+        raise DatasetError(problems)
+    return DatasetV2(tuple(items))
+
+
+def load_dataset_v2(root: pathlib.Path = DATASET_V2_DIR) -> DatasetV2:
+    """Load `<root>/golden.yaml` (top-level `items:` list) as v2 items. v1 stays on `load_dataset`."""
+    return validate_items_v2(yaml.safe_load((root / "golden.yaml").read_text())["items"])
