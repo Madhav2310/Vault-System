@@ -8,6 +8,7 @@ from collections.abc import Callable
 from typing import Any
 
 import httpx
+import pytest
 from eval.pipeline_retrieval import ensure_documents, make_pipeline, sha256_of
 from eval.schema import EvalContext, Query
 from sqlalchemy import text
@@ -92,3 +93,14 @@ async def test_reuses_ingested_docs(tmp_path: pathlib.Path, sm: SM, make_owner: 
             await s.execute(text("SELECT count(*) FROM document_versions WHERE owner_id = :o"), {"o": o.id})
         ).scalar_one()
     assert n == 1
+
+
+async def test_eval_user_reuse_only(tmp_path: pathlib.Path, sm: SM, make_owner: Callable[[], Any]) -> None:
+    from eval.pipeline_retrieval import reuse_only
+
+    o, doc, f = await _world(sm, make_owner, tmp_path)
+    assert await reuse_only(sm, o.id, {"d": f}) == {"d": str(doc.document_id)}
+    other = tmp_path / "b.txt"
+    other.write_text("not ingested " + uuid.uuid4().hex)
+    with pytest.raises(SystemExit, match=r"\['x'\]"):
+        await reuse_only(sm, o.id, {"d": f, "x": other})

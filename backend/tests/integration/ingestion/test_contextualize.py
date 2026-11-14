@@ -247,3 +247,103 @@ async def test_contextualized_chunks_are_not_a_reuse_source(
     gw, prov = db_gateway(tmp_path, sm)
     res = await EmbedStage().run(stage_ctx(sm, job, gw))
     assert res.detail and res.detail["reused"] == 0 and _embedded_texts(prov) == 2
+
+
+async def _second_doc(sm: Any, owner_id: Any) -> Any:
+    ref = await make_job(sm, owner_id, stage="contextualize")
+    await add_chunks(sm, owner_id, ref, 2, tag="b", embedded=True)
+    async with sm() as s:
+        await s.execute(
+            text("UPDATE document_versions SET status = 'ready' WHERE id = :v"), {"v": ref.version_id}
+        )
+        await s.execute(
+            text(
+                "INSERT INTO document_insights (id, owner_id, version_id, kind, params_hash, content, "
+                "status, prompt_version) VALUES (:i, :o, :v, 'brief', :h, CAST(:c AS jsonb), 'done', 1)"
+            ),
+            {
+                "i": uuid7(),
+                "o": owner_id,
+                "v": ref.version_id,
+                "h": EMPTY_PARAMS_HASH,
+                "c": json.dumps({"document_type": "Lease", "summary": "A lease. Two years."}),
+            },
+        )
+        await s.commit()
+    await _current(sm, ref.version_id)
+    return ref
+
+
+async def _current(sm: Any, version_id: Any) -> None:
+    async with sm() as s:
+        await s.execute(
+            text(
+                "UPDATE documents SET current_version_id = :v WHERE id = "
+                "(SELECT document_id FROM document_versions WHERE id = :v)"
+            ),
+            {"v": version_id},
+        )
+        await s.commit()
+
+
+async def test_backfill_idempotent_and_original_untouched(
+    sm: Any, make_owner: Any, tmp_path: pathlib.Path
+) -> None:
+    from app.ingestion.contextualize import backfill_owner
+
+    o, ref, _ = await _world(sm, make_owner)
+    await _current(sm, ref.version_id)
+    ref2 = await _second_doc(sm, o.id)
+    before = await _rows(sm, ref.version_id) + await _rows(sm, ref2.version_id)
+    gw, prov = db_gateway(tmp_path, sm)
+    settings = get_settings()
+    first = await backfill_owner(sm, gw, settings, o.id, "deterministic")
+    assert (first.documents, first.chunks_changed, first.failed) == (2, 5, 0)
+    assert _embedded_texts(prov) == 5
+    after = await _rows(sm, ref.version_id) + await _rows(sm, ref2.version_id)
+    for b, a in zip(before, after, strict=True):
+        assert (a.original_text, a.sentences, a.spans, a.content_hash) == (
+            b.original_text, b.sentences, b.spans, b.content_hash,
+        )  # fmt: skip
+        assert a.contextual_prefix and a.embedding_text.count(a.original_text) == 1
+    second = await backfill_owner(sm, gw, settings, o.id, "deterministic")
+    assert (second.documents, second.chunks_changed) == (2, 0)
+    assert _embedded_texts(prov) == 5  # zero embed calls on the second run
+    again = await _rows(sm, ref.version_id) + await _rows(sm, ref2.version_id)
+    assert [r.emb for r in again] == [r.emb for r in after]
+
+
+async def test_backfill_owner_scoped(sm: Any, make_owner: Any, tmp_path: pathlib.Path) -> None:
+    from app.ingestion.contextualize import backfill_owner
+
+    o, ref, _ = await _world(sm, make_owner)
+    await _current(sm, ref.version_id)
+    other, oref, _ = await _world(sm, make_owner)
+    await _current(sm, oref.version_id)
+    before = await _rows(sm, oref.version_id)
+    gw, _ = db_gateway(tmp_path, sm)
+    res = await backfill_owner(sm, gw, get_settings(), o.id, "deterministic")
+    assert (res.documents, res.chunks_changed) == (1, 3)
+    after = await _rows(sm, oref.version_id)
+    assert [(a.embedding_text, a.emb, a.contextual_prefix) for a in after] == [
+        (b.embedding_text, b.emb, b.contextual_prefix) for b in before
+    ]  # the other owner's chunks were never read or written
+    assert other.id != o.id
+
+
+async def test_backfill_cost_cap_stops(sm: Any, make_owner: Any, tmp_path: pathlib.Path) -> None:
+    from decimal import Decimal
+
+    from app.ingestion.contextualize import backfill_owner
+
+    o, ref, _ = await _world(sm, make_owner, n=2)
+    await _current(sm, ref.version_id)
+    ref2 = await _second_doc(sm, o.id)
+    gw, prov = fake_gateway(
+        [fake.structured({"context": f"Header {i}."}) for i in range(8)], ledger=DbLedgerWriter(sm)
+    )
+    res = await backfill_owner(sm, gw, get_settings(), o.id, "llm", Decimal("0.000000001"))
+    assert res.stopped == "budget" and res.documents == 1  # the second document never started
+    assert len(prov.requests) == 1  # the first wave is one call; the cap then blocks the rest
+    assert res.spend_usd > 0
+    assert all(r.contextual_prefix is None for r in await _rows(sm, ref2.version_id))

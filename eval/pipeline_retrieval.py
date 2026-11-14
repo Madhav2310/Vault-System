@@ -6,6 +6,14 @@ answers each item by calling `Retriever.retrieve` in process against the dev dat
 HTTP API) and reused by sha256 afterwards. Only `embed_query` rows reach `llm_calls` (about $0.00001 each).
 `--config` names a retrieval config file (`backend/config/<name>.yaml`). `EVAL_RANK` (rrf, vector, lexical,
 rerank, final; default final) picks which stored ranking is scored, for ablations.
+
+`EVAL_USER` (an email; default `eval-retrieval@vault.local`) names the user whose corpus is scored. Unset, or
+naming a user that does not exist yet: the user is created (the default user's API key is rotated each run) and
+missing documents are uploaded through the API as above. Naming an EXISTING user other than the default: that
+user's already-ingested corpus is scored as is, with no key rotation, no upload and no re-ingestion; every
+dataset document must already be there (matched by sha256 of the current ready/enriched version), otherwise the
+run exits naming the missing keys. This is how a differently indexed corpus (for example one backfilled with
+`python -m app.ingestion.contextualize --owner-email ...`) is compared against the default user's.
 """
 
 from __future__ import annotations
@@ -79,6 +87,17 @@ async def find_ingested(
             if row:
                 out[key] = str(row[0])
     return out
+
+
+async def reuse_only(
+    sm: async_sessionmaker[AsyncSession], owner_id: uuid.UUID, files: Mapping[str, pathlib.Path]
+) -> dict[str, str]:
+    """The owner's ingested documents for `files`; exit naming what is missing (nothing is uploaded)."""
+    ids = await find_ingested(sm, owner_id, files)
+    missing = sorted(set(files) - set(ids))
+    if missing:
+        raise SystemExit(f"EVAL_USER corpus is incomplete, not re-ingesting; missing documents: {missing}")
+    return ids
 
 
 async def ensure_documents(
@@ -169,23 +188,29 @@ async def setup(config: str) -> Harness:
     ds = load_dataset()
     sm = get_sessionmaker()
     settings = get_settings()
-    key = new_api_key()
-    async with sm() as s:
-        uid = (await s.execute(text("SELECT id FROM users WHERE email = :e"), {"e": EVAL_EMAIL})).scalar()
-        if uid is None:
-            uid = uuid.uuid4()
-            s.add(User(id=uid, email=EVAL_EMAIL, api_key_hash=hash_api_key(key)))
-        else:  # the key is not retrievable: rotate it (the eval user is ours alone)
-            await s.execute(
-                text("UPDATE users SET api_key_hash = :h WHERE id = :i"), {"h": hash_api_key(key), "i": uid}
-            )
-        await s.commit()
+    email = os.environ.get("EVAL_USER") or EVAL_EMAIL
     files = {k: ROOT / m["file"] for k, m in ds.documents.items()}
-    base = os.environ.get("API_BASE_URL", "http://localhost:8100")
-    async with httpx.AsyncClient(
-        base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=180
-    ) as http:
-        doc_ids = await ensure_documents(sm, http, uid, files)
+    async with sm() as s:
+        uid = (await s.execute(text("SELECT id FROM users WHERE email = :e"), {"e": email})).scalar()
+    if uid is not None and email != EVAL_EMAIL:  # an existing user's corpus: score it as is
+        doc_ids = await reuse_only(sm, uid, files)
+    else:
+        key = new_api_key()
+        async with sm() as s:
+            if uid is None:
+                uid = uuid.uuid4()
+                s.add(User(id=uid, email=email, api_key_hash=hash_api_key(key)))
+            else:  # the key is not retrievable: rotate it (the default eval user is ours alone)
+                await s.execute(
+                    text("UPDATE users SET api_key_hash = :h WHERE id = :i"),
+                    {"h": hash_api_key(key), "i": uid},
+                )
+            await s.commit()
+        base = os.environ.get("API_BASE_URL", "http://localhost:8100")
+        async with httpx.AsyncClient(
+            base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=180
+        ) as http:
+            doc_ids = await ensure_documents(sm, http, uid, files)
     chunks = await _chunks(sm, uid, doc_ids)
     gw = get_gateway()
     rds = aioredis.from_url(settings.redis_url)

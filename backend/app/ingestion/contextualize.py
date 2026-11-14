@@ -17,9 +17,17 @@ Only chunks whose `embedding_text` changes are re-embedded, so a second run make
 header that exists is never generated again. Nothing is written when anything fails (the old embeddings stay
 valid and searchable); the stage never fails the pipeline. All writes happen in the runner's fenced commit,
 each guarded by the `embedding_text` the compute step read, so a concurrent change is never overwritten.
+
+Backfill for already-ingested documents (S17.05 A/B): `python -m app.ingestion.contextualize --owner-email E
+[--variant deterministic|llm] [--max-usd N]` re-runs the same logic over one owner's current ready/enriched
+versions, one document per transaction (never a global run: lock waits), idempotent (a second run changes 0
+chunks). `--max-usd` caps the whole run's spend (header calls plus embeddings, read from `llm_calls`); the run
+stops before the next document once it is reached. It prints documents, chunks changed and spend.
 """
 
+import argparse
 import asyncio
+import sys
 import uuid
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
@@ -35,6 +43,7 @@ from app.core.logging import get_logger
 from app.core.quota import over_quota
 from app.ingestion.embed_index import EMBED_BATCH, vec_literal
 from app.ingestion.errors import PermanentStageError
+from app.ingestion.jobs import ClaimedJob
 from app.ingestion.runner import StageContext, StageResult
 from app.ingestion.sentences import split_sentences
 from app.ingestion.stages import document_deleted
@@ -105,7 +114,7 @@ def build_embedding_text(structural_prefix: str, contextual_prefix: str | None, 
 
 
 async def _read(
-    ctx: StageContext,
+    ctx: StageContext, ledger_job: bool = True
 ) -> tuple[list[ChunkRow], BriefInfo | None, str, Decimal]:
     job = ctx.job
     async with ctx.sm() as s:
@@ -138,14 +147,18 @@ async def _read(
             )
         ).scalar_one_or_none()
         spent = (
-            await s.execute(
-                text(
-                    "SELECT COALESCE(sum(cost_usd), 0) FROM llm_calls "
-                    "WHERE job_id = :j AND purpose = :p AND owner_id = :o"
-                ),
-                {"j": job.id, "p": PURPOSE, "o": job.owner_id},
-            )
-        ).scalar_one()
+            (
+                await s.execute(
+                    text(
+                        "SELECT COALESCE(sum(cost_usd), 0) FROM llm_calls "
+                        "WHERE job_id = :j AND purpose = :p AND owner_id = :o"
+                    ),
+                    {"j": job.id, "p": PURPOSE, "o": job.owner_id},
+                )
+            ).scalar_one()
+            if ledger_job
+            else 0
+        )
     chunks = [
         ChunkRow(
             r.id,
@@ -178,7 +191,7 @@ async def generate_headers(
     brief: BriefInfo | None,
     title: str,
     owner_id: uuid.UUID,
-    job_id: uuid.UUID,
+    job_id: uuid.UUID | None,
     cap_usd: Decimal,
     already_spent: Decimal,
 ) -> Generated:
@@ -248,7 +261,7 @@ async def embed_texts(
     *,
     model: str,
     owner_id: uuid.UUID,
-    job_id: uuid.UUID,
+    job_id: uuid.UUID | None,
     concurrency: int,
 ) -> list[list[float]]:
     batches = [list(texts[i : i + EMBED_BATCH]) for i in range(0, len(texts), EMBED_BATCH)]
@@ -305,9 +318,13 @@ def _writer(
     return write
 
 
-async def plan_and_embed(ctx: StageContext, variant: str, gateway: LlmGateway, settings: Any) -> StageResult:
+async def plan_and_embed(
+    ctx: StageContext, variant: str, gateway: LlmGateway, settings: Any, *, ledger_job: bool = True
+) -> StageResult:
+    """`ledger_job=False` (backfill CLI, no `processing_jobs` row): calls are ledgered without a job id."""
     job = ctx.job
-    chunks, brief, title, spent = await _read(ctx)
+    job_id = job.id if ledger_job else None
+    chunks, brief, title, spent = await _read(ctx, ledger_job)
     detail: dict[str, Any] = {"variant": variant, "chunks": len(chunks)}
     if not chunks:
         return StageResult(detail={**detail, "changed": 0})
@@ -330,7 +347,7 @@ async def plan_and_embed(ctx: StageContext, variant: str, gateway: LlmGateway, s
                 brief=brief,
                 title=title,
                 owner_id=job.owner_id,
-                job_id=job.id,
+                job_id=job_id,
                 cap_usd=Decimal(str(settings.contextualize_max_usd)),
                 already_spent=spent,
             )
@@ -353,7 +370,7 @@ async def plan_and_embed(ctx: StageContext, variant: str, gateway: LlmGateway, s
         [t for _, _, t in changed],
         model=model,
         owner_id=job.owner_id,
-        job_id=job.id,
+        job_id=job_id,
         concurrency=settings.embed_concurrency,
     )
     if len(vectors) != len(changed):
@@ -384,3 +401,124 @@ class ContextualizeStage:
             code = e.error_type if isinstance(e, LlmError) else type(e).__name__
             _log.warning("contextualize_failed", job_id=str(ctx.job.id), error_type=code)
             return StageResult(detail={"variant": variant, "failed": code})
+
+
+READY_STATUSES = ("ready", "enriched")
+
+
+@dataclass
+class BackfillSummary:
+    documents: int = 0
+    chunks_changed: int = 0
+    failed: int = 0
+    skipped: int = 0
+    spend_usd: Decimal = Decimal(0)
+    stopped: str | None = None  # budget
+
+
+async def _spend_since(sm: Any, owner_id: uuid.UUID, since: Any) -> Decimal:
+    async with sm() as s:
+        return Decimal(
+            (
+                await s.execute(
+                    text(
+                        "SELECT COALESCE(sum(cost_usd), 0) FROM llm_calls WHERE owner_id = :o "
+                        "AND job_id IS NULL AND purpose IN (:p, 'embed') AND created_at >= :t"
+                    ),
+                    {"o": owner_id, "p": PURPOSE, "t": since},
+                )
+            ).scalar_one()
+        )
+
+
+async def backfill_owner(
+    sm: Any,
+    gateway: LlmGateway,
+    settings: Any,
+    owner_id: uuid.UUID,
+    variant: str,
+    max_usd: Decimal | None = None,
+) -> BackfillSummary:
+    """Contextualize the owner's current ready/enriched versions, one transaction per document."""
+    out = BackfillSummary()
+    async with sm() as s:
+        since = (await s.execute(text("SELECT clock_timestamp()"))).scalar_one()
+        versions = (
+            (
+                await s.execute(
+                    text(
+                        "SELECT v.id FROM documents d "
+                        "JOIN document_versions v ON v.id = d.current_version_id "
+                        "WHERE d.owner_id = :o AND d.deleted_at IS NULL "
+                        "AND v.status IN ('ready', 'enriched') ORDER BY d.id"
+                    ),
+                    {"o": owner_id},
+                )
+            )
+            .scalars()
+            .all()
+        )
+    for vid in versions:
+        spent = await _spend_since(sm, owner_id, since)
+        out.spend_usd = spent
+        if max_usd is not None and spent >= max_usd:
+            out.stopped = "budget"
+            break
+        cap = float(settings.contextualize_max_usd)
+        if max_usd is not None:
+            cap = min(cap, float(max_usd - spent))
+        doc_settings = settings.model_copy(update={"contextualize_max_usd": cap})
+        job = ClaimedJob(uuid.uuid4(), vid, owner_id, "contextualize", 0, 1)  # not a stored job
+        ctx = StageContext(job, sm, {"gateway": gateway, "settings": doc_settings})
+        try:
+            res = await plan_and_embed(ctx, variant, gateway, doc_settings, ledger_job=False)
+            if res.write is not None:
+                async with sm() as s:
+                    await res.write(s)
+                    await s.commit()
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:  # one document's failure leaves it as it was; the run continues
+            code = e.error_type if isinstance(e, LlmError) else type(e).__name__
+            _log.warning("contextualize_backfill_failed", version_id=str(vid), error_type=code)
+            out.failed += 1
+            continue
+        detail = res.detail or {}
+        if "skipped" in detail:
+            out.skipped += 1
+            continue
+        out.documents += 1
+        out.chunks_changed += int(detail.get("changed", 0))
+    out.spend_usd = await _spend_since(sm, owner_id, since)
+    return out
+
+
+async def _cli(argv: Sequence[str]) -> int:
+    from app.core.settings import get_settings
+    from app.db.session import get_sessionmaker
+    from app.llm.gateway import get_gateway
+
+    ap = argparse.ArgumentParser(description="Backfill contextual chunk headers for one owner's documents.")
+    ap.add_argument("--owner-email", required=True)
+    ap.add_argument("--variant", choices=[VARIANT_DETERMINISTIC, VARIANT_LLM], default=VARIANT_DETERMINISTIC)
+    ap.add_argument("--max-usd", type=Decimal, default=None, help="stop once this much has been spent")
+    args = ap.parse_args(argv)
+    sm = get_sessionmaker()
+    async with sm() as s:
+        owner = (
+            await s.execute(text("SELECT id FROM users WHERE email = :e"), {"e": args.owner_email})
+        ).scalar_one_or_none()
+    if owner is None:
+        print(f"no user with email {args.owner_email!r}", file=sys.stderr)
+        return 2
+    summary = await backfill_owner(sm, get_gateway(), get_settings(), owner, args.variant, args.max_usd)
+    print(
+        f"variant={args.variant} documents={summary.documents} chunks_changed={summary.chunks_changed} "
+        f"skipped={summary.skipped} failed={summary.failed} spend_usd={summary.spend_usd}"
+        + (f" stopped={summary.stopped}" if summary.stopped else "")
+    )
+    return 1 if summary.failed else 0
+
+
+if __name__ == "__main__":
+    sys.exit(asyncio.run(_cli(sys.argv[1:])))
