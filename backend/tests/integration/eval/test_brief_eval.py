@@ -60,8 +60,8 @@ async def test_report_shape(tmp_path: pathlib.Path) -> None:
     assert [ln.split("|")[1].strip() for ln in rows] == KEYS  # one row per document, in order
     for ln in rows:
         assert (
-            len(ln.split("|")) == 12
-        )  # document, category, facts, verified, rate, judged, faith, comp, cost, error
+            len(ln.split("|")) == 14
+        )  # document, category, facts, verified, rate, judged, faith, comp, cost, brief cost, latency, error
     head = next(ln for ln in md.splitlines() if ln.startswith("| document |"))
     assert "verified rate" in head and "faithfulness" in head and "completeness" in head
     base = be.freeze_baseline(r, tmp_path)
