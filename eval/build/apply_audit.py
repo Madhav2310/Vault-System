@@ -14,7 +14,10 @@ neither the queue's nor the `fix`). Every change is a surgical line edit of the 
 hand formatting of the other items survive); the result is re-parsed and compared with the intended items, and
 the whole dataset is re-validated before anything is written.
 
-    python -m eval.build.apply_audit [--queue FILE] [--dataset-dir DIR] [--check]
+    python -m eval.build.apply_audit [--queue FILE] [--dataset-dir DIR] [--check] [--accept-proposed]
+
+`--accept-proposed` (explicit only) treats the queue's `proposed_decision` / `proposed_fix` as the decision of
+every item a human has not decided; without it undecided items are refused as before.
 """
 
 from __future__ import annotations
@@ -52,6 +55,24 @@ class Change:
     status: str
     claims: tuple[str, ...] | None  # new required_claims, None = keep
     note: str | None  # new audit_note, None = keep
+
+
+def accept_proposed(queue: Mapping[str, Any]) -> dict[str, Any]:
+    """Copy of the queue where every undecided item takes its PROPOSED decision (and fix; the proposed reason
+    becomes the note unless one is set). Human decisions are kept. Only used when the user passes
+    `--accept-proposed`; an undecided item without a proposal stays undecided (and `check_queue` refuses)."""
+    out = copy.deepcopy(dict(queue))
+    for q in out["queue"]:
+        if q.get("decision"):
+            continue
+        if not q.get("proposed_decision"):
+            continue
+        q["decision"] = q["proposed_decision"]
+        if q.get("proposed_fix") and not q.get("fix"):
+            q["fix"] = q["proposed_fix"]
+        if not (q.get("note") or "").strip():
+            q["note"] = q.get("proposed_reason")
+    return out
 
 
 # --- decisions -> changes ---------------------------------------------------------------------------------
@@ -285,9 +306,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="eval.build.apply_audit")
     ap.add_argument("--queue", type=pathlib.Path, default=QUEUE_FILE)
     ap.add_argument("--dataset-dir", type=pathlib.Path, default=DATASET_V2_DIR)
+    ap.add_argument(
+        "--accept-proposed",
+        action="store_true",
+        help="take `proposed_decision` / `proposed_fix` for every undecided item (never the default)",
+    )
     ap.add_argument("--check", action="store_true", help="validate and print the summary, write nothing")
     a = ap.parse_args(argv)
     queue = load_queue(a.queue)
+    if a.accept_proposed:
+        queue = accept_proposed(queue)
     try:
         new_texts, changes = apply(queue, a.dataset_dir)
     except ApplyError as e:

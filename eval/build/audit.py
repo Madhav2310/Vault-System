@@ -401,38 +401,60 @@ def _clip(s: str | None, n: int) -> str:
     return s if len(s) <= n else s[: n - 1].rstrip() + "…"
 
 
-def render_review(queue_doc: Mapping[str, Any], *, width: int = 230) -> str:
-    """Markdown, one block of three lines per queued item, for deciding ~40 items quickly."""
+_RANK = {None: 0, "gold_wrong": 1, "gold_incomplete": 2, "ambiguous": 3, "system_wrong": 4}
+
+
+def render_review(queue_doc: Mapping[str, Any], *, width: int = 200) -> str:
+    """Markdown, four lines per queued item (question, gold claims, the two answers, the proposed decision).
+    Items whose gold is suspect come first, `system_wrong` proposals last."""
     m = queue_doc.get("meta", {})
     lines = [
         "# Gold audit review",
         "",
-        f"{len(queue_doc['queue'])} queued of {m.get('audited', '?')} audited. For each: decision = "
-        "gold_wrong | gold_incomplete | ambiguous | system_wrong (edit `audit_queue.yaml`).",
+        f"{len(queue_doc['queue'])} queued of {m.get('audited', '?')} audited. "
+        "Confirm or change each: decision = "
+        "gold_wrong | gold_incomplete | ambiguous | system_wrong (edit `audit_queue.yaml`), or accept every "
+        "proposal with `apply_audit --accept-proposed`.",
         "",
     ]
-    for n, q in enumerate(queue_doc["queue"], 1):
+    ordered = sorted(queue_doc["queue"], key=lambda q: _RANK.get(q.get("proposed_decision"), 0))
+    skim = [
+        q
+        for q in ordered
+        if q.get("proposed_decision") == "system_wrong" and q.get("rca_gold_audit") != "CONFIDENT"
+    ]
+    look = [q for q in ordered if q not in skim]
+    if skim:
+        lines[2] += f" {len(look)} need a look; {len(skim)} are proposed system_wrong (skim list at the end)."
+    for n, q in enumerate(look, 1):
         f = q["failed"]
         who = []
         if f["vault_claims"] or f["vault_abstain_wrong"]:
             who.append("vault fails " + (",".join(f"c{i}" for i in f["vault_claims"]) or "abstention"))
         if f["strong_claims"] or f["strong_abstain_wrong"]:
             who.append("strong fails " + (",".join(f"c{i}" for i in f["strong_claims"]) or "abstention"))
-        if f["disagree_claims"]:
-            who.append("disagree " + ",".join(f"c{i}" for i in f["disagree_claims"]))
         if q.get("errors"):
             who.append("judge error")
         claims = " | ".join(f"c{i} {c}" for i, c in enumerate(q["required_claims"])) or "(abstain: no claims)"
-        ev = " ‖ ".join(e["text"] for e in q["gold_evidence"]) or "(no gold evidence)"
         lines += [
-            f"**{n}. `{q['id']}`** ({q['stratum']}) — {'; '.join(who) or 'queued'}  ",
+            f"**{n}. `{q['id']}`** ({q['stratum']}; {'; '.join(who) or 'queued'}) "
             f"Q: {_clip(q['question'], width)}  ",
             f"GOLD: {_clip(claims, width)}  ",
-            f"EVIDENCE: {_clip(ev, width)}  ",
-            f"VAULT: {_clip(q['vault_answer'] or '(no answer)', width)}  ",
-            f"STRONG: {_clip(q['strong_answer'] or '(no answer)', width)}",
+            f"VAULT: {_clip(q['vault_answer'] or '(no answer)', width // 2)} ‖ "
+            f"STRONG: {_clip(q['strong_answer'] or '(no answer)', width // 2)}  ",
+        ]
+        if "proposed_decision" in q:
+            fix = f" fix: {_clip(' | '.join(q['proposed_fix']), width)}" if q.get("proposed_fix") else ""
+            why = _clip(q.get("proposed_reason"), width)
+            lines.append(f"PROPOSED: {q['proposed_decision'] or 'none'} — {why}{fix}")
+        lines.append("")
+    if skim:
+        lines += [
+            "## Proposed system_wrong (no claim fails for both answers; skim, flip any you doubt)",
             "",
         ]
+        lines += [f"- `{q['id']}` ({q['stratum']}): {_clip(q.get('proposed_reason'), width)}" for q in skim]
+        lines.append("")
     return "\n".join(lines)
 
 

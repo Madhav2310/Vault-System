@@ -5,16 +5,36 @@
 # Then: python -m eval.build.apply_audit   (refuses while any queued item has no decision)
 meta:
   audited: 123
-  queued: 77
+  queued: 69
   skipped: 0
-  reasons:
-    answers_disagree: 54
-    strong_fails_gold: 44
-    vault_fails_gold: 64
+  reasons: &id001
+    answers_disagree: 53
+    strong_fails_gold: 36
+    vault_fails_gold: 57
   vault_answers_missing: 0
-  spent_usd: '1.877533'
+  spent_usd: '2.122557'
   cap_usd: '2'
   stopped_on_budget: false
+  requeue:
+    judge: claims@2 + current abstention judge, stored answers, no new answering
+    before:
+      queued: 77
+      reasons:
+        answers_disagree: 54
+        strong_fails_gold: 44
+        vault_fails_gold: 64
+    after:
+      queued: 69
+      reasons: *id001
+    dropped: 8
+    proposed:
+      ambiguous: 10
+      gold_incomplete: 10
+      gold_wrong: 3
+      system_wrong: 46
+    unresolved: []
+    stopped_on_budget: false
+    spent_usd: '0.245024'
 audited:
 - mig-fb_amd_10k-financebench_id_00222
 - mig-fb_amd_10k-financebench_id_00563
@@ -180,6 +200,14 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: 'Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold kept. RCA lists this gold
+    (CONFIDENT): claims treat hyperparameter-search candidates as the model''s activation functions.'
+  proposed_fix: null
+  rca_gold_audit: CONFIDENT
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: mig-qasper_factweet-q5
   stratum: unanswerable
   source_doc: qasper_factweet
@@ -202,6 +230,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: mig-qasper_hatespeech-q0
   stratum: single_span
   source_doc: qasper_hatespeech
@@ -240,6 +274,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c0,c1,c2 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: mig-qasper_hatespeech-q1
   stratum: unanswerable
   source_doc: qasper_hatespeech
@@ -262,6 +302,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: mig-qasper_hatespeech-q2
   stratum: single_span
   source_doc: qasper_hatespeech
@@ -292,6 +338,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c0 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: mig-fb_ulta_q4-financebench_id_00601
   stratum: single_span
   source_doc: fb_ulta_q4
@@ -332,6 +384,16 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_wrong
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; fix drops it. RCA lists this gold
+    (CONFIDENT): evidence range 76-80 is net-sales text; the full-year SG&A sentence is 82.'
+  proposed_fix:
+  - Leverage of incentive compensation due to higher sales drove the reduction in SG&A expense as a percent of net sales.
+  rca_gold_audit: CONFIDENT
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
+  - answers_disagree
 - id: mig-fb_ulta_q4-financebench_id_00603
   stratum: table_lookup
   source_doc: fb_ulta_q4
@@ -366,6 +428,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: mig-fb_amd_10k-financebench_id_00222
   stratum: numeric_calc
   source_doc: fb_amd_10k
@@ -409,6 +477,15 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: ambiguous
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0,c1,c2; no claim survives. RCA lists
+    this gold (CONFIDENT): evidence range 1475-1480 is the interest-rate-risk paragraph; the quick-ratio inputs are the balance
+    sheet (~sentence 1582).'
+  proposed_fix: null
+  rca_gold_audit: CONFIDENT
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: mig-fb_amd_10k-financebench_id_00995
   stratum: multi_span
   source_doc: fb_amd_10k
@@ -458,6 +535,18 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_incomplete
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c2; fix drops it.
+  proposed_fix:
+  - AMD sells server microprocessors (CPUs), graphics processing units (GPUs), data processing units (DPUs), Field Programmable
+    Gate Arrays (FPGAs), and Adaptive System-on-Chip (SoC) products for data centers.
+  - AMD sells CPUs, accelerated processing units (APUs) that integrate CPUs and GPUs, and chipsets for desktop and notebook
+    personal computers.
+  - AMD sells embedded CPUs, GPUs, APUs, FPGAs, and Adaptive SoC products.
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
+  - answers_disagree
 - id: mig-fb_amd_10k-financebench_id_00563
   stratum: table_lookup
   source_doc: fb_amd_10k
@@ -497,6 +586,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c0 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: mig-summarize-qasper_factweet
   stratum: multi_span
   source_doc: qasper_factweet
@@ -535,6 +630,17 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_incomplete
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; fix drops it. RCA lists this gold
+    (GUESS): open-ended summary with three narrow claims; completeness 0.67 on an answer that states all three.'
+  proposed_fix:
+  - FacTweet analyzes sequences of tweet chunks using features such as emotions, sentiment and style.
+  - The FacTweet approach outperforms baselines.
+  rca_gold_audit: GUESS
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
+  - answers_disagree
 - id: mig-summarize-fb_ulta_q4
   stratum: multi_span
   source_doc: fb_ulta_q4
@@ -578,6 +684,17 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_wrong
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c2,c3,c4; fix drops it. RCA lists this
+    gold (CONFIDENT): summary item requires fragments from other questions (47 new stores, marketing).'
+  proposed_fix:
+  - The release reports Ulta Beauty's Q4 / fiscal 2022 results.
+  - The release discusses Ulta Beauty's net sales performance.
+  rca_gold_audit: CONFIDENT
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
+  - answers_disagree
 - id: pub_single_span_01f0a97cd9
   stratum: single_span
   source_doc: fb_pepsico_2022_10k
@@ -613,6 +730,14 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: 'Vault misses c0; the strong model entails it from the gold evidence; gold kept. RCA lists this gold (GUESS):
+    claim "No, Pepsico is not involved in material legal battles" overstates "party to a variety of litigation".'
+  proposed_fix: null
+  rca_gold_audit: GUESS
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_single_span_04e4b9e254
   stratum: single_span
   source_doc: fb_mgmresorts_2022q4_earnings
@@ -655,6 +780,14 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: ambiguous
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; no claim survives. RCA lists this
+    gold (GUESS): claim presupposes an "Adjusted EBIT" the release does not define; 25-sentence page evidence.'
+  proposed_fix: null
+  rca_gold_audit: GUESS
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: pub_single_span_471760d0ab
   stratum: single_span
   source_doc: qasper_1610_09516
@@ -677,12 +810,12 @@ queue:
     comparison. They state that most gang member profiles portray gang culture, with profile images showing weapons, groups
     displaying gangster culture, graffiti, hand signs, tattoos, and bulk cash.
   reasons:
-  - strong_fails_gold
+  - vault_fails_gold
   - answers_disagree
   failed:
-    vault_claims: []
-    strong_claims:
+    vault_claims:
     - 0
+    strong_claims: []
     disagree_claims:
     - 0
     vault_abstain_wrong: false
@@ -691,6 +824,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: pub_single_span_a1add6deb7
   stratum: single_span
   source_doc: cuad_papajohnsinternationalinc_20190617_8_k_e_d6d30a
@@ -722,6 +861,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_conditional_11d309bb00
   stratum: conditional
   source_doc: cuad_vitalibisinc_20180316_8_k_ex_10_2_111001_120591
@@ -756,6 +901,14 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: ambiguous
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; no claim survives. RCA lists this
+    gold (GUESS): claim is the whole auto-renew clause; question asks the opt-out deadline.'
+  proposed_fix: null
+  rca_gold_audit: GUESS
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: pub_conditional_76c9cbf1a5
   stratum: conditional
   source_doc: cuad_ingevitycorp_05_16_2016_ex_10_5_intellec_40eb5b
@@ -790,6 +943,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_conditional_cb7ddacf21
   stratum: conditional
   source_doc: cuad_reganholdingcorp_03_31_2008_ex_10_licens_b6da21
@@ -832,6 +991,16 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_incomplete
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c1; fix drops it.
+  proposed_fix:
+  - 'The agreement provides: This Agreement shall be binding on the parties and their respective successors in interest and
+    assigns, but neither party shall have the power to assign this Agreement without the prior written consent of the other
+    party.'
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
+  - answers_disagree
 - id: pub_numeric_calc_063672cf46
   stratum: numeric_calc
   source_doc: fb_pepsico_2021_10k
@@ -878,6 +1047,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: ambiguous
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: pub_numeric_calc_5ceb5e8bcb
   stratum: numeric_calc
   source_doc: fb_netflix_2015_10k
@@ -946,6 +1121,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: ambiguous
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: pub_numeric_calc_6d07d5cd41
   stratum: numeric_calc
   source_doc: fb_cvshealth_2018_10k
@@ -1011,6 +1192,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_numeric_calc_8e035f67db
   stratum: numeric_calc
   source_doc: fb_adobe_2015_10k
@@ -1129,6 +1316,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_numeric_calc_9ecc6251c3
   stratum: numeric_calc
   source_doc: fb_cocacola_2017_10k
@@ -1195,6 +1388,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: ambiguous
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: pub_multi_span_267f540bab
   stratum: multi_span
   source_doc: qasper_1912_00423
@@ -1242,6 +1441,14 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: 'Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold kept. RCA lists this gold
+    (GUESS): question "How are FHIR and RDF combined?"; claims are the mismatch caveats.'
+  proposed_fix: null
+  rca_gold_audit: GUESS
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_multi_span_35293edf6b
   stratum: multi_span
   source_doc: qasper_1805_10824
@@ -1281,6 +1488,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_multi_span_56d1a931be
   stratum: multi_span
   source_doc: cuad_energyxxiltd_05_08_2015_ex_10_13_transpo_742e32
@@ -1324,6 +1537,18 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_wrong
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; fix drops it. RCA lists this gold
+    (CONFIDENT): fragment claims `Shipper`, `Transporter`, `ENERGY XXI USA, INC.`, and a definitional "Party" claim.'
+  proposed_fix:
+  - 'The agreement provides: Shipper'
+  - 'The agreement provides: ENERGY XXI GULF COAST, INC.'
+  - 'The agreement provides: Transporter'
+  - 'The agreement provides: ENERGY XXI USA, INC.'
+  rca_gold_audit: CONFIDENT
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: pub_multi_span_8e8b319c37
   stratum: multi_span
   source_doc: qasper_1701_06538
@@ -1360,6 +1585,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c1; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_multi_span_9748844d4e
   stratum: multi_span
   source_doc: cuad_seaspineholdingscorp_10_10_2018_ex_10_1__305733
@@ -1416,6 +1647,17 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_incomplete
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c1,c2; fix drops it. RCA lists this gold
+    (GUESS): verbatim fee clauses for "ceilings on volume".'
+  proposed_fix:
+  - 'The agreement provides: Changes to the *** Run Fee based on increased capacity will be determined upon completion of
+    the appropriate process validations.'
+  rca_gold_audit: GUESS
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
+  - answers_disagree
 - id: pub_multi_span_9d7cee8f65
   stratum: multi_span
   source_doc: cuad_ominto_inc_03_29_2004_ex_10_reseller_agr_ecce4d
@@ -1455,6 +1697,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_multi_span_c08dce639e
   stratum: multi_span
   source_doc: qasper_1910_10408
@@ -1492,6 +1740,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c1; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_multi_span_d466b3b7bd
   stratum: multi_span
   source_doc: cuad_curaegistechnologies_inc_05_26_2010_ex_1_269c35
@@ -1546,6 +1800,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_multi_hop_17217d5c78
   stratum: multi_hop
   source_doc: qasper_1905_01962
@@ -1586,6 +1846,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c0 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: pub_multi_hop_50f21d188d
   stratum: multi_hop
   source_doc: qasper_1910_11204
@@ -1635,6 +1901,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0,c1,c2; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_multi_hop_6ad7ee5d2d
   stratum: multi_hop
   source_doc: qasper_1707_07922
@@ -1668,11 +1940,9 @@ queue:
   - answers_disagree
   failed:
     vault_claims:
-    - 0
     - 1
     strong_claims: []
     disagree_claims:
-    - 0
     - 1
     vault_abstain_wrong: false
     strong_abstain_wrong: false
@@ -1680,6 +1950,14 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: 'Vault misses c1; the strong model entails it from the gold evidence; gold kept. RCA lists this gold (GUESS):
+    two-word claims `gating function`, `Dynamic Memory`.'
+  proposed_fix: null
+  rca_gold_audit: GUESS
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_multi_hop_70b5c16a8c
   stratum: multi_hop
   source_doc: qasper_1603_07044
@@ -1725,6 +2003,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: pub_multi_hop_d508f95538
   stratum: multi_hop
   source_doc: qasper_1808_08780
@@ -1772,6 +2056,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: tbl_table_lookup_43de2bbe1f
   stratum: table_lookup
   source_doc: fb_bestbuy_2024q2_10q
@@ -1802,6 +2092,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c0 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: tbl_table_lookup_7d09be66cb
   stratum: table_lookup
   source_doc: fb_paypal_2023q2_10q
@@ -1831,6 +2127,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c0 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: tbl_table_lookup_fe53586268
   stratum: table_lookup
   source_doc: fb_bestbuy_2024q2_10q
@@ -1861,6 +2163,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c0 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: tbl_table_lookup_41341064e3
   stratum: table_lookup
   source_doc: fb_ebay_2023q2_10q
@@ -1890,6 +2198,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: ambiguous
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: tbl_table_lookup_8f93590366
   stratum: table_lookup
   source_doc: fb_paypal_2023q2_10q
@@ -1918,6 +2232,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: tbl_table_lookup_2c59d692e7
   stratum: table_lookup
   source_doc: fb_bestbuy_2024q2_10q
@@ -1949,6 +2269,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c0 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: tbl_table_lookup_4a6f209dae
   stratum: table_lookup
   source_doc: fb_ebay_2023q2_10q
@@ -1978,6 +2304,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c0 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: s21-agg-01
   stratum: aggregation
   source_doc: dpa_cloudlane
@@ -2018,6 +2350,15 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_incomplete
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c2; fix drops it.
+  proposed_fix:
+  - The Cloudlane DPA gives the controller audit rights.
+  - The Bramble & Rowe supplier code lets the company audit any site.
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
+  - answers_disagree
 - id: s21-agg-08
   stratum: aggregation
   source_doc: safety_lab
@@ -2046,10 +2387,8 @@ queue:
   - strong_fails_gold
   failed:
     vault_claims:
-    - 0
     - 1
     strong_claims:
-    - 0
     - 1
     disagree_claims: []
     vault_abstain_wrong: false
@@ -2058,6 +2397,13 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_incomplete
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c1; fix drops it.
+  proposed_fix:
+  - 'Only the lab safety SOP does: incidents must be reported within twenty-four hours.'
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: s21-cmp-02
   stratum: compare_docs
   source_doc: sla_fibrenet
@@ -2102,6 +2448,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0,c3; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-cmp-10
   stratum: compare_docs
   source_doc: sla_fibrenet
@@ -2136,6 +2488,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c1 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: s21-con-01
   stratum: conflict
   source_doc: consulting_vantage_amend1
@@ -2173,6 +2531,15 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_incomplete
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c1; fix drops it. RCA lists this gold
+    (GUESS): claim 2 requires explaining the replacement; question asks only for the rate.'
+  proposed_fix:
+  - From 1 February 2026 the rate is USD 165 per hour (Amendment No. 1).
+  rca_gold_audit: GUESS
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: s21-con-03
   stratum: conflict
   source_doc: consulting_vantage_amend1
@@ -2215,6 +2582,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c2 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: s21-con-10
   stratum: conflict
   source_doc: report_outage_customer_notice
@@ -2251,6 +2624,14 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_incomplete
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c2; fix drops it.
+  proposed_fix:
+  - The engineering post-mortem says 47 minutes (09:12 to 09:59 UTC).
+  - The customer notice says 62 minutes.
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: s21-con-14
   stratum: conflict
   source_doc: report_headcount_finance
@@ -2287,6 +2668,14 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: gold_incomplete
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c2; fix drops it.
+  proposed_fix:
+  - The People Team reports annualised attrition of 9.4%.
+  - Finance reports attrition of 11.0%.
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: s21-fal-11
   stratum: false_premise
   source_doc: consulting_vantage
@@ -2319,6 +2708,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: strong model misses c1 (Vault states it); gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - strong_fails_gold
+  - answers_disagree
 - id: s21-fal-13
   stratum: false_premise
   source_doc: nda_brightwater
@@ -2351,6 +2746,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0,c1; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-inj-02
   stratum: injection
   source_doc: inj_travel_guide
@@ -2380,6 +2781,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: ambiguous
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: s21-inj-18
   stratum: injection
   source_doc: inj_candidate_summary
@@ -2409,6 +2816,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: ambiguous
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c0; no claim survives.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
 - id: s21-mul-03
   stratum: multi_turn
   source_doc: dpa_cloudlane
@@ -2442,34 +2855,13 @@ queue:
   decision: null
   fix: null
   note: null
-- id: s21-mul-04
-  stratum: multi_turn
-  source_doc: consulting_vantage
-  question: No, I meant the amendment.
-  answer_type: answer
-  required_claims:
-  - Amendment No. 1 sets the rate at USD 165 per hour from 1 February 2026.
-  gold_evidence:
-  - doc: consulting_vantage_amend1
-    sentences: 3-4
-    text: From 1 February 2026 the Consultant's rate is USD 165 per hour.
-  vault_answer: The amendment sets the Consultant’s rate at USD 165 per hour from 1 February 2026.
-  strong_answer: Under the amendment, Vantage charges Pinecrest USD 165 per hour from 1 February 2026.
-  reasons:
+  proposed_decision: gold_incomplete
+  proposed_reason: neither Vault nor the strong model (gold evidence only) entails c1; fix drops it.
+  proposed_fix:
+  - Cloudlane must give thirty days' notice of any new sub-processor.
+  prev_reasons:
   - vault_fails_gold
-  - answers_disagree
-  failed:
-    vault_claims:
-    - 0
-    strong_claims: []
-    disagree_claims:
-    - 0
-    vault_abstain_wrong: false
-    strong_abstain_wrong: false
-  errors: []
-  decision: null
-  fix: null
-  note: null
+  - strong_fails_gold
 - id: s21-una-01
   stratum: unanswerable
   source_doc: newsletter_twocol
@@ -2492,6 +2884,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-una-02
   stratum: unanswerable
   source_doc: newsletter_twocol
@@ -2514,6 +2912,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-una-03
   stratum: unanswerable
   source_doc: newsletter_twocol
@@ -2536,30 +2940,12 @@ queue:
   decision: null
   fix: null
   note: null
-- id: s21-una-09
-  stratum: unanswerable
-  source_doc: msa_northwind
-  question: What is the ceiling on Tessellate's liability if it breaches confidentiality?
-  answer_type: abstain
-  required_claims: []
-  gold_evidence: []
-  vault_answer: |-
-    The contractual liability cap does not apply to a breach of confidentiality; the agreement does not state a separate ceiling for it.
-    Neither party is liable for indirect or consequential loss.
-  strong_answer: The documents do not contain a ceiling on Tessellate's liability for a breach of confidentiality.
-  reasons:
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
   - vault_fails_gold
   - answers_disagree
-  failed:
-    vault_claims: []
-    strong_claims: []
-    disagree_claims: []
-    vault_abstain_wrong: true
-    strong_abstain_wrong: false
-  errors: []
-  decision: null
-  fix: null
-  note: null
 - id: s21-una-10
   stratum: unanswerable
   source_doc: msa_northwind
@@ -2582,6 +2968,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-una-11
   stratum: unanswerable
   source_doc: nda_brightwater
@@ -2604,6 +2996,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-una-12
   stratum: unanswerable
   source_doc: nda_brightwater
@@ -2627,6 +3025,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-una-17
   stratum: unanswerable
   source_doc: consulting_vantage
@@ -2649,6 +3053,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-una-20
   stratum: unanswerable
   source_doc: safety_lab
@@ -2671,6 +3081,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-una-21
   stratum: unanswerable
   source_doc: safety_lab
@@ -2693,6 +3109,12 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: Vault answers where the gold expects abstention; the strong model abstains.
+  proposed_fix: null
+  prev_reasons:
+  - vault_fails_gold
+  - answers_disagree
 - id: s21-ver-01
   stratum: versioned
   source_doc: msa_northwind_v2
@@ -2726,6 +3148,15 @@ queue:
   decision: null
   fix: null
   note: null
+  proposed_decision: system_wrong
+  proposed_reason: 'strong model misses c0 (Vault states it); gold kept. RCA lists this gold (CONFIDENT): evidence range 12-13
+    is the fee-escalation sentence; the fee is sentence 9.'
+  proposed_fix: null
+  rca_gold_audit: CONFIDENT
+  prev_reasons:
+  - vault_fails_gold
+  - strong_fails_gold
+  - answers_disagree
 - id: s21-ver-02
   stratum: versioned
   source_doc: msa_northwind_v2
@@ -2754,61 +3185,14 @@ queue:
   decision: null
   fix: null
   note: null
-- id: s21-ver-03
-  stratum: versioned
-  source_doc: msa_northwind_v2
-  question: Which company is the customer in the current Tessellate platform contract?
-  answer_type: answer
-  required_claims:
-  - The customer is Northwind Group plc.
-  gold_evidence:
-  - doc: msa_northwind_v2
-    sentences: 1-2
-    text: This Master Services Agreement (the "Agreement") is made on 3 March 2026 between Northwind Group plc, a company
-      registered in England (the "Customer"), and Tessellate Systems Inc., a Delaware corporation (the "Supplier").
-  vault_answer: Northwind Group plc is the customer in the amended and restated Master Services Agreement with Tessellate
-    Systems Inc.
-  strong_answer: Northwind Group plc, a company registered in England, is the Customer.
-  reasons:
+  proposed_decision: ambiguous
+  proposed_reason: 'neither Vault nor the strong model (gold evidence only) entails c0; no claim survives. RCA lists this
+    gold (CONFIDENT): evidence range 8-9 is the heading `## 3. Fees and Payment`; the 36-month term is sentence 6.'
+  proposed_fix: null
+  rca_gold_audit: CONFIDENT
+  prev_reasons:
   - vault_fails_gold
   - strong_fails_gold
-  failed:
-    vault_claims: []
-    strong_claims: []
-    disagree_claims: []
-    vault_abstain_wrong: true
-    strong_abstain_wrong: true
-  errors: []
-  decision: null
-  fix: null
-  note: null
-- id: s21-ver-07
-  stratum: versioned
-  source_doc: lease_harbor_v2
-  question: What monthly base rent does Suite 410 on Harbor Street carry under the restated lease?
-  answer_type: answer
-  required_claims:
-  - The base rent is USD 13,150 per month.
-  gold_evidence:
-  - doc: lease_harbor_v2
-    sentences: 7-8
-    text: Base rent is USD 13,150 per month, payable on the first day of each month without demand.
-  vault_answer: The monthly base rent is USD 13,150.
-  strong_answer: The monthly base rent under the restated lease is USD 13,150, payable on the first day of each month without
-    demand.
-  reasons:
-  - vault_fails_gold
-  - strong_fails_gold
-  failed:
-    vault_claims: []
-    strong_claims: []
-    disagree_claims: []
-    vault_abstain_wrong: true
-    strong_abstain_wrong: true
-  errors: []
-  decision: null
-  fix: null
-  note: null
 - id: s21-ver-08
   stratum: versioned
   source_doc: lease_harbor_v2
@@ -2824,122 +3208,22 @@ queue:
   strong_answer: The restated Harbor Street office lease lasts seven (7) years.
   reasons:
   - vault_fails_gold
-  - strong_fails_gold
+  - answers_disagree
   failed:
     vault_claims:
     - 0
-    strong_claims:
+    strong_claims: []
+    disagree_claims:
     - 0
-    disagree_claims: []
     vault_abstain_wrong: true
-    strong_abstain_wrong: true
+    strong_abstain_wrong: false
   errors: []
   decision: null
   fix: null
   note: null
-- id: s21-ver-09
-  stratum: versioned
-  source_doc: lease_harbor_v2
-  question: What security deposit has the tenant of Suite 410 put down according to the amended and restated lease?
-  answer_type: answer
-  required_claims:
-  - The security deposit is USD 26,300.
-  gold_evidence:
-  - doc: lease_harbor_v2
-    sentences: 11-12
-    text: The tenant has paid a security deposit of USD 26,300.
-  vault_answer: The tenant has paid a security deposit of USD 26,300.
-  strong_answer: The tenant has paid a security deposit of USD 26,300.
-  reasons:
+  proposed_decision: system_wrong
+  proposed_reason: Vault misses c0; the strong model entails it from the gold evidence; gold kept.
+  proposed_fix: null
+  prev_reasons:
   - vault_fails_gold
   - strong_fails_gold
-  failed:
-    vault_claims: []
-    strong_claims: []
-    disagree_claims: []
-    vault_abstain_wrong: true
-    strong_abstain_wrong: true
-  errors: []
-  decision: null
-  fix: null
-  note: null
-- id: s21-ver-10
-  stratum: versioned
-  source_doc: order_quill_v2
-  question: What yearly subscription charge applies to Marlowe Dental's renewal order with Quill?
-  answer_type: answer
-  required_claims:
-  - The annual subscription fee is USD 64,800.
-  gold_evidence:
-  - doc: order_quill_v2
-    sentences: 6-7
-    text: The price is USD 36 per seat per month, billed annually in advance, for an annual subscription fee of USD 64,800.
-  vault_answer: The annual subscription fee is USD 64,800, billed annually in advance.
-  strong_answer: The yearly subscription charge is USD 64,800, billed annually in advance.
-  reasons:
-  - vault_fails_gold
-  - strong_fails_gold
-  failed:
-    vault_claims: []
-    strong_claims: []
-    disagree_claims: []
-    vault_abstain_wrong: true
-    strong_abstain_wrong: true
-  errors: []
-  decision: null
-  fix: null
-  note: null
-- id: s21-ver-11
-  stratum: versioned
-  source_doc: order_quill_v2
-  question: How many clinician seats does the renewal order form for Marlowe cover?
-  answer_type: answer
-  required_claims:
-  - The renewal covers 150 named clinician seats.
-  gold_evidence:
-  - doc: order_quill_v2
-    sentences: 3-4
-    text: The Customer subscribes to the Quill Scheduling and Billing suite for 150 named clinician seats at its twelve clinics.
-  vault_answer: The renewal order form covers 150 named clinician seats.
-  strong_answer: The renewal order form covers 150 named clinician seats.
-  reasons:
-  - vault_fails_gold
-  - strong_fails_gold
-  failed:
-    vault_claims: []
-    strong_claims: []
-    disagree_claims: []
-    vault_abstain_wrong: true
-    strong_abstain_wrong: true
-  errors: []
-  decision: null
-  fix: null
-  note: null
-- id: s21-ver-12
-  stratum: versioned
-  source_doc: order_quill_v2
-  question: How much warning must Marlowe give to stop the Quill subscription from rolling over, per the renewal order?
-  answer_type: answer
-  required_claims:
-  - The customer must give ninety (90) days' written notice before the renewal date.
-  gold_evidence:
-  - doc: order_quill_v2
-    sentences: 11-12
-    text: It renews automatically for twelve-month terms unless the Customer gives ninety (90) days' written notice before
-      the renewal date.
-  vault_answer: Marlowe must give ninety days’ written notice before the renewal date to prevent automatic renewal.
-  strong_answer: Marlowe must give written notice ninety (90) days before the renewal date to stop the Quill subscription
-    from automatically renewing for another twelve-month term.
-  reasons:
-  - vault_fails_gold
-  - strong_fails_gold
-  failed:
-    vault_claims: []
-    strong_claims: []
-    disagree_claims: []
-    vault_abstain_wrong: true
-    strong_abstain_wrong: true
-  errors: []
-  decision: null
-  fix: null
-  note: null

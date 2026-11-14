@@ -121,7 +121,6 @@ def test_render_review() -> None:
     res, _ = _run([_item("vault_bad", ["Beta is 7."], 1, 2)], {"vault_bad": "Beta is 70."})
     md = au.render_review(au.queue_document(res, spent=Decimal(0), cap=None))
     assert "`vault_bad`" in md and "VAULT: Beta is 70." in md and "STRONG: Beta is 7." in md
-    assert "EVIDENCE: Beta is 7." in md
 
 
 def test_vault_answers_formats(tmp_path: pathlib.Path) -> None:
