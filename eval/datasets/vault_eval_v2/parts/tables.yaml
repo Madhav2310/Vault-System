@@ -1,0 +1,450 @@
+# S21.04b: table_lookup items from eval/build/draft_tables.py (gold unaudited until S21.05)
+items:
+- id: tbl_table_lookup_6c981336b5
+  stratum: table_lookup
+  question: What was 3M's balance of cash and cash equivalents as of June 30, 2023?
+  source_doc: fb_3m_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - 3M reports "Cash and cash equivalents" of $4,258 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).
+  alternates:
+    3M reports "Cash and cash equivalents" of $4,258 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).:
+    - 4,258 million
+    - $4,258 million
+    - $4,258
+    - 4258 million
+    - $4258 million
+    - '4258'
+    - $4258
+    - $4.258 billion
+    - $4.3 billion
+    - 4,258
+  gold_evidence:
+  - doc: fb_3m_2023q2_10q
+    sentence_start: 131
+    sentence_end: 132
+  doc_ids:
+  - fb_3m_2023q2_10q
+  audit_note: 'S21.04b table cell: 3M_2023Q2_10Q page 5 row "Cash and cash equivalents" (unit 131) col "June 30,
+    2023" unit millions; value, row, column and unit chosen by code from the parsed table; question drafted by model
+    (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_dcd22b7b2e
+  stratum: table_lookup
+  question: What was Apple's balance of other non-current assets as of July 1, 2023?
+  source_doc: fb_apple_2023q3_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - Apple reports "Other non-current assets" of $64,768 million for the column "July 1, 2023" (Form 10-Q (Q3 fiscal
+    2023)).
+  alternates:
+    Apple reports "Other non-current assets" of $64,768 million for the column "July 1, 2023" (Form 10-Q (Q3 fiscal 2023)).:
+    - 64,768 million
+    - $64,768 million
+    - $64,768
+    - 64768 million
+    - $64768 million
+    - '64768'
+    - $64768
+    - $64.768 billion
+    - $64.8 billion
+    - 64,768
+  gold_evidence:
+  - doc: fb_apple_2023q3_10q
+    sentence_start: 156
+    sentence_end: 157
+  doc_ids:
+  - fb_apple_2023q3_10q
+  audit_note: 'S21.04b table cell: APPLE_2023Q3_10Q page 6 row "Other non-current assets" (unit 156) col "July 1,
+    2023" unit millions; value, row, column and unit chosen by code from the parsed table; question drafted by model
+    (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_43de2bbe1f
+  stratum: table_lookup
+  question: What were Best Buy's net earnings for the six months ended July 30, 2022?
+  source_doc: fb_bestbuy_2024q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - Best Buy reports "Net earnings" of $647 million for the column "Six Months Ended July 30, 2022" (Form 10-Q (Q2
+    fiscal 2024)).
+  alternates:
+    ? Best Buy reports "Net earnings" of $647 million for the column "Six Months Ended July 30, 2022" (Form 10-Q
+      (Q2 fiscal 2024)).
+    : - 647 million
+      - $647 million
+      - $647
+      - '647'
+  gold_evidence:
+  - doc: fb_bestbuy_2024q2_10q
+    sentence_start: 141
+    sentence_end: 142
+  doc_ids:
+  - fb_bestbuy_2024q2_10q
+  audit_note: 'S21.04b table cell: BESTBUY_2024Q2_10Q page 5 row "Net earnings" (unit 141) col "Six Months Ended
+    July 30, 2022" unit millions; value, row, column and unit chosen by code from the parsed table; question drafted
+    by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_39ac44bf5f
+  stratum: table_lookup
+  question: How much long-term debt did eBay have as of June 30, 2023?
+  source_doc: fb_ebay_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - eBay reports "Long-term debt" of $7,721 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).
+  alternates:
+    eBay reports "Long-term debt" of $7,721 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).:
+    - 7,721 million
+    - $7,721 million
+    - $7,721
+    - 7721 million
+    - $7721 million
+    - '7721'
+    - $7721
+    - $7.721 billion
+    - $7.7 billion
+    - 7,721
+  gold_evidence:
+  - doc: fb_ebay_2023q2_10q
+    sentence_start: 134
+    sentence_end: 135
+  doc_ids:
+  - fb_ebay_2023q2_10q
+  audit_note: 'S21.04b table cell: EBAY_2023Q2_10Q page 4 row "Long-term debt" (unit 134) col "June 30, 2023" unit
+    millions; value, row, column and unit chosen by code from the parsed table; question drafted by model (balanced,
+    eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_31d4457dcf
+  stratum: table_lookup
+  question: As of June 30, 2023, how much did Netflix owe in content obligations due after three years through five
+    years?
+  source_doc: fb_netflix_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - Netflix reports "Due after three years and through five years" of $1,662,733 thousand for the column "June 30,
+    2023" (Form 10-Q (Q2 2023)).
+  alternates:
+    ? Netflix reports "Due after three years and through five years" of $1,662,733 thousand for the column "June
+      30, 2023" (Form 10-Q (Q2 2023)).
+    : - 1,662,733 thousand
+      - $1,662,733 thousand
+      - $1,662,733
+      - 1662733 thousand
+      - $1662733 thousand
+      - '1662733'
+      - $1662733
+      - 1,662,733
+  gold_evidence:
+  - doc: fb_netflix_2023q2_10q
+    sentence_start: 498
+    sentence_end: 499
+  doc_ids:
+  - fb_netflix_2023q2_10q
+  audit_note: 'S21.04b table cell: NETFLIX_2023Q2_10Q page 15 row "Due after three years and through five years"
+    (unit 498) col "June 30, 2023" unit thousands; value, row, column and unit chosen by code from the parsed table;
+    question drafted by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_7d09be66cb
+  stratum: table_lookup
+  question: What were PayPal's aggregate operating lease liabilities as of December 31, 2022?
+  source_doc: fb_paypal_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - PayPal reports "Total operating lease liabilities" of $720 million for the column "December 31, 2022" (Form
+    10-Q (Q2 2023)).
+  alternates:
+    ? PayPal reports "Total operating lease liabilities" of $720 million for the column "December 31, 2022" (Form
+      10-Q (Q2 2023)).
+    : - 720 million
+      - $720 million
+      - $720
+      - '720'
+  gold_evidence:
+  - doc: fb_paypal_2023q2_10q
+    sentence_start: 498
+    sentence_end: 499
+  doc_ids:
+  - fb_paypal_2023q2_10q
+  audit_note: 'S21.04b table cell: PAYPAL_2023Q2_10Q page 16 row "Total operating lease liabilities" (unit 498)
+    col "December 31, 2022" unit millions; value, row, column and unit chosen by code from the parsed table; question
+    drafted by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_9fbdfe07f5
+  stratum: table_lookup
+  question: What was the net value of 3M's property, plant and equipment as of June 30, 2023?
+  source_doc: fb_3m_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - 3M reports "Property, plant and equipment — net" of $9,211 million for the column "June 30, 2023" (Form 10-Q
+    (Q2 2023)).
+  alternates:
+    3M reports "Property, plant and equipment — net" of $9,211 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).:
+    - 9,211 million
+    - $9,211 million
+    - $9,211
+    - 9211 million
+    - $9211 million
+    - '9211'
+    - $9211
+    - $9.211 billion
+    - $9.2 billion
+    - 9,211
+  gold_evidence:
+  - doc: fb_3m_2023q2_10q
+    sentence_start: 144
+    sentence_end: 145
+  doc_ids:
+  - fb_3m_2023q2_10q
+  audit_note: 'S21.04b table cell: 3M_2023Q2_10Q page 5 row "Property, plant and equipment — net" (unit 144) col
+    "June 30, 2023" unit millions; value, row, column and unit chosen by code from the parsed table; question drafted
+    by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_69e3e7260b
+  stratum: table_lookup
+  question: What were Apple's total assets as of July 1, 2023?
+  source_doc: fb_apple_2023q3_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - Apple reports "Total assets" of $335,038 million for the column "July 1, 2023" (Form 10-Q (Q3 fiscal 2023)).
+  alternates:
+    Apple reports "Total assets" of $335,038 million for the column "July 1, 2023" (Form 10-Q (Q3 fiscal 2023)).:
+    - 335,038 million
+    - $335,038 million
+    - $335,038
+    - 335038 million
+    - $335038 million
+    - '335038'
+    - $335038
+    - $335.038 billion
+    - $335.0 billion
+    - 335,038
+  gold_evidence:
+  - doc: fb_apple_2023q3_10q
+    sentence_start: 158
+    sentence_end: 159
+  doc_ids:
+  - fb_apple_2023q3_10q
+  audit_note: 'S21.04b table cell: APPLE_2023Q3_10Q page 6 row "Total assets" (unit 158) col "July 1, 2023" unit
+    millions; value, row, column and unit chosen by code from the parsed table; question drafted by model (balanced,
+    eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_fe53586268
+  stratum: table_lookup
+  question: What were Best Buy's liabilities for gift cards that had not been redeemed as of January 28, 2023?
+  source_doc: fb_bestbuy_2024q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - Best Buy reports "Unredeemed gift card liabilities" of $274 million for the column "January 28, 2023" (Form
+    10-Q (Q2 fiscal 2024)).
+  alternates:
+    ? Best Buy reports "Unredeemed gift card liabilities" of $274 million for the column "January 28, 2023" (Form
+      10-Q (Q2 fiscal 2024)).
+    : - 274 million
+      - $274 million
+      - $274
+      - '274'
+  gold_evidence:
+  - doc: fb_bestbuy_2024q2_10q
+    sentence_start: 89
+    sentence_end: 90
+  doc_ids:
+  - fb_bestbuy_2024q2_10q
+  audit_note: 'S21.04b table cell: BESTBUY_2024Q2_10Q page 3 row "Unredeemed gift card liabilities" (unit 89) col
+    "January 28, 2023" unit millions; value, row, column and unit chosen by code from the parsed table; question
+    drafted by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_41341064e3
+  stratum: table_lookup
+  question: What was the net value of eBay's property and equipment as of June 30, 2023?
+  source_doc: fb_ebay_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - eBay reports "Property and equipment, net" of $1,227 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).
+  alternates:
+    eBay reports "Property and equipment, net" of $1,227 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).:
+    - 1,227 million
+    - $1,227 million
+    - $1,227
+    - 1227 million
+    - $1227 million
+    - '1227'
+    - $1227
+    - $1.227 billion
+    - $1.2 billion
+    - 1,227
+  gold_evidence:
+  - doc: fb_ebay_2023q2_10q
+    sentence_start: 118
+    sentence_end: 119
+  doc_ids:
+  - fb_ebay_2023q2_10q
+  audit_note: 'S21.04b table cell: EBAY_2023Q2_10Q page 4 row "Property and equipment, net" (unit 118) col "June
+    30, 2023" unit millions; value, row, column and unit chosen by code from the parsed table; question drafted
+    by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_8f93590366
+  stratum: table_lookup
+  question: What was the value of PayPal's operating lease right-of-use assets as of June 30, 2023?
+  source_doc: fb_paypal_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - PayPal reports "Operating ROU lease assets" of $495 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).
+  alternates:
+    PayPal reports "Operating ROU lease assets" of $495 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).:
+    - 495 million
+    - $495 million
+    - $495
+    - '495'
+  gold_evidence:
+  - doc: fb_paypal_2023q2_10q
+    sentence_start: 495
+    sentence_end: 496
+  doc_ids:
+  - fb_paypal_2023q2_10q
+  audit_note: 'S21.04b table cell: PAYPAL_2023Q2_10Q page 16 row "Operating ROU lease assets" (unit 495) col "June
+    30, 2023" unit millions; value, row, column and unit chosen by code from the parsed table; question drafted
+    by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_6cf2bec477
+  stratum: table_lookup
+  question: What were Apple's other long-term liabilities as of September 24, 2022?
+  source_doc: fb_apple_2023q3_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - Apple reports "Other non-current liabilities" of $49,142 million for the column "September 24, 2022" (Form 10-Q
+    (Q3 fiscal 2023)).
+  alternates:
+    ? Apple reports "Other non-current liabilities" of $49,142 million for the column "September 24, 2022" (Form
+      10-Q (Q3 fiscal 2023)).
+    : - 49,142 million
+      - $49,142 million
+      - $49,142
+      - 49142 million
+      - $49142 million
+      - '49142'
+      - $49142
+      - $49.142 billion
+      - $49.1 billion
+      - 49,142
+  gold_evidence:
+  - doc: fb_apple_2023q3_10q
+    sentence_start: 169
+    sentence_end: 170
+  doc_ids:
+  - fb_apple_2023q3_10q
+  audit_note: 'S21.04b table cell: APPLE_2023Q3_10Q page 6 row "Other non-current liabilities" (unit 169) col "September
+    24, 2022" unit millions; value, row, column and unit chosen by code from the parsed table; question drafted
+    by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_2c59d692e7
+  stratum: table_lookup
+  question: What was Best Buy's depreciation and amortization expense for the six months ended July 29, 2023, as
+    reported in its cash flow statement?
+  source_doc: fb_bestbuy_2024q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - Best Buy reports "Depreciation and amortization" of $473 million for the column "Six Months Ended July 29, 2023"
+    (Form 10-Q (Q2 fiscal 2024)).
+  alternates:
+    ? Best Buy reports "Depreciation and amortization" of $473 million for the column "Six Months Ended July 29,
+      2023" (Form 10-Q (Q2 fiscal 2024)).
+    : - 473 million
+      - $473 million
+      - $473
+      - '473'
+  gold_evidence:
+  - doc: fb_bestbuy_2024q2_10q
+    sentence_start: 153
+    sentence_end: 154
+  doc_ids:
+  - fb_bestbuy_2024q2_10q
+  audit_note: 'S21.04b table cell: BESTBUY_2024Q2_10Q page 6 row "Depreciation and amortization" (unit 153) col
+    "Six Months Ended July 29, 2023" unit millions; value, row, column and unit chosen by code from the parsed table;
+    question drafted by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_4a6f209dae
+  stratum: table_lookup
+  question: What were eBay's aggregate liabilities as of December 31, 2022?
+  source_doc: fb_ebay_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - eBay reports "Total liabilities" of $15,697 million for the column "December 31, 2022" (Form 10-Q (Q2 2023)).
+  alternates:
+    eBay reports "Total liabilities" of $15,697 million for the column "December 31, 2022" (Form 10-Q (Q2 2023)).:
+    - 15,697 million
+    - $15,697 million
+    - $15,697
+    - 15697 million
+    - $15697 million
+    - '15697'
+    - $15697
+    - $15.697 billion
+    - $15.7 billion
+    - 15,697
+  gold_evidence:
+  - doc: fb_ebay_2023q2_10q
+    sentence_start: 136
+    sentence_end: 137
+  doc_ids:
+  - fb_ebay_2023q2_10q
+  audit_note: 'S21.04b table cell: EBAY_2023Q2_10Q page 4 row "Total liabilities" (unit 136) col "December 31, 2022"
+    unit millions; value, row, column and unit chosen by code from the parsed table; question drafted by model (balanced,
+    eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_d180a302ae
+  stratum: table_lookup
+  question: What was the net value of Netflix's content assets as of December 31, 2022?
+  source_doc: fb_netflix_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - Netflix reports "Content assets, net" of $32,736,713 thousand for the column "December 31, 2022" (Form 10-Q
+    (Q2 2023)).
+  alternates:
+    Netflix reports "Content assets, net" of $32,736,713 thousand for the column "December 31, 2022" (Form 10-Q (Q2 2023)).:
+    - 32,736,713 thousand
+    - $32,736,713 thousand
+    - $32,736,713
+    - 32736713 thousand
+    - $32736713 thousand
+    - '32736713'
+    - $32736713
+    - 32,736,713
+  gold_evidence:
+  - doc: fb_netflix_2023q2_10q
+    sentence_start: 365
+    sentence_end: 366
+  doc_ids:
+  - fb_netflix_2023q2_10q
+  audit_note: 'S21.04b table cell: NETFLIX_2023Q2_10Q page 12 row "Content assets, net" (unit 365) col "December
+    31, 2022" unit thousands; value, row, column and unit chosen by code from the parsed table; question drafted
+    by model (balanced, eval_draft_table_q@1), unaudited'
+- id: tbl_table_lookup_a664573410
+  stratum: table_lookup
+  question: What were PayPal's aggregate current liabilities as of June 30, 2023?
+  source_doc: fb_paypal_2023q2_10q
+  answer_type: answer
+  audit_status: draft
+  required_claims:
+  - PayPal reports "Total current liabilities" of $41,754 million for the column "June 30, 2023" (Form 10-Q (Q2
+    2023)).
+  alternates:
+    PayPal reports "Total current liabilities" of $41,754 million for the column "June 30, 2023" (Form 10-Q (Q2 2023)).:
+    - 41,754 million
+    - $41,754 million
+    - $41,754
+    - 41754 million
+    - $41754 million
+    - '41754'
+    - $41754
+    - $41.754 billion
+    - $41.8 billion
+    - 41,754
+  gold_evidence:
+  - doc: fb_paypal_2023q2_10q
+    sentence_start: 106
+    sentence_end: 107
+  doc_ids:
+  - fb_paypal_2023q2_10q
+  audit_note: 'S21.04b table cell: PAYPAL_2023Q2_10Q page 4 row "Total current liabilities" (unit 106) col "June
+    30, 2023" unit millions; value, row, column and unit chosen by code from the parsed table; question drafted
+    by model (balanced, eval_draft_table_q@1), unaudited'
