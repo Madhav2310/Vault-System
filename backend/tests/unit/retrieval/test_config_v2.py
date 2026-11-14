@@ -9,10 +9,15 @@ from pydantic import ValidationError
 from app.retrieval.config import CONFIG_DIR, get_config, load_config
 
 
+# retrieval@2 default is kind=none: the S17.02 rule dropped the cross-encoder (p50 495 ms > 400 ms)
 def test_both_versions_load(tmp_path: pathlib.Path) -> None:
     v1, v2 = get_config("retrieval@1"), get_config("retrieval@2")
     assert (v1.version, v1.rerank.candidates) == ("retrieval@1", 40)
-    assert (v2.version, v2.rerank.candidates, v2.rerank.kind) == ("retrieval@2", 20, "cross_encoder")
+    assert (v2.version, v2.rerank.candidates, v2.rerank.kind) == (
+        "retrieval@2",
+        20,
+        "none",
+    )
     assert get_config().version == "retrieval@2"  # the default
     assert get_config("retrieval@2-norerank").rerank.kind == "none"
     assert get_config("retrieval@2-llm").rerank.kind == "llm"

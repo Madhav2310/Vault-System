@@ -7,7 +7,7 @@ per_doc_quota: 12        # no document contributes more than this many vector ca
 rrf_k: 60                # reciprocal rank fusion constant
 id_boost: 2              # weight of identifier matches (must equal fusion.ID_BOOST)
 rerank:
-  kind: cross_encoder
+  kind: none
   window_words: 180
   model: Xenova/ms-marco-MiniLM-L-6-v2
   candidates: 20         # fused candidates sent to the reranker
@@ -18,5 +18,5 @@ expansion:
 cache_ttl_s: 3600
 gate:
   high: 0.0              # placeholder (the high-confidence skip is not implemented)
-  floor: -5.44077             # top_score below this abstains without generating; set by `python -m eval.calibrate_gate --write`
+  floor: 0.3803             # top_score below this abstains without generating; set by `python -m eval.calibrate_gate --write`
   enabled: true         # `--write` turns the gate on together with a calibrated floor
