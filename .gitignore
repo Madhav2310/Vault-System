@@ -42,3 +42,6 @@ eval/.reuse*.json
 
 # local working notes (plans, scratch)
 .work/
+
+# local audit workbook (your answers)
+AUDIT.md
