@@ -80,7 +80,7 @@ Source: `docs/spec/case-study.pdf`. Status is one of **built**, **built, switche
 | Automated categorization and tagging | Built | Part of the brief (`category`, `tags`) |
 | Key insight extraction | Built | Key facts in `GET /v1/documents/{id}/brief`, each cited and verified in `backend/app/insights/verify.py` |
 | Sentiment analysis | Not built | |
-| Comparative analysis between documents | Built | Compare route with per-document retrieval and a conflict callout (`backend/app/chat/compare.py`, `conflicts.py`). Per-document quotas and a coverage repair are built, switched off (`CHAT_COMPARE_QUOTA`) |
+| Comparative analysis between documents | Built | Compare route with per-document retrieval and a conflict callout (`backend/app/chat/compare.py`, `conflicts.py`). |
 | Simple frontend | Built | `/app`: library, document page with source viewer, streaming chat, metrics (`frontend/`) |
 | Real-time updates | Built, over SSE | `GET /v1/versions/{id}/processing/stream` for processing, `text/event-stream` for chat; no WebSocket |
 | Smart caching | Built | Redis caches query embeddings (`backend/app/retrieval/`); chunk embeddings are cached by content hash (`backend/app/ingestion/embed_index.py`); paid ingestion outputs go through `llm_cache`. Answers are deliberately never cached |

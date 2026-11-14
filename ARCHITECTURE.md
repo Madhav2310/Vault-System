@@ -405,7 +405,6 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 | `answer_rag@4` | balanced | `answer_rag@3` plus a `plan` of required elements; code decides coverage | Switch `CHAT_PLAN_FIRST` |
 | `answer_rag@5` | balanced | `answer_rag@4` plus typed calculation segments; code does the arithmetic | Switch `CHAT_CALC` |
 | `answer_compare@3` | balanced, routed to `deep` | Per-document comparison answer | Default for compare turns |
-| `answer_compare@2` | balanced, routed to `deep` | Comparison with a per-document coverage rule and one repair | Switch `CHAT_COMPARE_QUOTA` |
 | `support_check@1` | fast | Per-segment support verdict; advisory | Default |
 | `support_check@2` | fast | Verdict plus the minimal handles needed; code repairs the answer | Switch `CHAT_SUPPORT_VERSION=2` |
 | `locate_step@1` | fast | Typed next move of the locate loop | Switch `CHAT_LOCATE` |
@@ -429,7 +428,6 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 |---|---|---|---|
 | `CHAT_PLAN_FIRST` | `false` | `answer_rag@4`: a coverage plan, with `ELEMENT_NOT_FOUND` segments for required elements the evidence lacks | Paired dev evaluation |
 | `CHAT_CALC` | `false` | `answer_rag@5`: typed calculations computed in code with `Decimal` (`backend/app/chat/calc.py`) | Paired dev evaluation on the numeric stratum |
-| `CHAT_COMPARE_QUOTA` | `false` | `answer_compare@2` and a per-document coverage repair | Paired dev evaluation on compare and conflict strata |
 | `CHAT_SUPPORT_VERSION` | `1` | `2` selects `support_check@2`: prune, remove unsupported segments and regenerate once | Paired dev evaluation |
 | `CHAT_ANSWER_VERSION` | `12` | `12` completeness-first answers with detail discipline (`10` is the same prompt with example names taken from the evaluation set); `7` without the detail rules (`11` is `7` with a neutral example); `9` is `10` without the derived-count and keep-every-detail rules; `3` the short-answer wording (`6` is `7` without the scope rule); `8` is `7` plus answering under the evidence's own period label instead of abstaining | Paired runs against `7` with `retrieval@5`: support_rate +4.5 (train) and +2.7 (dev), answer_pass -0.8 and +1.7 (no detectable difference), injection 0, citation integrity 1.00, must_not_contain 22/22 |
 | `CHAT_ANALYZE_VERSION` | `4` | `3` selects the shorter `analyze_query@3`; `2` is `4` with example document names taken from the evaluation set | Paired dev evaluation plus a live time-to-first-token measurement |
@@ -467,7 +465,7 @@ Operational settings that are not behaviour experiments:
 | Ledger check | `backend/app/chat/ledger.py` | The transaction aborts if a cited or candidate chunk is not the owner's or is outside the run's version snapshot. |
 | Per-segment verdicts | `backend/app/chat/support_check.py` → `answer_segments.verification` | `supported` / `partial` / `unsupported` / `unchecked`. The checker sees each segment with only its own `cited_text`. Failures yield `unchecked` plus `SUPPORT_CHECK_FAILED`, and the answer is never blocked. |
 | Conflicts | `backend/app/chat/conflicts.py` → `rag_runs.conflicts` | The model flags `{topic, handles_a, handles_b}`. Code keeps a conflict only if both sides resolve and touch at least 2 distinct chunks. The UI shows `frontend/src/chat/ConflictCallout.tsx` with both quotes. |
-| Abstain and partial | `backend/app/explain/templates.py` | Code-written texts (`ABSTAIN_TEXT_*`, `NOT_FOUND_ELEMENT`, `PARTIAL_ANSWER_TEXT`, `SIDE_NOT_FOUND`). A compare side with no evidence gets a code-appended "nothing relevant was found" sentence (`COMPARE_SIDE_NOT_FOUND`). |
+| Abstain and partial | `backend/app/explain/templates.py` | Code-written texts (`ABSTAIN_TEXT_*`, `NOT_FOUND_ELEMENT`, `PARTIAL_ANSWER_TEXT`). A compare side with no evidence gets a code-appended "nothing relevant was found" sentence (`COMPARE_SIDE_MISSING`). |
 | Reason codes | `rag_runs.reason_codes`, `run_steps.reason_code` | `REASON_TEMPLATES` maps 47 codes to user lines, and an empty template means operator-only (for example `FAST_PATH`). A unit test greps every code constant in `app/chat`, `app/retrieval` and `app/llm` and requires a template (`backend/tests/unit/explain/test_templates.py`). |
 | Degradations | `rag_runs.degraded` | `no_rerank`, `lexical_only` map to `DEGRADED_TEMPLATES`. |
 | Run record | `rag_runs` | `config` holds the prompt versions, role-to-model map and retrieval config. `analysis` holds intent and dimensions, plus `abstain` features, `locate` (actions, argument digests, counts), `clarify` options and `supersedes` when present. Also tokens, cost, latency, TTFT and `trace_id`. |

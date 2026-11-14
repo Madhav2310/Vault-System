@@ -41,7 +41,6 @@ PARTIAL_ANSWER_TEXT = (
     "That is what your documents back up. I could not find the rest, so please check the document itself "
     "or name the section you have in mind."
 )
-SIDE_NOT_FOUND = "I did not find anything about this in {title}. Try a document that covers it."
 CLARIFY_TEXT = "More than one of your documents could answer this. Which one should I look in?"
 UNSUPPORTED_ABSTAIN_TEXT = (
     "I could not write an answer that your documents clearly back up. "
@@ -104,13 +103,6 @@ REASON_TEMPLATES: dict[str, str] = {
         "One document had nothing on this comparison, and the answer says so. "
         "Try adding a document that covers it."
     ),
-    "COMPARE_SIDE_NOT_FOUND": (
-        "I could not find anything on this comparison in one of the documents, and the answer says so. "
-        "Try a document that covers it."
-    ),
-    "COMPARE_SIDE_REPAIRED": (
-        "One document was missing from the first draft, so I looked at it on its own and added what it says."
-    ),
     "ELEMENT_NOT_FOUND": (
         "Part of the question had no supporting passage, and the answer says so. "
         "Try a document that covers it."
@@ -163,10 +155,6 @@ def calc_text(op: str, operands: list[str], result: str) -> str:
     joined = operands[0] if len(operands) == 1 else ", ".join(operands[:-1]) + " and " + operands[-1]
     first, second = [*operands, "", ""][:2]
     return CALC_TEXTS[op].format(operands=joined, first=first, second=second, result=result)
-
-
-def side_not_found_text(title: str) -> str:
-    return SIDE_NOT_FOUND.format(title=title)
 
 
 def plural(n: int, one: str, many: str | None = None) -> str:

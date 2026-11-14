@@ -136,8 +136,6 @@ class Settings(BaseSettings):
     # --- analysis prompt: 4 = analyze_query@4 (the default: @2 with neutral document names in its examples);
     # 3 = analyze_query@3 (shorter prompt and output budget); 2 = the earlier default ---
     chat_analyze_version: Literal[2, 3, 4] = 4
-    # --- compare quotas + coverage gate (S22.05): answer_compare@2 + repair; off until the A/B decides ---
-    chat_compare_quota: bool = False
 
     # --- scored abstention (S22.07): logistic combiner (config/abstain@1.yaml) replaces the binary gate;
     # off until calibrated on a v2 run and the paired A/B accepts it ---
