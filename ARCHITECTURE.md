@@ -231,7 +231,7 @@ flowchart LR
 
 ## 5. Retrieval
 
-`backend/app/retrieval/retrieve.py` is the facade: a scope and a query go in, and ranked candidates with full provenance come out. The configuration is a versioned YAML file in `backend/config/` (strict loader `backend/app/retrieval/config.py`). The default is `RETRIEVAL_CONFIG=retrieval@2`.
+`backend/app/retrieval/retrieve.py` is the facade: a scope and a query go in, and ranked candidates with full provenance come out. The configuration is a versioned YAML file in `backend/config/` (strict loader `backend/app/retrieval/config.py`). The default is `RETRIEVAL_CONFIG=retrieval@5`.
 
 ```mermaid
 flowchart LR
@@ -247,13 +247,13 @@ flowchart LR
     exp --> rec["retrieval_candidates<br/>(every rank and score)"]
 ```
 
-| Step | Detail (from `backend/config/retrieval@2.yaml` and module docstrings) |
+| Step | Detail (from `backend/config/retrieval@5.yaml` and module docstrings) |
 |---|---|
 | Scope (`scope.py`) | The latest `ready`/`enriched` version of each document in the session scope, owned by the caller and not deleted. The analysis may narrow it but never widen it. Every SQL statement filters `owner_id` and `version_id = ANY(...)`. |
-| Vector (`vector.py`) | Exact, brute-force cosine search over one owner's chunks, `k_vec` 40. `per_doc_quota` 12 caps the hits per document, which balances documents in a cross-document scope but also caps a one-document scope at 12 hits (`retrieval@2-fullk` lifts it there). Hash partitioning prunes the query to 1 of 32 partitions. There is no ANN index. HNSW is the escape hatch above about 100,000 chunks in one scope, designed but **not built**. |
+| Vector (`vector.py`) | Exact, brute-force cosine search over one owner's chunks, `k_vec` 40. `per_doc_quota` 12 caps the hits per document in a cross-document scope; a one-document scope gets the full `k_vec` list (`single_doc_full_k`). Hash partitioning prunes the query to 1 of 32 partitions. There is no ANN index. HNSW is the escape hatch above about 100,000 chunks in one scope, designed but **not built**. |
 | Lexical (`lexical.py`, `numbers.py`) | An **OR** tsquery of the query's English lexemes, ranked by `ts_rank_cd`, `k_lex` 40, plus an identifier query on `tsv_ids` for clause numbers, IDs, amounts and dates. `retrieval@2-lexical2` adds number and unit variants. |
 | Fusion (`fusion.py`) | Reciprocal rank fusion, `rrf_k` 60, identifier matches weighted 2. |
-| Rerank (`rerank.py`, `listwise.py`, `windows.py`) | `kind: none` by default. The alternatives are `retrieval@2-rerank` (MiniLM cross-encoder in the `reranker` service, query-focused 180-word windows) and `retrieval@2-llm` (`rerank_listwise@1` on `fast`). On a reranker timeout or failure, the turn keeps fusion order and records `degraded=no_rerank`. |
+| Rerank (`rerank.py`, `listwise.py`, `windows.py`) | `kind: llm`: one `rerank_listwise@1` call on `fast` orders the top 50 fused candidates, each shown as a query-focused window of at most 180 words with dot-leader runs collapsed (`collapse_leaders`; the reranker's copy only, never evidence), and the top 8 are kept. The alternatives are `retrieval@2` (`kind: none`, fusion order) and `retrieval@2-rerank` (MiniLM cross-encoder in the `reranker` service). On a reranker timeout or failure, the turn keeps fusion order and records `degraded=no_rerank`. |
 | Expansion (`expand.py`) | Adds adjacent same-section chunks within a 4,000-token evidence budget, for answers split across chunks. |
 | Speculative retrieval (`backend/app/chat/speculative.py`) | Retrieval of the raw question starts while `analyze` runs. It is reused only when the analysis leaves the query and scope unchanged, otherwise it is cancelled. This saves latency and never changes the result. |
 
@@ -344,7 +344,7 @@ Legend: rectangles are nodes (async functions over the typed `TurnState`), and d
 | `analyze` | `analyze_query@2` (`fast`). Returns the intent, standalone query, dimensions, an optional document narrowing, an optional `meta_op` and a clarification hint. Code drops unknown or foreign document refs, caps free text, and on any failure falls back to the raw question (`ANALYZE_FALLBACK`). The query embedding and speculative retrieval run at the same time. | 1, or 0 on the fast path |
 | `plan_context` | Chooses RAG or full context (`backend/app/chat/full_context.py`). Full context loads every chunk in order if the prompt fits `FULL_CONTEXT_MAX_TOKENS` (50,000) plus 4,000. Otherwise it falls back to RAG (`FULL_CONTEXT_TOO_LARGE`). | none |
 | `retrieve` / `compare_retrieve` | Hybrid retrieval, or for a compare intent over 2 to 5 documents, per-document retrieval with `max(3, 8 // n)` passages each, so one document cannot crowd out the others (`backend/app/chat/compare.py`). | embeddings only |
-| `gate` | The no-LLM evidence floor on `top_score`, off in `retrieval@2`. With `CHAT_ABSTAIN_SCORED` and a fitted `backend/config/abstain@1.yaml`, a logistic combiner decides instead (`backend/app/chat/abstain.py`). | none |
+| `gate` | The no-LLM evidence floor on `top_score`, off in `retrieval@5`. With `CHAT_ABSTAIN_SCORED` and a fitted `backend/config/abstain@1.yaml`, a logistic combiner decides instead (`backend/app/chat/abstain.py`). | none |
 | `locate` | Behind `CHAT_LOCATE`. A bounded in-document loop for one long document (at least 150 chunks or 60 pages) when the first pass is low-confidence. `locate_step@1` returns `search`/`find`/`open`/`done`, and code validates and runs each step. | up to the step cap |
 | `generate` | Builds the evidence set with handles and calls `answer_rag@7` (or `answer_compare@1` for compare), streaming. Resolves citations in code, validates conflicts and follow-ups, and runs the calc and coverage checks when their flags are on. | 1 |
 | `verify` | The support check (`support_check@1`, `fast`) over cited segments. Version 1 is advisory: it annotates verdicts and adds reason codes. Version 2 (`CHAT_SUPPORT_VERSION=2`) also prunes, removes unsupported segments, and regenerates once. | 1 |
@@ -443,7 +443,7 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 | `CHUNKER_VERSION` | `chunker@1` | `chunker@2`, `chunker@2-overlap25` | Retrieval-only paired evaluation after a re-ingest |
 | `INDEX_CONTEXT` | `none` | `deterministic` or `llm` index-only headers | Retrieval-only paired evaluation after a re-ingest |
 | `CONTEXTUALIZE_VARIANT` (+ `CONTEXTUALIZE_MAX_USD` $0.02) | `off` | Alias for the same stage as `INDEX_CONTEXT`; `INDEX_CONTEXT` wins when both are set | As `INDEX_CONTEXT` |
-| `RETRIEVAL_CONFIG` | `retrieval@2` | `retrieval@2-rerank`, `-llm`, `-lexical2`, `-norerank`, `-fullk` (a one-document scope drops the per-document vector quota, so its vector list is `k_vec` long instead of 12), `retrieval@1` | Retrieval-only paired evaluation (section 5) |
+| `RETRIEVAL_CONFIG` | `retrieval@5` | `retrieval@4` (no leader collapse), `retrieval@3`, `retrieval@2` (no reranker), `retrieval@2-rerank`, `-llm`, `-lexical2`, `-norerank`, `-fullk`, `retrieval@1` | Retrieval-only paired evaluation (section 5) |
 
 Operational settings that are not behaviour experiments:
 
@@ -482,11 +482,11 @@ Operational settings that are not behaviour experiments:
 This is an illustrative turn, not a recorded run. The field names and template strings are the real ones. A user asks: "What is the notice period for termination?" over one ready document, "Services Agreement" (version 2).
 
 1. `route_question` finds no pronoun or comparison cue, so `analyze` records a skipped step and the reason code `FAST_PATH` (operator-only, empty template).
-2. `retrieve` stores 40 to 80 `retrieval_candidates` rows with `vector_rank`, `lexical_rank`, `rrf_score` and `selected`. The top 8 plus neighbours become evidence chunks `E1`…`E9`.
+2. `retrieve` stores 40 to 80 `retrieval_candidates` rows with `vector_rank`, `lexical_rank`, `rrf_score` and `selected`. The listwise reranker orders the top 50 by fusion, and its top 8 plus neighbours become evidence chunks `E1`…`E9`.
 3. `generate` sends lines like `E3.1 Either party may terminate on thirty days written notice.` and receives `{"status":"answer","segments":[{"text":"Either party can end the agreement with 30 days' written notice.","evidence":["E3.1"]}], ...}`.
 4. `citations.resolve` maps `E3.1` through the manifest to `(chunk_id, sentence 1)` and writes `segment_evidence(chunk_id, sentence_start=1, sentence_end=2, cited_text=<copied from chunks.original_text>)`. `answer_segments.support = 'cited'`.
 5. `verify` runs `support_check@1` on that segment and its `cited_text` only, and writes `answer_segments.verification = 'supported'`.
-6. `persist` writes `rag_runs` with `route='qa'`, `mode='rag'`, `reason_codes=['FAST_PATH']`, `config.prompts=['analyze_query@2','answer_rag@7','support_check@1']`, `config.retrieval='retrieval@2'`, plus `llm_calls_used`, `cost_usd`, `latency_ms` and `ttft_ms`.
+6. `persist` writes `rag_runs` with `route='qa'`, `mode='rag'`, `reason_codes=['FAST_PATH']`, `config.prompts=['analyze_query@2','answer_rag@7','support_check@1']`, `config.retrieval='retrieval@5'`, plus `llm_calls_used`, `cost_usd`, `latency_ms` and `ttft_ms`.
 7. `GET /v1/runs/{id}` computes `sources` from `segment_evidence` joined to chunks, versions and documents, giving one document with `chunks_used: 1` and its pages. `_explain` renders `ANSWERED_ONE_DOC`: **"Answered from 1 passage in 'Services Agreement' v2."** If the check had returned `unsupported`, the view would add **"One sentence is not backed up by its citation, so read it with care."** (`UNSUPPORTED_ONE`). If the reranker had been configured and timed out, it would add **"Passage ranking was not available, so passages are shown in search order."**
 8. In the UI, hovering the citation shows `cited_text`. Clicking it opens the source viewer, which turns the sentence offsets, then `spans`, then the page character range, then glyph boxes from the version's layout file (`GET /v1/versions/{id}/pages/{page}/layout`) into a highlight.
 9. When version 3 of the document reaches `ready`, `stale_since` is set on this message and the UI shows **"A newer version of this document was added after this answer. Ask again to see if anything changed."**

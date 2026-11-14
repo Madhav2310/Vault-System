@@ -108,7 +108,7 @@ class Settings(BaseSettings):
     index_context: Literal["none", "deterministic", "llm"] = "none"
 
     # --- retrieval config file under backend/config (design §7.3), e.g. retrieval@2 ---
-    retrieval_config: str = "retrieval@2"
+    retrieval_config: str = "retrieval@5"
 
     # --- whole-document answering (design §8.2, S17.07) ---
     full_context_auto: bool = False  # off until the answer A/B decides (docs/evidence/answer_ab.md)

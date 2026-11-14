@@ -79,5 +79,5 @@ def _load_version(version: str) -> RetrievalConfig:
 
 
 def get_config(version: str | None = None) -> RetrievalConfig:
-    """The named config, or the `retrieval_config` setting (default retrieval@2) when none is named."""
+    """The named config, or the `retrieval_config` setting (default retrieval@5) when none is named."""
     return _load_version(version or get_settings().retrieval_config)

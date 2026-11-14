@@ -57,6 +57,16 @@ async def _recreate(admin_url: str) -> None:
         await conn.close()
 
 
+@pytest.fixture(autouse=True)
+def _scripted_turns_use_fusion_order(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Scripted fake providers list every LLM call of a turn in order. The default retrieval config reranks
+    with one extra LLM call, so these tests of turn mechanics run on `retrieval@2` (fusion order);
+    `chat/test_default_retrieval_turn.py` covers the default with a scripted rerank step."""
+    from app.core.settings import get_settings
+
+    monkeypatch.setattr(get_settings(), "retrieval_config", "retrieval@2")
+
+
 @pytest.fixture(scope="session")
 def db_url() -> Iterator[str]:
     test_url, admin_url = _urls()
