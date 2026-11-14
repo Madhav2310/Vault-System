@@ -40,3 +40,4 @@ eval/.cache/
 # Eval run outputs (kept runs live in docs/evidence/runs/)
 eval/reports/*
 !eval/reports/.gitkeep
+eval/.reuse*.json

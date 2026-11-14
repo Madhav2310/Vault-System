@@ -35,6 +35,35 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 READY = {"ready", "enriched"}
 
 
+def _load_reuse(path: str, keys: list[str]) -> tuple[str, uuid.UUID, dict[str, str]] | None:
+    import json as _json
+
+    p = pathlib.Path(path)
+    if not p.exists():
+        return None
+    d = _json.loads(p.read_text())
+    if not set(keys) <= set(d["doc_ids"]):
+        return None
+    return d["key"], uuid.UUID(d["uid"]), {k: d["doc_ids"][k] for k in keys}
+
+
+def _save_reuse(path: str, key: str, uid: uuid.UUID, doc_ids: dict[str, str]) -> None:
+    import json as _json
+
+    p = pathlib.Path(path)
+    prev = _json.loads(p.read_text())["doc_ids"] if p.exists() else {}
+    p.write_text(_json.dumps({"key": key, "uid": str(uid), "doc_ids": {**prev, **doc_ids}}))
+    p.chmod(0o600)
+
+
+async def _all_ready(http: httpx.AsyncClient, doc_ids: dict[str, str]) -> bool:
+    for did in doc_ids.values():
+        r = await http.get(f"/v1/documents/{did}")
+        if r.status_code != 200 or r.json()["status"] not in READY:
+            return False
+    return True
+
+
 async def setup(
     config: str,
     *,
@@ -62,32 +91,47 @@ async def setup(
         documents = load_dataset().documents
     with_judges = config.startswith("answers") if with_judges is None else with_judges
     sm = get_sessionmaker()
-    key, uid = new_api_key(), uuid.uuid4()
-    async with sm() as s:
-        s.add(User(id=uid, email=f"eval-{uid}@vault.local", api_key_hash=hash_api_key(key)))
-        await s.commit()
-    http = httpx.AsyncClient(base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=180)
+    reuse_path = os.environ.get(
+        "EVAL_REUSE_CACHE"
+    )  # a gitignored json: keep one ingested corpus across A/B arms
     doc_ids: dict[str, str] = {}
-    for k, meta in documents.items():
-        p = resolve_file(meta["file"]) if v2 else ROOT / meta["file"]
-        for _attempt in range(
-            8
-        ):  # the upload route is rate limited per user (30/min): wait as told, then retry
-            r = await http.post("/v1/documents", files={"file": (p.name, p.read_bytes())})
-            if r.status_code != 429:
-                break
-            await asyncio.sleep(min(float(r.headers.get("retry-after", "5")) + 1, 65))
-        r.raise_for_status()
-        doc_ids[k] = r.json()["document_id"]
-    deadline = time.monotonic() + 2400  # ~75 documents incl. 10-Ks through the ingest workers (4 at a time)
-    for k, did in doc_ids.items():
-        while True:
-            st = (await http.get(f"/v1/documents/{did}")).json()["status"]
-            if st in READY:
-                break
-            if st in {"failed", "unsupported", "needs_ocr"} or time.monotonic() > deadline:
-                raise RuntimeError(f"document {k} ended in {st}")
-            await asyncio.sleep(2)
+    reused = _load_reuse(reuse_path, list(documents)) if reuse_path and v2 else None
+    if reused is not None:
+        key, uid, doc_ids = reused
+        http = httpx.AsyncClient(base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=180)
+        if not await _all_ready(http, doc_ids):
+            reused = None
+            await http.aclose()
+    if reused is None:
+        key, uid = new_api_key(), uuid.uuid4()
+        async with sm() as s:
+            s.add(User(id=uid, email=f"eval-{uid}@vault.local", api_key_hash=hash_api_key(key)))
+            await s.commit()
+        http = httpx.AsyncClient(base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=180)
+        for k, meta in documents.items():
+            p = resolve_file(meta["file"]) if v2 else ROOT / meta["file"]
+            for _attempt in range(
+                8
+            ):  # the upload route is rate limited per user (30/min): wait as told, then retry
+                r = await http.post("/v1/documents", files={"file": (p.name, p.read_bytes())})
+                if r.status_code != 429:
+                    break
+                await asyncio.sleep(min(float(r.headers.get("retry-after", "5")) + 1, 65))
+            r.raise_for_status()
+            doc_ids[k] = r.json()["document_id"]
+        deadline = (
+            time.monotonic() + 2400
+        )  # ~75 documents incl. 10-Ks through the ingest workers (4 at a time)
+        for k, did in doc_ids.items():
+            while True:
+                st = (await http.get(f"/v1/documents/{did}")).json()["status"]
+                if st in READY:
+                    break
+                if st in {"failed", "unsupported", "needs_ocr"} or time.monotonic() > deadline:
+                    raise RuntimeError(f"document {k} ended in {st}")
+                await asyncio.sleep(2)
+        if reuse_path and v2:
+            _save_reuse(reuse_path, key, uid, doc_ids)
     by_id = {v: k for k, v in doc_ids.items()}
     async with sm() as s:
         rows = (
