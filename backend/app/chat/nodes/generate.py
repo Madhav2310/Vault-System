@@ -45,6 +45,7 @@ class GenerateResult:
     call_ids: tuple[uuid.UUID, ...]
     followups: tuple[str, ...] = ()  # as the model wrote them; the node cleans them (followups.py)
     conflicts: tuple[ResolvedConflict, ...] = ()  # validated by code (conflicts.py)
+    not_found: int | None = None  # plan elements without a valid handle (S22.04); None: no plan was checked
 
     @property
     def text(self) -> str:
@@ -195,6 +196,7 @@ async def generate(
         final.call_ids,
         tuple(out.followups),
         flagged,
+        None if check is None else len(check.not_found),
     )
 
 
