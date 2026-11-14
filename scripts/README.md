@@ -10,4 +10,3 @@
 | `check_trace.py` | Sends a request with a known trace id and finds it in Tempo (needs the observability stack) | manual check of trace propagation |
 | `export_postman.py` | Generates `docs/api/vault.postman_collection.json` from the OpenAPI schema | `backend/tests/unit/api/test_postman_export.py` |
 | `gen_turn_diagram.py` | Writes `docs/img/chat_turn.mmd` from the turn graph | `make diagrams`, `backend/tests/unit/docs/test_diagrams.py` |
-| `named_doc_detection.py` | Measures the named-document detector (`CHAT_NAMED_DOCS`) against the v2 gold questions: per item, the documents the gold expects against the documents named; read-only on the compose postgres | manual, before changing the detector |

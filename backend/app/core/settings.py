@@ -138,12 +138,6 @@ class Settings(BaseSettings):
     chat_analyze_version: Literal[2, 3, 4] = 4
     # --- compare quotas + coverage gate (S22.05): answer_compare@2 + repair; off until the A/B decides ---
     chat_compare_quota: bool = False
-    # --- per-document evidence floor on the plain qa route (scope of 2-5 documents); off until the A/B ---
-    chat_scope_floor: bool = False
-    # --- named-document retrieval: a question naming 2-5 scoped documents also retrieves inside each
-    # of them (up to `chat_named_docs_k` chunks per document, merged into the global selection); off until A/B
-    chat_named_docs: bool = False
-    chat_named_docs_k: int = Field(default=3, ge=1, le=8)
 
     # --- scored abstention (S22.07): logistic combiner (config/abstain@1.yaml) replaces the binary gate;
     # off until calibrated on a v2 run and the paired A/B accepts it ---
@@ -157,13 +151,8 @@ class Settings(BaseSettings):
     chat_locate_min_chunks: int = 150  # "long" = at least this many chunks ...
     chat_locate_min_pages: int = 60  # ... or at least this many pages
 
-
     # --- clarify when ambiguous (S23.02): code-checked ambiguity gives option chips; off until reviewed ---
     chat_clarify: bool = False
-
-    # --- follow-up memory: number of top chunks of the previous turn's evidence added to a follow-up's
-    # own retrieval (0 = off); a rewritten follow-up often retrieves only the new subject ---
-    chat_memory_carry_evidence: int = 0
 
     # --- telemetry (design §17, §20.1) ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"

@@ -1,6 +1,5 @@
 """Working memory window (design §8.8): newest whole turns within a token budget, plus session memory."""
 
-import dataclasses
 import uuid
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, field
@@ -9,9 +8,7 @@ from typing import Any
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.chat.evidence import EvidenceChunk
 from app.ingestion.chunk import count_tokens
-from app.retrieval.scope import Scope
 
 WINDOW_TOKENS = 3000
 _FETCH_LIMIT = 200
@@ -101,51 +98,3 @@ async def load_memory(
     if len(rows) == _FETCH_LIMIT and turns and turns[0][0].role != "user":
         turns = turns[1:]  # the fetch cut this turn in half
     return Memory(select_window(turns, budget), s["rolling_summary"], dict(s["resolved_entities"] or {}))
-
-
-def merge_carried(
-    current: Sequence[EvidenceChunk],
-    carried: Sequence[EvidenceChunk],
-    version_ids: set[uuid.UUID],
-    *,
-    limit: int,
-) -> list[EvidenceChunk]:
-    """`current` followed by up to `limit` previous-turn chunks that are new and inside the current scope."""
-    seen = {c.chunk_id for c in current}
-    added: list[EvidenceChunk] = []
-    for c in carried:
-        if len(added) >= limit:
-            break
-        if c.chunk_id in seen or c.version_id not in version_ids:
-            continue
-        seen.add(c.chunk_id)
-        added.append(c)
-    return [*current, *added]
-
-
-def scope_with_carried(scope: Scope, unnarrowed: Scope | None, carried: Sequence[EvidenceChunk]) -> Scope:
-    """`scope` plus the entries of the versions that carried chunks came from, so the run's version snapshot
-    names every version its evidence and citations use. Only versions of the session scope are added."""
-    if unnarrowed is None or not carried:
-        return scope
-    have = set(scope.version_ids)
-    wanted = {c.version_id for c in carried} - have
-    extra = tuple(e for e in unnarrowed.entries if e[1] in wanted)
-    return dataclasses.replace(scope, entries=tuple(sorted((*scope.entries, *extra)))) if extra else scope
-
-
-async def previous_selected_chunk_ids(
-    db: AsyncSession, owner_id: uuid.UUID, session_id: uuid.UUID, run_id: uuid.UUID, *, limit: int
-) -> list[uuid.UUID]:
-    """The top selected chunks of the session's latest earlier completed run, best first."""
-    rows = await db.execute(
-        text(
-            "SELECT rc.chunk_id FROM retrieval_candidates rc WHERE rc.run_id = ("
-            "SELECT r.id FROM rag_runs r WHERE r.session_id = :s AND r.owner_id = :o AND r.id <> :r "
-            "AND r.status = 'completed' AND EXISTS (SELECT 1 FROM retrieval_candidates x "
-            "WHERE x.run_id = r.id AND x.selected) ORDER BY r.created_at DESC LIMIT 1) "
-            "AND rc.selected AND rc.expanded_from IS NULL ORDER BY rc.result_index LIMIT :n"
-        ),
-        {"s": session_id, "o": owner_id, "r": run_id, "n": limit},
-    )
-    return [r[0] for r in rows]

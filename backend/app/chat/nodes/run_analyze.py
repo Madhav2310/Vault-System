@@ -102,9 +102,7 @@ async def analyze(state: TurnState, ctx: TurnCtx) -> TurnState:
     state.degraded += analysis.degraded
     state.call_ids += analysis.call_ids
     try:
-        wider = state.scope
         state.scope = narrow(state.scope, analysis.target_document_ids)
-        state.scope_unnarrowed = wider if state.scope is not wider else None
     except ScopeWideningError:  # never widen; keep the wider scope but leave a trace
         state.reasons.append(TARGET_IGNORED)
     limit_compare(state)  # S18.06: compare needs 2-5 documents in scope, else it is a plain question

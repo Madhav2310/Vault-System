@@ -9,10 +9,7 @@ result is used as is (`speculative: hit`); an unusable one is dropped (`miss`) a
 import uuid
 
 from app.chat.clarify import near_tie
-from app.chat.compare import floor_on, floor_per_doc
 from app.chat.graph import TurnCtx, TurnState
-from app.chat.memory import merge_carried, previous_selected_chunk_ids, scope_with_carried
-from app.chat.named_docs import apply_named, named_on
 from app.chat.nodes.run_analyze import clarify_ok
 from app.chat.speculative import HIT, MISS, cancel
 from app.retrieval.load import load_evidence_chunks
@@ -21,7 +18,7 @@ from app.retrieval.retrieve import RetrievalResult
 
 
 def _near_tie(state: TurnState, ctx: TurnCtx, result: RetrievalResult) -> None:
-    """Rule (a) of S23.02: the selected evidence spans several documents with near-equal scores."""
+    """Clarification rule (a): the selected evidence spans several documents with near-equal scores."""
     a = state.analysis
     if not state.clarify_hint or state.compare or a is None or not clarify_ok(state, ctx):
         return
@@ -67,39 +64,8 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
         result = await deps.retriever.retrieve(
             deps.sm, ctx.owner_id, state.scope, query, embedding=emb, run_id=ctx.run_id
         )
-    named_info: dict[str, int] = {}
-    if named_on(deps.gateway.settings) and not state.compare and len(state.scope.entries) >= 2:
-        result, named_info = await apply_named(
-            deps.retriever,
-            deps.sm,
-            ctx.owner_id,
-            state.docs,
-            state.scope,
-            query,
-            result,
-            embedding=emb,
-            k=deps.gateway.settings.chat_named_docs_k,
-        )
-    if floor_on(deps.gateway.settings):
-        result = floor_per_doc(result, state.scope)
-    carry_info: dict[str, int] = {}
     async with deps.sm() as s:
         state.chunks = await load_evidence_chunks(s, ctx.owner_id, list(result.selected))
-        carry = deps.gateway.settings.chat_memory_carry_evidence
-        if carry and state.memory is not None and state.memory.turns:
-            prior = await previous_selected_chunk_ids(
-                s, ctx.owner_id, ctx.session_id, ctx.run_id, limit=carry
-            )
-            carried = await load_evidence_chunks(s, ctx.owner_id, prior)
-            before = len(state.chunks)
-            allowed = set((state.scope_unnarrowed or state.scope).version_ids)  # still in the session scope
-            state.chunks = merge_carried(state.chunks, carried, allowed, limit=carry)
-            state.scope = scope_with_carried(state.scope, state.scope_unnarrowed, state.chunks[before:])
-            carry_info = {
-                "carry_prior": len(prior),
-                "carry_loaded": len(carried),
-                "carried": len(state.chunks) - before,
-            }
     state.retrieval = result
     _near_tie(state, ctx, result)
     state.degraded += result.degraded
@@ -109,8 +75,6 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
         "embed_reused": emb is not None,
         "cache_hit": result.cache_hit,
         "speculative": speculative,
-        **carry_info,
-        **named_info,
         **result.timings,
     }
     return state
