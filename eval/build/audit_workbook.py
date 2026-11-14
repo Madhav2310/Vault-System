@@ -255,11 +255,12 @@ def main(argv: Sequence[str] | None = None) -> int:
     r.add_argument("--answers", nargs="+", required=True)
     r.add_argument("--pairs", type=int, default=200)
     r.add_argument("--seed", type=int, default=0)
+    r.add_argument("--force", action="store_true", help="overwrite an existing AUDIT.md")
     a = sub.add_parser("apply")
     a.add_argument("--check", action="store_true")
     args = ap.parse_args(argv)
     if args.cmd == "render":
-        if WORKBOOK.exists() and "--force" not in (argv or sys.argv):
+        if WORKBOOK.exists() and not args.force:
             print(f"refusing to overwrite {WORKBOOK} (it may hold your answers); move it away first")
             return 2
         print(render(args.answers, args.pairs, args.seed))
