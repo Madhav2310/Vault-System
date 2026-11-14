@@ -50,8 +50,13 @@ export const chatApi = {
   },
 
   /** Rate an answer. Idempotent per message: posting again replaces the earlier rating. */
-  async feedback(messageId: string, rating: FeedbackRating, reason?: FeedbackReason): Promise<void> {
-    const body = { message_id: messageId, rating, ...(rating === "down" && reason ? { reason } : {}) };
+  async feedback(messageId: string, rating: FeedbackRating, reason?: FeedbackReason, note?: string): Promise<void> {
+    const body = {
+      message_id: messageId,
+      rating,
+      ...(rating === "down" && reason ? { reason } : {}),
+      ...(rating === "down" && note ? { note } : {}),
+    };
     await getJson("/v1/feedback", { method: "POST", body });
   },
 

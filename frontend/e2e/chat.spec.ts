@@ -280,7 +280,7 @@ test("no stale banner for a current answer", async ({ page }) => {
   await expect(page.getByTestId("stale-banner")).toHaveCount(0);
 });
 
-test("feedback up and down with a reason", async ({ page }) => {
+test("feedback up and down with a reason chip", async ({ page }) => {
   const feedback: Record<string, unknown>[] = [];
   await mock(page, { feedback });
   await ask(page);
@@ -292,8 +292,9 @@ test("feedback up and down with a reason", async ({ page }) => {
 
   await fb.getByRole("button", { name: "Not helpful" }).click();
   await expect(fb.getByRole("button", { name: "Not helpful" })).toHaveAttribute("aria-pressed", "true");
-  await fb.getByLabel("What was wrong? (optional)").selectOption("unsupported");
-  await expect.poll(() => feedback.length).toBe(3);
+  await fb.getByTestId("reason-citation").click();
+  await expect(fb.getByTestId("reason-citation")).toHaveAttribute("aria-pressed", "true");
+  expect(feedback).toHaveLength(3);
   expect(feedback[1]).toEqual({ message_id: "m-a1", rating: "down" });
   expect(feedback[2]).toEqual({ message_id: "m-a1", rating: "down", reason: "unsupported" });
 });
@@ -303,7 +304,7 @@ test("feedback failure is reported", async ({ page }) => {
   await page.route("**/v1/feedback", (r) => r.fulfill(json({ type: "about:blank", title: "Not found", status: 404, code: "not_found", detail: null, retryable: false }, 404)));
   await ask(page);
   await page.getByTestId("feedback").getByRole("button", { name: "Helpful", exact: true }).click();
-  await expect(page.getByTestId("feedback")).toContainText("could not be saved");
+  await expect(page.getByTestId("feedback")).toContainText("did not save");
 });
 
 test("quota exceeded", async ({ page }) => {
@@ -345,4 +346,251 @@ test("support-check verdict and reason from history", async ({ page }) => {
   await expect(page.getByTestId("tag-unsupported")).toHaveText("not supported by its source");
   await expect(page.getByTestId("tag-unsupported")).toHaveAttribute("title", /does not mention fees rising/);
   await expect(page.getByTestId("segment").nth(3).getByTestId("tag-supported")).toHaveCount(0); // no check ran: no label
+});
+
+// --- S23.03: chat interaction polish ---------------------------------------------------------------------
+
+const HELD = `
+  const realFetch = window.fetch.bind(window);
+  window.__ctl = null;
+  window.fetch = (input, init) => {
+    const url = typeof input === "string" ? input : input.url;
+    if (window.__hold && init && init.method === "POST" && /\\/messages$/.test(url)) {
+      const body = new ReadableStream({
+        start(c) {
+          window.__ctl = c;
+          if (init.signal) init.signal.addEventListener("abort", () => c.error(new DOMException("aborted", "AbortError")));
+        },
+      });
+      return Promise.resolve(new Response(body, { status: 200, headers: { "content-type": "text/event-stream" } }));
+    }
+    return realFetch(input, init);
+  };
+`;
+
+declare global {
+  interface Window {
+    __ctl: ReadableStreamDefaultController<Uint8Array> | null;
+    __hold?: boolean;
+  }
+}
+
+/** The next message POST answers with a stream the test controls: `push` sends frames, nothing closes it. */
+async function hold(page: Page) {
+  await page.addInitScript(`window.__hold = true; ${HELD}`);
+  return (text: string) => page.evaluate((t) => window.__ctl!.enqueue(new TextEncoder().encode(t)), text);
+}
+
+const firstSegment = [
+  frame("run.started", { message_id: "m-u1" }),
+  frame("status", { stage: "writing" }),
+  frame("segment", { index: 0, text: "Either side can leave on 30 days notice.", support: "cited", evidence: [evidence] }),
+].join("");
+const verification = frame("verification", { verdicts: [{ index: 0, verdict: "supported" }] });
+
+async function axeClean(page: Page, label: string) {
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
+    const bad = (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"]).analyze()).violations.filter(
+      (v) => v.impact === "serious" || v.impact === "critical",
+    );
+    expect(bad.map((v) => v.id), `axe ${label} ${scheme}`).toEqual([]);
+  }
+}
+
+test("skeleton, then segments, with citation markers after verification", async ({ page }) => {
+  await mock(page);
+  const push = await hold(page);
+  await ask(page);
+  await expect(page.getByTestId("answer-skeleton")).toBeVisible();
+  await push(firstSegment);
+  await expect(page.getByTestId("answer-skeleton")).toHaveCount(0);
+  await expect(page.getByTestId("segment")).toHaveCount(1);
+  await expect(page.getByTestId("citation-marker")).toBeHidden(); // not checked yet
+  await push(verification);
+  await expect(page.getByTestId("citation-marker")).toBeVisible();
+});
+
+test("stop keeps the partial answer and marks it stopped", async ({ page }) => {
+  await mock(page);
+  const push = await hold(page);
+  await ask(page);
+  await push(firstSegment);
+  await expect(page.getByTestId("segment")).toHaveCount(1);
+  await page.getByTestId("stop").click();
+  await expect(page.getByTestId("stopped-note")).toContainText("Stopped");
+  await expect(page.getByTestId("segment")).toHaveCount(1);
+  await expect(page.getByTestId("citation-marker")).toBeVisible(); // nothing is left pending
+  await expect(page.getByTestId("stop")).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Ask" })).toBeDisabled(); // composer is empty again
+  await expect(page.getByTestId("feedback")).toHaveCount(0);
+  await expect(page.getByTestId("regenerate")).toBeVisible();
+});
+
+test("Esc stops the answer", async ({ page }) => {
+  await mock(page);
+  const push = await hold(page);
+  await ask(page);
+  await push(firstSegment);
+  await expect(page.getByTestId("stop")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByTestId("stopped-note")).toBeVisible();
+});
+
+test("regenerate answers the same question with a new message id", async ({ page }) => {
+  const posts: Record<string, unknown>[] = [];
+  await mock(page, { posts });
+  await ask(page);
+  await expect(page.getByTestId("regenerate")).toBeVisible();
+  await page.getByTestId("regenerate").click();
+  await expect.poll(() => posts.length).toBe(2);
+  expect(posts[1]!["content"]).toBe("How can the contract end?");
+  expect(posts[1]!["client_message_id"]).not.toBe(posts[0]!["client_message_id"]);
+  await expect(page.getByTestId("user-message")).toHaveCount(1);
+  await expect(page.getByTestId("assistant-message")).toHaveCount(1);
+  await expect(page.getByTestId("regenerate")).toBeVisible();
+});
+
+test("edit and resend the last question", async ({ page }) => {
+  const posts: Record<string, unknown>[] = [];
+  await mock(page, { posts });
+  await ask(page);
+  await page.getByTestId("edit-question").click();
+  const box = page.getByLabel("Edit your question");
+  await expect(box).toHaveValue("How can the contract end?");
+  await expect(box).toBeFocused();
+  await box.fill("When can I leave early?");
+  await page.getByRole("button", { name: "Resend", exact: true }).click();
+  await expect.poll(() => posts.length).toBe(2);
+  expect(posts[1]!["content"]).toBe("When can I leave early?");
+  await expect(page.getByTestId("user-message")).toHaveCount(1);
+  await expect(page.getByTestId("user-message")).toContainText("When can I leave early?");
+});
+
+test("keyboard: Enter sends, Shift+Enter adds a line, ArrowUp edits the last question", async ({ page }) => {
+  const posts: Record<string, unknown>[] = [];
+  await mock(page, { posts });
+  await page.goto("/app/chat");
+  const box = page.getByLabel("Your question");
+  await box.fill("first");
+  await box.press("Shift+Enter");
+  await box.pressSequentially("second");
+  await expect(box).toHaveValue("first\nsecond");
+  expect(posts).toHaveLength(0);
+  await box.press("Enter");
+  await expect.poll(() => posts.length).toBe(1);
+  expect(posts[0]!["content"]).toBe("first\nsecond");
+  await expect(page.getByTestId("answer")).toBeVisible();
+  await expect(box).toHaveValue("");
+  await box.focus();
+  await box.press("ArrowUp");
+  await expect(page.getByLabel("Edit your question")).toHaveValue("first\nsecond");
+  await page.keyboard.press("Escape"); // cancels the edit
+  await expect(page.getByLabel("Your question")).toHaveValue("");
+});
+
+test("copy answer includes numbered citations and quotes", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await mock(page);
+  await ask(page);
+  await page.getByTestId("copy-answer").click();
+  await expect(page.getByTestId("copy-status")).toContainText("Copied");
+  const text = await page.evaluate(() => navigator.clipboard.readText());
+  expect(text).toContain("Either side can leave on 30 days notice. [1]");
+  expect(text).toContain(`[1] Master services agreement, v1, p. 4: "${CITED}"`);
+});
+
+test("jump to latest appears after scrolling up", async ({ page }) => {
+  const history: unknown[] = [];
+  for (let i = 0; i < 10; i++) {
+    history.push({ ...histUser, id: `m-u${i}`, content: `Question ${i}` });
+    history.push(histAnswer({ id: `m-a${i}` }, [{ ordinal: 0, text: "Long answer. ".repeat(60), support: "none", evidence: [] }]));
+  }
+  await mock(page, { history });
+  await page.goto(`/app/chat?s=${SESSION}`);
+  await expect(page.getByTestId("user-message")).toHaveCount(10);
+  await expect(page.getByTestId("jump-latest")).toHaveCount(0); // history opens at the end
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await expect(page.getByTestId("jump-latest")).toBeVisible();
+  await page.getByTestId("jump-latest").click();
+  await expect(page.getByTestId("jump-latest")).toHaveCount(0);
+  await expect
+    .poll(() => page.evaluate(() => document.documentElement.scrollHeight - window.scrollY - window.innerHeight))
+    .toBeLessThan(49);
+});
+
+test("reason chips send reason and note; Wrong document opens the scope picker", async ({ page }) => {
+  const feedback: Record<string, unknown>[] = [];
+  await mock(page, { feedback });
+  await ask(page);
+  await page.getByTestId("feedback-down").click();
+  await page.getByTestId("reason-long").click();
+  await expect(page.getByTestId("reason-long")).toHaveAttribute("aria-pressed", "true");
+  expect(feedback.at(-1)).toEqual({ message_id: "m-a1", rating: "down", reason: "other", note: "too long" });
+  await page.getByTestId("reason-incomplete").click();
+  await expect(page.getByTestId("reason-incomplete")).toHaveAttribute("aria-pressed", "true");
+  expect(feedback.at(-1)).toEqual({ message_id: "m-a1", rating: "down", reason: "incomplete" });
+  await expect(page.getByTestId("wrong-doc-nudge")).toHaveCount(0);
+  await page.getByTestId("reason-wrong").click();
+  await expect(page.getByTestId("wrong-doc-nudge")).toBeVisible();
+  expect(feedback.at(-1)).toEqual({ message_id: "m-a1", rating: "down", reason: "wrong" });
+  await page.getByTestId("wrong-doc-nudge").getByRole("link").click();
+  await expect(page).toHaveURL(/pick=1/);
+  await expect(page.getByTestId("scope-picker")).toHaveAttribute("open", "");
+});
+
+test("first-run suggestions come from the documents and send on click", async ({ page }) => {
+  const posts: Record<string, unknown>[] = [];
+  await mock(page, { posts });
+  await page.route("**/v1/documents?**", (r) =>
+    r.fulfill(
+      json({
+        items: [{ id: DOC, title: "Master services agreement", status: "ready", category: null, tags: [], summary_snippet: null, created_at: null, version: {} }],
+        next_cursor: null,
+      }),
+    ),
+  );
+  await page.goto("/app/chat");
+  const chips = page.getByTestId("suggestions").getByRole("button");
+  await expect(chips.first()).toHaveText('What is "Master services agreement" about?');
+  await chips.first().click();
+  await expect.poll(() => posts.length).toBe(1);
+  expect(posts[0]!["content"]).toBe('What is "Master services agreement" about?');
+});
+
+test("follow-up chips stay visible after an answer without follow-ups", async ({ page }) => {
+  const stream = [
+    frame("run.started", { message_id: "m-u1" }),
+    frame("segment", { index: 0, text: "Thirty days.", support: "none", evidence: [] }),
+    done(),
+  ].join("");
+  await mock(page, { stream });
+  await ask(page);
+  await expect(page.getByTestId("followups").getByRole("button")).toHaveCount(2);
+});
+
+test("axe on chat states", async ({ page }) => {
+  await mock(page);
+  const push = await hold(page);
+  await page.goto("/app/chat");
+  await expect(page.getByTestId("chat-empty")).toBeVisible();
+  await axeClean(page, "empty");
+  await page.getByLabel("Your question").fill("How can the contract end?");
+  await page.getByRole("button", { name: "Ask" }).click();
+  await expect(page.getByTestId("answer-skeleton")).toBeVisible();
+  await axeClean(page, "skeleton");
+  await push(firstSegment);
+  await expect(page.getByTestId("segment")).toHaveCount(1);
+  await page.getByTestId("stop").click();
+  await expect(page.getByTestId("stopped-note")).toBeVisible();
+  await axeClean(page, "stopped");
+});
+
+test("axe on an answer with reason chips and the nudge", async ({ page }) => {
+  await mock(page);
+  await ask(page);
+  await page.getByTestId("feedback-down").click();
+  await page.getByTestId("reason-wrong").click();
+  await expect(page.getByTestId("wrong-doc-nudge")).toBeVisible();
+  await axeClean(page, "reasons");
 });

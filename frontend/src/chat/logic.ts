@@ -1,7 +1,7 @@
 /** Pure chat logic: SSE event decoding, the turn reducer, marker numbering, labels. No React, no fetch. */
 import type { Citation } from "../source";
 import type { SseFrame } from "../sse";
-import type { ChatEvent, ChatStage, ConflictView, EvidenceOut, HistoryMessage, Staleness } from "../api/types";
+import type { ChatEvent, ChatStage, ConflictView, EvidenceOut, FeedbackReason, HistoryMessage, Staleness } from "../api/types";
 
 export const EVENT_TYPES = ["run.started", "status", "segment", "verification", "followups", "done", "error"] as const;
 
@@ -44,6 +44,10 @@ export interface Msg {
   /** Set when the stream ended with an `error` event and no `done`. */
   errorCode: string | null;
   reasonCodes: string[];
+  /** The user pressed Stop: what streamed so far is kept and labelled. */
+  stopped: boolean;
+  /** Streamed in this session: its segments fade in. Restored history appears at once. */
+  animate: boolean;
 }
 
 export function pendingAssistant(id: string): Msg {
@@ -61,11 +65,13 @@ export function pendingAssistant(id: string): Msg {
     stage: null,
     errorCode: null,
     reasonCodes: [],
+    stopped: false,
+    animate: true,
   };
 }
 
 export function userMsg(id: string, content: string): Msg {
-  return { ...pendingAssistant(id), role: "user", content, streaming: false };
+  return { ...pendingAssistant(id), role: "user", content, streaming: false, animate: false };
 }
 
 /** Apply one event to the in-flight assistant message. Pure; replaying a transcript is deterministic. */
@@ -137,6 +143,8 @@ export function fromHistory(h: HistoryMessage): Msg {
     stage: null,
     errorCode: null,
     reasonCodes: [],
+    stopped: false,
+    animate: false,
   };
 }
 
@@ -144,7 +152,7 @@ export function fromHistory(h: HistoryMessage): Msg {
 export function statusLabel(stage: ChatStage | null, docCount: number | null = null): string {
   switch (stage) {
     case null:
-      return "Starting…";
+      return "Getting started…";
     case "analyzing":
       return "Understanding your question…";
     case "retrieving":
@@ -238,10 +246,10 @@ export type FailureKind =
 /** Friendly text for a pre-stream HTTP error, a mid-stream `error` event, or a dropped connection. */
 export function describeFailure(kind: FailureKind): SendFailure {
   if ("network" in kind) {
-    return { message: "Could not reach the server. Check your connection and try again. Your question is kept.", reuseId: true };
+    return { message: "We could not reach the server. Check your connection and try again. Your question is kept.", reuseId: true };
   }
   if ("stream" in kind) {
-    return { message: "Something went wrong while answering. You can ask again. Your question is kept.", reuseId: true };
+    return { message: "That did not finish. Ask again whenever you are ready. Your question is kept.", reuseId: true };
   }
   if (kind.http === 429 && kind.code === "quota_exceeded") {
     return {
@@ -254,22 +262,22 @@ export function describeFailure(kind: FailureKind): SendFailure {
   switch (kind.http) {
     case 409:
       return {
-        message: "Another question is still being answered in this chat. Wait for it to finish, then send again.",
+        message: "I am still answering your last question in this chat. Send this one once that finishes.",
         reuseId: false,
       };
     case 429:
       return {
-        message: `You are asking too quickly.${
+        message: `Easy does it, that was a lot at once.${
           kind.retryAfterS ? ` Try again in ${retryTime(kind.retryAfterS)}.` : " Try again shortly."
         } Your question is kept.`,
         reuseId: false,
       };
     case 503:
-      return { message: "The answering service is busy or unavailable. Try again in a moment. Your question is kept.", reuseId: true };
+      return { message: "The answering service is busy right now. Try again in a moment. Your question is kept.", reuseId: true };
     case 404:
-      return { message: "That chat or one of its documents was not found.", reuseId: false };
+      return { message: "We could not find that chat or one of its documents. Start a new chat to carry on.", reuseId: false };
     default:
-      return { message: "Something went wrong. Try again. Your question is kept.", reuseId: false };
+      return { message: "Something did not work on our side. Try again. Your question is kept.", reuseId: false };
   }
 }
 
@@ -306,4 +314,73 @@ export function toCitation(e: EvidenceOut): Citation {
     sentence_end: e.sentence_end,
     cited_text: e.cited_text ?? "",
   };
+}
+
+/** Keep what streamed and label it stopped. A message that is not streaming is returned unchanged. */
+export function markStopped(m: Msg): Msg {
+  return m.streaming ? { ...m, streaming: false, stopped: true, stage: null } : m;
+}
+
+/** Remove the last question and everything after it (an answer being regenerated or an edited question). */
+export function dropLastTurn(msgs: Msg[]): Msg[] {
+  for (let i = msgs.length - 1; i >= 0; i--) if (msgs[i]!.role === "user") return msgs.slice(0, i);
+  return msgs;
+}
+
+export function lastUser(msgs: Msg[]): Msg | null {
+  for (let i = msgs.length - 1; i >= 0; i--) if (msgs[i]!.role === "user") return msgs[i]!;
+  return null;
+}
+
+/** Within `threshold` px of the end of the page: the reader is following the answer. */
+export function isNearBottom(scrollTop: number, clientHeight: number, scrollHeight: number, threshold = 48): boolean {
+  return scrollHeight - (scrollTop + clientHeight) <= threshold;
+}
+
+/** Offered after an answer that came with no follow-ups, so there is always a next step. */
+export const FALLBACK_FOLLOWUPS = ["Explain that more simply", "Where in the documents is this stated?"];
+
+/** First-run questions. The list API has no brief field, so they come from document titles. */
+export function suggestionsFor(docs: { id: string; title: string }[], scope: string[]): string[] {
+  const pool = scope.length ? docs.filter((d) => scope.includes(d.id)) : docs;
+  const out = pool.slice(0, 2).map((d) => `What is "${d.title}" about?`);
+  if (pool.length > 1 || pool.length === 0) out.push("What are the key dates and deadlines across my documents?");
+  else out.push(`What are the key dates and deadlines in "${pool[0]!.title}"?`);
+  return out;
+}
+
+/** Feedback reason chips. The API reason set has no "too long": it goes as `other` with a note. */
+export const REASON_CHIPS: { key: string; label: string; reason: FeedbackReason; note?: string }[] = [
+  { key: "wrong", label: "Wrong", reason: "wrong" },
+  { key: "incomplete", label: "Incomplete", reason: "incomplete" },
+  { key: "citation", label: "Bad citation", reason: "unsupported" },
+  { key: "long", label: "Too long", reason: "other", note: "too long" },
+];
+
+function pagesText(p: EvidenceOut["pages"]): string {
+  if (!p || p.length < 2) return "";
+  return p[0] === p[1] ? `p. ${p[0]}` : `pp. ${p[0]}\u2013${p[1]}`;
+}
+
+/** Plain text for the clipboard: the answer with [n] markers, then each numbered source with its quote. */
+export function formatCopy(m: Msg): string {
+  if (m.segments.length === 0) return m.content;
+  const { segments: nums, conflicts: cn } = numberMessage(m.segments, m.conflicts);
+  const sources = new Map<number, EvidenceOut>();
+  m.segments.forEach((s, i) => uniqueMarkers(s.evidence, nums[i]!).forEach(({ n, ev }) => sources.set(n, ev)));
+  m.conflicts.forEach((c, i) => {
+    c.side_a.forEach((ev, j) => sources.set(cn[i]!.a[j]!, ev));
+    c.side_b.forEach((ev, j) => sources.set(cn[i]!.b[j]!, ev));
+  });
+  const body = m.segments
+    .map((s, i) => `${s.text}${uniqueMarkers(s.evidence, nums[i]!).map(({ n }) => ` [${n}]`).join("")}`)
+    .join(" ");
+  if (sources.size === 0) return body;
+  const lines = [...sources]
+    .sort((a, b) => a[0] - b[0])
+    .map(([n, ev]) => {
+      const where = [ev.document_title ?? "Document", ev.version_no ? `v${ev.version_no}` : "", pagesText(ev.pages)].filter(Boolean).join(", ");
+      return `[${n}] ${where}${ev.cited_text ? `: "${ev.cited_text}"` : ""}`;
+    });
+  return `${body}\n\nSources\n${lines.join("\n")}`;
 }

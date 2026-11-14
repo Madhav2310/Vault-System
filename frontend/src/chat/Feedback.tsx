@@ -1,30 +1,27 @@
 import { useState } from "react";
-import type { FeedbackReason } from "../api/types";
+import { hrefFor, linkClick } from "../document/nav";
 import { chatApi } from "./api";
+import { REASON_CHIPS } from "./logic";
 
-const REASONS: { value: FeedbackReason; label: string }[] = [
-  { value: "wrong", label: "Wrong" },
-  { value: "unsupported", label: "Not backed by the source" },
-  { value: "incomplete", label: "Incomplete" },
-  { value: "other", label: "Something else" },
-];
+const PICK_SCOPE = "/chat?pick=1";
 
-/** Thumbs up/down on one answer. A rating posts at once; a reason for "down" is optional and replaces the rating. */
+/** Thumbs on one answer. A rating posts at once; a reason chip for "down" is optional and replaces the rating. */
 export function Feedback({ messageId }: { messageId: string }) {
   const [rating, setRating] = useState<"up" | "down" | null>(null);
-  const [reason, setReason] = useState<FeedbackReason | null>(null);
+  const [chip, setChip] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
-  async function rate(next: "up" | "down", why?: FeedbackReason) {
+  async function rate(next: "up" | "down", key?: string) {
+    const c = REASON_CHIPS.find((x) => x.key === key);
     setBusy(true);
     setError(null);
     try {
-      await chatApi.feedback(messageId, next, why);
+      await chatApi.feedback(messageId, next, c?.reason, c?.note);
       setRating(next);
-      setReason(why ?? null);
+      setChip(c?.key ?? null);
     } catch {
-      setError("Your feedback could not be saved. Try again.");
+      setError("That did not save. Give it another try.");
     } finally {
       setBusy(false);
     }
@@ -51,32 +48,39 @@ export function Feedback({ messageId }: { messageId: string }) {
           className="btn btn-quiet"
           aria-pressed={rating === "down"}
           disabled={busy}
-          onClick={() => void rate("down", reason ?? undefined)}
+          onClick={() => void rate("down", chip ?? undefined)}
           data-testid="feedback-down"
         >
           Not helpful
         </button>
       </div>
       {rating === "down" && (
-        <label className="feedback-reason">
-          What was wrong? (optional)
-          <select
-            value={reason ?? ""}
-            disabled={busy}
-            onChange={(e) => e.target.value && void rate("down", e.target.value as FeedbackReason)}
-            data-testid="feedback-reason"
-          >
-            <option value="">Choose a reason</option>
-            {REASONS.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="feedback-reasons" role="group" aria-label="What was off?" data-testid="feedback-reasons">
+          {REASON_CHIPS.map((c) => (
+            <button
+              key={c.key}
+              type="button"
+              className="chip chip-small"
+              aria-pressed={chip === c.key}
+              disabled={busy}
+              onClick={() => void rate("down", c.key)}
+              data-testid={`reason-${c.key}`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      )}
+      {rating === "down" && chip === "wrong" && (
+        <p className="feedback-nudge" data-testid="wrong-doc-nudge">
+          Wrong document?{" "}
+          <a href={hrefFor(PICK_SCOPE)} onClick={linkClick(PICK_SCOPE)}>
+            Choose which documents to search
+          </a>
+        </p>
       )}
       <span role="status" className="feedback-thanks" data-testid="feedback-status">
-        {rating ? "Thanks, your feedback was saved." : ""}
+        {rating ? "Thanks. Your feedback is saved." : ""}
       </span>
       {error && (
         <span className="notice notice-error" role="alert">
