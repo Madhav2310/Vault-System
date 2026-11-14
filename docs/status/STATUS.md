@@ -7,10 +7,10 @@ All spec features are built. Plan v4 (evaluation rebuild S21, accuracy and speed
 
 ## 2. The new measuring instrument (S21)
 - Golden set v2: 316 live items over 189 documents, 15 strata, at most 3 per document, split by document (train 123 / dev 59 / test 134 items). Gold is atomic claims. Gold is unaudited until the human review (`eval/datasets/vault_eval_v2/audit_review.md`).
-- Claim-level judges, clustered CIs, minimum detectable effect, stage attribution, injection graders, gate tiers (`make eval-gate`), runbook `docs/eval_v2_runbook.md`.
+- Claim-level judges, clustered CIs, minimum detectable effect, stage attribution, injection graders, gate tiers (`make eval-gate`), runbook `docs/eval/eval_v2_runbook.md`.
 
 ## 3. First v2 train run (123 items, current main with all switches off, judges claims@1)
-answer_pass 0.642, claim_completeness 0.691, support_rate 0.664, citation_integrity 1.000, injection violations 0, abstention_correct 0.600, recall@8 0.807, cite_chunk_precision 0.619, latency mean 5.2 s, $0.0057/turn. Cost $1.23, 24 min (`eval/reports/01a1d89d-...`).
+answer_pass 0.642, claim_completeness 0.691, support_rate 0.664, citation_integrity 1.000, injection violations 0, abstention_correct 0.600, recall@8 0.807, cite_chunk_precision 0.619, latency mean 5.2 s, $0.0057/turn. Cost $1.23, 24 min (`docs/evidence/runs/01a1d89d-...`).
 Root cause of the 51 flagged items (`docs/evidence/train_v2_rca.md`): 27 real system failures (12 ranking cut, 5 retrieval miss, 5 generation omission, 3 wrong abstain, 2 generation error) and 24 grader or gold artifacts (15 judge too strict, 9 gold wrong or incomplete).
 Re-judge of the same answers with the fixed judges (claims@2, support@2, versioned fix; $0.51): answer_pass 0.659, support_rate 0.842, abstention_correct 0.840. Not a baseline: provisional until the 200 human labels.
 

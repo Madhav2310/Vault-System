@@ -2,7 +2,7 @@
 
 Usage: python3 scripts/plan_tick.py S0.04            # tick every AC of S0.04
        python3 scripts/plan_tick.py S0.06:AC1,AC3    # tick only those ACs
-Then run scripts/plan_lint.py. Tick only with evidence recorded in docs/progress.md.
+Then run scripts/plan_lint.py. Tick only with evidence recorded in docs/status/progress.md.
 """
 
 import pathlib

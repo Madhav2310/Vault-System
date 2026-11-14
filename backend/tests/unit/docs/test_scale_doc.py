@@ -1,11 +1,11 @@
-"""S20.04: docs/scale.md carries a computed cost table and only sourced numbers."""
+"""S20.04: docs/ops/scale.md carries a computed cost table and only sourced numbers."""
 
 import json
 import pathlib
 import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
-DOC = (ROOT / "docs" / "scale.md").read_text()
+DOC = (ROOT / "docs" / "ops" / "scale.md").read_text()
 
 
 def _rows() -> list[list[str]]:

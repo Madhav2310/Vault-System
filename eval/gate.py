@@ -9,7 +9,7 @@ map check and the security tests. Tier 1 (prompt / model / routing changes, live
 The gate makes no model call: it consumes two files (a run sidecar `eval/reports/<run_id>.json` or a frozen
 baseline `eval/baselines/answer_v2.json`) and prints PASS / FAIL / INCONCLUSIVE per criterion with the numbers
 and the MDE. Exit 1 when any criterion FAILs (INCONCLUSIVE too with `--strict-power`). The candidate
-sidecar is produced separately (docs/eval_gates.md).
+sidecar is produced separately (docs/eval/eval_gates.md).
 
 Criteria (items are paired by id; the baseline is restricted to the candidate's items):
   answer_pass, support_rate   non-inferior: clustered-CI lower bound of (cand - base) > -margin (S22 rule).

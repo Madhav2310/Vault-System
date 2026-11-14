@@ -56,7 +56,7 @@ Legend: DONE = acceptance evidence in hand; BUILT = code merged, behaviour off o
 1. Review the gold audit queue `eval/datasets/vault_eval_v2/audit_review.md` (about 15 minutes). Decisions go in `audit_queue.yaml`; then `make eval-audit-apply`.
 2. Label 200 pairs (`make eval-labels`) for judge calibration (about 1 to 2 hours). Until then the judge numbers are provisional.
 3. Review the chat UI at `localhost:8100/app` and the examples in `docs/voice.md`.
-4. S16.07 sign-off (read `docs/STATUS.md`).
+4. S16.07 sign-off (read `docs/status/STATUS.md`).
 
 **B. Needs live spend (ask first; caps in each command)**
 5. A/B round on dev (59 items, about $0.6 per arm): baseline, then plan-first, support v2, calc, compare quota, voice, analyze v3 (about $4 to $5 total).
@@ -68,7 +68,7 @@ Legend: DONE = acceptance evidence in hand; BUILT = code merged, behaviour off o
 
 **C. Code and content (no spend, I can do these in parallel)**
 11. Author the 5 `formatting` items (multi-column, scanned page, DOCX tracked changes) and observe extraction/chunking in attribution.
-12. Run the S21.09 `/security-review` and file findings in `docs/followups.md`.
+12. Run the S21.09 `/security-review` and file findings in `docs/status/followups.md`.
 13. Turn each accepted A/B arm into the default (one-line config change each) and delete rejected arms.
 14. Reconcile the plan tick boxes against evidence (S17, S18, S20 and all of S21–S23).
 

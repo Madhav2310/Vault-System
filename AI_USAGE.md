@@ -10,7 +10,7 @@ How AI tools were used to design and build this project, including where they we
 ## Workflow
 1. **Design first.** Design (`docs/design.md`) and research passes (`docs/research/01–06`) were written before any code, then cross-reviewed with ChatGPT.
 2. **Plan with checks.** `docs/plan/` holds 194 tasks and 792 acceptance criteria. Each criterion is verified by a named test, a command or a manual check. `scripts/plan_lint.py` checks the plan's consistency.
-3. **Build one task at a time.** Tests come first, then one commit per task prefixed with the task ID. Evidence goes in `docs/progress.md`, and shortfalls and postponed work go in `docs/followups.md`.
+3. **Build one task at a time.** Tests come first, then one commit per task prefixed with the task ID. Evidence goes in `docs/status/progress.md`, and shortfalls and postponed work go in `docs/status/followups.md`.
 4. **Claude Code rules.** Project rules in `CLAUDE.md` constrain Claude Code: the gateway-only LLM calls, code-side model routing and citation validation, owner scoping, no content in logs, and the rest.
 
 ## Per-slice log

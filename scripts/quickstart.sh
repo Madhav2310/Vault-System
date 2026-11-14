@@ -5,7 +5,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 if ! docker info >/dev/null 2>&1; then
-  echo "Docker is not running. Start Docker Desktop (see docs/dev-environment.md for recommended limits) and retry." >&2
+  echo "Docker is not running. Start Docker Desktop (see docs/ops/dev-environment.md for recommended limits) and retry." >&2
   exit 1
 fi
 
