@@ -511,31 +511,7 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
-        /**
-         * BriefOut
-         * @example {
-         *       "category": "contract",
-         *       "created_at": "2026-11-13T14:51:29.224375+00:00",
-         *       "document_type": "contract",
-         *       "facts": [],
-         *       "model": "balanced-model",
-         *       "status": "ready",
-         *       "suggested_questions": [
-         *         "What is the termination notice period?"
-         *       ],
-         *       "summary": "Services agreement between Acme and Globex.",
-         *       "tags": [
-         *         "msa"
-         *       ],
-         *       "tone": {
-         *         "evidence": [],
-         *         "label": "formal",
-         *         "note": "Precise legal drafting with defined terms.",
-         *         "status": "verified"
-         *       },
-         *       "version_id": "0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21"
-         *     }
-         */
+        /** BriefOut */
         BriefOut: {
             /** Category */
             category?: string | null;
@@ -577,65 +553,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * ChatMetrics
-         * @example {
-         *       "cost_per_turn_usd": {
-         *         "p50": 0.004,
-         *         "p95": 0.009
-         *       },
-         *       "coverage": {
-         *         "covered": 10,
-         *         "none": 1,
-         *         "partial": 1
-         *       },
-         *       "degraded": {},
-         *       "feedback": {
-         *         "by_reason": {
-         *           "unsupported": 1
-         *         },
-         *         "down": 1,
-         *         "up": 3
-         *       },
-         *       "latency_ms": {
-         *         "p50": 5200,
-         *         "p95": 9100
-         *       },
-         *       "llm": {
-         *         "cache_hit_ratio": 0.31,
-         *         "calls": 40,
-         *         "cost_by_purpose": {
-         *           "generate": {
-         *             "calls": 12,
-         *             "cost_usd": 0.05
-         *           }
-         *         },
-         *         "tokens": [],
-         *         "total_cost_usd": 0.061
-         *       },
-         *       "node_latency_ms": {
-         *         "generate": {
-         *           "p50": 2100,
-         *           "p95": 3900
-         *         },
-         *         "retrieve": {
-         *           "p50": 310,
-         *           "p95": 620
-         *         }
-         *       },
-         *       "outcomes": {
-         *         "abstain": 1,
-         *         "answer": 11
-         *       },
-         *       "scope": "owner",
-         *       "ttft_ms": {
-         *         "p50": 1400,
-         *         "p95": 2600
-         *       },
-         *       "turns": 12,
-         *       "window": "24h"
-         *     }
-         */
+        /** ChatMetrics */
         ChatMetrics: {
             cost_per_turn_usd: components["schemas"]["Percentiles"];
             /** Coverage */
@@ -687,35 +605,7 @@ export interface components {
              */
             status: "ok" | "fail";
         };
-        /**
-         * ChunkOut
-         * @example {
-         *       "document_id": "0192f3a4-7b1c-7c3e-9a55-3d2f6c1e8a10",
-         *       "id": "0192f3a4-9a01-7b33-9d44-0e1f2a3b4c5d",
-         *       "kind": "paragraph",
-         *       "ordinal": 4,
-         *       "page_end": 3,
-         *       "page_start": 3,
-         *       "prev_chunk_id": "0192f3a4-0000-7000-8000-0000000000c3",
-         *       "section_path": [
-         *         "8",
-         *         "Termination"
-         *       ],
-         *       "sentences": [
-         *         [
-         *           0,
-         *           77
-         *         ]
-         *       ],
-         *       "text": "Either party may terminate this Agreement on thirty (30) days written notice.",
-         *       "token_count": 17,
-         *       "version": {
-         *         "filename": "master-services-agreement.pdf",
-         *         "id": "0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21",
-         *         "version_no": 1
-         *       }
-         *     }
-         */
+        /** ChunkOut */
         ChunkOut: {
             /**
              * Document Id
@@ -798,40 +688,7 @@ export interface components {
             /** Title */
             title?: string | null;
         };
-        /**
-         * DocumentDetail
-         * @example {
-         *       "category": "contract",
-         *       "created_at": "2026-11-13T14:51:29.224375+00:00",
-         *       "current_version_id": "0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21",
-         *       "id": "0192f3a4-7b1c-7c3e-9a55-3d2f6c1e8a10",
-         *       "quality": {
-         *         "score": 0.97
-         *       },
-         *       "status": "enriched",
-         *       "tags": [
-         *         "msa"
-         *       ],
-         *       "title": "Master Services Agreement",
-         *       "versions": [
-         *         {
-         *           "created_at": "2026-11-13T14:51:29.224375+00:00",
-         *           "filename": "master-services-agreement.pdf",
-         *           "id": "0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21",
-         *           "mime": "application/pdf",
-         *           "page_count": 12,
-         *           "quality": {
-         *             "score": 0.97
-         *           },
-         *           "ready_at": "2026-11-13T14:51:29.224375+00:00",
-         *           "sha256": "9f2c4e1a7b3d5c60e8f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7",
-         *           "size_bytes": 482113,
-         *           "status": "enriched",
-         *           "version_no": 1
-         *         }
-         *       ]
-         *     }
-         */
+        /** DocumentDetail */
         DocumentDetail: {
             /** Category */
             category?: string | null;
@@ -859,40 +716,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * DocumentList
-         * @example {
-         *       "items": [
-         *         {
-         *           "category": "contract",
-         *           "created_at": "2026-11-13T14:51:29.224375+00:00",
-         *           "id": "0192f3a4-7b1c-7c3e-9a55-3d2f6c1e8a10",
-         *           "status": "enriched",
-         *           "summary_snippet": "Services agreement between Acme and Globex.",
-         *           "tags": [
-         *             "msa",
-         *             "services"
-         *           ],
-         *           "title": "Master Services Agreement",
-         *           "version": {
-         *             "created_at": "2026-11-13T14:51:29.224375+00:00",
-         *             "filename": "master-services-agreement.pdf",
-         *             "id": "0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21",
-         *             "mime": "application/pdf",
-         *             "page_count": 12,
-         *             "quality": {
-         *               "score": 0.97
-         *             },
-         *             "ready_at": "2026-11-13T14:51:29.224375+00:00",
-         *             "sha256": "9f2c4e1a7b3d5c60e8f1a2b3c4d5e6f708192a3b4c5d6e7f8091a2b3c4d5e6f7",
-         *             "size_bytes": 482113,
-         *             "status": "enriched",
-         *             "version_no": 1
-         *           }
-         *         }
-         *       ]
-         *     }
-         */
+        /** DocumentList */
         DocumentList: {
             /** Items */
             items: components["schemas"]["DocumentListItem"][];
@@ -924,42 +748,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * DocumentsMetrics
-         * @example {
-         *       "brief_cost_usd": {
-         *         "per_document_p50": 0.004,
-         *         "total": 0.012
-         *       },
-         *       "by_category": {
-         *         "contract": 3
-         *       },
-         *       "by_mime": {
-         *         "application/pdf": 3
-         *       },
-         *       "by_status": {
-         *         "enriched": 3,
-         *         "failed": 0
-         *       },
-         *       "chunks": {
-         *         "total": 210
-         *       },
-         *       "documents": 3,
-         *       "enriched": 3,
-         *       "facts": {
-         *         "total": 18,
-         *         "verified_ratio": 0.94
-         *       },
-         *       "needs_ocr": 0,
-         *       "pages": 41,
-         *       "scope": "owner",
-         *       "storage_bytes": 1544021,
-         *       "time_to_ready_seconds": {
-         *         "p50": 38.2,
-         *         "p95": 71
-         *       }
-         *     }
-         */
+        /** DocumentsMetrics */
         DocumentsMetrics: {
             /** Brief Cost Usd */
             brief_cost_usd: {
@@ -1007,13 +796,11 @@ export interface components {
             /**
              * Code
              * @description Stable machine-readable error code
-             * @example not_found
              */
             code: string;
             /**
              * Detail
              * @default null
-             * @example Original file is not available
              */
             detail: string | null;
             /**
@@ -1027,35 +814,19 @@ export interface components {
             /**
              * Retryable
              * @description Whether retrying the same request can succeed
-             * @example false
              */
             retryable: boolean;
-            /**
-             * Status
-             * @example 404
-             */
+            /** Status */
             status: number;
-            /**
-             * Title
-             * @example Not found
-             */
+            /** Title */
             title: string;
             /**
              * Type
              * @description Problem type URI
-             * @example https://vault.local/problems/not_found
              */
             type: string;
         };
-        /**
-         * EventSchemaOut
-         * @example {
-         *       "discriminator": {
-         *         "propertyName": "type"
-         *       },
-         *       "title": "TurnEvent"
-         *     }
-         */
+        /** EventSchemaOut */
         EventSchemaOut: {
             /** Title */
             title?: string | null;
@@ -1084,16 +855,7 @@ export interface components {
              */
             segment_ordinal?: number | null;
         };
-        /**
-         * FeedbackOut
-         * @example {
-         *       "id": "0192f3a7-2b01-7c10-8d20-3e4f5a6b7c8d",
-         *       "message_id": "0192f3a5-0c12-7e55-8c66-9a0b1c2d3e4f",
-         *       "rating": "down",
-         *       "reason": "unsupported",
-         *       "segment_ordinal": 0
-         *     }
-         */
+        /** FeedbackOut */
         FeedbackOut: {
             /**
              * Id
@@ -1142,17 +904,9 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * Liveness
-         * @example {
-         *       "status": "ok"
-         *     }
-         */
+        /** Liveness */
         Liveness: {
-            /**
-             * Status
-             * @example ok
-             */
+            /** Status */
             status: string;
         };
         /** LlmMetrics */
@@ -1176,23 +930,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * MessageList
-         * @example {
-         *       "items": [
-         *         {
-         *           "content": "Either party may terminate on 30 days written notice.",
-         *           "coverage_state": "covered",
-         *           "created_at": "2026-11-13T14:51:29.224375+00:00",
-         *           "id": "0192f3a5-0c12-7e55-8c66-9a0b1c2d3e4f",
-         *           "response_type": "answer",
-         *           "role": "assistant",
-         *           "run_id": "0192f3a5-0c11-7d44-b3a2-6e8f1a2b3c4d",
-         *           "segments": []
-         *         }
-         *       ]
-         *     }
-         */
+        /** MessageList */
         MessageList: {
             /** Items */
             items: components["schemas"]["MessageOut"][];
@@ -1231,11 +969,6 @@ export interface components {
             /**
              * Staleness
              * @description `null` for a fresh answer. When a document the answer used has a newer version: `{stale: true, since: ISO timestamp, newer_version_no: int | null}`. Re-ask with `reask_of`.
-             * @example {
-             *       "newer_version_no": 2,
-             *       "since": "2026-01-15T10:30:00Z",
-             *       "stale": true
-             *     }
              */
             staleness?: {
                 [key: string]: unknown;
@@ -1256,23 +989,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * PageLayoutOut
-         * @example {
-         *       "glyphs": [
-         *         [
-         *           72,
-         *           90.5,
-         *           80.1,
-         *           101.2
-         *         ]
-         *       ],
-         *       "height": 792,
-         *       "page": 1,
-         *       "version_id": "0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21",
-         *       "width": 612
-         *     }
-         */
+        /** PageLayoutOut */
         PageLayoutOut: {
             /**
              * Glyphs
@@ -1302,18 +1019,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * PostMessage
-         * @example {
-         *       "client_message_id": "c-0001",
-         *       "content": "What is the notice period?",
-         *       "mode": "auto"
-         *     }
-         * @example {
-         *       "client_message_id": "c-0002",
-         *       "reask_of": "0193c2a4-7b1e-7c3a-9d55-2f6e8a1b4c90"
-         *     }
-         */
+        /** PostMessage */
         PostMessage: {
             /** @description The option picked from a clarification: the clarified question is asked again, with the scope narrowed by the server to the chosen document. Omit `content` and `reask_of`. */
             clarify_choice?: components["schemas"]["ClarifyChoice"] | null;
@@ -1341,15 +1047,7 @@ export interface components {
              */
             replaces?: string | null;
         };
-        /**
-         * PostMessageOut
-         * @example {
-         *       "deduplicated": false,
-         *       "run_id": "0192f3a5-0c11-7d44-b3a2-6e8f1a2b3c4d",
-         *       "status": "running",
-         *       "user_message_id": "0192f3a5-0c10-7a01-9b02-3c4d5e6f7081"
-         *     }
-         */
+        /** PostMessageOut */
         PostMessageOut: {
             /** Deduplicated */
             deduplicated: boolean;
@@ -1378,28 +1076,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * ProcessingMetrics
-         * @example {
-         *       "failures_by_error_code": {},
-         *       "redispatch_candidates": 0,
-         *       "retries": 0,
-         *       "scope": "owner",
-         *       "stage_duration_ms": {
-         *         "extract": {
-         *           "count": 3,
-         *           "p50": 840,
-         *           "p95": 1900
-         *         }
-         *       },
-         *       "throughput": {
-         *         "jobs_completed": 3,
-         *         "jobs_per_hour": 0.125,
-         *         "stage_runs": 18
-         *       },
-         *       "window": "24h"
-         *     }
-         */
+        /** ProcessingMetrics */
         ProcessingMetrics: {
             /** Failures By Error Code */
             failures_by_error_code: {
@@ -1428,38 +1105,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * ProcessingOut
-         * @example {
-         *       "job": {
-         *         "attempt_count": 1,
-         *         "current_stage": "brief",
-         *         "status": "done"
-         *       },
-         *       "pages": [
-         *         {
-         *           "flags": [],
-         *           "page_no": 1,
-         *           "quality_score": 0.98,
-         *           "text_chars": 2210
-         *         }
-         *       ],
-         *       "quality": {
-         *         "score": 0.97
-         *       },
-         *       "stages": [
-         *         {
-         *           "at": "2026-11-13T14:51:29.224375+00:00",
-         *           "attempt": 1,
-         *           "duration_ms": 840,
-         *           "stage": "extract",
-         *           "status": "done"
-         *         }
-         *       ],
-         *       "status": "enriched",
-         *       "version_id": "0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21"
-         *     }
-         */
+        /** ProcessingOut */
         ProcessingOut: {
             /** Error Code */
             error_code?: string | null;
@@ -1482,25 +1128,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * Readiness
-         * @example {
-         *       "checks": {
-         *         "database": {
-         *           "duration_ms": 3.1,
-         *           "required": true,
-         *           "status": "ok"
-         *         },
-         *         "reranker": {
-         *           "duration_ms": 2000,
-         *           "error": "TimeoutError",
-         *           "required": false,
-         *           "status": "fail"
-         *         }
-         *       },
-         *       "status": "degraded"
-         *     }
-         */
+        /** Readiness */
         Readiness: {
             /** Checks */
             checks: {
@@ -1512,44 +1140,7 @@ export interface components {
              */
             status: "ok" | "degraded" | "fail";
         };
-        /**
-         * RunViewOut
-         * @example {
-         *       "explanation": [
-         *         "Searched 1 document and used 3 passages."
-         *       ],
-         *       "mode": "rag",
-         *       "reason_codes": [],
-         *       "response_type": "answer",
-         *       "route": "rag",
-         *       "run_id": "0192f3a5-0c11-7d44-b3a2-6e8f1a2b3c4d",
-         *       "sources": [
-         *         {
-         *           "chunks_used": 3,
-         *           "document_title": "MSA.pdf",
-         *           "pages": [
-         *             2,
-         *             3
-         *           ],
-         *           "version_no": 1
-         *         }
-         *       ],
-         *       "status": "done",
-         *       "steps": [
-         *         {
-         *           "duration_ms": 420,
-         *           "node": "retrieve",
-         *           "status": "ok"
-         *         }
-         *       ],
-         *       "usage": {
-         *         "calls": 2,
-         *         "cost_usd": 0.004,
-         *         "input_tokens": 3100,
-         *         "output_tokens": 240
-         *       }
-         *     }
-         */
+        /** RunViewOut */
         RunViewOut: {
             /**
              * Explanation
@@ -1607,19 +1198,7 @@ export interface components {
              */
             api_key: string;
         };
-        /**
-         * SessionList
-         * @example {
-         *       "items": [
-         *         {
-         *           "created_at": "2026-11-13T14:51:29.224375+00:00",
-         *           "id": "0192f3a4-e001-7f10-a2c4-1d3e5f708192",
-         *           "title": "Termination terms",
-         *           "updated_at": "2026-11-13T14:51:29.224375+00:00"
-         *         }
-         *       ]
-         *     }
-         */
+        /** SessionList */
         SessionList: {
             /** Items */
             items: components["schemas"]["SessionOut"][];
@@ -1628,18 +1207,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * SessionOut
-         * @example {
-         *       "created_at": "2026-11-13T14:51:29.224375+00:00",
-         *       "document_ids": [
-         *         "0192f3a4-7b1c-7c3e-9a55-3d2f6c1e8a10"
-         *       ],
-         *       "id": "0192f3a4-e001-7f10-a2c4-1d3e5f708192",
-         *       "title": "Termination terms",
-         *       "updated_at": "2026-11-13T14:51:29.224375+00:00"
-         *     }
-         */
+        /** SessionOut */
         SessionOut: {
             /** Created At */
             created_at: string;
@@ -1675,20 +1243,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * SummaryOut
-         * @example {
-         *       "created_at": "2026-11-13T14:51:29.224375+00:00",
-         *       "document_id": "0192f3a4-7b1c-7c3e-9a55-3d2f6c1e8a10",
-         *       "id": "0192f3a6-1a01-7a10-b2c3-4d5e6f708192",
-         *       "params": {
-         *         "length": "short"
-         *       },
-         *       "poll": "/v1/documents/0192f3a4-7b1c-7c3e-9a55-3d2f6c1e8a10/summaries/0192f3a6-1a01-7a10-b2c3-4d5e6f708192",
-         *       "status": "pending",
-         *       "version_id": "0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21"
-         *     }
-         */
+        /** SummaryOut */
         SummaryOut: {
             /** Created At */
             created_at?: string | null;
@@ -1758,29 +1313,7 @@ export interface components {
              */
             tone: "neutral" | "executive" | "plain";
         };
-        /**
-         * ToneOut
-         * @example {
-         *       "evidence": [
-         *         {
-         *           "chunk_id": "0192f3a4-9a01-7b33-9d44-0e1f2a3b4c5d",
-         *           "cited_text": "This Services Agreement is made between Acme and Globex.",
-         *           "pages": [
-         *             1
-         *           ],
-         *           "section_path": [
-         *             "Term"
-         *           ],
-         *           "sentence_end": 1,
-         *           "sentence_start": 0,
-         *           "version_no": 1
-         *         }
-         *       ],
-         *       "label": "formal",
-         *       "note": "Precise legal drafting with defined terms.",
-         *       "status": "verified"
-         *     }
-         */
+        /** ToneOut */
         ToneOut: {
             /**
              * Evidence
@@ -1807,20 +1340,7 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /**
-         * UploadAccepted
-         * @example {
-         *       "deduplicated": false,
-         *       "document_id": "0192f3a4-7b1c-7c3e-9a55-3d2f6c1e8a10",
-         *       "job_id": "0192f3a4-7b1e-7b90-a0d1-2c3e4f506172",
-         *       "links": {
-         *         "document": "/v1/documents/0192f3a4-7b1c-7c3e-9a55-3d2f6c1e8a10",
-         *         "processing": "/v1/versions/0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21/processing"
-         *       },
-         *       "status": "uploaded",
-         *       "version_id": "0192f3a4-7b1d-7a02-8e11-5b7c9d0e4f21"
-         *     }
-         */
+        /** UploadAccepted */
         UploadAccepted: {
             /** Deduplicated */
             deduplicated: boolean;
@@ -1958,16 +1478,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -1977,16 +1487,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2019,16 +1519,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2038,16 +1528,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2057,16 +1537,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2102,16 +1572,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2121,16 +1581,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2140,16 +1590,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2159,16 +1599,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2200,16 +1630,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2219,16 +1639,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2238,16 +1648,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2257,16 +1657,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2301,16 +1691,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2320,16 +1700,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2339,16 +1709,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2358,16 +1718,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2412,16 +1762,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2431,16 +1771,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2450,16 +1780,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 409,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2469,16 +1789,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2488,16 +1798,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2507,16 +1807,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 503,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2548,16 +1838,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2567,16 +1847,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2586,16 +1856,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2605,16 +1865,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2651,16 +1901,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2670,16 +1910,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2689,16 +1919,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2747,16 +1967,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2766,16 +1976,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 413,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2785,16 +1985,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 415,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2804,16 +1994,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2823,16 +2003,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2864,16 +2034,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2883,16 +2043,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2902,16 +2052,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2921,16 +2061,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2960,16 +2090,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2979,16 +2099,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -2998,16 +2108,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3017,16 +2117,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3060,16 +2150,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3079,16 +2159,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3098,16 +2168,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3117,16 +2177,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3171,16 +2221,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3190,16 +2230,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3209,16 +2239,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3228,16 +2248,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3270,16 +2280,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3289,16 +2289,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3308,16 +2298,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3327,16 +2307,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3386,16 +2356,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3405,16 +2365,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3424,16 +2374,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3443,16 +2383,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3486,16 +2416,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3505,16 +2425,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3524,16 +2434,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3543,16 +2443,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3587,16 +2477,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3606,16 +2486,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 403,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3625,16 +2495,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3644,16 +2504,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3686,16 +2536,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3705,16 +2545,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 403,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3724,16 +2554,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3743,16 +2563,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3787,16 +2597,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3806,16 +2606,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 403,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3825,16 +2615,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3844,16 +2624,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3885,16 +2655,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3904,16 +2664,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3923,16 +2673,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3942,16 +2682,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3979,16 +2709,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -3998,16 +2718,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4039,16 +2749,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4058,16 +2758,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4077,16 +2767,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4114,16 +2794,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4133,16 +2803,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4165,7 +2825,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /** @example %PDF-1.7 ... (the original bytes) */
                     "application/octet-stream": string;
                 };
             };
@@ -4175,16 +2834,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4194,16 +2843,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4213,16 +2852,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4232,16 +2861,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4274,16 +2893,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4293,16 +2902,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4312,16 +2911,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4331,16 +2920,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4372,16 +2951,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4391,16 +2960,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4410,16 +2969,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4429,16 +2978,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4461,13 +3000,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example event: stage
-                     *     data: {"name": "extract", "status": "done", "attempt": 1}
-                     *
-                     *     event: done
-                     *     data: {"status": "enriched", "error_code": null}
-                     */
                     "text/event-stream": string;
                 };
             };
@@ -4477,16 +3009,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 401,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4496,16 +3018,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 404,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4515,16 +3027,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 422,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
@@ -4534,16 +3036,6 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    /**
-                     * @example {
-                     *       "code": "not_found",
-                     *       "detail": null,
-                     *       "retryable": false,
-                     *       "status": 429,
-                     *       "title": "Not found",
-                     *       "type": "https://vault.local/problems/not_found"
-                     *     }
-                     */
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
