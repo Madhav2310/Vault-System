@@ -149,5 +149,15 @@ def validate_items_v2(raw: list[Any]) -> DatasetV2:
 
 
 def load_dataset_v2(root: pathlib.Path = DATASET_V2_DIR) -> DatasetV2:
-    """Load `<root>/golden.yaml` (top-level `items:` list) as v2 items. v1 stays on `load_dataset`."""
-    return validate_items_v2(yaml.safe_load((root / "golden.yaml").read_text())["items"])
+    """Load v2 items from `<root>/golden.yaml` plus every part file (`parts/*.yaml`, `authored/*.yaml`), each a
+    top-level `items:` list, validated together (so the per-document cap spans parts). v1 stays on `load_dataset`."""
+    files = [
+        root / "golden.yaml",
+        *sorted((root / "parts").glob("*.yaml")),
+        *sorted((root / "authored").glob("*.yaml")),
+    ]
+    raw: list[dict] = []
+    for f in files:
+        if f.exists():
+            raw += (yaml.safe_load(f.read_text()) or {}).get("items", [])
+    return validate_items_v2(raw)
