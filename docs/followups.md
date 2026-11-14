@@ -58,3 +58,5 @@ Fixed in the review commit: persist failure now falls back to a minimal error re
 - F-046 judge `SpendGuard` is check-then-spend (concurrency overshoot); live gateway built outside `get_gateway` (still via LlmGateway). Add `eval_judge:flagship` to DEFAULT_ROUTES and design §4.2.
 - F-047 retrieval recall@8 0.759 < 0.85 [T]: weakest table 0.40, compare 0.55, conflict 0.58; MRR 0.50 even when recall@8 = 1 (reranker order). Tuning through the convergence engine (S2.19/S4), no hand tuning on test items.
 - F-048 `tests/integration/observability/test_trace_propagation.py::test_api_to_celery_same_trace` times out (15 s) in full suite runs after the e2e celery tests, passes alone (3 of 3 full runs 2026-11-13). Likely shared in-memory broker/worker state between tests; isolate or run it first.
+
+- F-049 (2026-11-14): `a11y.spec.ts > keyboard flow` timed out once waiting for the file chooser (2.5 min run, right after `make test`), passed on rerun (41/41 in 27 s). Likely load-related; if it recurs, wait for the upload control to be focused before pressing Enter.

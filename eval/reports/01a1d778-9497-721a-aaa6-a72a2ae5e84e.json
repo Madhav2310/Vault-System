@@ -1,0 +1,49 @@
+{
+ "run_id": "01a1d778-9497-721a-aaa6-a72a2ae5e84e",
+ "name": "x",
+ "suite": "retrieval",
+ "split": "all",
+ "git_sha": "32bc26c",
+ "config": {
+  "name": "x",
+  "suite": "retrieval",
+  "split": "all",
+  "n_items": 3
+ },
+ "items": [
+  {
+   "item_id": "toy:lookup",
+   "category": "lookup",
+   "split": "-",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  },
+  {
+   "item_id": "toy:unans",
+   "category": "unanswerable",
+   "split": "-",
+   "metrics": {},
+   "quote_hits": null,
+   "error": null
+  },
+  {
+   "item_id": "toy:inj",
+   "category": "injection",
+   "split": "-",
+   "metrics": {
+    "recall@8": 1.0,
+    "mrr@40": 1.0
+   },
+   "quote_hits": [
+    true
+   ],
+   "error": null
+  }
+ ]
+}
