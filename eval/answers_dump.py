@@ -30,10 +30,11 @@ def answer_row(
     view: GoldenItem,
     *,
     failed: bool,
+    judged: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     segs = build_case(view, out, chunks).segments
     cited = list(dict.fromkeys(c.chunk_id for c in citations_of(out)))
-    return {
+    row: dict[str, Any] = {
         "item_id": item.id,
         "question": item.question,
         "answer": out.answer_text,
@@ -44,6 +45,9 @@ def answer_row(
         "stratum": item.stratum,
         "source_doc": item.source_doc,
     }
+    if judged:  # additive: per-claim / per-segment verdicts, so a failed item is inspectable without a re-run
+        row["judge"] = dict(judged)
+    return row
 
 
 ABSTAIN_MARGIN_RANK = 3  # the calibrator's `--margin-rank` default

@@ -32,6 +32,7 @@ import json
 import math
 import re
 import sys
+import unicodedata
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
@@ -591,8 +592,11 @@ def sample_cases(items: Sequence[GoldenItem], jt: JudgeType, n: int) -> list[Jud
 # The v1 judges above are untouched and still serve v1 reports.
 
 PROMPTS_V2: dict[str, tuple[str, int]] = {
-    "claims": ("eval_judge_claims", 1),
-    "support": ("eval_judge_support", 1),
+    "claims": (
+        "eval_judge_claims",
+        2,
+    ),  # @1 ("read on its own", no naming rule) stays on disk for old reports
+    "support": ("eval_judge_support", 2),
     "abstain": ("eval_judge_abstain", 1),
 }
 ABSTAIN_STRATA = ("unanswerable", "false_premise", "versioned")
@@ -636,8 +640,14 @@ class AbstainVerdict(BaseModel):
     correct: bool
 
 
+_PUNCT = str.maketrans(
+    {"\u2018": "'", "\u2019": "'", "\u201c": '"', "\u201d": '"', "\u2013": "-", "\u2014": "-", "\u2212": "-"}
+)
+
+
 def _norm(s: str) -> str:
-    return " ".join(s.casefold().split())
+    """Casefold, collapse whitespace, fold curly quotes and dashes."""
+    return " ".join(unicodedata.normalize("NFKC", s).translate(_PUNCT).casefold().split())
 
 
 def _quote_in(quote: str, haystacks: Sequence[str]) -> bool:
@@ -694,10 +704,33 @@ def _complete_indices(got: Sequence[int], n: int, what: str) -> None:
 
 
 @dataclass(frozen=True)
+class Verdict2:
+    """One judged unit (claim or segment) as the model said it and as code applied it (S21.06b)."""
+
+    index: int
+    decision: bool  # after the verbatim-quote check: what the metric uses
+    raw: bool  # what the model said
+    quote: str
+    quote_verified: bool | None  # None: no quote was required or given
+    overruled: bool  # raw True flipped to False by the quote check
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "index": self.index,
+            "decision": self.decision,
+            "raw": self.raw,
+            "quote": self.quote,
+            "quote_verified": self.quote_verified,
+            "overruled": self.overruled,
+        }
+
+
+@dataclass(frozen=True)
 class ClaimJudgement:
     item_id: str
     entailed: tuple[bool, ...]  # per required claim, in item order
     cost_usd: Decimal
+    details: tuple[Verdict2, ...] = ()
 
     @property
     def completeness(self) -> float:
@@ -735,8 +768,14 @@ async def judge_claims(
     )
     _complete_indices([d.claim_index for d in out.decisions], n, "claim")
     by = {d.claim_index: d for d in out.decisions}
-    ent = tuple(by[i].entailed and _quote_in(by[i].quote, [answer]) for i in range(n))
-    return ClaimJudgement(item.id, ent, cost)
+    details = []
+    for i in range(n):
+        d = by[i]
+        verified = _quote_in(d.quote, [answer])
+        details.append(
+            Verdict2(i, d.entailed and verified, d.entailed, d.quote, verified, d.entailed and not verified)
+        )
+    return ClaimJudgement(item.id, tuple(v.decision for v in details), cost, tuple(details))
 
 
 # support judge
@@ -746,6 +785,7 @@ async def judge_claims(
 class SupportJudgement:
     supported: tuple[bool | None, ...]  # per segment; None = no cited passages, not judged
     cost_usd: Decimal
+    details: tuple[Verdict2 | None, ...] = ()  # per segment; None = not judged
 
     @property
     def rate(self) -> float:
@@ -759,24 +799,35 @@ async def judge_support(
     *,
     route: str | None = None,
     guard: SpendGuard | None = None,
+    question: str | None = None,
+    documents: Sequence[str] = (),
 ) -> SupportJudgement:
+    """`question` and `documents` (names of the source documents) are metadata for the naming rule of
+    eval_judge_support@2; they are never evidence."""
     idx = [i for i, s in enumerate(segments) if s.passages]
     if not idx:
-        return SupportJudgement(tuple(None for _ in segments), Decimal(0))
-    inputs = {
-        "segments": [
-            {"index": i, "text": segments[i].text, "cited_passages": list(segments[i].passages)} for i in idx
-        ]
-    }
+        return SupportJudgement(tuple(None for _ in segments), Decimal(0), tuple(None for _ in segments))
+    inputs: dict[str, Any] = {}
+    if question:
+        inputs["question"] = question
+    if documents:
+        inputs["documents"] = list(documents)
+    inputs["segments"] = [
+        {"index": i, "text": segments[i].text, "cited_passages": list(segments[i].passages)} for i in idx
+    ]
     out, cost = await _call_v2(gw, "support", SupportVerdict, inputs, route=route, guard=guard)
     by = {d.segment_index: d for d in out.decisions}
     if len(out.decisions) != len(idx) or set(by) != set(idx):
         raise JudgeOutputError(f"segment decisions {sorted(by)} do not match the judged segments {idx}")
     res: list[bool | None] = [None] * len(segments)
+    det: list[Verdict2 | None] = [None] * len(segments)
     for i in idx:
         d = by[i]
-        res[i] = d.supported and (not d.quote or _quote_in(d.quote, segments[i].passages))
-    return SupportJudgement(tuple(res), cost)
+        verified = _quote_in(d.quote, segments[i].passages) if d.quote else None
+        ok = d.supported and verified is not False
+        det[i] = Verdict2(i, ok, d.supported, d.quote, verified, d.supported and not ok)
+        res[i] = ok
+    return SupportJudgement(tuple(res), cost, tuple(det))
 
 
 # abstention judge
@@ -789,6 +840,33 @@ class AbstainJudgement:
     behaviour: str
     reason: str
     cost_usd: Decimal
+
+
+def overrules(*js: ClaimJudgement | SupportJudgement | None) -> int:
+    """Model 'yes' decisions flipped to 'no' by the verbatim-quote check (metric `judge_quote_overrules`)."""
+    n = 0
+    for j in js:
+        if j is not None:
+            n += sum(1 for v in j.details if v is not None and v.overruled)
+    return n
+
+
+def verdict_record(
+    claims: ClaimJudgement | None, support: SupportJudgement | None, abstain: AbstainJudgement | None
+) -> dict[str, Any]:
+    """Per-claim / per-segment / abstention verdicts for the answers dump (additive `judge` field)."""
+    rec: dict[str, Any] = {"prompts": {k: f"{n}@{v}" for k, (n, v) in PROMPTS_V2.items()}}
+    if claims is not None:
+        rec["claims"] = [v.as_dict() for v in claims.details]
+    if support is not None:
+        rec["segments"] = [None if v is None else v.as_dict() for v in support.details]
+    if abstain is not None:
+        rec["abstain"] = {
+            "behaviour": abstain.behaviour,
+            "correct": abstain.correct,
+            "reason": abstain.reason,
+        }
+    return rec
 
 
 def abstain_applicable(item: GoldItemV2) -> bool:
@@ -813,7 +891,9 @@ async def judge_abstention(
         "reference_claims": list(item.required_claims),
     }
     out, cost = await _call_v2(gw, "abstain", AbstainVerdict, inputs, route=route, guard=guard)
-    ok = out.correct and out.behaviour != "answered_as_asked"  # a contradictory verdict is not a pass
+    # versioned: a correct answer answers from the current version, so `answered_as_asked` is expected;
+    # elsewhere a contradictory verdict (correct but answered as asked) is not a pass
+    ok = out.correct if item.stratum == "versioned" else out.correct and out.behaviour != "answered_as_asked"
     return AbstainJudgement(item.id, ok, out.behaviour, out.reason, cost)
 
 
