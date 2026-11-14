@@ -48,9 +48,15 @@ def _row(r: Any) -> SessionRow:
 
 
 async def create_session(
-    db: AsyncSession, owner_id: uuid.UUID, document_ids: list[uuid.UUID] | None, title: str | None
+    db: AsyncSession,
+    owner_id: uuid.UUID,
+    document_ids: list[uuid.UUID] | None,
+    title: str | None,
+    *,
+    commit: bool = True,
 ) -> SessionRow:
-    """`document_ids` None or empty = whole vault (stored NULL); else all must be the owner's live docs."""
+    """`document_ids` None or empty = whole vault (stored NULL); else all must be the owner's live docs.
+    `commit=False` leaves the transaction to the caller (the idempotency wrapper commits with the key row)."""
     scope = list(dict.fromkeys(document_ids)) if document_ids else None
     if scope:
         n = (
@@ -77,7 +83,8 @@ async def create_session(
         .mappings()
         .one()
     )
-    await db.commit()
+    if commit:
+        await db.commit()
     return _row(r)
 
 

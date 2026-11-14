@@ -72,7 +72,9 @@ class _Receiver:
         self._value += data[start:end]
 
     def on_header_end(self) -> None:
-        self._headers[self._field.decode("latin-1").lower()] = self._value.decode("utf-8", "replace")
+        # latin-1 round-trips the raw bytes: `parse_options_header` re-encodes values as latin-1, and the
+        # callers below decode them as UTF-8 (a UTF-8 decode here made any non-latin-1 filename a 500).
+        self._headers[self._field.decode("latin-1").lower()] = self._value.decode("latin-1")
         self._field.clear()
         self._value.clear()
 
