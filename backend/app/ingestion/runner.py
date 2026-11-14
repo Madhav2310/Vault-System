@@ -1,4 +1,4 @@
-"""Stage runner (design §6.3, §6.6).
+"""Stage runner.
 
 One Celery delivery runs one stage of one job:
 1. claim the job (lease); no lease → another worker has it → no-op
@@ -293,7 +293,7 @@ async def _commit(
             )
         await _event(s, job, stage, "succeeded", job.attempt_count + 1, ms, result.detail)
         await s.commit()
-    await publish_wake(get_settings().redis_url, job.version_id)  # live status (S14.05); never raises
+    await publish_wake(get_settings().redis_url, job.version_id)  # live status; never raises
     if nxt is None:
         return "finished"
     async with sm() as s:
@@ -340,7 +340,7 @@ async def _fail(
             )
         await _event(s, job, job.current_stage, "error", attempt, ms, detail)
         await s.commit()
-    await publish_wake(get_settings().redis_url, job.version_id)  # live status (S14.05); never raises
+    await publish_wake(get_settings().redis_url, job.version_id)  # live status; never raises
     _log.info(
         "stage_failed",
         job_id=str(job.id),

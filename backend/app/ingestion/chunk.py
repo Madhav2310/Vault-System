@@ -1,4 +1,4 @@
-"""Structure-aware chunker `chunker@1` (design §6.5; research 05 §3.4).
+"""Structure-aware chunker `chunker@1` (research 05 §3.4).
 
 Units are sentences (from `split_sentences`) located in page text. Within one section group, sentences are
 packed up to ~400 tokens (hard max 800) with ~15% overlap made of whole sentences. Tables and footnotes are
@@ -251,7 +251,7 @@ def _header_unit(
 
 
 def chunk_document(doc: ExtractedDocument, title: str, version: str = CHUNKER_VERSION) -> list[ChunkDraft]:
-    """Chunk with `version` (default `chunker@1`); `chunker@2` arms live in `chunk_rules` (S22.01)."""
+    """Chunk with `version` (default `chunker@1`); `chunker@2` arms live in `chunk_rules`."""
     if version != CHUNKER_VERSION:
         from app.ingestion.chunk_rules import chunk_document_v2
 

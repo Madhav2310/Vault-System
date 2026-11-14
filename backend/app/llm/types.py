@@ -21,7 +21,7 @@ class Usage:
 
 @dataclass(frozen=True)
 class SearchResult:
-    """One evidence chunk → one `search_result` block; one text block per sentence (design §8.5)."""
+    """One evidence chunk → one `search_result` block; one text block per sentence."""
 
     source: str
     title: str

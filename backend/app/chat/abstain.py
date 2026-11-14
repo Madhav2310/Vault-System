@@ -1,9 +1,9 @@
-"""Scored abstention (design §8.4, S22.07): a logistic combiner replaces the binary evidence floor.
+"""Scored abstention: a logistic combiner replaces the binary evidence floor.
 
 Features (all numbers, computed by code): `top` (best retrieval score, the gate's own `top_score`), `margin`
-(top minus the score at rank `margin_rank`), `not_found` (plan elements without a valid handle, S22.04, capped
+(top minus the score at rank `margin_rank`), `not_found` (plan elements without a valid handle, capped
 at `MAX_NOT_FOUND`) and `unsupported` (share of cited segments the support check labelled unsupported,
-S22.06, measured before removal). The probability that the question is answerable from the documents is
+measured before removal). The probability that the question is answerable from the documents is
 `sigmoid(bias + sum_i w_i * (x_i - mean_i) / std_i)`. Two thresholds cut it into three outcomes:
 `p < t_abstain` abstain, `t_abstain <= p < t_answer` partial (answer what is supported and say the rest
 was not found), `p >= t_answer` answer. Both thresholds are fitted offline (`eval/calibrate_abstain.py`)
@@ -213,7 +213,7 @@ def decide(cfg: AbstainConfig, x: Features, *, stage: Literal["gate", "final"]) 
 
 def apply_partial(resolution: Resolution) -> tuple[Resolution, tuple[str, ...]]:
     """Partial outcome: keep the supported segments and end with one uncited template segment that says the
-    rest was not found (the S22.04 pattern, so no new response type or UI change)."""
+    rest was not found (the plan-first pattern, so no new response type or UI change)."""
     segments = [
         *resolution.segments,
         ResolvedSegment(len(resolution.segments), PARTIAL_ANSWER_TEXT, "none", ()),

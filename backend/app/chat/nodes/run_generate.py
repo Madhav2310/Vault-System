@@ -17,7 +17,7 @@ from app.llm.errors import LlmError
 
 
 def generate_kwargs(state: TurnState, ctx: TurnCtx) -> dict[str, Any]:
-    """Every `generate` argument of this turn except `on_segment` (shared with the S22.06 regeneration)."""
+    """Every `generate` argument of this turn except `on_segment` (shared with the regeneration)."""
     assert state.analysis is not None
     full = state.mode == "full_context"
     call: dict[str, Any] = {"route": state.analysis.intent if full else "qa"}
@@ -25,8 +25,8 @@ def generate_kwargs(state: TurnState, ctx: TurnCtx) -> dict[str, Any]:
     call.update(
         compare_call(state, ctx.deps.gateway.settings) if state.compare else {}
     )  # route, prompt, coverage
-    call.update(plan_call(state, ctx.deps.gateway.settings, full))  # S22.04: empty unless switched on
-    call.update(calc_call(state, ctx.deps.gateway.settings, full))  # S22.08: empty unless switched on
+    call.update(plan_call(state, ctx.deps.gateway.settings, full))  # empty unless switched on
+    call.update(calc_call(state, ctx.deps.gateway.settings, full))  # empty unless switched on
     return dict(
         gateway=ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
         question=state.analysis.standalone_query, **call,

@@ -1,4 +1,4 @@
-"""`Idempotency-Key` for resource-creating POSTs (design §12, §14).
+"""`Idempotency-Key` for resource-creating POSTs.
 
 The key row is inserted in the same transaction as the work it guards. A concurrent request with the same
 key blocks on the primary key until the first transaction ends: if it committed, the second request

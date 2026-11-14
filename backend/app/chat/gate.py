@@ -1,4 +1,4 @@
-"""Evidence gate v1, the no-LLM floor (design §8.4, S17.08). Pure functions; the `gate` node applies them.
+"""Evidence gate v1, the no-LLM floor. Pure functions; the `gate` node applies them.
 
 `top_score` is one number per retrieval: the best rerank score when the reranker ran, else the best vector
 similarity (`1 - distance`). A turn abstains without generating when that score is below `gate.floor`, no

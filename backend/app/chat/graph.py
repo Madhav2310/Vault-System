@@ -1,4 +1,4 @@
-"""Explicit turn graph (design §8.1, §8.2): typed state, async nodes, conditional edges, a node runner.
+"""Explicit turn graph: typed state, async nodes, conditional edges, a node runner.
 
 Small and dependency-free on purpose (no LangChain/LangGraph): the code, not the model, picks the next node.
 The runner wraps every node with an OTel span `vault.node.<name>`, the turn deadline, and an automatic
@@ -64,7 +64,7 @@ class TurnCtx:
     sink: EventSink = field(default_factory=NullSink)
     stage: str | None = None  # last `status` stage emitted
     segments_emitted: int = 0  # `segment` events sent so far (the index of the next one)
-    ttft_ms: int | None = None  # turn start to the first model-written segment (S18.02); None without one
+    ttft_ms: int | None = None  # turn start to the first model-written segment; None without one
 
     def mark_first_segment(self) -> None:
         if self.ttft_ms is None:
@@ -112,22 +112,18 @@ class TurnState:
     last_status: str = "ok"  # a node may report "failed" for a handled failure
     last_error: str | None = None
     last_reason: str | None = None  # a node may set a reason code for its step (e.g. FAST_PATH)
-    fast_path: bool = False  # set by `route_question`: `analyze` is skipped (S17.10)
-    gate_abstain: bool = False  # set by `gate`: the evidence is below the floor (S17.08)
-    abstain_features: dict[str, Any] | None = None  # set by `verify` (flag `chat_abstain_scored`, S22.07)
-    compare: bool = False  # set by `analyze`: a compare turn over 2-5 documents (S18.06)
-    prev_clarified: bool = (
-        False  # set by `load_context`: the last assistant message was a clarification (S23.02)
-    )
+    fast_path: bool = False  # set by `route_question`: `analyze` is skipped
+    gate_abstain: bool = False  # set by `gate`: the evidence is below the floor
+    abstain_features: dict[str, Any] | None = None  # set by `verify` (flag `chat_abstain_scored`)
+    compare: bool = False  # set by `analyze`: a compare turn over 2-5 documents
+    prev_clarified: bool = False  # set by `load_context`: the last assistant message was a clarification
     pick_document_id: uuid.UUID | None = None  # set by `load_context`: the option chosen from a clarification
     supersedes: uuid.UUID | None = None  # set by `load_context`: the earlier run this turn replaces
     clarify_hint: bool = (
         False  # set by `analyze`: the model hinted at a document ambiguity (code still decides)
     )
     clarification: Clarification | None = None  # set by a code rule; sends the turn to `clarify`
-    locate_on: bool = (
-        False  # flag `chat_locate` (S22.10): `gate` may route to `locate`; set once by the runner
-    )
+    locate_on: bool = False  # flag `chat_locate`: `gate` may route to `locate`; set once by the runner
     locate_done: bool = False  # set by `locate`: it runs at most once per turn
     locate_log: list[dict[str, Any]] = field(default_factory=list)  # {step, action, arg_digest, new_chunks}
 

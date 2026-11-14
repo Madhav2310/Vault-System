@@ -1,4 +1,4 @@
-"""Support check (design §8.5, S17.09): does each cited segment follow from its own citations?
+"""Support check: does each cited segment follow from its own citations?
 
 One `fast` strict-schema call over all cited segments of the answer. The model sees, per segment, the
 segment text and the `cited_text` of that segment's references (copied from stored sentences by the citation
@@ -29,13 +29,13 @@ from app.llm.gateway import Budget, LlmGateway
 _log = get_logger("vault.chat.support_check")
 
 PROMPT: tuple[str, int] = ("support_check", 1)
-PROMPT_V2: tuple[str, int] = ("support_check", 2)  # S22.06: verdict + minimal needed handles; off by default
+PROMPT_V2: tuple[str, int] = ("support_check", 2)  # verdict + minimal needed handles; off by default
 
 SUPPORT_CHECK_FAILED = "SUPPORT_CHECK_FAILED"
 UNSUPPORTED_CLAIM = "UNSUPPORTED_CLAIM"
-UNSUPPORTED_REMOVED = "UNSUPPORTED_REMOVED"  # S22.06: an unsupported segment was removed from the answer
-ANSWER_REGENERATED = "ANSWER_REGENERATED"  # S22.06: every segment failed, the answer was written once more
-UNSUPPORTED_ABSTAINED = "UNSUPPORTED_ABSTAINED"  # S22.06: nothing supported survived: the warm abstain text
+UNSUPPORTED_REMOVED = "UNSUPPORTED_REMOVED"  # an unsupported segment was removed from the answer
+ANSWER_REGENERATED = "ANSWER_REGENERATED"  # every segment failed, the answer was written once more
+UNSUPPORTED_ABSTAINED = "UNSUPPORTED_ABSTAINED"  # nothing supported survived: the warm abstain text
 
 SUPPORTED, PARTIAL, UNSUPPORTED, UNCHECKED = "supported", "partial", "unsupported", "unchecked"
 MAX_REASON_CHARS = 120

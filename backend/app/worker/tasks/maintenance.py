@@ -44,7 +44,8 @@ def purge_job_events_task() -> int:
 
 
 async def backfill_tsv_ids_task_fn(sm: SessionFactory) -> int:
-    """One-off: fill `tsv_ids` for chunks indexed before S17.04. Idempotent (a second run updates 0)."""
+    """One-off: fill `tsv_ids` for chunks indexed before the identifier index existed. Idempotent: a second
+    run updates 0."""
     async with sm() as s:
         n = await backfill_tsv_ids(s)
     _log.info("tsv_ids_backfilled", updated=n)

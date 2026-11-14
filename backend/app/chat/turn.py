@@ -1,4 +1,4 @@
-"""Turn orchestrator (design §8): the explicit graph in `app.chat.graph` over the nodes in `app.chat.nodes`.
+"""Turn orchestrator: the explicit graph in `app.chat.graph` over the nodes in `app.chat.nodes`.
 
 load_context -> route_question -> analyze (embeds the question meanwhile) -> retrieve -> gate -> generate ->
 verify -> persist. The routers below, not the nodes, pick the next node. No DB connection is held across
@@ -6,7 +6,7 @@ an LLM call or a retrieval call: each phase opens its own short session. Whateve
 and the session lease released in one `persist_turn` transaction (a failed node becomes an `error` response,
 never a stuck run: the graph jumps to `persist`).
 
-`plan_context` (S17.07) picks RAG or the full-context route; the run records `mode=full_context` only when
+`plan_context` picks RAG or the full-context route; the run records `mode=full_context` only when
 the whole scoped documents were sent. M0 scope: no evidence floor, no conflict detection (later slices).
 """
 
@@ -54,9 +54,9 @@ def _analysis_record(state: TurnState) -> dict[str, Any] | None:
     if a is None:
         return {"abstain": state.abstain_features} if state.abstain_features else None
     rec: dict[str, Any] = {"intent": a.intent, "dimensions": list(a.dimensions)}
-    if state.abstain_features:  # S22.07: calibration inputs and the decision, only with `chat_abstain_scored`
+    if state.abstain_features:  # calibration inputs and the decision, only with `chat_abstain_scored`
         rec["abstain"] = state.abstain_features
-    if state.locate_log:  # S22.10: typed actions, digests and counts only
+    if state.locate_log:  # typed actions, digests and counts only
         rec["locate"] = state.locate_log
     if state.clarification is not None:  # the options, so history can show the chips again
         rec["clarify"] = state.clarification.to_json()
@@ -99,7 +99,7 @@ def after_route_question(s: TurnState) -> str:
 @router("clarify", "meta", "plan_context")
 def after_analyze(s: TurnState) -> str:
     a = s.analysis
-    if s.clarification is not None:  # decided by code (S23.02), never by the model alone
+    if s.clarification is not None:  # decided by code, never by the model alone
         return "clarify"
     return "meta" if a is not None and a.intent == "meta" and a.meta_op is not None else "plan_context"
 
@@ -125,7 +125,7 @@ def after_locate(s: TurnState) -> str:
 
 @router("abstain_no_evidence", "generate", "locate")
 def after_gate(s: TurnState) -> str:
-    if s.locate_on and not s.locate_done and not s.compare and len(s.scope.entries) == 1:  # S22.10
+    if s.locate_on and not s.locate_done and not s.compare and len(s.scope.entries) == 1:
         return "locate"  # the node itself checks length and confidence, and may skip
     return after_locate(s)
 

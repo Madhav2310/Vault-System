@@ -1,11 +1,11 @@
-"""OpenAI Responses API chat adapter (design §4.4, §5.3).
+"""OpenAI Responses API chat adapter.
 
 - SDK retries are off (`max_retries=0`): the gateway owns retries and writes one `llm_calls` row per attempt.
 - Structured output is `text.format` = strict `json_schema`; reasoning effort is always explicit (the
   API default is `medium`); `temperature`/`top_p` are never sent. `store=False`: nothing is retained.
 - Usage: OpenAI's `input_tokens` includes cached reads and cache writes, so uncached = total - both.
   `output_tokens` already includes reasoning tokens.
-- Citations are application-managed (design §8.5): provider-native search results are rejected here.
+- Citations are application-managed: provider-native search results are rejected here.
 """
 
 from collections.abc import AsyncGenerator

@@ -1,4 +1,4 @@
-"""Fast-path routing rules (design §8.2): when `analyze_query` can be skipped. Pure, data-driven.
+"""Fast-path routing rules: when `analyze_query` can be skipped. Pure, data-driven.
 
 A question without pronouns, comparison or meta cues needs no rewrite or intent label: the raw question is the
 standalone query and the route is `qa`. A follow-up (prior turns) qualifies only when it also reads as

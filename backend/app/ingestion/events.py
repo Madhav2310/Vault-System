@@ -1,4 +1,4 @@
-"""Live processing status (design §12 `/processing/stream`).
+"""Live processing status (`/processing/stream`).
 
 `job_events` is the only source of truth. Redis pub/sub carries no data, just a wake-up ("something changed
 for version V") published by the runner after each stage commit. The stream subscribes first, then reads

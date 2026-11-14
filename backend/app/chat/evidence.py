@@ -1,4 +1,4 @@
-"""Evidence set, citation handles, strict answer schema and manifest (design §8.5).
+"""Evidence set, citation handles, strict answer schema and manifest.
 
 Each evidence chunk gets a request-scoped handle `E<k>` (k from 1) and each of its sentences `E<k>.<i>`
 (i from 0). The prompt shows one line per sentence. The model answers with
@@ -18,7 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model
 from app.chat.nodes_common import defuse
 
 MAX_ENUM_HANDLES = 1000
-CALC_OPS = ("add", "subtract", "ratio", "percent_change", "sum", "average")  # S22.08 (see `calc.py`)
+CALC_OPS = ("add", "subtract", "ratio", "percent_change", "sum", "average")  # see `calc.py`
 HEADER_SEP = " · "  # middle dot, as in the design's header format
 
 Mode = Literal["rag", "full_context"]
@@ -111,8 +111,8 @@ def answer_schema(
     evidence: EvidenceSet | None, mode: Mode = "rag", plan_ids: Sequence[str] = (), calc: bool = False
 ) -> type[BaseModel]:
     """Strict answer schema. RAG mode with an enum-sized evidence set: handle enum; else plain strings.
-    `plan_ids` (S22.04, e.g. `("R1", "R2")`) adds a `plan` field before the segments; empty = unchanged.
-    `calc` (S22.08) adds a nullable `calc` object to each segment; False = unchanged."""
+    `plan_ids` (e.g. `("R1", "R2")`) adds a `plan` field before the segments; empty = unchanged.
+    `calc` adds a nullable `calc` object to each segment; False = unchanged."""
     cfg = ConfigDict(extra="forbid")
     item: Any = str
     if mode == "rag" and evidence is not None and evidence.enum_ok and evidence.handles:
@@ -154,14 +154,14 @@ def answer_schema(
         **plan,
         segments=(list[segment], ...),
         followups=(list[str], Field(default_factory=list)),
-        # S18.07: handles are plain strings (an enum here would triple the schema's enum-value count);
+        # handles are plain strings (an enum here would triple the schema's enum-value count);
         # `conflicts.resolve_conflicts` validates them against the manifest.
         conflicts=(list[ConflictItem], Field(default_factory=list)),
     )
 
 
 def cache_mode_for(mode: Mode) -> Literal["implicit", "explicit"] | None:
-    """OpenAI prompt-cache mode per answer mode (design §4.4, F-021). RAG evidence differs on every request,
+    """OpenAI prompt-cache mode per answer mode (F-021). RAG evidence differs on every request,
     so caching it only adds the 1.25x write charge: `explicit` with no breakpoint disables it. FULL_CONTEXT
-    keeps the default until the document-block breakpoint syntax is verified (S3.15)."""
+    keeps the default until the document-block breakpoint syntax is verified."""
     return "explicit" if mode == "rag" else None

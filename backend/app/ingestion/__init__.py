@@ -1,1 +1,1 @@
-"""Ingestion: job dispatch, claim/lease, stage runner, sweeper, extractors, chunker (design §6)."""
+"""Ingestion: job dispatch, claim/lease, stage runner, sweeper, extractors, chunker."""

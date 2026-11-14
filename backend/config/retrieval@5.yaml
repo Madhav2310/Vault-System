@@ -1,4 +1,4 @@
-# Retrieval configuration (design §7). The file name is the config version: changing any value means a new
+# Retrieval configuration. The file name is the config version: changing any value means a new
 # file; results and cache keys carry the version. retrieval@5 = retrieval@2-llm with a deeper rerank pool
 # (50 fused candidates, the listwise reranker sees all of them) and no per-document vector quota on a
 # one-document scope; the evidence size is unchanged (top 8 chunks).

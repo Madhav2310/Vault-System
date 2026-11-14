@@ -1,4 +1,4 @@
-"""Contextual chunk headers, index side only (design §6.5; plan S17.05).
+"""Contextual chunk headers, index side only.
 
 A short header situating a chunk in its document is added to the text that is embedded and lexically indexed:
 `embedding_text = structural_prefix + "\\n" + contextual_prefix + "\\n" + original_text` (`tsv_en` follows:
@@ -18,7 +18,7 @@ header that exists is never generated again. Nothing is written when anything fa
 valid and searchable); the stage never fails the pipeline. All writes happen in the runner's fenced commit,
 each guarded by the `embedding_text` the compute step read, so a concurrent change is never overwritten.
 
-Backfill for already-ingested documents (S17.05 A/B): `python -m app.ingestion.contextualize --owner-email E
+Backfill for already-ingested documents: `python -m app.ingestion.contextualize --owner-email E
 [--variant deterministic|llm] [--max-usd N]` re-runs the same logic over one owner's current ready/enriched
 versions, one document per transaction (never a global run: lock waits), idempotent (a second run changes 0
 chunks). `--max-usd` caps the whole run's spend (header calls plus embeddings, read from `llm_calls`); the run
@@ -67,7 +67,7 @@ MAX_SUMMARY_SENTENCE_CHARS = 300
 MAX_CHUNK_CHARS = 6000
 VARIANT_DETERMINISTIC = "deterministic"
 VARIANT_LLM = "llm"
-VARIANT_INDEX = "index_deterministic"  # S22.02: code-only header (title, section, table caption / header row)
+VARIANT_INDEX = "index_deterministic"  # code-only header (title, section, table caption / header row)
 WAVE = 4  # concurrent header calls; the cost cap is checked before every wave
 
 

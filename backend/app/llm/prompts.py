@@ -1,4 +1,4 @@
-"""Prompt registry (design §19): `backend/prompts/<id>@<version>.md` with a flat front-matter block.
+"""Prompt registry: `backend/prompts/<id>@<version>.md` with a flat front-matter block.
 
     ---
     id: analyze_query

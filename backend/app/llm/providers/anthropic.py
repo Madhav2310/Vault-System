@@ -3,7 +3,7 @@
 - SDK retries are off (`max_retries=0`): the gateway owns retries and writes one `llm_calls` row per attempt.
 - Native OpenTelemetry with `content_mode=metadata_only`, set explicitly so env vars cannot flip it.
 - No `temperature`/`top_p`/`top_k` (400 on 2026-10-21) and no `thinking` param (5.5 models run adaptive).
-- Evidence goes in `search_result` blocks, one text block per sentence, citations enabled (design §8.5).
+- Evidence goes in `search_result` blocks, one text block per sentence, citations enabled.
 """
 
 from collections.abc import AsyncGenerator

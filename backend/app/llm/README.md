@@ -1,6 +1,6 @@
 # app.llm
 
-The only path to a model (design §4, §5.3).
+The only path to a model.
 
 - `gateway.py`: every call goes through it (routing, turn budget, retries with jitter, one `llm_calls` row per attempt, schema validation, fallback)
 - `routing.py`: model roles (`fast`/`balanced`/`deep`/`flagship`) and per-node routing; the only module besides settings that names models

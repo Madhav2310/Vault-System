@@ -1,4 +1,4 @@
-"""Initial schema: every table in design §11.
+"""Initial schema: every table.
 
 Revision ID: 0001
 Revises:

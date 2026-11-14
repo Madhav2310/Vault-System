@@ -1,1 +1,1 @@
-"""Document insights: brief, summaries, staleness (design §9)."""
+"""Document insights: brief, summaries, staleness."""

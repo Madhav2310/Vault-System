@@ -1,4 +1,4 @@
-"""Soft delete and purge (design §6.7).
+"""Soft delete and purge.
 
 `DELETE /documents/{id}` only sets `documents.deleted_at` (every read path filters on it) and enqueues a
 purge. The purge works per version and is idempotent: derived rows and objects are removed, the blob

@@ -1,4 +1,4 @@
-"""OpenTelemetry setup (design §17): traces, metrics and logs over OTLP to the collector.
+"""OpenTelemetry setup: traces, metrics and logs over OTLP to the collector.
 
 Content is never recorded: LLM SDKs run metadata-only (app/llm), and the collector redacts gen_ai
 message attributes as a backstop. Call `setup_telemetry()` once per process (API startup, Celery

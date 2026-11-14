@@ -28,7 +28,7 @@ class Settings(BaseSettings):
     db_pool_size: int = 10
     db_max_overflow: int = 5
 
-    # --- UI session cookie (S22.11) ---
+    # --- UI session cookie ---
     session_ttl_s: int = 28800  # lifetime of a /v1/session cookie
     local_autologin: bool = (
         True  # POST /v1/session/local: one-click sign-in on localhost only (never in prod)
@@ -53,19 +53,19 @@ class Settings(BaseSettings):
     # `fake` = scripted UI-test model (app/llm/fake.py); refused when environment is prod
     llm_provider: Literal["openai", "fake"] = "openai"
 
-    # --- model roles (design §4.1; no date suffixes). Only app/llm/routing.py reads these. ---
+    # --- model roles (no date suffixes). Only app/llm/routing.py reads these. ---
     model_fast: str = "gpt-6-luna"
     model_balanced: str = "gpt-6.1-terra"
     model_deep: str = "gpt-6.1-sol"
     model_flagship: str = "gpt-6-astra"
-    # Per-node overrides over the routing table (design §4.2), JSON, e.g.
+    # Per-node overrides over the routing table, JSON, e.g.
     # {"analyze_query": {"role": "balanced", "effort": "low"},
     #  "generate:compare": {"role": "deep", "effort": "low"}}
     model_routes: dict[str, dict[str, str]] = Field(default_factory=dict)
     embedding_model: str = "text-embedding-3-small"
     embedding_dim: int = 1536
 
-    # --- LLM gateway (design §5.3, §15) ---
+    # --- LLM gateway ---
     llm_timeout_s: float = 120.0
     llm_first_token_timeout_s: float = 15.0  # a stream with no first token by then is retried (0 = off)
     llm_max_retries: int = 2  # retries after the first attempt, retryable errors only
@@ -75,71 +75,71 @@ class Settings(BaseSettings):
     # {"gpt-6.1-terra": {"input": 1, "output": 5, "cache_read": 0.05, "cache_write": 1.25}}
     llm_prices: dict[str, dict[str, float]] = Field(default_factory=dict)
 
-    # --- upload / ingestion limits (design §6) ---
+    # --- upload / ingestion limits ---
     max_upload_bytes: int = 25 * 1024 * 1024
     parse_timeout_s: int = 120
     embed_concurrency: int = 4  # concurrent embedding batches per document (ingest stage)
     chunker_version: Literal["chunker@1", "chunker@2", "chunker@2-overlap25"] = (
-        "chunker@1"  # S22.01: default unchanged
+        "chunker@1"  # default unchanged
     )
     brief_concurrency: int = 3  # concurrent brief map calls per document
     max_pages: int = 600  # PDFs above this end `unsupported` / `too_many_pages` before extraction
     parse_memory_mb: int = 2048  # address-space cap of the extraction subprocess (Linux only)
 
-    # --- per-user rate limits: requests per window, Redis token bucket per (user, bucket) (design §13.4) ---
+    # --- per-user rate limits: requests per window, Redis token bucket per (user, bucket) ---
     rate_limit_chat_post_per_min: int = 20
     rate_limit_upload_per_min: int = 30
     rate_limit_default_per_min: int = 300
     rate_limit_window_s: int = 60  # the "min" above; tests widen it so refill cannot blur exact counts
 
-    # --- daily LLM cost quota per user, UTC day; admins are unlimited (design §13.4) ---
+    # --- daily LLM cost quota per user, UTC day; admins are unlimited ---
     user_daily_usd: float = 1.00
 
-    # --- document brief (design §9.1) ---
+    # --- document brief ---
     brief_max_evidence_tokens: int = 12_000  # above this the brief maps over section groups, then merges
     brief_enabled: bool = True  # False skips the brief stage (eval uploads: no spend); version stays `ready`
     brief_max_usd: float = 0.05  # per document; reaching it stops further map calls (BRIEF_PARTIAL_BUDGET)
 
-    # --- contextual chunk headers, index side only (design §6.5, S17.05); off until the A/B decides ---
+    # --- contextual chunk headers, index side only; off until the A/B decides ---
     contextualize_variant: Literal["off", "deterministic", "llm"] = "off"
     contextualize_max_usd: float = 0.02  # per document; reaching it stops further header calls
-    # S22.02 contextual index text for both legs: none = chunker text unchanged; deterministic = code header
+    # contextual index text for both legs: none = chunker text unchanged; deterministic = code header
     # (title, section, table caption/header, written by the chunk stage); llm = chunk_context@1 headers.
     index_context: Literal["none", "deterministic", "llm"] = "none"
 
-    # --- retrieval config file under backend/config (design §7.3), e.g. retrieval@2 ---
+    # --- retrieval config file under backend/config, e.g. retrieval@2 ---
     retrieval_config: str = "retrieval@5"
 
     # --- whole-document answering, on request only: the token cap of the scope ---
     full_context_max_tokens: int = 50_000
 
-    # --- fast path (design §8.2, S17.10): false = always run analyze_query (kill switch) ---
+    # --- fast path: false = always run analyze_query (kill switch) ---
     chat_fast_path: bool = True
     chat_speculative_retrieval: bool = True  # retrieve on the raw question while `analyze` runs
 
-    # --- plan-first answers (S22.04): answer_rag@4 + coverage plan; off until the A/B decides ---
+    # --- plan-first answers: answer_rag@4 + coverage plan; off until the A/B decides ---
     chat_plan_first: bool = False
 
-    # --- support check (S22.06): 2 = support_check@2 (prunes unneeded citations, removes unsupported
+    # --- support check: 2 = support_check@2 (prunes unneeded citations, removes unsupported
     # segments, one regeneration if every segment fails); 1 until the paired A/B accepts it ---
     chat_support_version: Literal[1, 2] = 1
 
-    # --- scored abstention (S22.07): logistic combiner (config/abstain@1.yaml) replaces the binary gate;
+    # --- scored abstention: logistic combiner (config/abstain@1.yaml) replaces the binary gate;
     # off until calibrated on a v2 run and the paired A/B accepts it ---
     chat_abstain_scored: bool = False
-    # --- typed calculation segments (S22.08): answer_rag@5, code computes numbers; off until A/B decides ---
+    # --- typed calculation segments: answer_rag@5, code computes numbers; off until A/B decides ---
     chat_calc: bool = False
 
-    # --- routed locate loop for long filings (S22.10): bounded search/find/open steps when the first pass
+    # --- routed locate loop for long filings: bounded search/find/open steps when the first pass
     # over one long document is low-confidence; off until the paired A/B decides ---
     chat_locate: bool = False
     chat_locate_min_chunks: int = 150  # "long" = at least this many chunks ...
     chat_locate_min_pages: int = 60  # ... or at least this many pages
 
-    # --- clarify when ambiguous (S23.02): code-checked ambiguity gives option chips; off until reviewed ---
+    # --- clarify when ambiguous: code-checked ambiguity gives option chips; off until reviewed ---
     chat_clarify: bool = False
 
-    # --- telemetry (design §17, §20.1) ---
+    # --- telemetry ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"

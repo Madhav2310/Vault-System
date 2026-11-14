@@ -1,4 +1,4 @@
-"""Generate node, non-streaming consumption (design §8.3, §8.5).
+"""Generate node, non-streaming consumption.
 
 Streaming to the client arrives in S5; this node already uses `gateway.stream` and consumes it to completion,
 so S5 only changes the consumer.
@@ -50,7 +50,7 @@ class GenerateResult:
     call_ids: tuple[uuid.UUID, ...]
     followups: tuple[str, ...] = ()  # as the model wrote them; the node cleans them (followups.py)
     conflicts: tuple[ResolvedConflict, ...] = ()  # validated by code (conflicts.py)
-    not_found: int | None = None  # plan elements without a valid handle (S22.04); None: no plan was checked
+    not_found: int | None = None  # plan elements without a valid handle; None: no plan was checked
 
     @property
     def text(self) -> str:
@@ -114,7 +114,7 @@ async def generate(
     the stream, before the whole answer has arrived. The final result is resolved from the complete, validated
     answer and is what gets persisted."""
     plan_ids = element_ids(len(plan_elements)) if mode == "rag" else ()
-    calc = calc and mode == "rag"  # S22.08: typed calculation segments
+    calc = calc and mode == "rag"  # typed calculation segments
     schema = answer_schema(evidence, mode, plan_ids, calc)
     elements = elements_block(plan_elements) if plan_ids else None
     message = compose_user_message(evidence, question, route, memory, coverage, conflicts, elements)

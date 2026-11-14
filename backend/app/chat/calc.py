@@ -1,4 +1,4 @@
-"""Typed calculation segments (design §8.5, S22.08).
+"""Typed calculation segments.
 
 With `chat_calc` on, a segment may carry `calc: {op, operands: [{handle, value_text}], unit, stated_result}`.
 The model only chooses the operation and which cited sentences hold the operands. Code reads every operand

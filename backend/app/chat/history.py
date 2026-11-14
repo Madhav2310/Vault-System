@@ -118,7 +118,7 @@ async def get_message(db: AsyncSession, owner_id: uuid.UUID, message_id: uuid.UU
 async def _clarify_options(
     db: AsyncSession, owner_id: uuid.UUID, msgs: list[Any]
 ) -> dict[uuid.UUID, list[dict[str, str]]]:
-    """`{label, document_id}` options of the clarification messages (stored with the run, S23.02)."""
+    """`{label, document_id}` options of the clarification messages (stored with the run)."""
     marked = {m["run_id"]: m["id"] for m in msgs if m["response_type"] == "clarify" and m["run_id"]}
     if not marked:
         return {}

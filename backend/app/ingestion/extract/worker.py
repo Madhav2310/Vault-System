@@ -1,4 +1,4 @@
-"""Extraction subprocess (design §6.3: parser wall-clock timeout and memory limit).
+"""Extraction subprocess (parser wall-clock timeout and memory limit).
 
     python -m app.ingestion.extract.worker <input> <mime> <output.json.gz>
 

@@ -1,4 +1,4 @@
-"""User view of one run (design §10.2, S18.03): status, route, sources, steps, usage and the explanation.
+"""User view of one run: status, route, sources, steps, usage and the explanation.
 
 Every line of `explanation` is rendered by templates from the run's reason codes and facts (`templates.py`);
 no model is asked to explain anything. Nothing internal leaves this module: no prompt ids, model names, trace

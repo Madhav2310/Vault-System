@@ -1,5 +1,5 @@
 """document_versions.purged_at: a purged version that the permanent ledger still references keeps its row,
-marked here (design §6.7; replaces a marker inside the `quality` JSON).
+marked here (replaces a marker inside the `quality` JSON).
 
 Revision ID: 0003
 Revises: 0002

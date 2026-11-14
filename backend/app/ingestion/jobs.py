@@ -1,4 +1,4 @@
-"""Job dispatch, claim, lease and heartbeat (design §6.6, §14).
+"""Job dispatch, claim, lease and heartbeat.
 
 - dispatch: compare-and-set on `processing_jobs`; only the winner enqueues; the payload is the job id only.
 - claim: a worker takes a lease (5 min) before doing stage work; a live lease turns duplicates into no-ops.

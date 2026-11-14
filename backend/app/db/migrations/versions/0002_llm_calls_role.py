@@ -1,4 +1,4 @@
-"""llm_calls gains `role` and `resolved_model` (design §4.2, §11).
+"""Llm_calls gains `role` and `resolved_model`.
 
 Revision ID: 0002
 Revises: 0001

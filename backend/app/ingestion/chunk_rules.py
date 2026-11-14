@@ -1,4 +1,4 @@
-"""`chunker@2` boundary rules (S22.01; design §6.5 successor, research parsing_chunking_indexing).
+"""`chunker@2` boundary rules .
 
 Differences from `chunker@1`, all about where chunks start and end and what the index sees:
 - cut at headings, table boundaries and captions first, then pack by tokens (target 350, max 600);

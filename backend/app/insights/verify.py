@@ -1,4 +1,4 @@
-"""Fact verification (design §9.1): pure functions, no model, no I/O.
+"""Fact verification: pure functions, no model, no I/O.
 
 A fact is `verified` iff it has at least one resolved citation into the same version *and* its value is
 supported by the cited sentences:

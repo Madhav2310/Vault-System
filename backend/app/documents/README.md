@@ -1,6 +1,6 @@
 # app.documents
 
-Document and version lifecycle outside the ingestion pipeline (design §6.1, §6.7).
+Document and version lifecycle outside the ingestion pipeline.
 
 - `upload.py`: streaming multipart upload
 - `sniff.py`: magic-byte type detection; the client's extension and Content-Type are never trusted

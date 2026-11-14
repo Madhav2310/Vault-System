@@ -1,4 +1,4 @@
-"""Clarify when ambiguous (S23.02, design 8.2): the human in the loop, decided by code.
+"""Clarify when ambiguous: the human in the loop, decided by code.
 
 The model never decides to ask and never writes the question or the options. Two rules fire, both only when
 `chat_clarify` is on and the previous assistant message was not itself a clarification (no loops):

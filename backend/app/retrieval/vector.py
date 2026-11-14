@@ -1,5 +1,5 @@
 """Exact scoped vector search (design 7.2, 7.3): brute-force cosine distance over one owner's chunks in the
-allowed versions, on `halfvec(1536)`. No ANN index is used here (the HNSW escape hatch is S2.04).
+allowed versions, on `halfvec(1536)`. No ANN index is used here (HNSW is the escape hatch at larger scale).
 
 Every statement is filtered by `owner_id` (partition pruning) and the allowed version ids; the query vector is
 always a bound parameter. Order is distance ascending, then chunk id, so results are deterministic.

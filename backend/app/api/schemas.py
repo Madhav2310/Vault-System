@@ -1,4 +1,4 @@
-"""Response models of the public API (design §12), used for OpenAPI and response validation (S18.11).
+"""Response models of the public API, used for OpenAPI and response validation.
 
 Handlers build plain dicts; these models give each body a name, typed top-level fields and an example. Nested,
 open-ended structures (facts, segments, glyphs, per-stage metrics) stay `dict[str, Any]`. Models allow extra
@@ -342,7 +342,7 @@ class PageLayoutOut(Model):
     page: int
     width: float
     height: float
-    glyphs: list[Any] = Field(description="Glyph boxes in page coordinates (design §6.4)")
+    glyphs: list[Any] = Field(description="Glyph boxes in page coordinates")
     model_config = ConfigDict(
         extra="allow",
         json_schema_extra={

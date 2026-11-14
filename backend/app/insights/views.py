@@ -1,4 +1,4 @@
-"""Read side of the brief (design §12): the `GET /v1/documents/{id}/brief` body and the list snippet.
+"""Read side of the brief: the `GET /v1/documents/{id}/brief` body and the list snippet.
 
 The brief of a document is the brief of its current version (else its newest). Every query is scoped by
 `owner_id`; a missing, foreign or soft-deleted document is `None` (the route answers 404). A brief that has

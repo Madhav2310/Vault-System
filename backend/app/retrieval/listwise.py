@@ -1,4 +1,4 @@
-"""LLM listwise rerank (plan S17.03, design §7.3): one `fast` strict-schema call orders the top fused
+"""LLM listwise rerank: one `fast` strict-schema call orders the top fused
 passages. Same result type as `RerankClient`, and it never raises.
 
 The model sees the question and up to `MAX_PASSAGES` numbered focus windows (each capped at

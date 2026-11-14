@@ -1,9 +1,9 @@
-"""Per-user request rate limit (design §13.4): a Redis token bucket, one Lua call per request.
+"""Per-user request rate limit: a Redis token bucket, one Lua call per request.
 
 - One bucket per (user, bucket name): capacity = the bucket's limit, refilled continuously at limit/window.
 - The Lua script reads Redis `TIME`, refills, takes one token and writes back in one atomic step, so parallel
   requests can never exceed the capacity and API replicas need no clock agreement.
-- Redis unavailable -> fail open (design §15): the request proceeds, a warning is logged and
+- Redis unavailable -> fail open: the request proceeds, a warning is logged and
   `vault.ratelimit.fail_open` is counted. A limiter outage must never become an API outage.
 - `enforce_rate_limit` is one router-level dependency; the bucket comes from the matched route
   (`ROUTE_BUCKETS`), everything else is `default`. `RateLimitHeadersMiddleware` adds the headers to every
@@ -129,7 +129,7 @@ async def get_ratelimit_redis() -> aioredis.Redis:
 def _headers(d: Decision) -> list[tuple[bytes, bytes]]:
     pairs = {"limit": d.limit, "remaining": d.remaining, "reset": d.reset_s}
     out = []
-    for name, v in pairs.items():  # X-RateLimit-* (the plan) and RateLimit-* (design §12)
+    for name, v in pairs.items():  # X-RateLimit-* (the plan) and RateLimit-*
         out.append((f"x-ratelimit-{name}".encode(), str(v).encode()))
         out.append((f"ratelimit-{name}".encode(), str(v).encode()))
     return out

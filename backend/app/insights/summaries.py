@@ -1,4 +1,4 @@
-"""Custom summaries (design §9.2, plan S12.06): `POST /v1/documents/{id}/summaries`, run on the `ai` queue.
+"""Custom summaries: `POST /v1/documents/{id}/summaries`, run on the `ai` queue.
 
 - Parameters `{length, focus, tone}` are canonicalized (focus: whitespace collapsed, empty -> none), hashed;
   a summary is cached by `(version, kind='summary', params_hash, prompt_version)` in `document_insights`, so

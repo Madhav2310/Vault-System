@@ -1,4 +1,4 @@
-"""Extraction output (design §5.2, §6.4).
+"""Extraction output.
 
 Every document becomes one or more `PageText`s plus `Element`s that point into them:
 - PDF: one `PageText` per page; `text` is the glyph-mapped character stream (invariant I1): each char maps to

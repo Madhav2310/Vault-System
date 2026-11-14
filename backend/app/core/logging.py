@@ -1,4 +1,4 @@
-"""Structured JSON logging (design §17).
+"""Structured JSON logging.
 
 One JSON object per line on stdout. Correlation IDs come from contextvars (bound per request / task)
 and from the active OpenTelemetry span. Never log document text, prompts or completions: IDs and
@@ -30,7 +30,7 @@ def _add_otel_ids(_: WrappedLogger, __: str, event: EventDict) -> EventDict:
     """Attach trace_id/span_id of the current OTel span when one is recording."""
     try:
         from opentelemetry import trace
-    except ImportError:  # OTel arrives in S0.15
+    except ImportError:  # OpenTelemetry is optional
         return event
     ctx = trace.get_current_span().get_span_context()
     if ctx.is_valid:

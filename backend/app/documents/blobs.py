@@ -1,4 +1,4 @@
-"""Content-addressed blobs (design §6.1, §11, §14).
+"""Content-addressed blobs.
 
 The file goes to `blobs/{sha256}` before the database transaction: the write is idempotent (same key,
 same bytes), so a crash can at worst leave an unreferenced file, never a row pointing to a missing one.

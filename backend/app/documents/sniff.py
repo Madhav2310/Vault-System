@@ -1,4 +1,4 @@
-"""Magic-byte type detection (design §6.1). The client's extension and Content-Type are never trusted.
+"""Magic-byte type detection. The client's extension and Content-Type are never trusted.
 
 Allowed: PDF, DOCX (a ZIP with `[Content_Types].xml` and a `word/` part), and UTF-8 text without NUL bytes.
 Text is `text/markdown` when the filename says so, else `text/plain`: bytes cannot tell the two apart,

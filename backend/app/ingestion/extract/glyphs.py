@@ -1,4 +1,4 @@
-"""Glyph geometry and the glyph-mapped character stream (research 05 §3.1 and §3.3; S0.21 spike).
+"""Glyph geometry and the glyph-mapped character stream.
 
 - `PageGeo` converts pdfplumber coordinates (MediaBox-relative, /Rotate applied) to boxes normalized to the
   rendered page (CropBox offset removed, rotation applied, top-left origin, [0, 1]).
@@ -22,7 +22,7 @@ from app.ingestion.extract.base import Box
 EXTRACT_CFG: dict[str, Any] = {
     "use_text_flow": True,
     "x_tolerance_ratio": 0.15,
-}  # extraction sweep, design §6.4
+}  # extraction sweep
 BOLD_MARKERS = ("bold", "black", "heavy", "semibold", "demi")
 
 
@@ -209,7 +209,7 @@ def dedupe_chars_fast(
     Same selection (cluster identical glyphs by text/font/size and position within `tolerance`, keep the
     leftmost of each cluster) and the same output order (original order); the order comes from an id->index
     map instead of `list.index`. Profiled on a 121-page 10-K: ~25 s of 37 s
-    (docs/status/progress.md S16.05)."""
+    """
     import itertools
     from operator import itemgetter
 

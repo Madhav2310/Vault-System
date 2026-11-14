@@ -1,4 +1,4 @@
-"""`plan_context` node (design §8.2): decide RAG vs full context, and for full context load the evidence.
+"""`plan_context` node: decide RAG vs full context, and for full context load the evidence.
 
 Runs after `analyze`. RAG leaves the state untouched (the graph goes on to `retrieve`). Full context loads
 every chunk of the scoped versions in order into `state.chunks`, records each as a selected candidate (vector

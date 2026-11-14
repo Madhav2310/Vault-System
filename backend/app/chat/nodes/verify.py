@@ -1,4 +1,4 @@
-"""`verify` node (S17.09, S22.06): the support check runs here, after `generate` and before `persist`.
+"""`verify` node: the support check runs here, after `generate` and before `persist`.
 
 With `chat_support_version` 1 (default) it is advisory only: it rewrites the resolved segments with their
 verdicts and adds reason codes, and never fails the turn (`check_support` does not raise for model, provider,
@@ -159,7 +159,7 @@ def _counts(verdicts: dict[int, CheckVerdict], kept: tuple[ResolvedSegment, ...]
 async def _scored_final(
     state: TurnState, ctx: TurnCtx, gen: GenerateResult, res: SupportResult, events: list[Verdict]
 ) -> list[Verdict]:
-    """S22.07 post-generation decision (flag `chat_abstain_scored`): record the combiner inputs on the run
+    """Post-generation decision (flag `chat_abstain_scored`): record the combiner inputs on the run
     and, with a fitted `final` model and every feature present, keep the answer, add the partial-answer
     segment or replace the answer with the warm abstain text. `gen` is the answer as checked (features are
     measured before removal). No model call; anything missing keeps the old behaviour. Returns the

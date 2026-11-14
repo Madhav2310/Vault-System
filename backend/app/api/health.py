@@ -1,4 +1,4 @@
-"""Health endpoints (design §12).
+"""Health endpoints.
 
 `/healthz`: process liveness, touches nothing. `/readyz`: every dependency, checked concurrently with a
 per-check timeout. A failed *required* check (database, Redis, object store, provider key) gives 503. The

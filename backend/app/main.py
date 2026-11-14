@@ -73,7 +73,7 @@ def create_app(*, telemetry: bool = False, ui_dist: Path | None = None) -> FastA
     install_openapi(app)
     app.add_middleware(RateLimitHeadersMiddleware)
     app.add_middleware(RequestContextMiddleware)
-    limited = [Depends(enforce_rate_limit)]  # per-user token bucket on every authenticated router (S14.01)
+    limited = [Depends(enforce_rate_limit)]  # per-user token bucket on every authenticated router
     app.include_router(health.router)
     app.include_router(session.router)
     app.include_router(documents.router, dependencies=limited)

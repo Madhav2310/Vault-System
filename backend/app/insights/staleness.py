@@ -1,4 +1,4 @@
-"""Staleness hook (design §9.5). Called once when a version becomes `ready`, in the same transaction.
+"""Staleness hook. Called once when a version becomes `ready`, in the same transaction.
 
 Living answers: assistant messages whose run used (`run_versions`) an earlier version of the document get
 `chat_messages.stale_since = now()`. The update is idempotent (`WHERE stale_since IS NULL`: a second call

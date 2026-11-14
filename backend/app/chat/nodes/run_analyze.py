@@ -28,7 +28,7 @@ def clarify_ok(state: TurnState, ctx: TurnCtx) -> bool:
 
 
 def _pre_clarify(state: TurnState, ctx: TurnCtx) -> None:
-    """Rule (b), decided by code from the question, the history and the scope (S23.02)."""
+    """Rule (b), decided by code from the question, the history and the scope."""
     a = state.analysis
     if a is None or not clarify_ok(state, ctx) or a.intent == "meta":
         return
@@ -46,7 +46,7 @@ def _pre_clarify(state: TurnState, ctx: TurnCtx) -> None:
 
 
 async def analyze(state: TurnState, ctx: TurnCtx) -> TurnState:
-    if state.fast_path:  # S17.10: the raw question is the standalone query, route `qa`, no model call
+    if state.fast_path:  # the raw question is the standalone query, route `qa`, no model call
         query = " ".join(state.question.split())
         state.analysis = AnalyzeResult("qa", query, (), (), False, None, (FAST_PATH,))
         state.last_status, state.last_reason = "skipped", FAST_PATH
@@ -105,8 +105,8 @@ async def analyze(state: TurnState, ctx: TurnCtx) -> TurnState:
         state.scope = narrow(state.scope, analysis.target_document_ids)
     except ScopeWideningError:  # never widen; keep the wider scope but leave a trace
         state.reasons.append(TARGET_IGNORED)
-    limit_compare(state)  # S18.06: compare needs 2-5 documents in scope, else it is a plain question
-    # a clarification hint is only a hint: the turn goes on as `qa`, and code decides after retrieval (S23.02)
+    limit_compare(state)  # compare needs 2-5 documents in scope, else it is a plain question
+    # a clarification hint is only a hint: the turn goes on as `qa`, and code decides after retrieval
     cur = state.analysis
     state.clarify_hint = cur.clarification is not None and cur.clarification.kind == "document"
     state.route = cur.intent if cur.intent in ROUTE_LIMITS and cur.intent != "clarify" else "qa"

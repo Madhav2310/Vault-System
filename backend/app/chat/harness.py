@@ -1,4 +1,4 @@
-"""Turn limits and budget (design §5.2, §8.1). `TurnBudget` satisfies the gateway's `Budget` protocol."""
+"""Turn limits and budget. `TurnBudget` satisfies the gateway's `Budget` protocol."""
 
 import time
 from dataclasses import dataclass, field

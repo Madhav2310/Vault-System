@@ -1,6 +1,6 @@
 # app.chat
 
-Chat turn engine (design §8). `turn.py` wires the explicit graph (`graph.py`: typed state, async nodes, routers) over `nodes/`.
+Chat turn engine. `turn.py` wires the explicit graph (`graph.py`: typed state, async nodes, routers) over `nodes/`.
 
 - `nodes/`: one module per graph node (load_context, analyze, retrieve, gate, generate, verify, persist, terminal, ...)
 - `routing_rules.py`, `locate.py`, `full_context.py`, `compare.py`, `meta.py`, `clarify.py`: route decisions and special routes

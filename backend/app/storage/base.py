@@ -1,4 +1,4 @@
-"""Object store contract (design §5.1, §6.1).
+"""Object store contract.
 
 Keys are content-addressed or version-scoped, never user-chosen.
 """

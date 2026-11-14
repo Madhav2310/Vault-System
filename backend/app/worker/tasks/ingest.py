@@ -1,4 +1,4 @@
-"""Ingestion stage tasks. The payload is the job id only (design §14); everything else is read from the DB."""
+"""Ingestion stage tasks. The payload is the job id only; everything else is read from the DB."""
 
 import os
 import socket

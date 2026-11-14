@@ -1,4 +1,4 @@
-"""DOCX extractor (design §6.4): `Heading N` paragraphs become `section_path`, tables become pipe-row
+"""DOCX extractor: `Heading N` paragraphs become `section_path`, tables become pipe-row
 markdown, body order is preserved. One flow page, `page_no=None`. The archive is size/ratio checked with
 `zipfile` metadata before python-docx parses anything."""
 

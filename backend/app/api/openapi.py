@@ -1,4 +1,4 @@
-"""OpenAPI polish (S18.11): ordered tags, the API-key security scheme, and one error model.
+"""OpenAPI polish: ordered tags, the API-key security scheme, and one error model.
 
 The served schema is the generated one plus three deterministic rewrites, applied once and cached:
 - `securitySchemes.ApiKey` (HTTP bearer) is declared and applied to every operation except health;

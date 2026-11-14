@@ -1,4 +1,4 @@
-"""Index text assembly for contextual retrieval (design §6.5, §7; plan S22.02). Pure functions, no I/O.
+"""Index text assembly for contextual retrieval. Pure functions, no I/O.
 
 `embedding_text` feeds the embedding and the generated `tsv_en` column, so one string serves both search
 legs: `structural_prefix`, the contextual header, optional extra lines the chunker added (`Header:` row of a

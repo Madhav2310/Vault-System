@@ -1,4 +1,4 @@
-"""API-key authentication (design §16). Keys are high-entropy random tokens; only their SHA-256 is stored."""
+"""API-key authentication. Keys are high-entropy random tokens; only their SHA-256 is stored."""
 
 import hashlib
 import hmac

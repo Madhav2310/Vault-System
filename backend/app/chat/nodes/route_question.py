@@ -1,4 +1,4 @@
-"""`route_question` node (design §8.2): the fast-path rules decide whether `analyze` makes its model call."""
+"""`route_question` node: the fast-path rules decide whether `analyze` makes its model call."""
 
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.routing_rules import fast_path

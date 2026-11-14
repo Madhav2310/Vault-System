@@ -1,4 +1,4 @@
-"""Routed in-document locate loop for long filings (S22.10, design §8.2).
+"""Routed in-document locate loop for long filings.
 
 A bounded, code-owned loop inside ONE scoped document. The model returns a typed next move (`search`, `find`,
 `open`, `done`); code validates it, runs it and accumulates evidence chunks. An unknown action, a malformed

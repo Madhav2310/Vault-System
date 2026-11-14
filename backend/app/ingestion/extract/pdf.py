@@ -1,4 +1,4 @@
-"""PDF extractor (design §6.4, research 05 §3): pdfplumber glyphs → lines → elements over a glyph-mapped
+"""PDF extractor (research 05 §3): pdfplumber glyphs → lines → elements over a glyph-mapped
 character stream (invariant I1).
 
 Per page: dedupe glyphs, extract words in the text's upright frame with the sweep-chosen config, group
@@ -198,7 +198,7 @@ def _carry_header(blocks: list[_Block], prev_tail: _Block | None, page_height: f
 
 
 def _open(path: str) -> Any:
-    """pdfplumber.open with failure classes (design §6.2): encrypted → unsupported, unparseable → corrupt."""
+    """pdfplumber.open with failure classes: encrypted → unsupported, unparseable → corrupt."""
     try:
         return pdfplumber.open(path)
     except PdfminerException as e:

@@ -1,4 +1,4 @@
-"""`gate` node: the no-LLM evidence floor (S17.08). Below the floor the turn abstains without generating."""
+"""`gate` node: the no-LLM evidence floor. Below the floor the turn abstains without generating."""
 
 from collections.abc import Sequence
 from typing import Any
@@ -35,7 +35,7 @@ async def gate(state: TurnState, ctx: TurnCtx) -> TurnState:
 
 
 def _scored(state: TurnState, candidates: Sequence[Any], scale_ok: bool) -> bool:
-    """S22.07 scored gate (flag `chat_abstain_scored`): True when it decided the turn. Same bypasses as the
+    """scored gate (flag `chat_abstain_scored`): True when it decided the turn. Same bypasses as the
     floor; an uncalibrated config or an unscored retrieval leaves the turn to the old gate."""
     try:
         cfg = load_config()

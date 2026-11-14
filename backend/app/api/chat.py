@@ -1,4 +1,4 @@
-"""Chat endpoints (design §12): sessions (S3.01) and message posting with dedupe/turn ownership (S3.02-03)."""
+"""Chat endpoints: sessions and message posting with dedupe/turn ownership."""
 
 import asyncio
 import dataclasses
@@ -104,7 +104,7 @@ async def create_session(
     idempotency_key: Annotated[str | None, Header()] = None,
 ) -> Response:
     """Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404. A retry
-    with the same `Idempotency-Key` returns the same session (design §14)."""
+    with the same `Idempotency-Key` returns the same session."""
     key = check_key(idempotency_key)
 
     async def op() -> tuple[int, dict[str, Any]]:
@@ -223,7 +223,7 @@ async def post_message(
     """Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
     while running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion
     before the response and returns 200 with the assistant message; it keeps running and persists even if the
-    client disconnects. With `Accept: text/event-stream` the turn streams events instead (S18.01): the
+    client disconnects. With `Accept: text/event-stream` the turn streams events instead: the
     status codes above are decided before the stream starts and the stream itself answers 200."""
     sse = "text/event-stream" in request.headers.get("accept", "")
     content = body.content

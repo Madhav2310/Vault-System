@@ -1,4 +1,4 @@
-"""Answer feedback endpoint (design §9.6, §12)."""
+"""Answer feedback endpoint."""
 
 import uuid
 from typing import Annotated, Any, Literal, Self

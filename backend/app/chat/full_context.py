@@ -1,4 +1,4 @@
-"""Whole-document answering (design §8.2, §8.5): the pure route decision and the full-context evidence loader.
+"""Whole-document answering: the pure route decision and the full-context evidence loader.
 
 `plan_mode` is pure. `load_scope_chunks` returns every chunk of the scoped versions in
 `(document, ordinal)` order, owner-scoped, as `EvidenceChunk`s (stored text, never altered).

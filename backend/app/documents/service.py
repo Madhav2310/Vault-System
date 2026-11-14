@@ -1,4 +1,4 @@
-"""Document and version creation with per-owner dedupe (design §6.1, steps 4 to 6).
+"""Document and version creation with per-owner dedupe (steps 4 to 6).
 
 The caller owns the transaction: `create_from_upload` only adds rows and the blob reference, so a failure
 anywhere before commit leaves no document, version, job or refcount change behind.

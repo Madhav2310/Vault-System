@@ -1,4 +1,4 @@
-"""Plan-first answers: the code check of the model's coverage plan (design §8.5, S22.04).
+"""Plan-first answers: the code check of the model's coverage plan.
 
 The user message lists the question's required elements as `R1..R4` (from the query analysis `dimensions`, at
 most `MAX_ELEMENTS`). The answer's `plan` field, written before the segments, maps each element to the handles

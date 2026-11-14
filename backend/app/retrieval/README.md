@@ -1,6 +1,6 @@
 # app.retrieval
 
-Scoped candidate retrieval (design §7). Entry point: `retrieve()` in `retrieve.py` (scope + query -> ranked candidates with provenance).
+Scoped candidate retrieval. Entry point: `retrieve()` in `retrieve.py` (scope + query -> ranked candidates with provenance).
 
 - `scope.py`: the live document versions one owner's query may touch (the LLM never widens scope)
 - `query_embed.py`: query embedding with Redis cache and lexical fallback

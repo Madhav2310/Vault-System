@@ -1,11 +1,11 @@
-"""Embed and index stages (design §6.3, §7.4; S1.24, S1.25).
+"""Embed and index stages.
 
 Embed: chunks of the version without an embedding are filled from this owner's already-embedded chunks
 with the same `content_hash` and model (re-uploaded versions share most chunks); the rest are embedded in
 batches of at most 128 through the gateway (lane `background`, ledger rows carry `job_id`). Every batch is
 persisted as soon as it returns, so a retry after a provider failure never pays for finished batches again.
 
-Index: identifier tokens fill `tsv_ids` (S17.04); the version becomes `ready`,
+Index: identifier tokens fill `tsv_ids`; the version becomes `ready`,
 `documents.current_version_id` moves to it, and the previously current version is marked
 `superseded`. All of it happens inside the runner's fenced commit.
 """
@@ -192,9 +192,7 @@ class IndexStage:
                 text("UPDATE documents SET current_version_id = :v WHERE id = :d"),
                 {"v": job.version_id, "d": cur.document_id},
             )
-            await fill_tsv_ids(
-                s, job.owner_id, job.version_id
-            )  # identifier tokens for lexical search (S17.04)
+            await fill_tsv_ids(s, job.owner_id, job.version_id)  # identifier tokens for lexical search
             await on_version_ready(s, job.owner_id, cur.document_id, job.version_id)
 
         return StageResult(write=write, terminal_status=vs.READY, detail={"chunks": row.n})

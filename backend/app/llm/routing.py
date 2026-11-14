@@ -1,4 +1,4 @@
-"""Model roles and per-node routing (design §4.1 and §4.2). The only module (with settings) that names models.
+"""Model roles and per-node routing. The only module (with settings) that names models.
 
 Nodes ask for a *role*; settings map roles to models; `ModelRouter.resolve(node, route, mode)` returns the
 role, model and effort for one call. The LLM never picks its own model. Every pairing is validated when the
@@ -26,7 +26,7 @@ EFFORT_SUPPORT: dict[str, frozenset[Effort]] = {
     "gpt-6-astra": _ALL,
 }
 
-# One within-provider fallback attempt after retries are exhausted on a retryable error (design §4.2).
+# One within-provider fallback attempt after retries are exhausted on a retryable error.
 FALLBACK_ROLE: dict[Role, Role] = {"fast": "balanced", "balanced": "deep"}
 
 DEGRADED_MODEL_FALLBACK = "DEGRADED_MODEL_FALLBACK"
@@ -50,7 +50,7 @@ class Resolved:
     effort: Effort
 
 
-# Default routing table (design §4.2). Key: "node", "node:route", "node::mode" or "node:route:mode".
+# Default routing table. Key: "node", "node:route", "node::mode" or "node:route:mode".
 # Lookup order is most specific first: node:route:mode, node:route, node::mode, node.
 DEFAULT_ROUTES: dict[str, Route] = {
     "analyze_query": Route("fast", "none"),

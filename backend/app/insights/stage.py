@@ -1,4 +1,4 @@
-"""Brief stage (design §6.2-6.3, §9.1): the last ingestion stage, `ai` queue.
+"""Brief stage: the last ingestion stage, `ai` queue.
 
 - One `brief_extract` call when the version's chunks fit `BRIEF_MAX_EVIDENCE_TOKENS`; otherwise map over
   groups of whole sections (same budget each), then one `brief_merge` call. The merge model sees the map

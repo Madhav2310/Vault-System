@@ -1,4 +1,4 @@
-"""Daily LLM cost quota per user (design §13.4, S18.08).
+"""Daily LLM cost quota per user.
 
 - Spend today = `sum(llm_calls.cost_usd)` since UTC midnight for the owner. The 429 check reads it through a
   30 s Redis cache; metrics read the ledger directly so they always equal the ledger sum.

@@ -1,4 +1,4 @@
-"""Turn events (design §8.6, S18.01): the typed stream a UI consumes, plus the sink the turn graph emits to.
+"""Turn events: the typed stream a UI consumes, plus the sink the turn graph emits to.
 
 `TurnEvent` is a pydantic union discriminated on `type`; every event carries `run_id`. The graph emits through
 an `EventSink`: `NullSink` for JSON mode (nothing listens), `QueueSink` (unbounded `asyncio.Queue`, so an emit
@@ -97,7 +97,7 @@ class ClarifyOptionOut(BaseModel):
 
 
 class Clarify(_Event):
-    """The turn ended with a question (S23.02). Text and options come from code, never the model."""
+    """The turn ended with a question. Text and options come from code, never the model."""
 
     type: Literal["clarify"] = "clarify"
     question: str

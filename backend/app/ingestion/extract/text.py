@@ -1,4 +1,4 @@
-"""TXT and Markdown extractor (design §6.4): Markdown headings become `section_path`; paragraphs are
+"""TXT and Markdown extractor: Markdown headings become `section_path`; paragraphs are
 blank-line separated blocks; list items and pipe tables are recognised. One flow page, `page_no=None`."""
 
 import re

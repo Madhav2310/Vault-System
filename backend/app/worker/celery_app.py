@@ -1,4 +1,4 @@
-"""Celery application (design §6.6, §13.1).
+"""Celery application.
 
 Delivery is at-least-once: tasks ack late and are re-queued if a worker dies, so every task must be
 idempotent. Durable job state lives in `processing_jobs`, never only in Celery.
@@ -37,7 +37,7 @@ BEAT: dict[str, tuple[str, float]] = {
     "reap-chat-runs": ("vault.maintenance.reap_chat_runs", 60.0),
 }
 
-VISIBILITY_TIMEOUT_S = 3600  # > longest stage time (design §6.6)
+VISIBILITY_TIMEOUT_S = 3600  # > longest stage time
 
 
 def make_celery() -> Celery:

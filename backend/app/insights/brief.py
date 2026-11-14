@@ -1,4 +1,4 @@
-"""DocumentBrief: model output schema, code-side normalization and the stored form (design §9.1).
+"""DocumentBrief: model output schema, code-side normalization and the stored form.
 
 The model returns `BriefOut` in a strict schema: every field required, no defaults, `T | None` only. Each fact
 names evidence *handles* (`E3.1`); in RAG-sized evidence sets the handle field is an enum of the handles in

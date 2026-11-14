@@ -1,4 +1,4 @@
-"""answer_segments.verification / verification_reason: the per-segment support check (design §8.5, S17.09).
+"""Answer_segments.verification / verification_reason: the per-segment support check.
 
 `verification` is NULL when no check ran (older rows, turns without cited segments), otherwise one of
 supported | partial | unsupported | unchecked. `verification_reason` is a short note (≤120 chars).

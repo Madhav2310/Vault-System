@@ -1,4 +1,4 @@
-"""Document endpoints (design §12). Upload: §6.1."""
+"""Document endpoints. Upload: §6.1."""
 
 import asyncio
 import base64
@@ -119,7 +119,7 @@ async def upload_document(
     return canonical_response(status, body)
 
 
-# --- read endpoints (S1.27) ---------------------------------------------------------------------------------
+# --- read endpoints ---------------------------------------------------------------------------------
 VersionStatus = Literal[
     "uploaded", "processing", "ready", "enriched", "needs_ocr", "unsupported", "failed", "superseded"
 ]
@@ -383,7 +383,7 @@ async def get_summary(
     return body
 
 
-# --- new version of an existing document (S14.03) ----------------------------------------------------------
+# --- new version of an existing document ----------------------------------------------------------
 @router.post(
     "/documents/{document_id}/versions",
     status_code=202,

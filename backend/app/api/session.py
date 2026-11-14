@@ -1,4 +1,4 @@
-"""Browser session: exchange an API key for an httpOnly, SameSite=Strict signed cookie (S22.11, design §16).
+"""Browser session: exchange an API key for an httpOnly, SameSite=Strict signed cookie.
 
 The UI never holds the key after login; curl/Postman keep using `Authorization: Bearer`. Tokens are stateless
 HMACs bound to the user's key hash (see `app.core.auth`): rotating the key invalidates them, and logout clears

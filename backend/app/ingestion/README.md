@@ -1,6 +1,6 @@
 # app.ingestion
 
-Stage pipeline from stored file to searchable chunks (design §6).
+Stage pipeline from stored file to searchable chunks.
 
 - `stages.py`: stage implementations and registry; `runner.py`: stage runner; `errors.py`: stage error classes
 - `jobs.py`: dispatch, CAS claim, lease, heartbeat on `processing_jobs`; `sweeper.py`: recovers lost dispatches, dead workers, due retries

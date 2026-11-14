@@ -18,7 +18,7 @@ TARGET_IGNORED = "TARGET_IGNORED"
 
 
 async def abstain_followups(state: Any, ctx: Any) -> tuple[str, ...]:
-    """Up to three suggested questions from the briefs of the documents in scope (S18.04)."""
+    """Up to three suggested questions from the briefs of the documents in scope."""
     async with ctx.deps.sm() as db:
         return await brief_questions(db, ctx.owner_id, state.scope.version_ids, [state.question])
 

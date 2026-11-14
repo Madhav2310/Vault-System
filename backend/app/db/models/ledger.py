@@ -1,5 +1,5 @@
 """Evidence ledger: rag_runs + run_versions + run_steps + retrieval_candidates + answer_segments
-+ segment_evidence + llm_calls (design §11). chunk_id columns have no FK (chunks PK is (owner_id, id))."""
++ segment_evidence + llm_calls. chunk_id columns have no FK (chunks PK is (owner_id, id))."""
 
 import datetime as dt
 import uuid
@@ -96,7 +96,7 @@ class AnswerSegment(CreatedAt, Base):
     ordinal: Mapped[int]
     text: Mapped[str]
     support: Mapped[str | None]
-    verification: Mapped[str | None]  # support check (S17.09); NULL = no check ran
+    verification: Mapped[str | None]  # support check; NULL = no check ran
     verification_reason: Mapped[str | None]
 
 

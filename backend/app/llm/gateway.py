@@ -1,6 +1,6 @@
-"""LLM gateway (design §5.3): the only path to a model. Per call, in order:
+"""LLM gateway: the only path to a model. Per call, in order:
 
-0. resolve node → role → model + effort through the router (design §4.2)
+0. resolve node → role → model + effort through the router
 1. rate-limit tokens (lane-aware; stub until S5)
 2. charge the turn budget
 3. one OTel span per attempt (IDs/counters only)
@@ -68,7 +68,7 @@ CacheMode = Literal["implicit", "explicit"]
 T = TypeVar("T", bound=BaseModel)
 R = TypeVar("R")
 
-MAX_EMBED_BATCH = 128  # design §4
+MAX_EMBED_BATCH = 128
 TRUNCATING_STOPS = frozenset({"max_tokens", "model_context_window_exceeded"})
 _tracer = trace.get_tracer("app.llm.gateway")
 
@@ -77,7 +77,7 @@ _tracer = trace.get_tracer("app.llm.gateway")
 
 
 class Budget(Protocol):
-    """The turn budget (design §5.2 TurnBudget). `deadline_at` is on the `time.monotonic()` clock."""
+    """The turn budget. `deadline_at` is on the `time.monotonic()` clock."""
 
     @property
     def deadline_at(self) -> float | None: ...

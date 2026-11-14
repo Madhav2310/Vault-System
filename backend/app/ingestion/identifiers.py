@@ -1,4 +1,4 @@
-"""Identifier tokens at index time (design §6.5, §7.3; S17.04).
+"""Identifier tokens at index time.
 
 `chunks.tsv_ids = to_tsvector('simple', <tokens joined by space>)` over the identifier-like tokens of
 `original_text` (section numbers, clause refs, amounts, percentages, dates, codes). The tokens come from the

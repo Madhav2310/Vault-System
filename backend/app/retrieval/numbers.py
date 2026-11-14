@@ -1,4 +1,4 @@
-"""Number and unit variants for lexical queries (S22.03).
+"""Number and unit variants for lexical queries.
 
 `to_tsvector('english')` splits "1,200" into the lexemes `1` and `200` and drops "$", "%", parentheses, so a
 question that says "$1.2 billion" never reaches a table cell that says "1,200" (in millions). For every amount

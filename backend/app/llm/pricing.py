@@ -1,10 +1,10 @@
 """Per-model prices (USD per million tokens) and the cost formula.
 
-Sources: design §4 [V, skill cache 2026-10-06] for input/output and Sonnet/Opus cache reads. Cache writes are
+Sources: the providers' published list prices for input/output and Sonnet/Opus cache reads. Cache writes are
 1.25x input (5-minute TTL; claude-api skill, prompt-caching "Economics"). Haiku 5.5's cache-read rate and its
 >100K-prompt tier ($0.50 / $2.50) come from the claude-api skill model notes; the tier's cache rates are not
-published there, so cache tokens keep the base rate. OpenAI GPT-6 prices: design §4.1 [V] (cache reads
-from the pricing page; 30-minute cache writes 1.25x input; above 272K prompt tokens 2x input and
+published there, so cache tokens keep the base rate. OpenAI GPT-6 prices: the published price list
+(cache reads from the pricing page; 30-minute cache writes 1.25x input; above 272K prompt tokens 2x input and
 cache, 1.5x output).
 text-embedding-3-small is OpenAI's list price [C].
 Every entry can be overridden by `Settings.llm_prices` without a code change.
@@ -57,7 +57,7 @@ DEFAULT_PRICES: dict[str, Price] = {
     "claude-haiku-5-5": Price(
         _d("0.10"), _d("0.50"), _d("0.01"), _d("0.10") * _WRITE_5M, 100_000, _d("0.50"), _d("2.50")
     ),
-    # OpenAI GPT-6 line (design §4.1; developers.openai.com/api/docs/pricing, probed 2026-11-13)
+    # OpenAI GPT-6 line (developers.openai.com/api/docs/pricing, probed 2026-11-13)
     "gpt-6-luna": _oa("0.10", "0.01", "0.50"),
     "gpt-6.1-terra": _oa("1.00", "0.05", "5.00"),
     "gpt-6.1-sol": _oa("2.00", "0.10", "10.00"),

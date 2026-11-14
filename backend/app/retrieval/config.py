@@ -1,4 +1,4 @@
-"""Retrieval configuration loader (design §7.3). Strict: unknown keys are rejected at load."""
+"""Retrieval configuration loader. Strict: unknown keys are rejected at load."""
 
 import pathlib
 from functools import lru_cache
@@ -34,7 +34,7 @@ class GateCfg(BaseModel):
     model_config = ConfigDict(extra="forbid")
     high: float
     floor: float
-    enabled: bool = False  # the no-LLM evidence floor (S17.08) applies only when a config turns it on
+    enabled: bool = False  # the no-LLM evidence floor applies only when a config turns it on
 
 
 class RetrievalConfig(BaseModel):
@@ -49,7 +49,7 @@ class RetrievalConfig(BaseModel):
     expansion: ExpansionCfg
     cache_ttl_s: int = Field(ge=0)
     gate: GateCfg
-    lexical: Literal["v1", "v2"] = "v1"  # v2 = S22.03: length-normalised rank_cd, number/unit variants
+    lexical: Literal["v1", "v2"] = "v1"  # v2: length-normalised rank_cd, number/unit variants
     single_doc_full_k: bool = False  # one-document scope: no per_doc_quota (it caps the list below k_vec)
 
     def model_post_init(self, _ctx: Any) -> None:

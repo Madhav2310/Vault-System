@@ -1,4 +1,4 @@
-"""Typed LLM errors (design §5.3, §15). Providers translate SDK exceptions into these; nothing above
+"""Typed LLM errors. Providers translate SDK exceptions into these; nothing above
 `app.llm` ever sees an SDK exception. `error_type` is a bounded enum value: it goes into `llm_calls`
 and metric labels. Messages never carry prompt or completion text."""
 
@@ -31,7 +31,7 @@ class LlmError(Exception):
     error_type: ClassVar[str] = "llm_error"
     retryable: ClassVar[bool] = False
     # Outcome errors (refusal, truncation) are raised after the ledger row is written: the gateway attaches
-    # that row's accounting so callers keep usage, cost and call ids (S17.11, design §5.3).
+    # that row's accounting so callers keep usage, cost and call ids.
     usage: "Usage | None" = None
     cost_usd: Decimal = Decimal(0)
     call_ids: tuple[uuid.UUID, ...] = ()

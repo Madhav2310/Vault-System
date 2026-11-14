@@ -1,4 +1,4 @@
-"""Repository base classes (design §16).
+"""Repository base classes.
 
 Every query on an owned table (one with `owner_id`) goes through `OwnedRepository`, whose public methods
 all take `owner_id` explicitly and whose `_scoped()` helper always adds the owner predicate. A contract

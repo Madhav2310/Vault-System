@@ -50,13 +50,13 @@ def lexical_statement(
 ) -> tuple[str, dict[str, Any]]:
     """The SQL and parameters of one lexical search (exposed so tests can EXPLAIN the exact statement).
 
-    OR semantics (S11.03): the query's stemmed, stopword-free lexemes (`to_tsvector('english')`) are joined
+    OR semantics: the query's stemmed, stopword-free lexemes (`to_tsvector('english')`) are joined
     with `|` as quoted literals, so no user text is ever parsed as tsquery syntax. A chunk matches when it
     has at least one lexeme (two when the query has `MIN_MATCH_FROM`+), ranked by `ts_rank_cd`: OR score plus
     2x the AND score, which rewards proximity. Identifier tokens keep their own `simple` match on `tsv_ids`
     and bypass the minimum.
 
-    `variant="v2"` (S22.03, selected by `lexical: v2` in the retrieval config): `ts_rank_cd` with length
+    `variant="v2"` (selected by `lexical: v2` in the retrieval config): `ts_rank_cd` with length
     normalisation (`RANK_NORM_V2`), and every amount in the query also matches its equivalent written forms
     (`app.retrieval.numbers`: "$1.2 billion" also finds "1,200 million"). Each amount counts as one
     matched lexeme for the minimum. Without amounts the v2 statement differs from v1 only by the rank flag."""

@@ -1,4 +1,4 @@
-"""Streaming multipart upload (design §6.1).
+"""Streaming multipart upload.
 
 The body is parsed incrementally: the `file` part streams into a temp file in the server's chunk size
 (~64 KB) while sha256 is computed, and the upload aborts with 413 as soon as the file exceeds the cap.

@@ -25,14 +25,14 @@ async def abstain_no_documents(state: TurnState, ctx: TurnCtx) -> TurnState:
 
 
 def _scored_gate(state: TurnState, ctx: TurnCtx) -> bool:
-    """S22.07: the gate abstained through the fitted combiner (its step names the model), not the floor."""
+    """The gate abstained through the fitted combiner (its step names the model), not the floor."""
     return ctx.deps.gateway.settings.chat_abstain_scored and any(
         s.node == "gate" and s.decision is not None and "scored" in s.decision for s in state.steps
     )
 
 
 async def abstain_no_evidence(state: TurnState, ctx: TurnCtx) -> TurnState:
-    if state.gate_abstain:  # below the evidence floor (S17.08): a template naming the documents in scope
+    if state.gate_abstain:  # below the evidence floor: a template naming the documents in scope
         code = ABSTAIN_SCORED if _scored_gate(state, ctx) else ABSTAIN_NO_EVIDENCE
         base = plain("abstain", abstain_text(len(state.scope.entries)), (code,))
     else:
@@ -43,7 +43,7 @@ async def abstain_no_evidence(state: TurnState, ctx: TurnCtx) -> TurnState:
 
 
 async def clarify(state: TurnState, ctx: TurnCtx) -> TurnState:
-    """The turn ends with a question (S23.02): template text, options from real document titles."""
+    """The turn ends with a question: template text, options from real document titles."""
     c = state.clarification
     assert c is not None
     state.route = "clarify"

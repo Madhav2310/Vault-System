@@ -1,4 +1,4 @@
-"""PDF tables (design §6.4 and §6.5): pdfplumber `find_tables` (ruled tables) → pipe-table rows built from the
+"""PDF tables: pdfplumber `find_tables` (ruled tables) → pipe-table rows built from the
 glyph-mapped words in each cell, so table text obeys invariant I1 too. The only synthetic characters are
 spaces, newlines and the ` | ` cell separators. Words inside a table are removed from the paragraph flow (no
 duplicated text). Columns that are empty in every row (spacer columns in financial statements) are dropped.

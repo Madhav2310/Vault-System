@@ -1,4 +1,4 @@
-"""Object-store keys for per-version stage artifacts (design §6.3, §11).
+"""Object-store keys for per-version stage artifacts.
 
 Replaced on re-run; purged with the version."""
 

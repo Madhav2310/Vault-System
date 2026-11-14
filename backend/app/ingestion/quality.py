@@ -1,4 +1,4 @@
-"""Page quality and flags (design §6.2, §6.3; S1.19).
+"""Page quality and flags.
 
 Per PDF page: `text_chars` (non-whitespace), `quality_score` in [0, 1], and flags: the extractor's repairs and
 signals (`multi_column`, `reading_order_repaired`, `footnotes_separated`, `has_tables`, `gutter_split`) plus

@@ -1,4 +1,4 @@
-"""`locate` node (S22.10, flag `chat_locate`): the bounded in-document loop of `app.chat.locate`.
+"""`locate` node (flag `chat_locate`): the bounded in-document loop of `app.chat.locate`.
 
 Runs after `gate`, only when the turn is a plain question over ONE long document and the first pass is
 low-confidence (the gate abstained, or the best retrieval score is below the config's `gate.high`). It adds

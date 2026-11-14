@@ -1,4 +1,4 @@
-"""Follow-up suggestions (design §9.3, S18.04).
+"""Follow-up suggestions.
 
 The answer schema carries `followups` (no extra model call). Code, not the model, enforces the limits: at most
 `MAX_FOLLOWUPS`, each at most `MAX_FOLLOWUP_CHARS` characters, and none that repeats the user's question. An

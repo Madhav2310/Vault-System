@@ -1,4 +1,4 @@
-"""Chat-run reaper (design §8.7, F-041): finishes runs whose turn died (worker shutdown, crash) as `failed`.
+"""Chat-run reaper (F-041): finishes runs whose turn died (worker shutdown, crash) as `failed`.
 
 A run is abandoned when it is still `running` and its session lease expired more than `GRACE_SECONDS` ago, or
 when the session no longer belongs to it (another turn took over after expiry) and the run is older than

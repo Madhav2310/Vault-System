@@ -1,1 +1,1 @@
-"""LLM gateway and provider adapters (design §4, §5.3). Every model call goes through app.llm.gateway."""
+"""LLM gateway and provider adapters. Every model call goes through app.llm.gateway."""

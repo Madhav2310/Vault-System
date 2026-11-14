@@ -1,4 +1,4 @@
-"""`retrieve()` facade (design §5.1, §7.3, §7.4): scope + query -> ranked candidates with full provenance.
+"""`retrieve()` facade: scope + query -> ranked candidates with full provenance.
 
 Pipeline: embed (degrades to lexical-only) -> exact vector search + lexical search -> RRF fusion -> rerank the
 top `rerank.candidates` (degrades to fusion order) -> keep `top_n` -> neighbor expansion. Every candidate

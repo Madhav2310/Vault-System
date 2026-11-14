@@ -1,4 +1,4 @@
-# Retrieval configuration (design §7). The file name is the config version: changing any value means a new
+# Retrieval configuration. The file name is the config version: changing any value means a new
 # file (retrieval@2.yaml); results and cache keys carry the version.
 version: retrieval@1
 k_vec: 40                # exact cosine search: candidates from the vector list

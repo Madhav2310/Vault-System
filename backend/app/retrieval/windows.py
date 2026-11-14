@@ -1,4 +1,4 @@
-"""Query-focused rerank windows (plan S16.03).
+"""Query-focused rerank windows.
 
 A cross-encoder's cost grows faster than linearly with passage length, and a chunk is ~400 tokens. The rerank
 passage is the best-matching window of whole sentences (<= `max_words`), so the reranker sees the part of the

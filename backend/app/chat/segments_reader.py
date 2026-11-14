@@ -1,4 +1,4 @@
-"""Incremental reader for the strict answer JSON (design §8.5, §8.6).
+"""Incremental reader for the strict answer JSON.
 
 Feed it text fragments as they stream in; it yields each element of `"segments": [ ... ]` the moment its
 object closes, so segments (and their citations) can be validated and shown before the whole answer has

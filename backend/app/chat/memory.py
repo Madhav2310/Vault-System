@@ -1,4 +1,4 @@
-"""Working memory window (design §8.8): newest whole turns within a token budget, plus session memory."""
+"""Working memory window: newest whole turns within a token budget, plus session memory."""
 
 import uuid
 from collections.abc import Callable, Sequence

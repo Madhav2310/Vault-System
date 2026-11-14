@@ -1,4 +1,4 @@
-"""Run endpoints (design §10.2): "why this answer" for the user, and the reconnect state of a running turn."""
+"""Run endpoints: "why this answer" for the user, and the reconnect state of a running turn."""
 
 import uuid
 from typing import Annotated, Any

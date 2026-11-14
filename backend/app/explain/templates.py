@@ -1,4 +1,4 @@
-"""Deterministic explanation templates (design §10): one per reason code, rendered from run facts.
+"""Deterministic explanation templates: one per reason code, rendered from run facts.
 
 The model is never asked to explain itself. Every reason code a turn can record has a template here (a unit
 test greps the constants in `app/chat`, `app/retrieval` and `app/llm`); an empty template means the code is
@@ -18,7 +18,7 @@ UNSUPPORTED_ONE = "One sentence is not backed up by its citation, so read it wit
 UNSUPPORTED_MANY = "{count} sentences are not backed up by their citations, so read them with care."
 NO_ANSWER = "No answer was written this time. Try asking again."
 
-# Code-written responses (S23.01, docs/voice.md). Always on: they are deterministic, the model writes none of them.
+# Code-written responses (docs/voice.md). Always on: they are deterministic, the model writes none of them.
 NO_DOCUMENTS_TEXT = (
     "There are no ready documents to search yet. Upload one, or give processing a moment to finish."
 )
@@ -141,7 +141,7 @@ def not_found_text(element: str) -> str:
     return NOT_FOUND_ELEMENT.format(element=element)
 
 
-CALC_TEXTS = {  # S22.08: the segment text of a checked calculation (code-written; the number is the computed one)
+CALC_TEXTS = {  # the segment text of a checked calculation (code-written; the number is the computed one)
     "add": "Adding {operands} gives {result}.",
     "sum": "Adding {operands} gives {result}.",
     "subtract": "{first} minus {second} is {result}.",

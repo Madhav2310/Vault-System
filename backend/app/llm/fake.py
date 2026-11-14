@@ -1,4 +1,4 @@
-"""Scripted model for the UI test harness (S19.02). TEST-ONLY: selected by `LLM_PROVIDER=fake`, refused when
+"""Scripted model for the UI test harness. TEST-ONLY: selected by `LLM_PROVIDER=fake`, refused when
 `ENVIRONMENT=prod` (`Settings` validator). Replies are keyed by question text from a YAML script; nothing
 here is a quality signal. Embeddings are the deterministic hash vectors of `FakeProvider`.
 

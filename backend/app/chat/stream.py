@@ -1,4 +1,4 @@
-"""SSE transport for a turn (design §8.6, S18.01): frames the turn graph's events and the final `done`.
+"""SSE transport for a turn: frames the turn graph's events and the final `done`.
 
 The turn runs as its own task (strong reference kept by the caller), never inside the response generator, so a
 client disconnect only closes the generator: the turn keeps running and persists. A heartbeat comment goes out

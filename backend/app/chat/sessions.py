@@ -1,4 +1,4 @@
-"""Chat sessions, turn ownership and message dedupe (design §8.7, §14). Every function takes `owner_id`."""
+"""Chat sessions, turn ownership and message dedupe. Every function takes `owner_id`."""
 
 import base64
 import datetime as dt
@@ -330,7 +330,7 @@ async def start_turn(
 async def set_run_hints(
     db: AsyncSession, owner_id: uuid.UUID, run_id: uuid.UUID, hints: dict[str, Any]
 ) -> None:
-    """Record request-time facts on a just-started run, in `rag_runs.analysis` (S23.02): `clarify_pick` (the
+    """Record request-time facts on a just-started run, in `rag_runs.analysis`: `clarify_pick` (the
     document chosen from a clarification; `load_context` narrows to it) and `supersedes` (the earlier run this
     turn replaces: Regenerate and Edit-and-resend; history and memory then hide the replaced turn)."""
     await db.execute(

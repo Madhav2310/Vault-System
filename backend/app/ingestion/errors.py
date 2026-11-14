@@ -1,4 +1,4 @@
-"""Stage error classes (design §6.6, §15).
+"""Stage error classes.
 
 Stages raise these; any other exception counts as a retryable `internal` error."""
 

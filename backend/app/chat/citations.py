@@ -1,4 +1,4 @@
-"""Citation resolver (design §8.5). Code, not the model, decides what a citation is.
+"""Citation resolver. Code, not the model, decides what a citation is.
 
 Every handle a segment names is looked up in the request's manifest. Unknown handles are dropped
 (`CITATION_UNRESOLVED`, metric `vault.citations.unresolved`). Adjacent sentences of one chunk merge into one
@@ -41,7 +41,7 @@ class ResolvedSegment:
     support: str  # "cited" (has >= 1 valid reference) | "none"
     references: tuple[EvidenceReference, ...]
     dropped_handles: tuple[str, ...] = ()
-    verification: str | None = None  # support check (S17.09): supported | partial | unsupported | unchecked
+    verification: str | None = None  # support check: supported | partial | unsupported | unchecked
     verification_reason: str | None = None
 
 

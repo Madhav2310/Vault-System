@@ -1,6 +1,6 @@
 # app.api
 
-HTTP layer (design §12). Routers are thin: they validate, call a service, and shape the response.
+HTTP layer. Routers are thin: they validate, call a service, and shape the response.
 
 - `documents.py`, `versions.py`, `chunks.py`: documents, upload, processing timeline/stream, original file, page layout, chunk inspection
 - `chat.py`, `runs.py`, `feedback.py`: sessions and message posting (SSE), "why this answer", ratings

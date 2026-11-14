@@ -1,4 +1,4 @@
-"""Meta route (design 8.3, S18.05): questions about the vault, answered by allowlisted SQL.
+"""Meta route: questions about the vault, answered by allowlisted SQL.
 
 `analyze_query` returns a loosely typed `meta_op` (`MetaOpOut`); `validate_op` turns it into a `MetaOp` or
 rejects it (`META_OP_REJECTED`, the turn then routes as qa). `run_op` runs one parameterized, owner-scoped

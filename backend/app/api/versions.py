@@ -1,4 +1,4 @@
-"""Version endpoints (design §12): processing timeline, original file, page layout."""
+"""Version endpoints: processing timeline, original file, page layout."""
 
 import asyncio
 import gzip
@@ -204,7 +204,7 @@ async def page_layout(
     db: Annotated[AsyncSession, Depends(get_db)],
     store: Annotated[ObjectStore, Depends(get_store)],
 ) -> dict[str, Any]:
-    """Page size and glyph boxes from `layouts/{version_id}.json.gz` (design §6.4)."""
+    """Page size and glyph boxes from `layouts/{version_id}.json.gz`."""
     await _owned_version(db, user.id, version_id)
     await db.rollback()
     try:
@@ -223,7 +223,7 @@ async def page_layout(
     }
 
 
-# --- live processing status (S14.05) ----------------------------------------------------------------
+# --- live processing status ----------------------------------------------------------------
 _event_clients: "weakref.WeakKeyDictionary[asyncio.AbstractEventLoop, aioredis.Redis]" = (
     weakref.WeakKeyDictionary()
 )

@@ -1,5 +1,5 @@
-"""OpenAI embeddings adapter (design §4: text-embedding-3-small, 1536 dims).
-SDK retries are off (the gateway retries). No OpenAI tracing/content capture is enabled here (S0.15)."""
+"""OpenAI embeddings adapter (text-embedding-3-small, 1536 dims).
+SDK retries are off (the gateway retries). No OpenAI tracing/content capture is enabled here."""
 
 from collections.abc import Sequence
 

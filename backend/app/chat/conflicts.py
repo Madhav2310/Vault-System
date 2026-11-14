@@ -1,4 +1,4 @@
-"""Conflicting sources (design §8.4, §8.5, S18.07): the model flags disagreeing evidence, code validates it.
+"""Conflicting sources: the model flags disagreeing evidence, code validates it.
 
 The answer schema carries `conflicts: [{topic, handles_a[], handles_b[]}]`. Handles resolve through the same
 manifest as citations (`cited_text` is copied from storage, never taken from the model). A conflict survives

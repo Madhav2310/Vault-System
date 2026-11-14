@@ -1,4 +1,4 @@
-"""Central error catalog (design §12). Every API error carries one of these codes."""
+"""Central error catalog. Every API error carries one of these codes."""
 
 from dataclasses import dataclass
 from enum import StrEnum

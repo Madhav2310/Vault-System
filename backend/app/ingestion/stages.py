@@ -1,4 +1,4 @@
-"""Stage implementations and registry (design §6.3).
+"""Stage implementations and registry.
 
 Each stage computes with no DB connection held, then returns a `write` callback that replaces its outputs
 inside the runner's fenced commit (idempotent re-runs).
@@ -199,7 +199,7 @@ def _index_fields(c: Any, title: str, version: str, index_context: str) -> dict[
 
 
 class ChunkStage:
-    """`chunks` rows (no embeddings yet) from the extracted document (design §6.5)."""
+    """`chunks` rows (no embeddings yet) from the extracted document."""
 
     name = "chunk"
 

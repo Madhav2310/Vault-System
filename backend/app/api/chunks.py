@@ -1,4 +1,4 @@
-"""Chunk inspection endpoint (design §12): the stored evidence text with its sentences and location."""
+"""Chunk inspection endpoint: the stored evidence text with its sentences and location."""
 
 import uuid
 from typing import Annotated, Any

@@ -1,4 +1,4 @@
-"""Sweeper (design §6.6): eventual recovery of lost dispatches, dead workers and due retries.
+"""Sweeper: eventual recovery of lost dispatches, dead workers and due retries.
 
 Runs from beat every 60 s. It only *selects candidates*; the dispatch CAS decides, so concurrent sweepers
 (or a sweeper racing a normal dispatch) still enqueue each job at most once per grace period.

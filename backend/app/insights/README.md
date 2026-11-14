@@ -1,6 +1,6 @@
 # app.insights
 
-Document-level AI outputs (design §9).
+Document-level AI outputs.
 
 - `brief.py`: DocumentBrief model-output schema, code-side normalization, stored form
 - `stage.py`: the brief stage, the last ingestion stage, run on the `ai` queue
