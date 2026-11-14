@@ -132,6 +132,8 @@ class Settings(BaseSettings):
     chat_analyze_version: Literal[2, 3] = 2
     # --- compare quotas + coverage gate (S22.05): answer_compare@2 + repair; off until the A/B decides ---
     chat_compare_quota: bool = False
+    # --- per-document evidence floor on the plain qa route (scope of 2-5 documents); off until the A/B ---
+    chat_scope_floor: bool = False
 
     # --- scored abstention (S22.07): logistic combiner (config/abstain@1.yaml) replaces the binary gate;
     # off until calibrated on a v2 run and the paired A/B accepts it ---

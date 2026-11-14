@@ -37,6 +37,7 @@ QUOTA_CONCURRENCY = 3
 MIN_DOCS = 2
 MAX_DOCS = 5
 TARGET_PASSAGES = 8
+SCOPE_FLOOR = 2
 
 
 def per_doc_passages(n_documents: int) -> int:
@@ -120,6 +121,42 @@ def _quota_pick(r: RetrievalResult, quota: int) -> tuple[uuid.UUID, ...]:
 
 def quota_on(settings: Any) -> bool:
     return bool(getattr(settings, "chat_compare_quota", False))
+
+
+def floor_on(settings: Any) -> bool:
+    return bool(getattr(settings, "chat_scope_floor", False))
+
+
+def floor_per_doc(result: RetrievalResult, scope: Scope, floor: int = SCOPE_FLOOR) -> RetrievalResult:
+    """Plain-qa evidence floor: in a scope of 2-5 documents, a document with fewer than `floor` selected
+    chunks is topped up from its own best remaining candidates (reranked score, then fusion score), so one
+    document cannot be crowded out of the global top-n. Added chunks go last in the evidence order. Chosen by
+    code from candidates the retrieval already scored: no extra retrieval and no model call."""
+    if not MIN_DOCS <= len(scope.entries) <= MAX_DOCS:
+        return result
+    chosen = set(result.selected)
+    added: list[uuid.UUID] = []
+    for _, version_id in scope.entries:
+        mine = [c for c in result.candidates if c.version_id == version_id]
+        have = sum(1 for c in mine if c.chunk_id in chosen)
+        if have >= floor:
+            continue
+        rest = sorted(
+            (c for c in mine if c.chunk_id not in chosen),
+            key=lambda c: (
+                -(c.rerank_score if c.rerank_score is not None else float("-inf")),
+                -(c.rrf_score or 0.0),
+            ),
+        )
+        added += [c.chunk_id for c in rest[: floor - have]]
+    if not added:
+        return result
+    index = {cid: len(result.selected) + i for i, cid in enumerate(added)}
+    candidates = tuple(
+        dataclasses.replace(c, selected=True, result_index=index[c.chunk_id]) if c.chunk_id in index else c
+        for c in result.candidates
+    )
+    return dataclasses.replace(result, candidates=candidates, selected=(*result.selected, *added))
 
 
 def missing_titles(state: TurnState) -> list[str]:
