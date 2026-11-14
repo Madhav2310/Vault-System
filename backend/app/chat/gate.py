@@ -10,9 +10,10 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from typing import Protocol
 
+from app.explain.templates import ABSTAIN_TEXT_MANY as ABSTAIN_TEXT_MANY
+from app.explain.templates import ABSTAIN_TEXT_ONE as ABSTAIN_TEXT_ONE
+
 ABSTAIN_NO_EVIDENCE = "ABSTAIN_NO_EVIDENCE"
-ABSTAIN_TEXT_ONE = "I could not find anything in your 1 document that answers this."
-ABSTAIN_TEXT_MANY = "I could not find anything in your {n} documents that answers this."
 
 
 class Scored(Protocol):

@@ -43,7 +43,7 @@ async def test_below_floor_abstains(
     assert r.status_code == 200 and msg["response_type"] == "abstain"
     assert len(prov.requests) == 1  # the analysis only: zero generate calls (and no support check)
     assert "ABSTAIN_NO_EVIDENCE" in await reasons(sm, o.id)
-    assert msg["content"] == "I could not find anything in your 1 document that answers this."
+    assert msg["content"].startswith("I could not find this in your 1 document.")
 
 
 async def test_above_floor_generates(

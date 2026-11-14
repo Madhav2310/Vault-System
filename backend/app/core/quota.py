@@ -26,6 +26,7 @@ from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 from app.core.ratelimit import get_ratelimit_redis
 from app.core.settings import get_settings
+from app.explain.templates import QUOTA_REACHED
 
 CACHE_TTL_S = 30
 KEY_PREFIX = "vault:quota"
@@ -94,7 +95,7 @@ async def check_quota(
         retry = seconds_to_reset(now)
         raise DomainError(
             ErrorCode.QUOTA_EXCEEDED,
-            f"Daily cost quota reached; resets in {retry} s (UTC midnight)",
+            QUOTA_REACHED.format(retry=retry),
             headers={"Retry-After": str(retry)},
         )
 

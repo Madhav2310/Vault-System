@@ -10,6 +10,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.settings import get_settings
+from app.explain import templates as T
 from tests.integration.chat.conftest import owners
 from tests.support.ledger_env import ledger_owners
 from tests.support.turn_env import (
@@ -99,7 +100,7 @@ async def test_explanations(
     r = await post(api, o2, sid, "anything", "a1")
     assert r.json()["message"]["response_type"] == "abstain"
     v2 = (await api.get(f"/v1/runs/{r.json()['run_id']}", headers=o2.auth)).json()
-    assert v2["explanation"] == ["Nothing in your documents matched closely enough."]
+    assert v2["explanation"] == [T.REASON_TEMPLATES["NO_EVIDENCE"]]
     assert v2["sources"] == [] and v2["response_type"] == "abstain" and v2["reason_codes"] == ["NO_EVIDENCE"]
 
 

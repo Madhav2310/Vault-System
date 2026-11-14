@@ -34,6 +34,7 @@ from app.chat.nodes.run_generate import generate
 from app.chat.nodes.terminal import abstain_no_documents, abstain_no_evidence, clarify
 from app.chat.nodes.verify import verify
 from app.chat.speculative import cancel_all
+from app.chat.voice import recorded as recorded_voice
 from app.core.logging import get_logger
 from app.llm.gateway import LlmGateway
 from app.retrieval.retrieve import RetrievalResult
@@ -127,6 +128,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
                 "analyze_query@2",
                 "answer_compare@1" if state.compare else "answer_rag@3",
                 "support_check@1",
+                *(recorded_voice(deps.gateway.settings) if gen.call_ids else []),
             ],
             "models": _models(deps.gateway),
             "retrieval": deps.retriever.config.version,

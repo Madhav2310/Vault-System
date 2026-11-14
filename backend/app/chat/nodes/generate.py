@@ -97,6 +97,7 @@ async def generate(
     coverage: str | None = None,
     conflicts: str | None = None,
     plan_elements: Sequence[str] = (),
+    system_suffix: str | None = None,
     run_id: uuid.UUID | None = None,
     budget: Budget | None = None,
     on_segment: Callable[[ResolvedSegment], Awaitable[None]] | None = None,
@@ -125,6 +126,7 @@ async def generate(
             messages=[{"role": "user", "content": message}],
             run_id=run_id,
             budget=budget,
+            system_suffix=system_suffix,
         ):
             if isinstance(ev, TextDelta):
                 chunks.append(ev.text)

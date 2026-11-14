@@ -72,4 +72,4 @@ def test_renderers() -> None:
     )
     assert T.full_context(2, 18400) == "Read the documents in full (2 documents, 18k tokens)."
     assert T.full_context(1, 3000) == "Read the whole document (1 document, 3k tokens)."
-    assert T.unsupported(0) is None and T.unsupported(1) == "One sentence is not supported by its citation."
+    assert T.unsupported(0) is None and T.unsupported(1) == T.UNSUPPORTED_ONE

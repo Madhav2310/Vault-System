@@ -36,11 +36,8 @@ def test_bypasses() -> None:
 
 
 def test_template_text() -> None:
-    assert (
-        abstain_text(1)
-        == ABSTAIN_TEXT_ONE
-        == "I could not find anything in your 1 document that answers this."
-    )
-    assert abstain_text(3) == "I could not find anything in your 3 documents that answers this."
+    assert abstain_text(1) == ABSTAIN_TEXT_ONE
+    assert abstain_text(1).startswith("I could not find this in your 1 document.")
+    assert abstain_text(3).startswith("I could not find this in your 3 documents.")
     assert abstain_text(3) == abstain_text(3)  # deterministic: code-written, no model text
     assert "ABSTAIN_NO_EVIDENCE" in REASON_TEMPLATES
