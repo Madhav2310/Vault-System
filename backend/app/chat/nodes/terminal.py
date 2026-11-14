@@ -2,6 +2,7 @@
 
 import dataclasses
 
+from app.chat.abstain import ABSTAIN_SCORED
 from app.chat.events import Clarify, ClarifyOptionOut
 from app.chat.gate import ABSTAIN_NO_EVIDENCE, abstain_text
 from app.chat.graph import TurnCtx, TurnState
@@ -23,9 +24,17 @@ async def abstain_no_documents(state: TurnState, ctx: TurnCtx) -> TurnState:
     return state
 
 
+def _scored_gate(state: TurnState, ctx: TurnCtx) -> bool:
+    """S22.07: the gate abstained through the fitted combiner (its step names the model), not the floor."""
+    return ctx.deps.gateway.settings.chat_abstain_scored and any(
+        s.node == "gate" and s.decision is not None and "scored" in s.decision for s in state.steps
+    )
+
+
 async def abstain_no_evidence(state: TurnState, ctx: TurnCtx) -> TurnState:
     if state.gate_abstain:  # below the evidence floor (S17.08): a template naming the documents in scope
-        base = plain("abstain", abstain_text(len(state.scope.entries)), (ABSTAIN_NO_EVIDENCE,))
+        code = ABSTAIN_SCORED if _scored_gate(state, ctx) else ABSTAIN_NO_EVIDENCE
+        base = plain("abstain", abstain_text(len(state.scope.entries)), (code,))
     else:
         base = plain("abstain", NO_EVIDENCE_TEXT, (NO_EVIDENCE,))
     state.generation = dataclasses.replace(base, followups=await abstain_followups(state, ctx))

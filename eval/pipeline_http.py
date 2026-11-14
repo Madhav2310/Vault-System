@@ -166,13 +166,20 @@ async def setup(
             cand_rows = (
                 await s.execute(
                     text(
-                        "SELECT chunk_id, attempt, selected FROM retrieval_candidates "
+                        "SELECT chunk_id, attempt, selected, rerank_score, vector_distance, id_match "
+                        "FROM retrieval_candidates "
                         "WHERE run_id = :r ORDER BY "
                         "rerank_score DESC NULLS LAST, rrf_score DESC NULLS LAST"
                     ),
                     {"r": run[0]},
                 )
             ).all()
+            abstain_run = (
+                await s.execute(
+                    text("SELECT analysis -> 'abstain' FROM rag_runs WHERE id = :r AND owner_id = :o"),
+                    {"r": run[0], "o": uid},
+                )
+            ).scalar_one_or_none()
         cands = [r[0] for r in cand_rows]
         abstained = msg["response_type"] in {"abstain", "clarify"}
         kw: dict[str, Any] = {
@@ -194,7 +201,15 @@ async def setup(
         last = max((r[1] for r in cand_rows), default=0)  # the final attempt's selected chunks + cited ones
         picked = {str(r[0]) for r in cand_rows if r[2] and r[1] == last}
         picked |= {c.chunk_id for sg in segs for c in sg.citations}
-        return ItemOutputV2(**kw, evidence=sorted(picked))
+        inputs = {  # S22.07: the final attempt's scores and the features the turn recorded
+            "candidates": [
+                {"rerank_score": r[3], "vector_distance": r[4], "id_match": bool(r[5])}
+                for r in cand_rows
+                if r[1] == last
+            ],
+            "run": abstain_run,
+        }
+        return ItemOutputV2(**kw, evidence=sorted(picked), abstain_inputs=inputs)
 
     get_settings()  # fail early on a bad environment
     started = dt.datetime.now(dt.UTC)
