@@ -67,6 +67,7 @@ class Settings(BaseSettings):
 
     # --- LLM gateway (design §5.3, §15) ---
     llm_timeout_s: float = 120.0
+    llm_first_token_timeout_s: float = 15.0  # a stream with no first token by then is retried (0 = off)
     llm_max_retries: int = 2  # retries after the first attempt, retryable errors only
     llm_retry_base_s: float = 0.5  # backoff base when no retry-after is given
     llm_retry_max_s: float = 8.0

@@ -39,6 +39,7 @@ from app.llm.errors import (
     LlmError,
     ProviderConnectionError,
     ProviderError,
+    ProviderTimeoutError,
     RateLimitedError,
     RefusalError,
     RequestConflictError,
@@ -459,7 +460,12 @@ class LlmGateway:
             span = _tracer.start_span("llm.stream", attributes=meta.span_attrs(attempt))
             try:
                 async with aclosing(self.chat.stream(req)) as events:
-                    async for ev in events:
+                    stream = events.__aiter__()
+                    while True:
+                        try:
+                            ev = await self._next_event(stream, first=ttft is None)
+                        except StopAsyncIteration:
+                            break
                         if isinstance(ev, ProviderFinal):
                             final = ev
                             continue
@@ -646,6 +652,18 @@ class LlmGateway:
         self.rate_limiter.reconcile(model=meta.model, usage=usage)
         if budget is not None:
             budget.record_usage(usage)
+
+    async def _next_event(self, stream: AsyncIterator[Any], *, first: bool) -> Any:
+        """The next stream event. Before the first token a stalled call is cut after
+        `llm_first_token_timeout_s` and surfaces as a retryable timeout, so the retry still fits in the turn
+        deadline (a hung call would otherwise hold the turn until `llm_timeout_s`)."""
+        limit = self.settings.llm_first_token_timeout_s
+        if not first or limit <= 0:
+            return await stream.__anext__()
+        try:
+            return await asyncio.wait_for(stream.__anext__(), limit)
+        except TimeoutError:
+            raise ProviderTimeoutError(f"no first token within {limit:g}s") from None
 
     def _retry_delay(
         self, e: ProviderError, attempt: int, budget: Budget | None, retries: int | None = None

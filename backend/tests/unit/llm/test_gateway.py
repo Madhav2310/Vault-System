@@ -1,3 +1,4 @@
+import asyncio
 import json
 import pathlib
 import uuid
@@ -267,3 +268,39 @@ async def test_no_fallback_after_deadline(tmp_path: pathlib.Path) -> None:
     with pytest.raises(errors.OverloadedError):
         await _schema_call(gw, budget=FakeBudget(deadline_s=0))  # deadline already passed: no fallback
     assert [r.model for r in prov.requests] == ["gpt-6-luna"]  # and no retry either
+
+
+async def test_stream_stalled_before_first_token_is_retried(tmp_path: pathlib.Path) -> None:
+    gw, prov, led, _ = make_gateway(tmp_path, [fake.text("a b c"), fake.text("a b c")])
+    gw.settings.llm_first_token_timeout_s = 0.05
+    real, calls = prov._next, 0
+
+    async def hang_once() -> object:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            await asyncio.sleep(5)  # the first call never produces a token
+        return await real()
+
+    prov._next = hang_once  # type: ignore[method-assign]
+    got = [
+        ev
+        async for ev in gw.stream(
+            purpose="generate", lane="interactive", prompt=("t_text", 1), owner_id=OWNER, inputs={"q": "x"}
+        )
+    ]
+    assert len(prov.requests) == 2 and got
+    assert isinstance(led, MemoryLedger) and [r.error_type for r in led.records] == ["timeout", None]
+
+
+async def test_stream_first_token_timeout_off_waits_for_the_provider(tmp_path: pathlib.Path) -> None:
+    gw, prov, _, _ = make_gateway(tmp_path, [fake.text("a b")])
+    gw.settings.llm_first_token_timeout_s = 0
+    prov.latency_s = 0.1
+    got = [
+        ev
+        async for ev in gw.stream(
+            purpose="generate", lane="interactive", prompt=("t_text", 1), owner_id=OWNER, inputs={"q": "x"}
+        )
+    ]
+    assert got and len(prov.requests) == 1
