@@ -145,7 +145,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         generation=gen,
         config={
             "prompts": [
-                "analyze_query@2",
+                f"analyze_query@{deps.gateway.settings.chat_analyze_version}",
                 f"answer_compare@{compare_prompt(deps.gateway.settings)[1]}"
                 if state.compare
                 else "answer_rag@3",
