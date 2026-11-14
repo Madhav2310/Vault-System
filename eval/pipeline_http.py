@@ -149,7 +149,7 @@ async def setup(
             .all()
         )
     chunks: dict[str, list[ChunkInfo]] = {k: [] for k in doc_ids}
-    for c in chunks_from_rows([dict(r) for r in rows], by_id):
+    for c in chunks_from_rows([dict(r) for r in rows if str(r["document_id"]) in by_id], by_id):
         chunks[c.doc_id].append(c)
 
     async def new_session(q: Query, ctx: EvalContext) -> uuid.UUID:
