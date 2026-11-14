@@ -70,10 +70,16 @@ async def setup(
     doc_ids: dict[str, str] = {}
     for k, meta in documents.items():
         p = resolve_file(meta["file"]) if v2 else ROOT / meta["file"]
-        r = await http.post("/v1/documents", files={"file": (p.name, p.read_bytes())})
+        for _attempt in range(
+            8
+        ):  # the upload route is rate limited per user (30/min): wait as told, then retry
+            r = await http.post("/v1/documents", files={"file": (p.name, p.read_bytes())})
+            if r.status_code != 429:
+                break
+            await asyncio.sleep(min(float(r.headers.get("retry-after", "5")) + 1, 65))
         r.raise_for_status()
         doc_ids[k] = r.json()["document_id"]
-    deadline = time.monotonic() + 900
+    deadline = time.monotonic() + 2400  # ~75 documents incl. 10-Ks through the ingest workers (4 at a time)
     for k, did in doc_ids.items():
         while True:
             st = (await http.get(f"/v1/documents/{did}")).json()["status"]
