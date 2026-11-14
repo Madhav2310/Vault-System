@@ -31,6 +31,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
 import uuid
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -257,6 +258,8 @@ class DocResult:
     targets: int = 0
     present: int = 0
     cost_usd: Decimal = Decimal(0)
+    brief_cost_usd: Decimal = Decimal(0)  # extract + merge calls only (no judge)
+    latency_s: float = 0.0  # wall time of generate_brief (all calls of the document)
     error: str | None = None
     partial: bool = False
     failures: list[str] = field(
@@ -304,6 +307,8 @@ class BriefEvalResult:
             "completeness": sum(d.present for d in self.docs) / targets if targets else None,
             "completeness_targets": targets,
             "verified_rate": sum(d.verified for d in self.docs) / facts if facts else None,
+            "latency_s": sum(d.latency_s for d in self.docs) / max(1, len(self.docs)),
+            "brief_cost_usd": float(sum(d.brief_cost_usd for d in self.docs)) / max(1, len(self.docs)),
         }
 
     def targets_met(self) -> bool:
@@ -340,6 +345,7 @@ async def evaluate_document(
         return [by_id[i] for i in ids]
 
     before = guard.spent
+    t0 = time.monotonic()
     try:
         gen = await generate_brief(
             cast(LlmGateway, GuardedGateway(gw, guard)),
@@ -357,6 +363,8 @@ async def evaluate_document(
         res.error = type(e).__name__
         res.cost_usd = guard.spent - before
         return res
+    res.latency_s = time.monotonic() - t0
+    res.brief_cost_usd = guard.spent - before
     brief = gen.brief
     res.category, res.partial = brief.category, brief.partial
     res.facts = len(brief.facts)
@@ -471,14 +479,14 @@ def render_report(r: BriefEvalResult) -> str:
         "## Per document",
         "",
         "| document | category | facts | verified | verified rate | judged | faithfulness | completeness | "
-        "cost usd | error |",
-        "|---|---|---:|---:|---:|---:|---:|---:|---:|---|",
+        "cost usd | brief cost usd | latency s | error |",
+        "|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
     for d in r.docs:
         comp = f"{d.present}/{d.targets} = {_f(d.completeness)}" if d.targets else "-"
         lines.append(
             f"| {_cell(d.key)} | {d.category or '-'} | {d.facts} | {d.verified} | {_f(d.verified_rate)} | "
-            f"{d.judged} | {_f(d.faithfulness)} | {comp} | {d.cost_usd} | {_cell(d.error or '')} |"
+            f"{d.judged} | {_f(d.faithfulness)} | {comp} | {d.cost_usd} | {d.brief_cost_usd} | {d.latency_s:.1f} | {_cell(d.error or '')} |"
         )
     bad = [(d.key, x) for d in r.docs for x in d.failures]
     if bad:
@@ -620,6 +628,7 @@ def _print_summary(r: BriefEvalResult, path: pathlib.Path) -> None:
     )
     print(f"completeness {_f(t['completeness'])} over {t['completeness_targets']} gold clauses")
     print(f"verified {_f(t['verified_rate'])} target >= {VERIFIED_TARGET}")
+    print(f"mean brief latency {t['latency_s']:.1f}s per document, brief cost ${t['brief_cost_usd']:.5f} per document")
     cap = f" of cap ${r.cap}" if r.cap is not None else ""
     print(f"spend ${r.spent}{cap}")
     print(f"report {path}")
