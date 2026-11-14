@@ -80,6 +80,16 @@ eval-labels:  ## export label pairs from a run's answers: make eval-labels ANSWE
 	$(UV) env PYTHONPATH=.. python -m eval.judge --export-labels $(or $(N),200) --answers ../$(ANSWERS) --out ../eval/labels/labeled.yaml
 eval-v2-docs:  ## regenerate vault_eval_v2/documents.yaml ($0): make eval-v2-docs [ARGS=--download|--check]
 	cd backend && VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) UV_PYTHON_PREFERENCE=only-managed uv run --frozen python ../eval/build/build_v2_docs.py $(ARGS)
+eval-gate:  ## Tier 1 gate, no model call: make eval-gate BASE=eval/baselines/answer_v2.json CAND=eval/reports/<run_id>.json [GATE_ARGS=--strict-power]
+	@test -n "$(CAND)" || { echo "usage: make eval-gate [BASE=eval/baselines/answer_v2.json] CAND=eval/reports/<run_id>.json (docs/eval_gates.md)"; exit 2; }
+	$(UV) env PYTHONPATH=.. python -m eval.gate compare ../$(or $(BASE),eval/baselines/answer_v2.json) ../$(CAND) $(GATE_ARGS)
+eval-gate-t0:  ## Tier 0 gate ($0, every PR): schema, documents map, citation integrity, replay, retrieval-only vs baseline, security tests
+	$(UV) env PYTHONPATH=.. python -m eval.gate schema
+	$(MAKE) eval-v2-docs ARGS=--check
+	$(UV) env PYTHONPATH=.. python -m eval.gate citations $(RUNS)
+	$(UV) env PYTHONPATH=.. python -m eval.replay --run $(or $(RUN),latest)
+	$(MAKE) eval-retrieval-fast EVAL_ARGS="--compare retrieval"
+	$(UV) pytest tests/integration/security
 eval-smoke:
 	$(UV) env PYTHONPATH=.. python -m eval.run --suite smoke --config smoke --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 loadtest:
