@@ -4,7 +4,7 @@
 
 Upload PDF, DOCX, TXT or Markdown files. Vault processes them in the background, writes a cited summary (a "source guide") of each, and lets you chat with your documents. Every claim in an answer points to the exact sentence it came from, and that sentence is copied by code from the stored text, never written by the model.
 
-Screenshot or GIF of a cited streaming answer: pending (recorded by the author, see `docs/demo.md`). Screen recording: pending (link added by the author).
+Screenshot or GIF of a cited streaming answer: pending (recorded by the author, see `docs/ops/demo.md`). Screen recording: pending (link added by the author).
 
 ## Quickstart
 
@@ -17,8 +17,8 @@ scripts/demo_core.sh      # shorter smoke: upload, ready, one cited answer, hist
 
 - Open `/app` (the web UI) and paste the API key `quickstart.sh` printed. API docs: `http://localhost:8100/docs`.
 - No OpenAI key: `make ui-e2e` runs the UI tests against a scripted fake model on its own ports and tears itself down. `scripts/demo.sh` also runs against that stack with `LLM_PROVIDER=fake` (instructions at the top of the script).
-- Docker is only needed to run the stack. Unit tests and lint need none: `make ci`. Docker limits and which target needs what: `docs/dev-environment.md`.
-- The recorded walkthrough and its narration script: `docs/demo.md`.
+- Docker is only needed to run the stack. Unit tests and lint need none: `make ci`. Docker limits and which target needs what: `docs/ops/dev-environment.md`.
+- The recorded walkthrough and its narration script: `docs/ops/demo.md`.
 
 ## What works today
 
@@ -147,11 +147,11 @@ Judges are OpenAI models, like the generator; this is mitigated (deterministic g
 
 ## Scale
 
-How the design handles thousands of documents, what was measured and what was not: `docs/scale.md`. In short: search is exact and scoped to the owner's hash partition, ingestion is bounded by CPU-bound extraction on the `ingest` worker and scales by adding workers, and no load test was run. Measured rows and TBD rows each name their source or the command that would measure them.
+How the design handles thousands of documents, what was measured and what was not: `docs/ops/scale.md`. In short: search is exact and scoped to the owner's hash partition, ingestion is bounded by CPU-bound extraction on the `ingest` worker and scales by adding workers, and no load test was run. Measured rows and TBD rows each name their source or the command that would measure them.
 
 ## Cost
 
-Per-document and per-turn costs, scaled in `docs/scale.md`. The demo run is capped by `DEMO_MAX_USD` and prints its spend from the ledger.
+Per-document and per-turn costs, scaled in `docs/ops/scale.md`. The demo run is capped by `DEMO_MAX_USD` and prints its spend from the ledger.
 
 | Item | Value | Command |
 |---|---|---|
@@ -175,15 +175,38 @@ Per-document and per-turn costs, scaled in `docs/scale.md`. The demo run is capp
 | UI end to end with a fake model | `make ui-e2e` | pending |
 | Live provider smoke (spends a few cents) | `make smoke-providers` | pending |
 
-Counts come from `docs/progress.md` (S17.12 and S16 gate entries) and age as the code changes; rerun the command for the current value. Live and eval commands always run on samples with a spend cap, never on the full dataset by default.
+Counts come from `docs/status/progress.md` (S17.12 and S16 gate entries) and age as the code changes; rerun the command for the current value. Live and eval commands always run on samples with a spend cap, never on the full dataset by default.
 
 ## Limitations and deliberately not built
 
 - Cut from plan v3 as low visibility for their cost (`docs/plan/v3.md` section 1): convergence-engine tuning stages, a comparison matrix view, load tests, Grafana dashboards, geometry vision QA of highlights.
 - Not built or not finished: a dedicated compare route and conflict detection, an answer-quality baseline, the retrieval re-baseline with the working reranker, an accessibility pass, OCR for scanned PDFs (they end as `needs_ocr`).
-- Known limits: gold labels are unreviewed drafts; judges and generator share a vendor; no concurrency or throughput claim beyond the single-document measurements in `docs/scale.md`; PDFs over the page cap (600 pages) end as unsupported.
+- Known limits: gold labels are unreviewed drafts; judges and generator share a vendor; no concurrency or throughput claim beyond the single-document measurements in `docs/ops/scale.md`; PDFs over the page cap (600 pages) end as unsupported.
 - Optional heavy components, off by default: reranker (`make up-rerank`; retrieval falls back to fusion order without it), observability with Grafana (`make up-full`), the web UI build (`make ui`, built automatically in the Docker image).
 
 ## Repo map
 
-`backend/app` (API, ingestion, retrieval, chat, insights, llm, explain) · `backend/prompts` (versioned prompts) · `frontend` (React UI served at `/app`) · `eval` (golden set, graders, judges, harness) · `reranker` (optional service) · `docs` (design, plan, architecture, scale, evidence, demo) · `scripts` (quickstart, demo) · `ops` (collector and Grafana config)
+Architecture overview: [`ARCHITECTURE.md`](ARCHITECTURE.md). Documentation index: [`docs/README.md`](docs/README.md).
+
+| Path | Purpose |
+|---|---|
+| `backend/app/` | FastAPI app: api, ingestion, retrieval, chat, insights, matrix, feedback, llm gateway, explain, observability |
+| `backend/prompts/` | Versioned prompt files (`<id>@<version>.md`) |
+| `backend/tests/` | Unit and integration tests |
+| `backend/config/` | Backend configuration files |
+| `frontend/` | React UI served at `/app`, with Playwright e2e specs in `frontend/e2e/` |
+| `reranker/` | Optional cross-encoder rerank service (`make up-rerank`) |
+| `eval/` | Golden sets, graders, judges, harness, frozen baselines (`eval/baselines/`) |
+| `ops/` | OpenTelemetry collector and Grafana configuration |
+| `scripts/` | Quickstart, demo, plan tooling, spikes (see `scripts/README.md`) |
+| `docs/design.md` | Design, source of truth |
+| `docs/plan/` | Plan of record (slices, acceptance criteria); parsed by `scripts/plan_lint.py` |
+| `docs/status/` | Status, total progress, progress log, followups, spec coverage |
+| `docs/eval/` | Eval gate rules and the v2 runbook |
+| `docs/ops/` | Scale, dev environment, demo script |
+| `docs/research/` | Research 01-06, plus `reports/` and `notes/` from the rebuild research |
+| `docs/evidence/` | Spikes, A/B write-ups, kept eval runs (`runs/`) |
+| `docs/spec/`, `docs/api/`, `docs/img/` | Case-study PDF, Postman collection, diagram sources |
+| `docker-compose.yml` | Default stack; `docker-compose.ui-test.yml` is the fake-model UI e2e stack |
+| `Makefile` | All commands (`make up`, `make ci`, `make eval-*`) |
+| `AI_USAGE.md` | AI usage log |
