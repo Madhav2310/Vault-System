@@ -37,7 +37,7 @@ backend/tests/fixtures/files/oversize.pdf
 eval/runs/
 eval/.cache/
 
-# Eval run outputs (kept runs live in docs/evidence/runs/)
+# Eval run outputs (the kept train run lives in eval/baselines/v2_train/)
 eval/reports/*
 !eval/reports/.gitkeep
 eval/.reuse*.json

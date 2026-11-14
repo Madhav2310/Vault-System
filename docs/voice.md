@@ -15,36 +15,36 @@ How Vault talks. It reads like a calm, kind colleague who has read your document
 9. **A gentle next step whenever we cannot answer.** One short sentence: rephrase, name the document, upload, try again.
 10. **Warmth never loosens grounding.** The voice changes wording only. Citations, abstention and evidence rules are unchanged.
 
-## Before and after
+## Avoid and prefer
 
 **Answer**
-- Before: "Notice period: 30 days. Termination: either party."
-- After: "Either party can end the agreement with 30 days' written notice."
+- Avoid: "Notice period: 30 days. Termination: either party."
+- Prefer: "Either party can end the agreement with 30 days' written notice."
 
 **Partial**
-- Before: "The documents provided do not state an answer to: renewal terms."
-- After: "I did not find anything about renewal terms in these documents. Try a document that covers it."
+- Avoid: "The documents provided do not state an answer to: renewal terms."
+- Prefer: "I did not find anything about renewal terms in these documents. Try a document that covers it."
 
 **Not found**
-- Before: "I could not find anything in your 2 documents that answers this."
-- After: "I could not find this in your 2 documents. Try asking in different words, or name the document you have in mind."
+- Avoid: "I could not find anything in your 2 documents that answers this."
+- Prefer: "I could not find this in your 2 documents. Try asking in different words, or name the document you have in mind."
 
 **Ambiguous**
-- Before: "The question was too ambiguous to answer, so you were asked to clarify."
-- After: "The question could be read more than one way, so you were asked to clarify."
+- Avoid: "The question was too ambiguous to answer, so you were asked to clarify."
+- Prefer: "The question could be read more than one way, so you were asked to clarify."
 
 **Conflict**
-- Before: "The sources disagree on a point, so both sides are shown with their citations."
-- After: "The sources differ on a point, so both sides are shown with their citations."
+- Avoid: "The sources disagree on a point, so both sides are shown with their citations."
+- Prefer: "The sources differ on a point, so both sides are shown with their citations."
 
 **Error**
-- Before: "Something went wrong while answering. Please try again."
-- After: "That did not work on my side, and no answer was written. Please try again in a moment."
+- Avoid: "Something went wrong while answering. Please try again."
+- Prefer: "That did not work on my side, and no answer was written. Please try again in a moment."
 
 ## Where it lives
 
 | Surface | Mechanism | Test |
 | --- | --- | --- |
-| Model-written answers | `backend/prompts/voice@1.md` appended by `app/chat/voice.py`; off until the paired A/B accepts it | `tests/unit/chat/test_voice.py` |
+| Model-written answers | `backend/prompts/voice@1.md` appended by `app/chat/voice.py`; disabled by default (`CHAT_VOICE`; see the behaviour switches in `ARCHITECTURE.md`) | `tests/unit/chat/test_voice.py` |
 | Abstain, not found, quota, rate limit, stale, errors, reason lines | `app/explain/templates.py` (deterministic, always on) | `tests/unit/explain/test_voice_templates.py` |
 | UI microcopy | follows this page | UI e2e |
