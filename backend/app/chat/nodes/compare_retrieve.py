@@ -1,6 +1,6 @@
 """`compare_retrieve` node (S18.06): per-document retrieval for a compare turn."""
 
-from app.chat.compare import retrieve_per_doc
+from app.chat.compare import quota_on, retrieve_per_doc
 from app.chat.graph import TurnCtx, TurnState
 from app.retrieval.load import load_evidence_chunks
 from app.retrieval.query_embed import normalize_query
@@ -11,7 +11,10 @@ async def compare_retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
     query = state.analysis.standalone_query
     emb = state.embedding if normalize_query(query) == normalize_query(state.question) else None
     deps = ctx.deps
-    result = await retrieve_per_doc(deps.retriever, deps.sm, ctx.owner_id, state.scope, query, embedding=emb)
+    result = await retrieve_per_doc(
+        deps.retriever, deps.sm, ctx.owner_id, state.scope, query,
+        embedding=emb, quota=quota_on(deps.gateway.settings),
+    )  # fmt: skip
     async with deps.sm() as s:
         state.chunks = await load_evidence_chunks(s, ctx.owner_id, list(result.selected))
     state.retrieval = result

@@ -110,6 +110,9 @@ class Settings(BaseSettings):
     # --- plan-first answers (S22.04): answer_rag@4 + coverage plan; off until the A/B decides ---
     chat_plan_first: bool = False
 
+    # --- compare quotas + coverage gate (S22.05): answer_compare@2 + repair; off until the A/B decides ---
+    chat_compare_quota: bool = False
+
     # --- warm voice (S23.01): appends prompts/voice@1.md to the answer prompts; off until the A/B decides ---
     chat_voice: bool = False
 

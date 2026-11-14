@@ -37,6 +37,7 @@ ABSTAIN_TEXT_MANY = (
 NOT_FOUND_ELEMENT = (
     "I did not find anything about {element} in these documents. Try a document that covers it."
 )
+SIDE_NOT_FOUND = "I did not find anything about this in {title}. Try a document that covers it."
 CLARIFY_TEXT = "More than one of your documents could answer this. Which one should I look in?"
 ERROR_TEXT = "That did not work on my side, and no answer was written. Please try again in a moment."
 QUOTA_REACHED = "You have reached today's usage limit. It resets in {retry} s (at midnight UTC), so you can ask again then."
@@ -84,6 +85,13 @@ REASON_TEMPLATES: dict[str, str] = {
         "One document had nothing on this comparison, and the answer says so. "
         "Try adding a document that covers it."
     ),
+    "COMPARE_SIDE_NOT_FOUND": (
+        "I could not find anything on this comparison in one of the documents, and the answer says so. "
+        "Try a document that covers it."
+    ),
+    "COMPARE_SIDE_REPAIRED": (
+        "One document was missing from the first draft, so I looked at it on its own and added what it says."
+    ),
     "ELEMENT_NOT_FOUND": (
         "Part of the question had no supporting passage, and the answer says so. "
         "Try a document that covers it."
@@ -105,6 +113,10 @@ DEGRADED_TEMPLATES: dict[str, str] = {
 
 def not_found_text(element: str) -> str:
     return NOT_FOUND_ELEMENT.format(element=element)
+
+
+def side_not_found_text(title: str) -> str:
+    return SIDE_NOT_FOUND.format(title=title)
 
 
 def plural(n: int, one: str, many: str | None = None) -> str:
