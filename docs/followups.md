@@ -60,3 +60,6 @@ Fixed in the review commit: persist failure now falls back to a minimal error re
 - F-048 `tests/integration/observability/test_trace_propagation.py::test_api_to_celery_same_trace` times out (15 s) in full suite runs after the e2e celery tests, passes alone (3 of 3 full runs 2026-11-13). Likely shared in-memory broker/worker state between tests; isolate or run it first.
 
 - F-049 (2026-11-14): `a11y.spec.ts > keyboard flow` timed out once waiting for the file chooser (2.5 min run, right after `make test`), passed on rerun (41/41 in 27 s). Likely load-related; if it recurs, wait for the upload control to be focused before pressing Enter.
+
+## F-chat-regenerate-history (2026-11-14, from S23.03)
+Regenerate and Edit-and-resend replace the old Q/A on screen only; the server keeps both turns, so reloading the session shows the superseded pair. Fix: Regenerate should use `reask_of` (exists on POST messages); Edit-and-resend needs a server "supersede" marker or a branch. Also "Wrong document?" does not carry the question into the new chat, and the Jump-to-latest offset (`bottom: 148px`) is hand-tuned: check on mobile widths.
