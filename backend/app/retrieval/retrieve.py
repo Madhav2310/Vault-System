@@ -23,7 +23,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.core.logging import get_logger
-from app.retrieval.config import RetrievalConfig, get_config
+from app.retrieval.config import RetrievalConfig, get_config, vector_quota
 from app.retrieval.expand import expand_neighbors
 from app.retrieval.fusion import FusedCandidate, Ranked, fuse
 from app.retrieval.lexical import LexicalHit, lexical_search
@@ -209,7 +209,12 @@ class Retriever:
             t = time.monotonic()
             async with _use(db) as s:
                 hits = await vector_search(
-                    s, owner_id, scope, emb.vector, k=cfg.k_vec, per_doc_quota=cfg.per_doc_quota
+                    s,
+                    owner_id,
+                    scope,
+                    emb.vector,
+                    k=cfg.k_vec,
+                    per_doc_quota=vector_quota(cfg, len(version_ids)),
                 )
             timings["vector_ms"] = _ms(t)
             return hits
