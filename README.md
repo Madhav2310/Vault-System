@@ -34,7 +34,7 @@ scripts/demo_core.sh      # shorter smoke: upload, ready, one cited answer, hist
 - [x] "Why this answer" panel from reason codes and templates (`GET /v1/runs/{id}`)
 - [x] Metrics APIs (documents, processing, chat), daily cost quota, rate limits, answer feedback
 - [x] Web UI at `/app`: library, document page with source viewer, streaming chat with hover and click citations
-- [ ] Dedicated compare-across-documents route and conflict detection: a comparison question works as an ordinary multi-document question today (planned: S18.06, S18.07)
+- [x] Compare-across-documents route and conflict detection (`backend/app/chat/compare.py`; per-document quotas behind `CHAT_COMPARE_QUOTA` pending its A/B)
 - [ ] Accessibility pass on the UI (planned: S19.06)
 - [ ] Answer-quality baseline with judges (pending: `make eval-answers`)
 - [ ] Recorded demo (pending, author)
@@ -180,7 +180,7 @@ Counts come from `docs/status/progress.md` (S17.12 and S16 gate entries) and age
 ## Limitations and deliberately not built
 
 - Cut from plan v3 as low visibility for their cost (`docs/plan/v3.md` section 1): convergence-engine tuning stages, a comparison matrix view, load tests, Grafana dashboards, geometry vision QA of highlights.
-- Not built or not finished: a dedicated compare route and conflict detection, an answer-quality baseline, the retrieval re-baseline with the working reranker, an accessibility pass, OCR for scanned PDFs (they end as `needs_ocr`).
+- Not finished: the audited v2 answer-quality baseline and the A/B decisions on the new switches (see `docs/status/TOTAL_PROGRESS.md`), and OCR for scanned PDFs (they end as `needs_ocr`).
 - Known limits: gold labels are unreviewed drafts; judges and generator share a vendor; no concurrency or throughput claim beyond the single-document measurements in `docs/ops/scale.md`; PDFs over the page cap (600 pages) end as unsupported.
 - Optional heavy components, off by default: reranker (`make up-rerank`; retrieval falls back to fusion order without it), observability with Grafana (`make up-full`), the web UI build (`make ui`, built automatically in the Docker image).
 
