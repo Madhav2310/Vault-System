@@ -17,6 +17,7 @@ import uuid
 from typing import Any
 
 from app.chat import sessions as svc
+from app.chat.compare import compare_prompt
 from app.chat.conflicts import conflicts_record
 from app.chat.events import Followups, NullSink, current_sink
 from app.chat.graph import END, TURN_ERROR, Graph, TurnCtx, TurnDeps, TurnState, router
@@ -143,7 +144,9 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         config={
             "prompts": [
                 "analyze_query@2",
-                "answer_compare@1" if state.compare else "answer_rag@3",
+                f"answer_compare@{compare_prompt(deps.gateway.settings)[1]}"
+                if state.compare
+                else "answer_rag@3",
                 f"support_check@{deps.gateway.settings.chat_support_version}",
                 *(recorded_voice(deps.gateway.settings) if gen.call_ids else []),
             ],
