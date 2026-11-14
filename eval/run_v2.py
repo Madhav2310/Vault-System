@@ -90,7 +90,7 @@ from eval.report import (
 )
 from eval.run import SUITES, Harness, _extra, _git_sha, _persist, ttft_summary
 from eval.schema import GoldenItem, GoldItemV2, ItemOutput, Query
-from eval.splits_v2 import SPLITS_V2, live_items, select_v2, split_counts, split_of
+from eval.splits_v2 import SPLITS_V2, live_items, select_dropped_v2, select_v2, split_counts, split_of
 
 DATASET = "v2"
 BASELINE_NAME = "answer_v2"
@@ -444,14 +444,21 @@ async def run_suite_v2(
     judge_concurrency: int = CONCURRENCY,
     split_items: Sequence[GoldItemV2] | None = None,
     filter_spec: str | None = None,
+    dropped_only: bool = False,
 ) -> tuple[RunResult, pathlib.Path]:
+    """`dropped_only` runs the given `audit_status: dropped` items (never part of a normal run). The run says so:
+    its split reads `<split>+dropped`, `config.dropped_only` is set and the fingerprint's dataset id differs, so
+    it cannot be paired with, or mistaken for, a normal run."""
     if suite not in SUITES:
         raise ValueError(f"unknown suite {suite!r}")
     answers = suite != "retrieval"
     if answers and (harness.judge_gw is None):
         raise ValueError("v2 answer suites need harness.judge_gw (the judges' gateway)")
-    items = live_items(items)
-    gold = live_items(split_items) if split_items is not None else items
+    if dropped_only:
+        split = f"{split}+dropped"
+    else:
+        items = live_items(items)
+    gold = (split_items if dropped_only else live_items(split_items)) if split_items is not None else items
     run = RunResult(
         uuid7(),
         name,
@@ -461,6 +468,8 @@ async def run_suite_v2(
         dt.datetime.now(dt.UTC),
         config={"name": name, "suite": suite, "split": split, "n_items": len(items), "dataset": DATASET},
     )
+    if dropped_only:
+        run.config["dropped_only"] = True
     if sm is not None:
         from app.db.models.eval import EvalRun
 
@@ -544,7 +553,7 @@ async def run_suite_v2(
         run.config["spent_usd"] = round(await harness.spent(), 4)
     run.finished_at = dt.datetime.now(dt.UTC)
     run.fingerprint = fingerprint.build(
-        dataset_id=f"vault_eval_{DATASET}",
+        dataset_id=f"vault_eval_{DATASET}" + (":dropped" if dropped_only else ""),
         split=split,
         split_items=gold,
         evaluated_ids=[i.item_id for i in run.items],
@@ -664,8 +673,12 @@ async def main_v2(a: argparse.Namespace) -> int:
     if a.suite == "smoke":
         raise SystemExit("--dataset v2 has no smoke split: use --split dev --filter ... or a small --max-usd")
     all_items = load_dataset_v2().items
-    items = select_filter_v2(select_v2(all_items, a.split), a.filter)
-    print(f"v2 {a.split}: {len(items)} live items; splits (items, source_docs): {split_counts(all_items)}")
+    only_dropped = bool(getattr(a, "only_dropped", False))
+    if only_dropped and (a.freeze or a.compare):
+        raise SystemExit("--only-dropped runs are never frozen or compared to a baseline")
+    pick = select_dropped_v2 if only_dropped else select_v2
+    items = select_filter_v2(pick(all_items, a.split), a.filter)
+    print(f"v2 {a.split}{' DROPPED-ITEMS RUN' if only_dropped else ''}: {len(items)} {'dropped' if only_dropped else 'live'} items; splits (items, source_docs): {split_counts(all_items)}")
     docs = load_documents_v2()
     keys = sorted({d for i in items for d in _doc_keys(i) if docs.get(d, {}).get("kind") != "virtual"})
     fn = _setup_fn(a)
@@ -682,8 +695,9 @@ async def main_v2(a: argparse.Namespace) -> int:
             sm=sm,
             max_usd=a.max_usd,
             answer_concurrency=a.answer_concurrency,
-            split_items=select_v2(all_items, a.split),
+            split_items=pick(all_items, a.split),
             filter_spec=a.filter,
+            dropped_only=only_dropped,
         )
     finally:
         if harness.close is not None:

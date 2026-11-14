@@ -47,6 +47,15 @@ def select_v2(items: Iterable[GoldItemV2], split: str = "all") -> list[GoldItemV
     return [i for i in live_items(items) if split == "all" or split_of(i.source_doc) == split]
 
 
+def select_dropped_v2(items: Iterable[GoldItemV2], split: str = "all") -> list[GoldItemV2]:
+    """The `audit_status: dropped` items of one split, with their stored gold as is (`--only-dropped` runs)."""
+    if split != "all" and split not in SPLITS_V2:
+        raise ValueError(f"unknown v2 split {split!r} (use {', '.join(SPLITS_V2)} or all)")
+    return [
+        i for i in items if i.audit_status == "dropped" and (split == "all" or split_of(i.source_doc) == split)
+    ]
+
+
 def split_counts(items: Sequence[GoldItemV2]) -> dict[str, tuple[int, int]]:
     """split -> (live items, distinct source_docs)."""
     live = live_items(items)

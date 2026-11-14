@@ -246,6 +246,8 @@ def ttft_summary(run: RunResult) -> str | None:
 
 
 async def _main(a: argparse.Namespace) -> int:
+    if getattr(a, "only_dropped", False) and getattr(a, "dataset", "v1") != "v2":
+        raise SystemExit("--only-dropped is for --dataset v2 only")
     if getattr(a, "dataset", "v1") == "v2":
         from eval.run_v2 import main_v2
 
@@ -340,6 +342,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         "--stream",
         action="store_true",
         help="answer over the SSE stream and report TTFT (p50/p95); needs a setup with a `stream` parameter",
+    )
+    p.add_argument(
+        "--only-dropped",
+        action="store_true",
+        help="v2: run the audit_status=dropped items of --split (stored gold as is) instead of the live ones; "
+        "the report and fingerprint mark it, and it is never frozen or compared",
     )
     p.add_argument("--no-db", action="store_true", help="skip eval_runs/eval_results rows")
     return asyncio.run(_main(p.parse_args(argv)))
