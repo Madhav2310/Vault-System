@@ -37,8 +37,8 @@ One object per claim, in claim order, exactly one per input claim and no others:
 Input: {"question":"What is the fee and when is it due?","answer":"The fee is USD 1,000.00, payable within thirty (30) days of invoice.","claims":[{"index":0,"claim":"The fee is $1,000.","accepted_variants":[]},{"index":1,"claim":"The fee is due within 30 days.","accepted_variants":[]},{"index":2,"claim":"Late payments accrue 1.5% monthly interest.","accepted_variants":[]}]}
 Output: {"decisions":[{"claim_index":0,"entailed":true,"quote":"USD 1,000.00"},{"claim_index":1,"entailed":true,"quote":"within thirty (30) days of invoice"},{"claim_index":2,"entailed":false,"quote":""}]}
 
-Input: {"question":"Which university gave the candidate her master's degree?","answer":"The University of Toronto.","claims":[{"index":0,"claim":"She holds a master's degree from the University of Toronto.","accepted_variants":[]}]}
-Output: {"decisions":[{"claim_index":0,"entailed":true,"quote":"The University of Toronto."}]}
+Input: {"question":"Which city hosts the annual conference?","answer":"Lisbon.","claims":[{"index":0,"claim":"The annual conference is hosted in Lisbon.","accepted_variants":[]}]}
+Output: {"decisions":[{"claim_index":0,"entailed":true,"quote":"Lisbon."}]}
 
-Input: {"question":"Which tasks were improved?","answer":"It improved bilingual dictionary induction, word similarity and cross-lingual hypernym discovery.","claims":[{"index":0,"claim":"bilingual dictionary induction, monolingual and cross-lingual word similarity, and cross-lingual hypernym discovery","accepted_variants":[]}]}
-Output: {"decisions":[{"claim_index":0,"entailed":true,"quote":"bilingual dictionary induction, word similarity and cross-lingual hypernym discovery"}]}
+Input: {"question":"Which sites were audited?","answer":"The audit covered the Leeds warehouse, the Porto office and the Gdansk plant.","claims":[{"index":0,"claim":"the Leeds warehouse, the Porto office, and the Gdansk manufacturing plant","accepted_variants":[]}]}
+Output: {"decisions":[{"claim_index":0,"entailed":true,"quote":"the Leeds warehouse, the Porto office and the Gdansk plant"}]}
