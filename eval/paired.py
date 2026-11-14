@@ -22,7 +22,7 @@ import sys
 from collections.abc import Sequence
 from dataclasses import dataclass
 
-from eval.report import Sidecar
+from eval.report import Sidecar, cluster_ci, cluster_key, design_effect, mde
 
 N_BOOT = 10_000
 
@@ -41,6 +41,16 @@ class Comparison:
     p_value: float
     p_kind: str
     verdict: str
+    # S21.07 additions (defaulted so existing constructions keep working)
+    mean_diff: float = 0.0
+    cluster_ci_low: float = 0.0
+    cluster_ci_high: float = 0.0
+    n_clusters: int = 0
+    b_better: int = 0  # discordant items: B > A
+    a_better: int = 0  # discordant items: A > B
+    mde_80: float = 0.0
+    design_effect: float = 1.0
+    strata: tuple[tuple[str, int, float], ...] = ()  # (stratum, n, mean diff): diagnostic only
 
 
 def bootstrap_ci(deltas: Sequence[float], seed: int = 7, n: int = N_BOOT) -> tuple[float, float, float]:
@@ -93,6 +103,17 @@ def compare(a: Sidecar, b: Sidecar, metric: str, seed: int = 7) -> Comparison:
             b10 += sum(1 for x, y in zip(ha, hb, strict=True) if x and not y)
         if usable:
             p, kind = mcnemar_exact(b01, b10), f"mcnemar({b01}/{b10})"
+    clusters = [
+        cluster_key(i, getattr(ib[i], "source_doc", None) or getattr(ia[i], "source_doc", None)) for i in ids
+    ]
+    mean_d, c_lo, c_hi = cluster_ci(deltas, clusters, seed)
+    deff = design_effect(deltas, clusters)
+    var = sum((d - mean_d) ** 2 for d in deltas) / (len(deltas) - 1) if len(deltas) > 1 else 0.0
+    by_stratum: dict[str, list[float]] = {}
+    for i, d in zip(ids, deltas, strict=True):
+        st = getattr(ib[i], "stratum", None) or getattr(ia[i], "stratum", None)
+        if st:
+            by_stratum.setdefault(st, []).append(d)
     return Comparison(
         metric,
         len(ids),
@@ -106,6 +127,15 @@ def compare(a: Sidecar, b: Sidecar, metric: str, seed: int = 7) -> Comparison:
         p,
         kind,
         verdict(low, high, p),
+        mean_d,
+        c_lo,
+        c_hi,
+        len(set(clusters)),
+        sum(1 for d in deltas if d > 0),
+        sum(1 for d in deltas if d < 0),
+        mde(var, len(deltas), deff),
+        deff,
+        tuple((st, len(v), sum(v) / len(v)) for st, v in sorted(by_stratum.items())),
     )
 
 
@@ -114,8 +144,13 @@ def render(c: Comparison) -> str:
         f"metric {c.metric}: n_paired={c.n_paired} (only A {c.n_only_a}, only B {c.n_only_b})\n"
         f"A={c.mean_a:.4f}  B={c.mean_b:.4f}  delta={c.delta:+.4f}  "
         f"95% CI [{c.ci_low:+.4f}, {c.ci_high:+.4f}]\n"
+        f"clustered 95% CI [{c.cluster_ci_low:+.4f}, {c.cluster_ci_high:+.4f}] "
+        f"({c.n_clusters} clusters, design effect {c.design_effect:.2f})\n"
+        f"discordant: B>A {c.b_better}, A>B {c.a_better}\n"
+        f"MDE at 80% power: {c.mde_80:.4f}\n"
         f"p={c.p_value:.4f} ({c.p_kind})\n"
         f"verdict: {c.verdict}"
+        + "".join(f"\nstratum {st} (diagnostic): n={n} mean diff {d:+.4f}" for st, n, d in c.strata)
     )
 
 
