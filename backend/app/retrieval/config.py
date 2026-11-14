@@ -48,6 +48,7 @@ class RetrievalConfig(BaseModel):
     expansion: ExpansionCfg
     cache_ttl_s: int = Field(ge=0)
     gate: GateCfg
+    lexical: Literal["v1", "v2"] = "v1"  # v2 = S22.03: length-normalised rank_cd, number/unit variants
 
     def model_post_init(self, _ctx: Any) -> None:
         if self.id_boost != ID_BOOST:

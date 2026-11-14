@@ -216,7 +216,7 @@ class Retriever:
         async def lex() -> list[LexicalHit]:
             t = time.monotonic()
             async with _use(db) as s:
-                out = await lexical_search(s, owner_id, scope, query, k=cfg.k_lex)
+                out = await lexical_search(s, owner_id, scope, query, k=cfg.k_lex, variant=cfg.lexical)
             timings["lexical_ms"] = _ms(t)
             return out
 
