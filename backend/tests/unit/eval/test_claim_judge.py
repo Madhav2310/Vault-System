@@ -290,3 +290,98 @@ async def test_calibrate_runs_judges_against_labels() -> None:
     assert res["claims"] == J.Confusion(tp=3, fn=0, tn=1, fp=0)  # the dev pair is excluded
     assert res["support"].n == 0 and res["abstain"].n == 0
     assert "claims" in J.format_calibration(res, route=None)
+
+
+async def test_versioned_correct_answer_is_not_vetoed() -> None:
+    """RCA: `answered_as_asked` is right for a versioned item answered from the current version."""
+    gw, _ = gateway(lambda i: {"reason": "r", "behaviour": "answered_as_asked", "correct": True})
+    ver = v2(
+        id="v1", stratum="versioned", answer_type="answer", required_claims=["USD 19,400"], alternates={}
+    )
+    r = await J.judge_abstention(gw, ver, "The current fee is USD 19,400.")
+    assert r.correct and r.behaviour == "answered_as_asked"
+    wrong = v2(id="v2", stratum="versioned", answer_type="answer", required_claims=["x"], alternates={})
+    gw2, _ = gateway(lambda i: {"reason": "r", "behaviour": "answered_as_asked", "correct": False})
+    assert not (await J.judge_abstention(gw2, wrong, "The fee is USD 18,500.")).correct
+
+
+async def test_abstain_strata_keep_the_contradiction_veto() -> None:
+    gw, _ = gateway(lambda i: {"reason": "r", "behaviour": "answered_as_asked", "correct": True})
+    for st in ("unanswerable", "false_premise"):
+        it = v2(
+            id="u", stratum=st, answer_type="abstain", required_claims=[], alternates={}, gold_evidence=[]
+        )
+        assert not (await J.judge_abstention(gw, it, "It is 2%.")).correct
+
+
+def names_every_item(inputs: dict[str, Any]) -> dict[str, Any]:
+    """Scripted 'model' for the v2 rule: a claim that names items is entailed if the answer names them."""
+    ans = inputs["answer"]
+    return {
+        "decisions": [
+            {"claim_index": c["index"], "entailed": True, "quote": ans[:24]} for c in inputs["claims"]
+        ]
+    }
+
+
+async def test_claim_judge_v2_prompt_and_names_every_item_case() -> None:
+    assert J.PROMPTS_V2["claims"] == ("eval_judge_claims", 2) and J.PROMPTS_V2["support"] == (
+        "eval_judge_support",
+        2,
+    )
+    gw, _ = gateway(names_every_item)
+    it = v2(required_claims=["CPUs, GPUs and DPUs"], alternates={})
+    r = await J.judge_claims(gw, it, "It makes CPUs, GPUs, DPUs and FPGAs.")
+    assert r.answer_pass and r.completeness == 1.0
+
+
+async def test_per_claim_details_and_overrule_are_recorded() -> None:
+    def fn(inputs: dict[str, Any]) -> dict[str, Any]:
+        return {
+            "decisions": [
+                {"claim_index": 0, "entailed": True, "quote": "USD 1,000.00"},
+                {"claim_index": 1, "entailed": True, "quote": "not in the answer"},
+            ]
+        }
+
+    gw, _ = gateway(fn)
+    r = await J.judge_claims(gw, v2(), "The fee is USD 1,000.00 and due in 30 days.")
+    assert r.entailed == (True, False)
+    d0, d1 = r.details
+    assert (d0.raw, d0.decision, d0.quote_verified, d0.overruled) == (True, True, True, False)
+    assert (d1.raw, d1.decision, d1.quote_verified, d1.overruled) == (True, False, False, True)
+    assert J.overrules(r) == 1
+    assert J.verdict_record(r, None, None)["claims"][1]["overruled"] is True
+
+
+async def test_quote_check_folds_curly_quotes_and_dashes() -> None:
+    gw, _ = gateway(
+        lambda i: {
+            "decisions": [{"claim_index": 0, "entailed": True, "quote": "the lessee's right - in full"}]
+        }
+    )
+    it = v2(required_claims=["x"], alternates={})
+    r = await J.judge_claims(gw, it, "It is the lessee\u2019s right \u2014 in full.")
+    assert r.answer_pass and J.overrules(r) == 0
+
+
+async def test_support_details_and_metadata_inputs() -> None:
+    gw, fake = gateway(
+        lambda i: {
+            "decisions": [
+                {"segment_index": 0, "supported": True, "quote": "the consultant's rate"},
+                {"segment_index": 1, "supported": True, "quote": "invented"},
+            ]
+        }
+    )
+    segs = [
+        J.SegmentView("Vantage's rate is 165.", ("The Consultant's rate is 165.",)),
+        J.SegmentView("B.", ("Passage.",)),
+    ]
+    r = await J.judge_support(gw, segs, question="Rate for Vantage?", documents=["agreement"])
+    assert r.supported == (True, False)
+    assert r.details[1] is not None and r.details[1].overruled and J.overrules(r) == 1
+    sent = json.loads(
+        str(fake.requests[0].messages[0]["content"]).removeprefix("<inputs>").removesuffix("</inputs>")
+    )
+    assert sent["question"] == "Rate for Vantage?" and sent["documents"] == ["agreement"]

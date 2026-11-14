@@ -58,8 +58,10 @@ from eval.graders import (
 )
 from eval.judge import (
     CONCURRENCY,
+    AbstainJudgement,
     ClaimJudgement,
     JudgeOutputError,
+    SegmentView,
     SpendCapReached,
     SupportJudgement,
     abstain_applicable,
@@ -68,6 +70,8 @@ from eval.judge import (
     judge_abstention,
     judge_claims,
     judge_support,
+    overrules,
+    verdict_record,
 )
 from eval.mapping import ChunkInfo, GoldTarget, map_quote
 from eval.report import (
@@ -274,8 +278,15 @@ class Judged:
     metrics: dict[str, float] = field(default_factory=dict)
     claims: ClaimJudgement | None = None
     support: SupportJudgement | None = None
+    abstain: AbstainJudgement | None = None
     errors: list[str] = field(default_factory=list)
     budget_stop: bool = False
+
+
+async def judge_support_for(
+    gw: Any, views: Sequence[SegmentView], question: str, documents: Sequence[str], *, guard: Any = None
+) -> SupportJudgement:
+    return await judge_support(gw, views, guard=guard, question=question, documents=documents)
 
 
 async def _judge_all(
@@ -316,7 +327,9 @@ async def _judge_all(
                 r.metrics["abstention_correct"] = float(item.answer_type == "abstain" and out.abstained)
         views = build_case(v1_view(item), out, chunks).segments
         if any(s.passages for s in views):
-            calls.append(call(judge_support, views))
+            calls.append(
+                call(judge_support_for, views, item.question, [item.source_doc] if item.source_doc else [])
+            )
             tags.append((n, "support"))
     done: list[tuple[bool, Any]] = await gather_bounded(calls, limit)
     for (n, kind), (ok, val) in zip(tags, done, strict=True):
@@ -332,6 +345,7 @@ async def _judge_all(
         elif kind == "support":
             r.support = val
         else:
+            r.abstain = val
             r.metrics["abstention_correct"] = float(val.correct)
     for r in results:
         if r.claims is not None:
@@ -339,6 +353,8 @@ async def _judge_all(
             r.metrics["answer_pass"] = float(r.claims.answer_pass)
         if r.support is not None and not math.isnan(r.support.rate):
             r.metrics["support_rate"] = r.support.rate
+        if r.claims is not None or r.support is not None:
+            r.metrics["judge_quote_overrules"] = float(overrules(r.claims, r.support))
     for (item, _out, _c), r in zip(pending, results, strict=True):
         if item.answer_type == "abstain" and "abstention_correct" in r.metrics:
             r.metrics["answer_pass"] = r.metrics[
@@ -505,7 +521,16 @@ async def run_suite_v2(
         )
         if answers:
             failed = bool(attr["failed"]) if attr else bool(err)
-            answer_rows.append(answer_row(item, a.out, chunks, v1_view(item), failed=failed))
+            answer_rows.append(
+                answer_row(
+                    item,
+                    a.out,
+                    chunks,
+                    v1_view(item),
+                    failed=failed,
+                    judged=verdict_record(j.claims, j.support, j.abstain),
+                )
+            )
             if (inputs := getattr(a.out, "abstain_inputs", None)) is not None:
                 abstain_rows.append(abstain_row(item, inputs))
     if stopped:
