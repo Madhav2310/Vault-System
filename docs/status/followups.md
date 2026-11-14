@@ -63,3 +63,10 @@ Fixed in the review commit: persist failure now falls back to a minimal error re
 
 ## F-chat-regenerate-history (2026-11-14, from S23.03)
 Regenerate and Edit-and-resend replace the old Q/A on screen only; the server keeps both turns, so reloading the session shows the superseded pair. Fix: Regenerate should use `reask_of` (exists on POST messages); Edit-and-resend needs a server "supersede" marker or a branch. Also "Wrong document?" does not carry the question into the new chat, and the Jump-to-latest offset (`bottom: 148px`) is hand-tuned: check on mobile widths.
+
+## F-tidy-superseded-status (2026-11-14, from the repository tidy)
+Facts kept from the deleted HANDOFF, PRIORITY and REMAINING status docs (superseded by `docs/status/STATUS.md` and `docs/status/TOTAL_PROGRESS.md`; the full text stays in git history):
+- Housekeeping for the user: delete the parked `Vault Document system.old.nosync` and `.claude/stale-worktrees.nosync` once iCloud releases them.
+- User stop points: every slice gate (S16.07, S17.13, S18.12, S19.07, S20.08); a missed [T] target (record the value and stop); a fix that fails twice (write the root-cause analysis and stop); any live spend above the cap written in the task.
+- Cut order if time runs short: S17.03 (LLM listwise rerank, can ship as "tried, not adopted"), S17.05 (contextual chunk headers), S18.06/07, then S19.06 (accessibility pass); S20.07 judge calibration is optional and needs the user's 40 labels (now 200, S21.06).
+- Never overlap test runs against the shared test DB (one heavy command at a time); also in CLAUDE.md "Machine hygiene".

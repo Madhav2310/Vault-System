@@ -1,6 +1,6 @@
 # Progress log
 
-One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked only when its entry below shows evidence. Shortfalls and postponed work go to `docs/followups.md`.
+One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked only when its entry below shows evidence. Shortfalls and postponed work go to `docs/status/followups.md`.
 
 ## Entry template
 ```
@@ -364,8 +364,8 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 ## 2026-11-13 — C2/C3 spine merged; first real smoke eval
 - Merged lanes E (S3.08), F (S3.10/S3.11), G (S2.12/S2.13); wrote S2.10 `retrieve()`, the turn orchestrator (`app/chat/turn.py`, `POST /messages` now answers), `scripts/demo_core.sh` (live OK, $0.0019).
 - Gate: `make ci` 235 passed, `make test` 471 passed. Lanes S2.14 (engine) and S2.18 (judges) running.
-- Real smoke eval (`eval.pipeline_http:setup`, 21 items, ~$0.10): recall@8 0.81, mrr@40 0.66, citation_integrity 1.00 (A met), cite_chunk_precision 0.74, abstain_recall 1.0, conflict_correct 0.0 and meta_correct 0.0 (routes not built yet: expected). Report: `eval/reports/01a1d428-72b0-733f-8119-90d3f9449ea7.md`. Regenerate: `cd backend && PYTHONPATH=.. uv run --frozen python -m eval.run --suite smoke --config baseline_smoke --pipeline eval.pipeline_http:setup`.
-- S2.14 engine, S2.18 judges (live inter-judge agreement 1.00 on all four types, $1.11) and S2.17 merged. `make eval-retrieval` (122 items, ~$0.70): recall@8 **0.759** (target >= 0.85 [T] NOT met, pre-review), mrr@40 0.505; weak: table 0.40, compare 0.55, conflict 0.58, identifier 0.67, lookup 0.82. Baseline frozen `eval/baselines/retrieval.json`. Report `eval/reports/01a1d43d-2bfe-7691-a250-7e3cd71c1d8f.md`. Regenerate: `make eval-retrieval EVAL_ARGS="--freeze retrieval"`. S2.17 AC3 stays open; tuning belongs to S2.19/S4 (convergence engine), not hand-tuning on test items.
+- Real smoke eval (`eval.pipeline_http:setup`, 21 items, ~$0.10): recall@8 0.81, mrr@40 0.66, citation_integrity 1.00 (A met), cite_chunk_precision 0.74, abstain_recall 1.0, conflict_correct 0.0 and meta_correct 0.0 (routes not built yet: expected). Report: `docs/evidence/runs/01a1d428-72b0-733f-8119-90d3f9449ea7.md`. Regenerate: `cd backend && PYTHONPATH=.. uv run --frozen python -m eval.run --suite smoke --config baseline_smoke --pipeline eval.pipeline_http:setup`.
+- S2.14 engine, S2.18 judges (live inter-judge agreement 1.00 on all four types, $1.11) and S2.17 merged. `make eval-retrieval` (122 items, ~$0.70): recall@8 **0.759** (target >= 0.85 [T] NOT met, pre-review), mrr@40 0.505; weak: table 0.40, compare 0.55, conflict 0.58, identifier 0.67, lookup 0.82. Baseline frozen `eval/baselines/retrieval.json`. Report `docs/evidence/runs/01a1d43d-2bfe-7691-a250-7e3cd71c1d8f.md`. Regenerate: `make eval-retrieval EVAL_ARGS="--freeze retrieval"`. S2.17 AC3 stays open; tuning belongs to S2.19/S4 (convergence engine), not hand-tuning on test items.
 
 ## 2026-11-13 — S16.02 reranker configuration (root-cause fix)
 - Service now: threads from cgroup quota (cap 4), batch 8, max_in_flight 1, passages truncated to 1200 chars at a word boundary (no 422), `/healthz` reports threads and batch. Tests: reranker `pytest tests` 11 passed (`test_cpu_quota`, `test_defaults`, `test_long_passage_truncated`, `test_overloaded_503`).
@@ -380,7 +380,7 @@ One entry per task, newest last. A task's checkbox in `docs/plan/` is ticked onl
 - `README.md` rewritten (honest "What works today"), `scripts/quickstart.sh` (Docker check, .env, `make up`, migrate, demo user). Tests: `backend/tests/unit/docs/test_readme_skeleton.py` 2 passed. AC3 (real quickstart run) pending Docker.
 
 ## 2026-11-13 — S16.01 compose profiles and limits (file work; Docker steps pending)
-- docker-compose.yml: every service has `mem_limit` + `cpus`; `reranker` (profiles rerank, full) and `otel-lgtm` (obs, full) are no longer default; ingest worker `-c 1`, AI worker `-c 2`. Default stack limit sum = 4.4 GB. Makefile: `up-test`, `up-rerank`, `up-full`, `down` stops all profiles; `scripts/wait_healthy.sh` takes services / COMPOSE_PROFILES. `docs/dev-environment.md` written.
+- docker-compose.yml: every service has `mem_limit` + `cpus`; `reranker` (profiles rerank, full) and `otel-lgtm` (obs, full) are no longer default; ingest worker `-c 1`, AI worker `-c 2`. Default stack limit sum = 4.4 GB. Makefile: `up-test`, `up-rerank`, `up-full`, `down` stops all profiles; `scripts/wait_healthy.sh` takes services / COMPOSE_PROFILES. `docs/ops/dev-environment.md` written.
 - Evidence: `make ci` 322 passed; `tests/unit/ops/test_compose.py` 2 passed.
 - PENDING (need Docker, user action): AC3 `make up-test`, AC4 `make up` + readyz `degraded`, AC5 user sets Docker Desktop to 6 GB / 4 CPUs, AC6 merged-lanes gate (`make test`).
 
@@ -424,4 +424,4 @@ AC1-4,6-8 ticked on lane tests; AC5 (make test on merged tree) pending the next 
 
 ## 2026-11-14 plan v4 build (S21 evaluation rebuild, S22 accuracy/speed, S23 voice and chat)
 - Merged (all behaviour changes off by default until a paired A/B accepts them): golden set v2 (316 live items, 15 strata, claim gold), claim/support/abstention judges, clustered CIs/MDE, stage attribution, injection graders and security suite, gate tiers; chunker@2, contextual index text, lexical v2, plan-first, compare quotas, verify-and-repair, scored abstention, calculation segments, analyze_query@3, locate loop; httpOnly session cookie + CSRF + CSP; warm voice, clarify, chat polish. Gates: make ci 728, make test 1289 + F-048 flaky.
-- Live: first v2 train run ($1.23, answer_pass 0.642), gold audit ($1.88), judge fixes and re-judge ($0.51). Findings: `docs/evidence/train_v2_rca.md`. Total and what is left: `docs/TOTAL_PROGRESS.md`.
+- Live: first v2 train run ($1.23, answer_pass 0.642), gold audit ($1.88), judge fixes and re-judge ($0.51). Findings: `docs/evidence/train_v2_rca.md`. Total and what is left: `docs/status/TOTAL_PROGRESS.md`.

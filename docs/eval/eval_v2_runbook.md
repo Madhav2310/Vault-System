@@ -118,7 +118,7 @@ STOP: labeling is human time.
 | 7 export | $0 | exact |
 | 7b calibrate (later) | $3 | est. |
 
-Record the real `spent_usd` of each step in `docs/progress.md` (measured) and replace the table.
+Record the real `spent_usd` of each step in `docs/status/progress.md` (measured) and replace the table.
 
 ## Regenerate / verify
 
