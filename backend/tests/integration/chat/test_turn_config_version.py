@@ -1,4 +1,4 @@
-"""S17.06 a turn records the default retrieval config (retrieval@2) in rag_runs.config."""
+"""A turn records the default retrieval config (retrieval@2) in rag_runs.config."""
 
 from collections.abc import Callable
 from typing import Any

@@ -1,4 +1,4 @@
-"""S12.08: the brief fields of GET /v1/metrics/documents: hand-computed values and owner scoping."""
+"""The brief fields of GET /v1/metrics/documents: hand-computed values and owner scoping."""
 
 import json
 import uuid

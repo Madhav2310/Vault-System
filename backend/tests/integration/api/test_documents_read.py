@@ -1,4 +1,4 @@
-"""S1.27 document read endpoints: list, detail, processing timeline, file, layout, chunk."""
+"""Document read endpoints: list, detail, processing timeline, file, layout, chunk."""
 
 import datetime as dt
 import hashlib

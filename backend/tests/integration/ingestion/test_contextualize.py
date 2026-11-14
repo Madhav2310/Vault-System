@@ -1,4 +1,4 @@
-"""S17.05 contextual chunk headers: index side only (original text untouched), re-embed changed chunks only,
+"""Contextual chunk headers: index side only (original text untouched), re-embed changed chunks only,
 idempotent, failure isolated. Offline: FakeProvider, real database."""
 
 import json

@@ -1,4 +1,4 @@
-"""S1.13 glyph-mapped character stream (invariant I1)."""
+"""Glyph-mapped character stream (invariant I1)."""
 
 import pathlib
 import re

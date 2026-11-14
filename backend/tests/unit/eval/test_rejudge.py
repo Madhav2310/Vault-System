@@ -1,4 +1,4 @@
-"""S21.06b: re-judging stored answers offline with a scripted provider (no network, no dataset files)."""
+"""Re-judging stored answers offline with a scripted provider (no network, no dataset files)."""
 
 import json
 from decimal import Decimal

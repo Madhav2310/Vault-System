@@ -1,4 +1,4 @@
-"""S22.02 index text assembly: pure functions, no I/O."""
+"""Index text assembly: pure functions, no I/O."""
 
 import hashlib
 from typing import Any

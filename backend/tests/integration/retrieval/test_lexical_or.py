@@ -1,4 +1,4 @@
-"""S11.03: lexical search with OR semantics over the query's English lexemes."""
+"""Lexical search with OR semantics over the query's English lexemes."""
 
 from collections.abc import Callable
 from typing import Any

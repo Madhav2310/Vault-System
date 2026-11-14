@@ -1,4 +1,4 @@
-"""S3.03 client_message_id dedupe."""
+"""Client_message_id dedupe."""
 
 import asyncio
 import uuid

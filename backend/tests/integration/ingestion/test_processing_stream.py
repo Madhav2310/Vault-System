@@ -1,4 +1,4 @@
-"""S14.05 GET /v1/versions/{vid}/processing/stream: catch-up from job_events, live via Redis pub/sub."""
+"""GET /v1/versions/{vid}/processing/stream: catch-up from job_events, live via Redis pub/sub."""
 
 import asyncio
 import datetime as dt

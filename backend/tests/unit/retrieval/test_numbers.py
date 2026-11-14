@@ -1,4 +1,4 @@
-"""S22.03: number and unit variants for lexical queries (pure functions)."""
+"""Number and unit variants for lexical queries (pure functions)."""
 
 import uuid
 

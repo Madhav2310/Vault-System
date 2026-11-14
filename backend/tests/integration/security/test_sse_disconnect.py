@@ -1,4 +1,4 @@
-"""S21.09: a client that drops the SSE connection mid-turn cannot wedge the session, duplicate the turn, or
+"""A client that drops the SSE connection mid-turn cannot wedge the session, duplicate the turn, or
 leave the model call unfinished (FakeProvider only; free)."""
 
 import asyncio

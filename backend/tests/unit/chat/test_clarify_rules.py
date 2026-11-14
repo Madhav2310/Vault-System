@@ -1,4 +1,4 @@
-"""S23.02 ambiguity rules: pure code, no model."""
+"""Ambiguity rules: pure code, no model."""
 
 import uuid
 

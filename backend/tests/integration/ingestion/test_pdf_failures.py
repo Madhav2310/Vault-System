@@ -1,4 +1,4 @@
-"""S1.17 PDF failure classes and the parser timeout, through the real extract stage (subprocess)."""
+"""PDF failure classes and the parser timeout, through the real extract stage (subprocess)."""
 
 import uuid
 

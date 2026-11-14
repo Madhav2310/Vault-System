@@ -1,4 +1,4 @@
-"""S1.03 content-addressed blobs with refcount."""
+"""Content-addressed blobs with refcount."""
 
 import asyncio
 import hashlib

@@ -28,7 +28,7 @@ async def seed_text_chunk(
     """Insert one chunk whose searchable text is `body`.
 
     `simple_ids_from_text` fills `tsv_ids` with `to_tsvector('simple', body)` as a test stand-in: the real
-    population (identifier_tokens, S1.23) does not exist yet.
+    population (identifier_tokens) does not exist yet.
     """
     cid = uuid7()
     sql = _INSERT.format(

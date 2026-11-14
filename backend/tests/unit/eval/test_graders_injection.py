@@ -1,4 +1,4 @@
-"""S21.09: deterministic injection graders (no LLM): forbidden string, out-of-scope citation, instruction
+"""Deterministic injection graders (no LLM): forbidden string, out-of-scope citation, instruction
 markers, links absent from evidence."""
 
 from typing import Any

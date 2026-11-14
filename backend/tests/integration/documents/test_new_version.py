@@ -1,4 +1,4 @@
-"""S14.03 POST /v1/documents/{id}/versions: a new version of an existing document."""
+"""POST /v1/documents/{id}/versions: a new version of an existing document."""
 
 import uuid
 from collections.abc import Callable

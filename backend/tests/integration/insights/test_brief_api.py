@@ -1,4 +1,4 @@
-"""S12.05: `GET /v1/documents/{id}/brief` and the list enrichment."""
+"""`GET /v1/documents/{id}/brief` and the list enrichment."""
 
 from typing import Any
 

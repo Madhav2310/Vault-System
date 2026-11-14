@@ -1,4 +1,4 @@
-"""S2.10 retrieval config: strict schema, agreement with the code's constants."""
+"""Retrieval config: strict schema, agreement with the code's constants."""
 
 import pathlib
 

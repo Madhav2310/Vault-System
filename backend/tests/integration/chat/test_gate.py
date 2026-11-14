@@ -1,4 +1,4 @@
-"""S17.08 evidence gate inside the real turn graph (fake provider; the mocked reranker scores 1.0 at best)."""
+"""Evidence gate inside the real turn graph (fake provider; the mocked reranker scores 1.0 at best)."""
 
 from collections.abc import Callable
 from typing import Any

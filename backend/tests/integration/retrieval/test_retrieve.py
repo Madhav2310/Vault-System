@@ -1,4 +1,4 @@
-"""S2.10 retrieve() facade: complete candidate fields, result cache, degradation never cached."""
+"""Retrieve() facade: complete candidate fields, result cache, degradation never cached."""
 
 import json
 import os
@@ -26,7 +26,7 @@ from tests.support.vectors import seed_vectors, unit_vector
 
 @pytest.fixture(autouse=True)
 def _rerank_config(monkeypatch: pytest.MonkeyPatch) -> None:
-    """These tests exercise the cross-encoder: default `retrieval@2` is `kind: none` since S17.02."""
+    """These tests exercise the cross-encoder: the integration fixture pins `retrieval@2` (`kind: none`)."""
     import app.retrieval.retrieve as rmod
     from app.retrieval.config import get_config as real
 
@@ -122,7 +122,7 @@ async def test_cache_hit_and_degraded_not_cached(
 async def test_rerank_passages_windowed(
     tmp_path: Any, sm: SM, make_owner: Callable[[], Any], rds: aioredis.Redis
 ) -> None:
-    """S16.03 AC5: passages sent to the reranker are focus windows (<= 1,200 chars) of a long chunk."""
+    """Passages sent to the reranker are focus windows (<= 1,200 chars) of a long chunk."""
     import json as _json
 
     o = await make_owner()
@@ -147,7 +147,7 @@ async def test_rerank_passages_windowed(
 
 
 async def test_neighbor_versions_one_query(tmp_path: Any, sm: SM, make_owner: Callable[[], Any]) -> None:
-    """S17.11 AC5 (F-044): neighbors never retrieved get their versions in one query."""
+    """Neighbors never retrieved get their versions in one query."""
     from sqlalchemy import event
 
     o = await make_owner()

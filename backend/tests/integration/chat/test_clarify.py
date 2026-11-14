@@ -1,4 +1,4 @@
-"""S23.02 clarify when ambiguous (fake provider, mocked reranker, test database).
+"""Clarify when ambiguous (fake provider, mocked reranker, test database).
 
 The ambiguity is decided by code: the model only hints, the options are real document titles, a chosen option
 narrows the scope by code, and a clarification is never followed by another one."""

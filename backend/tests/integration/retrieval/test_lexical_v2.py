@@ -1,4 +1,4 @@
-"""S22.03: lexical leg v2 (number/unit variants in the query, length-normalised ts_rank_cd)."""
+"""Lexical leg v2 (number/unit variants in the query, length-normalised ts_rank_cd)."""
 
 from collections.abc import Callable
 from typing import Any

@@ -1,4 +1,4 @@
-"""S1.05 Idempotency-Key on resource-creating POSTs (exercised through POST /v1/documents)."""
+"""Idempotency-Key on resource-creating POSTs (exercised through POST /v1/documents)."""
 
 import asyncio
 

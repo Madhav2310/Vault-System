@@ -1,4 +1,4 @@
-"""S2.06 reciprocal rank fusion: hand-computed values, single-list items, id boost, tie determinism."""
+"""Reciprocal rank fusion: hand-computed values, single-list items, id boost, tie determinism."""
 
 import uuid
 

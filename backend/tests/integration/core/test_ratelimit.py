@@ -1,4 +1,4 @@
-"""S14.01 per-user Redis token bucket (design §13.4)."""
+"""Per-user Redis token bucket."""
 
 import asyncio
 import uuid

@@ -1,4 +1,4 @@
-"""S2.12 AC2/AC3: the runner on a 3-item toy set writes one eval_runs row, one eval_results row per item per
+"""The runner on a 3-item toy set writes one eval_runs row, one eval_results row per item per
 metric, and a Markdown report with a per-item table and totals."""
 
 import pathlib
@@ -124,7 +124,7 @@ async def test_pipeline_error_is_scored_not_dropped(
 async def test_json_sidecar(
     sm: async_sessionmaker[AsyncSession], tracker: Tracker, tmp_path: pathlib.Path
 ) -> None:
-    """S17.01 AC5: run_suite writes <run_id>.json next to the report; it validates and mirrors the metrics."""
+    """run_suite writes <run_id>.json next to the report; it validates and mirrors the metrics."""
     from eval.report import Sidecar
 
     run, _path, _ = await _run(sm, tracker, tmp_path, suite="retrieval")

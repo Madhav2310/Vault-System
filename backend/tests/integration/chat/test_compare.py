@@ -1,4 +1,4 @@
-"""S18.06 compare across documents over the real database: per-document retrieval, both sides cited,
+"""Compare across documents over the real database: per-document retrieval, both sides cited,
 a code-checked "not found" segment and the more-than-5-documents fallback (fake provider, mocked reranker)."""
 
 import uuid

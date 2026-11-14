@@ -1,4 +1,4 @@
-"""S17.10 AC5: every executed node writes `duration_ms`; the retrieve step carries its sub-timings."""
+"""Every executed node writes `duration_ms`; the retrieve step carries its sub-timings."""
 
 from collections.abc import Callable
 from typing import Any

@@ -1,4 +1,4 @@
-"""TTFT (S18.02): turn start to the first model-written segment; stored on the run, reported as p50/p95."""
+"""TTFT: turn start to the first model-written segment; stored on the run, reported as p50/p95."""
 
 import uuid
 from collections.abc import Callable

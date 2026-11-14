@@ -1,4 +1,4 @@
-"""Live generate-node checks (S3.08 AC5, AC6) through the real `balanced` role.
+"""Live generate-node checks through the real `balanced` role.
 
 Spends real money (cap asserted: both tests together < $0.05). Run with
 `uv run pytest tests/live/chat/test_generate.py -s -m live`; excluded from `make ci`. Needs the CUAD source

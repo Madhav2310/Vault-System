@@ -1,4 +1,4 @@
-"""Live `analyze_query` sample (S3.05): 8 representative questions through the real `fast` role model.
+"""Live `analyze_query` sample: 8 representative questions through the real `fast` role model.
 
 Spends real money (about $0.001 in total; asserted < $0.01). Run with
 `uv run pytest tests/live/test_analyze_live.py -s -m live`; excluded from `make ci`.

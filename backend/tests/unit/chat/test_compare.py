@@ -1,4 +1,4 @@
-"""S18.06: the 2-5 document limit, per-document passage count and the code-written missing-side segment."""
+"""The 2-5 document limit, per-document passage count and the code-written missing-side segment."""
 
 import uuid
 from decimal import Decimal

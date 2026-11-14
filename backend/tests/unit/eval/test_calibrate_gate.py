@@ -1,4 +1,4 @@
-"""S17.08 AC4: the floor is picked from a fixture score/label table exactly as hand-computed."""
+"""The floor is picked from a fixture score/label table exactly as hand-computed."""
 
 import pathlib
 

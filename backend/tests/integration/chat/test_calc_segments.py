@@ -1,4 +1,4 @@
-"""S22.08 typed calculation segments through a whole turn: the persisted and streamed segment is a normal text
+"""Typed calculation segments through a whole turn: the persisted and streamed segment is a normal text
 segment whose number code computed from the cited sentences; operands are ordinary citations. Default off:
 the prompt and schema are unchanged. No SSE or frontend change."""
 

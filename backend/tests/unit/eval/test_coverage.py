@@ -1,4 +1,4 @@
-"""S21.03: authored strata 7-14 (items and fixtures), coverage check, anti-leak, injection variants."""
+"""Authored strata 7-14 (items and fixtures), coverage check, anti-leak, injection variants."""
 
 import pathlib
 from collections import Counter

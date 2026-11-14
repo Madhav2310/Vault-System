@@ -1,4 +1,4 @@
-"""S3.08 AC1/AC2: the generate node's request shape and prompt layout (FakeProvider, no network)."""
+"""The generate node's request shape and prompt layout (FakeProvider, no network)."""
 
 import uuid
 

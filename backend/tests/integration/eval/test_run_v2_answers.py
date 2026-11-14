@@ -1,4 +1,4 @@
-"""S21.10b: a persisted v2 run (DB-backed) writes the answers file next to the sidecar;
+"""A persisted v2 run (DB-backed) writes the answers file next to the sidecar;
 its item ids match the persisted eval_results rows. FakeProvider judges, $0."""
 
 import json

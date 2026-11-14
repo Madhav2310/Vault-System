@@ -1,4 +1,4 @@
-"""S2.13 AC4: a multi-turn item runs as ONE session with N turns, in order, and each turn is scored."""
+"""A multi-turn item runs as ONE session with N turns, in order, and each turn is scored."""
 
 import pathlib
 import uuid

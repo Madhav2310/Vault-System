@@ -1,4 +1,4 @@
-"""S2.09 neighbor expansion (pure planning part): budget and duplicates."""
+"""Neighbor expansion (pure planning part): budget and duplicates."""
 
 import uuid
 

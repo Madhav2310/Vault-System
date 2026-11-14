@@ -1,4 +1,4 @@
-"""S18.08 `quota` block of GET /v1/metrics/chat."""
+"""`quota` block of GET /v1/metrics/chat."""
 
 from collections.abc import Callable
 from decimal import Decimal

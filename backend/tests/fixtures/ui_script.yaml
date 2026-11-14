@@ -1,4 +1,4 @@
-# Scripted replies for the UI test harness (S19.02, LLM_PROVIDER=fake). Keyed by question text (case and
+# Scripted replies for the UI test harness (LLM_PROVIDER=fake). Keyed by question text (case and
 # whitespace insensitive). `cite` lists substrings of evidence sentences: the fake picks the handles by
 # matching them, so citations do not depend on retrieval order. Documents: frontend/e2e/fixtures/.
 questions:

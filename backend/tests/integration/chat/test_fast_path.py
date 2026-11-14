@@ -1,4 +1,4 @@
-"""S17.10 fast path inside the real turn graph (fake provider, mocked reranker, test database)."""
+"""Fast path inside the real turn graph (fake provider, mocked reranker, test database)."""
 
 import uuid
 from collections.abc import Callable

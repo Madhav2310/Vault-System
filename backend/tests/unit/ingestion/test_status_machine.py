@@ -1,4 +1,4 @@
-"""The status table against design §6.2, written out independently here as an edge list."""
+"""The status table, written out independently here as an edge list."""
 
 import random
 

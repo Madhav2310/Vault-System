@@ -104,7 +104,7 @@ def install_runner(
 def answer_script(query: str, *segments: tuple[str, list[str]], **extra: Any) -> list[Step]:
     steps: list[Step] = [analysis(query), EMBED_SLOT, answer(*segments, **extra)]
     cited = [i for i, (_, ev) in enumerate(segments) if ev]
-    if cited and not extra:  # the support check (S17.09) is a third model call when something is cited
+    if cited and not extra:  # the support check is a third model call when something is cited
         steps.append(
             structured({"verdicts": [{"index": i, "verdict": "supported", "reason": "ok"} for i in cited]})
         )

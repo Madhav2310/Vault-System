@@ -1,4 +1,4 @@
-"""S1.10 sweeper."""
+"""Sweeper."""
 
 import asyncio
 

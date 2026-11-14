@@ -1,4 +1,4 @@
-"""Every reason code the app can record has a user template (S18.03, design §10.1)."""
+"""Every reason code the app can record has a user template."""
 
 import ast
 import pathlib

@@ -1,4 +1,4 @@
-"""SSE turn stream (S18.01): event order and schema, equality with what is persisted, headers, heartbeat,
+"""SSE turn stream: event order and schema, equality with what is persisted, headers, heartbeat,
 parity with JSON mode, disconnect, retry of a finished turn, and the schema endpoint. Fake provider only."""
 
 import asyncio

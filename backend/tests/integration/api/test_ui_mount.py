@@ -1,4 +1,4 @@
-"""The built SPA is served at /app with fallback to index.html; absent a build, /app is a 404 (S19.01)."""
+"""The built SPA is served at /app with fallback to index.html; absent a build, /app is a 404."""
 
 import pathlib
 from collections.abc import AsyncIterator

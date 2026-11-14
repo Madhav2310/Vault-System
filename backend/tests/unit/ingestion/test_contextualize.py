@@ -1,4 +1,4 @@
-"""S17.05 pure parts of the contextual header stage and the per-document cost cap (offline)."""
+"""Pure parts of the contextual header stage and the per-document cost cap (offline)."""
 
 import uuid
 from decimal import Decimal

@@ -1,4 +1,4 @@
-"""S22.02 contextual index text for both legs (deterministic and llm arms), offline.
+"""Contextual index text for both legs (deterministic and llm arms), offline.
 
 The header is index-only: `chunks.original_text`, `sentences` and `spans` (everything a citation is copied
 from) never contain it, while the vector input and `tsv_en` do."""

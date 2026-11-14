@@ -1,4 +1,4 @@
-"""S22.10 locate loop: bounds, validation, dedup, routing eligibility (pure; no database, no model)."""
+"""Locate loop: bounds, validation, dedup, routing eligibility (pure; no database, no model)."""
 
 import uuid
 from types import SimpleNamespace

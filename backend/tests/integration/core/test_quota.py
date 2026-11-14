@@ -1,4 +1,4 @@
-"""S18.08 daily cost quota per user (design §13.4): chat 429, admin exemption, brief deferral."""
+"""Daily cost quota per user: chat 429, admin exemption, brief deferral."""
 
 import uuid
 from collections.abc import Callable

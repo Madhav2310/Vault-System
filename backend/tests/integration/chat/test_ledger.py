@@ -1,4 +1,4 @@
-"""S3.10 evidence ledger persistence."""
+"""Evidence ledger persistence."""
 
 import uuid
 from collections.abc import Callable

@@ -1,4 +1,4 @@
-"""Vault-Eval v1 corpus integrity (plan S0.18 AC2/AC3).
+"""Vault-Eval v1 corpus integrity.
 
 Third-party documents live in the gitignored ``eval/sources/`` (``make eval-fetch``); without them
 these tests skip. Gold quotes are re-located independently of the build, page by page, with the

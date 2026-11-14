@@ -1,4 +1,4 @@
-"""S2.18 AC1: judge output validates against its schema for sampled dataset items, per judge type.
+"""Judge output validates against its schema for sampled dataset items, per judge type.
 FakeProvider scripted replies; no live calls. Also checks the strict request schema and routed roles."""
 
 import pytest

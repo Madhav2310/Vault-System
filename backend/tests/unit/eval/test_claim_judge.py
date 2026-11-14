@@ -1,4 +1,4 @@
-"""S21.06: claim-level completeness, support and abstention judges; label export; calibration math."""
+"""Claim-level completeness, support and abstention judges; label export; calibration math."""
 
 import json
 import math

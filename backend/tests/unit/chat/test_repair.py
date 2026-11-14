@@ -1,4 +1,4 @@
-"""S22.06 pure parts: handle subset validation, pruning by code, removal, contradiction. No model calls."""
+"""Pure parts: handle subset validation, pruning by code, removal, contradiction. No model calls."""
 
 import uuid
 

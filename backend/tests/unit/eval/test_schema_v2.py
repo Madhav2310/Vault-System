@@ -1,4 +1,4 @@
-"""S21.01: gold schema v2 (atomic claims) validation and v1 compatibility."""
+"""Gold schema v2 (atomic claims) validation and v1 compatibility."""
 
 import copy
 from typing import Any

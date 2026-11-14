@@ -1,4 +1,4 @@
-"""S3.04 DB loader: budget on real history, summary, entities, exclusion of current message, owner scope."""
+"""DB loader: budget on real history, summary, entities, exclusion of current message, owner scope."""
 
 import uuid
 from collections.abc import Callable

@@ -1,4 +1,4 @@
-"""S22.10 routed locate loop inside the real turn graph (fake provider, test database, no live calls)."""
+"""Routed locate loop inside the real turn graph (fake provider, test database, no live calls)."""
 
 import json
 import uuid

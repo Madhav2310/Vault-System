@@ -1,4 +1,4 @@
-"""S2.01 pure scope rules."""
+"""Pure scope rules."""
 
 import uuid
 

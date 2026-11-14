@@ -1,4 +1,4 @@
-"""S1.07 CAS dispatch."""
+"""CAS dispatch."""
 
 import asyncio
 import uuid

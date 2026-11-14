@@ -1,4 +1,4 @@
-"""S12.07 AC1: the report of a dry run over in-memory documents has per-document rows and the three totals."""
+"""The report of a dry run over in-memory documents has per-document rows and the three totals."""
 
 import json
 import pathlib

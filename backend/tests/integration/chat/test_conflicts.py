@@ -1,4 +1,4 @@
-"""S18.07 conflicting sources end to end: persisted on the run, returned by POST, history and the SSE `done`,
+"""Conflicting sources end to end: persisted on the run, returned by POST, history and the SSE `done`,
 dropped when invalid, owner-scoped, redacted when a document is deleted."""
 
 import uuid

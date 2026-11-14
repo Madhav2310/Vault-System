@@ -1,4 +1,4 @@
-"""Model roles and per-node routing (S0.24, design §4.1 and §4.2)."""
+"""Model roles and per-node routing."""
 
 import pytest
 
@@ -24,7 +24,7 @@ def _router(**kw: object) -> ModelRouter:
 
 LUNA, TERRA, SOL = "gpt-6-luna", "gpt-6.1-terra", "gpt-6.1-sol"
 
-# design §4.2: (node, route, mode) → (role, model, effort)
+# (node, route, mode) → (role, model, effort)
 EXPECTED = [
     (("analyze_query", None, None), ("fast", LUNA, "none")),
     (("evidence_gate", None, None), ("balanced", TERRA, "low")),

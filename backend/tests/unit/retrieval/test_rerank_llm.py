@@ -1,4 +1,4 @@
-"""S17.03 LLM listwise rerank: strict schema, repair, never raises, prompt shape (offline FakeProvider)."""
+"""LLM listwise rerank: strict schema, repair, never raises, prompt shape (offline FakeProvider)."""
 
 import re
 import uuid

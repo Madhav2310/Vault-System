@@ -1,4 +1,4 @@
-"""S18.02 AC3 (offline): `eval.run --stream` reads the SSE stream, measures TTFT and reports p50/p95."""
+"""(offline): `eval.run --stream` reads the SSE stream, measures TTFT and reports p50/p95."""
 
 import json
 import uuid

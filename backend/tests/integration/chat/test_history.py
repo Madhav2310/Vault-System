@@ -1,4 +1,4 @@
-"""S3.11 message history endpoint."""
+"""Message history endpoint."""
 
 import uuid
 from collections.abc import Callable

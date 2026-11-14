@@ -1,4 +1,4 @@
-"""S17.10 fast-path rule table (pure, no model)."""
+"""Fast-path rule table (pure, no model)."""
 
 import pytest
 

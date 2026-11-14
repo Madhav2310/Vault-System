@@ -1,4 +1,4 @@
-"""S22.08 typed calculation segments (`app/chat/calc.py`): operands are read by code from the cited sentences
+"""Typed calculation segments (`app/chat/calc.py`): operands are read by code from the cited sentences
 only, code computes with Decimal, a wrong model result is corrected, an unverifiable one is never shown as
 verified. FakeProvider only, no network."""
 

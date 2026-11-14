@@ -1,4 +1,4 @@
-"""S2.18: judge prompts/schemas, deterministic-first, bias controls, disagreement marking, agreement, CLI."""
+"""Judge prompts/schemas, deterministic-first, bias controls, disagreement marking, agreement, CLI."""
 
 import math
 from decimal import Decimal

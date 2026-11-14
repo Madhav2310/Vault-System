@@ -1,4 +1,4 @@
-"""S21.10a: the v2 answer runner: splits, dropped items, multi-turn, judges, attribution, freeze, cap.
+"""The v2 answer runner: splits, dropped items, multi-turn, judges, attribution, freeze, cap.
 
 FakeProvider only ($0): a scripted pipeline answers a tiny synthetic v2 set over one document; the judges
 are a content-driven fake model behind the real gateway (the same trick as test_claim_judge)."""

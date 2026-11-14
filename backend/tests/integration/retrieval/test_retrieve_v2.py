@@ -1,4 +1,4 @@
-"""S17.03 `kind: llm` rerank in the real turn graph: ledgered, linked to the run, degrades to fusion order."""
+"""`kind: llm` rerank in the real turn graph: ledgered, linked to the run, degrades to fusion order."""
 
 import uuid
 from collections.abc import AsyncIterator, Callable

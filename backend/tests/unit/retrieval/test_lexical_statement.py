@@ -1,4 +1,4 @@
-"""S11.03 AC6: the lexical statement never interpolates user text."""
+"""The lexical statement never interpolates user text."""
 
 import uuid
 

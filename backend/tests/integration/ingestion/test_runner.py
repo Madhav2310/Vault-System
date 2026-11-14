@@ -1,4 +1,4 @@
-"""S1.09 stage runner: commit, idempotent re-run, retries, permanent errors, dead state."""
+"""Stage runner: commit, idempotent re-run, retries, permanent errors, dead state."""
 
 import datetime as dt
 import uuid

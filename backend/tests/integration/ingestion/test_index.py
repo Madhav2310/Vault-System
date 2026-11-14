@@ -1,4 +1,4 @@
-"""S1.25 index stage: ready, supersede, staleness hook."""
+"""Index stage: ready, supersede, staleness hook."""
 
 import pytest
 from sqlalchemy import text

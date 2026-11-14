@@ -1,4 +1,4 @@
-"""Live provider smoke (S0.13 AC13): one `fast`-role strict-schema call (gpt-6-luna)
+"""Live provider smoke: one `fast`-role strict-schema call (gpt-6-luna)
 and one embedding call through the gateway.
 
 Spends real money (well under $0.001 each). Run with `make smoke-providers`; excluded from `make ci`.

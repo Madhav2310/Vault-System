@@ -1,4 +1,4 @@
-"""S22.07b scored abstention over the real turn graph (flag `chat_abstain_scored`): after verify the `final`
+"""Scored abstention over the real turn graph (flag `chat_abstain_scored`): after verify the `final`
 combiner keeps the answer, appends the partial-answer segment or replaces it with the warm abstain text,
 with no extra model call; an unfitted config, a missing feature or the flag off keeps the old behaviour."""
 

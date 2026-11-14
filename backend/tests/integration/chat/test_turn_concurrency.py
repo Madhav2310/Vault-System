@@ -1,4 +1,4 @@
-"""S17.14 intra-turn concurrency over the real database: analyze overlaps the question embedding, vector and
+"""Intra-turn concurrency over the real database: analyze overlaps the question embedding, vector and
 lexical search run on separate sessions with identical results, and no pooled connection is checked out while
 an LLM (or reranker) call is awaited."""
 
@@ -43,7 +43,7 @@ __all__ = ["ledger_owners"]  # fixture import
 
 @pytest.fixture(autouse=True)
 def _rerank_config(monkeypatch: pytest.MonkeyPatch) -> None:
-    """These tests exercise the cross-encoder: default `retrieval@2` is `kind: none` since S17.02."""
+    """These tests exercise the cross-encoder: the integration fixture pins `retrieval@2` (`kind: none`)."""
     import app.retrieval.retrieve as rmod
     from app.retrieval.config import get_config as real
 

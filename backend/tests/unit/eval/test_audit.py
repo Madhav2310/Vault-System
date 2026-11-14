@@ -1,4 +1,4 @@
-"""S21.05: cross-model gold audit and apply_audit, offline (FakeProvider dry gateway, $0)."""
+"""Cross-model gold audit and apply_audit, offline (FakeProvider dry gateway, $0)."""
 
 import asyncio
 import pathlib

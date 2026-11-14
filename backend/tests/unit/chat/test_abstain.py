@@ -1,4 +1,4 @@
-"""S22.07 scored abstention: combiner math, thresholds, missing features, the gate node switch."""
+"""Scored abstention: combiner math, thresholds, missing features, the gate node switch."""
 
 import dataclasses
 import math

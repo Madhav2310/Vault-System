@@ -1,4 +1,4 @@
-"""S11.01: the retrieval-only pipeline makes no chat calls, reuses ingested documents, is deterministic."""
+"""The retrieval-only pipeline makes no chat calls, reuses ingested documents, is deterministic."""
 
 import json
 import pathlib

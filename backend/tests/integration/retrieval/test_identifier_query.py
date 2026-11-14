@@ -1,4 +1,4 @@
-"""S17.04: a section reference in the query finds its chunk through the real `tsv_ids` population."""
+"""A section reference in the query finds its chunk through the real `tsv_ids` population."""
 
 from typing import Any
 

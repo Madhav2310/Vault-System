@@ -1,4 +1,4 @@
-"""S2.01 scope computation against the real schema."""
+"""Scope computation against the real schema."""
 
 import uuid
 from collections.abc import Callable

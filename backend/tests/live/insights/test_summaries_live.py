@@ -1,4 +1,4 @@
-"""Live custom-summary samples (S12.06 AC6 and the plan's three evidence samples).
+"""Live custom-summary samples (three evidence samples).
 
 Spends real money (asserted: all calls together < $0.10). Run with
 `uv run pytest tests/live/insights/test_summaries_live.py -s -m live`; excluded from `make ci`. Needs the

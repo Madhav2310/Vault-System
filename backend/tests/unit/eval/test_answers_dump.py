@@ -1,4 +1,4 @@
-"""S21.10b: a v2 run writes `<run_id>.answers.jsonl` that `eval.build.audit` and `eval.judge --export-labels`
+"""A v2 run writes `<run_id>.answers.jsonl` that `eval.build.audit` and `eval.judge --export-labels`
 load as-is. FakeProvider judges, scripted pipeline, $0."""
 
 import json

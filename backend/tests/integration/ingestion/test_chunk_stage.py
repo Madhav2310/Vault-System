@@ -1,4 +1,4 @@
-"""S1.22 AC12: the chunk stage writes chunk rows and records chunker_version on the version."""
+"""The chunk stage writes chunk rows and records chunker_version on the version."""
 
 import uuid
 

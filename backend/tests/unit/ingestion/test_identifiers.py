@@ -1,4 +1,4 @@
-"""S17.04 identifier-token extraction: the same tokens `lexical.identifier_query` makes of a query."""
+"""Identifier-token extraction: the same tokens `lexical.identifier_query` makes of a query."""
 
 from app.ingestion.identifiers import extract_identifier_tokens, tsv_ids_source
 from app.retrieval.lexical import identifier_query

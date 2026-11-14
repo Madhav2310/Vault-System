@@ -1,4 +1,4 @@
-"""S18.10 AC1: `/v1/metrics/chat` carries `feedback {up, down, by_reason}` matching a seeded fixture."""
+"""`/v1/metrics/chat` carries `feedback {up, down, by_reason}` matching a seeded fixture."""
 
 import uuid
 from collections.abc import Callable

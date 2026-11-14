@@ -1,4 +1,4 @@
-"""S1.01 upload endpoint and S1.02 type rejection over HTTP."""
+"""Upload endpoint and type rejection over HTTP."""
 
 import hashlib
 import pathlib

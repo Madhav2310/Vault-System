@@ -1,4 +1,4 @@
-"""Turn graph runner: routing, step records, failure/timeout, loop guard, Mermaid description (S17.14)."""
+"""Turn graph runner: routing, step records, failure/timeout, loop guard, Mermaid description."""
 
 import asyncio
 import uuid

@@ -1,4 +1,4 @@
-"""Live brief sample (S12.04 AC9): three corpus documents through the real `balanced` / `fast` roles.
+"""Live brief sample: three corpus documents through the real `balanced` / `fast` roles.
 
 Spends real money (asserted: all three documents together < $0.10, each capped by `max_usd`). Run with
 `uv run pytest tests/live/insights/test_brief_live.py -s -m live`; excluded from `make ci`. Needs the corpus

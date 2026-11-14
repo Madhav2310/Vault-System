@@ -1,4 +1,4 @@
-"""S18.05 meta op validation: allowlist, parameter checks, and the analyze fallback to qa."""
+"""Meta op validation: allowlist, parameter checks, and the analyze fallback to qa."""
 
 import datetime as dt
 import uuid

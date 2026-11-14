@@ -1,4 +1,4 @@
-"""S21.04b: table_lookup items drafted from parsed 10-Q tables, offline (FakeProvider dry gateway, $0)."""
+"""Table_lookup items drafted from parsed 10-Q tables, offline (FakeProvider dry gateway, $0)."""
 
 import asyncio
 from collections import Counter

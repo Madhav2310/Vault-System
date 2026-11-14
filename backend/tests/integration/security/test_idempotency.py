@@ -1,5 +1,5 @@
-"""S21.09 AC2: replaying every POST with the same idempotency key / client_message_id returns the same
-resource and creates no duplicate rows (design §14). The POST list comes from OpenAPI: a new POST route fails
+"""Replaying every POST with the same idempotency key / client_message_id returns the same
+resource and creates no duplicate rows. The POST list comes from OpenAPI: a new POST route fails
 `test_every_post` until a replay case is added here."""
 
 import json

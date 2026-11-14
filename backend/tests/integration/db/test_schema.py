@@ -1,4 +1,4 @@
-"""Schema checks against the migrated `vault_test` DB. Expected lists are hard-coded from design §11."""
+"""Schema checks against the migrated `vault_test` DB. Expected lists are hard-coded here."""
 
 import re
 

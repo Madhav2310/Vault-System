@@ -1,4 +1,4 @@
-"""S2.10 result cache key: owner, normalized query, sorted scope versions, config version."""
+"""Result cache key: owner, normalized query, sorted scope versions, config version."""
 
 import uuid
 

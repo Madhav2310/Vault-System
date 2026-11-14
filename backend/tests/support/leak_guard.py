@@ -1,4 +1,4 @@
-"""Content-leak guard (design §16, §17): proves document text/prompts never reach logs or spans.
+"""Content-leak guard: proves document text/prompts never reach logs or spans.
 
 Usage in a test:  def test_x(leak_guard): ...run flow...; leak_guard.assert_no_leak(["chunk text", ...])
 Captures (a) every stdlib/structlog log record emitted during the test, (b) every span finished on the

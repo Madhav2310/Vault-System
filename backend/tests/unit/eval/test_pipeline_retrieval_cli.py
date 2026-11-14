@@ -1,4 +1,4 @@
-"""S11.01 AC6: an unknown retrieval config exits with a message naming the missing file."""
+"""An unknown retrieval config exits with a message naming the missing file."""
 
 import pytest
 from eval.pipeline_retrieval import resolve_config

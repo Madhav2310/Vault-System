@@ -1,4 +1,4 @@
-"""Follow-up cleaning is code (S18.04): limits, repeats of the question, and the schema/prompt contract."""
+"""Follow-up cleaning is code: limits, repeats of the question, and the schema/prompt contract."""
 
 from app.chat.evidence import answer_schema
 from app.chat.followups import MAX_FOLLOWUP_CHARS, MAX_FOLLOWUPS, clean_followups

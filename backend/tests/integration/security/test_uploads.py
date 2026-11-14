@@ -1,4 +1,4 @@
-"""S21.09: hostile uploads. Oversized, forged (type and name), and archive bombs are refused or contained
+"""Hostile uploads. Oversized, forged (type and name), and archive bombs are refused or contained
 without trusting anything the client declares."""
 
 import io
@@ -186,7 +186,7 @@ async def test_valid_docx_still_accepted(api: httpx.AsyncClient, make_owner: Cal
 async def test_non_latin1_filename_regression(
     api: httpx.AsyncClient, make_owner: Callable[[], Any], sm: async_sessionmaker[AsyncSession], name: str
 ) -> None:
-    """Regression (S21.09 finding): the multipart header value was UTF-8-decoded and then re-encoded as
+    """Regression: the multipart header value was UTF-8-decoded and then re-encoded as
     latin-1 by python-multipart: a filename outside latin-1 was a 500, accented ones became U+FFFD."""
     o = await make_owner()
     r = await _post(api, o, name, VALID_PDF.read_bytes())

@@ -1,4 +1,4 @@
-"""S21.04: seeded public-strata sampler (classification rules, determinism, output validity)."""
+"""Seeded public-strata sampler (classification rules, determinism, output validity)."""
 
 import collections
 import pathlib

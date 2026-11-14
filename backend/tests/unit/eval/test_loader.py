@@ -1,4 +1,4 @@
-"""S2.13 AC1 (every item validates) and AC3 (document-level holdout)."""
+"""(every item validates) and AC3 (document-level holdout)."""
 
 import dataclasses
 from collections import Counter

@@ -1,4 +1,4 @@
-"""S3.06 evidence set, handles, answer schema and manifest."""
+"""Evidence set, handles, answer schema and manifest."""
 
 import re
 import uuid

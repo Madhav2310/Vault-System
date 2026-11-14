@@ -1,8 +1,8 @@
-"""Deterministic test-fixture generator (plan S0.18).
+"""Deterministic test-fixture generator.
 
 Writes two sets:
 
-* ``files/``    upload-safety fixtures (design §6.1/§6.4 failure paths): spoofed type, oversize,
+* ``files/``    upload-safety fixtures (failure paths): spoofed type, oversize,
   encrypted PDF, corrupt PDF, zip-bomb DOCX, empty-text PDF, prompt-injection PDF.
 * ``geometry/`` the geometry fixture zoo (research 05 §4): one PDF per failure mode plus an
   expected-highlight snapshot (``<case>.json``).
@@ -44,7 +44,7 @@ UPLOAD_FIXTURES = {
     "empty_text": "empty_text.pdf",
     "prompt_injection": "prompt_injection.pdf",
 }
-OVERSIZE_BYTES = 26 * 1024 * 1024  # > the 25 MB upload cap (design §6.1)
+OVERSIZE_BYTES = 26 * 1024 * 1024  # > the 25 MB upload cap
 ZIP_BOMB_UNCOMPRESSED = 128 * 1024 * 1024
 ENCRYPTED_USER_PASSWORD = b"vault-fixture"
 

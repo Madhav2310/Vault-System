@@ -1,4 +1,4 @@
-"""S18.10 AC2: `eval.inbox` exports down-rated turns as golden-schema `draft` items."""
+"""`eval.inbox` exports down-rated turns as golden-schema `draft` items."""
 
 import datetime as dt
 import pathlib

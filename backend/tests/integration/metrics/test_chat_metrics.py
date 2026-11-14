@@ -1,4 +1,4 @@
-"""S7.03 GET /v1/metrics/chat: values from a seeded ledger, cost reconciliation, empty state, isolation."""
+"""GET /v1/metrics/chat: values from a seeded ledger, cost reconciliation, empty state, isolation."""
 
 import uuid
 from collections.abc import Callable

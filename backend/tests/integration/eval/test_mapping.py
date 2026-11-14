@@ -1,4 +1,4 @@
-"""S2.13 AC2: every located gold quote maps to >= 1 chunk of the ingested version (chunker-independent gold).
+"""Every located gold quote maps to >= 1 chunk of the ingested version (chunker-independent gold).
 
 `test_all_gold_mapped` ingests every corpus document whose file exists (slow: full 10-K/10-Q filings), so it
 is opt-in like the C1 check: `VAULT_CORPUS=1` (plus `VAULT_CORPUS_ROOT=<checkout with eval/sources/>`

@@ -1,4 +1,4 @@
-"""S21.02: v1 -> v2 migration, offline (FakeProvider dry gateway, $0)."""
+"""V1 -> v2 migration, offline (FakeProvider dry gateway, $0)."""
 
 import asyncio
 import pathlib

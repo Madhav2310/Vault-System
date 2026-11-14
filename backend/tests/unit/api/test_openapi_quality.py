@@ -1,4 +1,4 @@
-"""S18.11 AC1-AC3: the OpenAPI schema documents every route, types every error and declares auth."""
+"""AC1-AC3: the OpenAPI schema documents every route, types every error and declares auth."""
 
 from typing import Any
 

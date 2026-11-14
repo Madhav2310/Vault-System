@@ -1,4 +1,4 @@
-"""S17.11 AC3 history redaction for deleted documents (F-042)."""
+"""History redaction for deleted documents (F-042)."""
 
 from collections.abc import Callable
 from typing import Any

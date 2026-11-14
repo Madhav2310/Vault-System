@@ -1,4 +1,4 @@
-"""S22.06 verify-and-repair over the real turn graph: prune unneeded citations, remove unsupported segments,
+"""Verify-and-repair over the real turn graph: prune unneeded citations, remove unsupported segments,
 regenerate once when every segment fails. support_check@2 behind `chat_support_version=2`. Fake provider."""
 
 import uuid

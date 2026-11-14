@@ -1,4 +1,4 @@
-"""S22.04 plan-first answers: a 2-part question gets a plan with both parts; a part with no evidence is stated
+"""Plan-first answers: a 2-part question gets a plan with both parts; a part with no evidence is stated
 as not found by code. Default off: the answer prompt and schema are unchanged."""
 
 from collections.abc import Callable

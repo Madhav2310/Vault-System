@@ -1,4 +1,4 @@
-"""S16.01: every compose service is resource-limited; the default profile stays small."""
+"""Every compose service is resource-limited; the default profile stays small."""
 
 import pathlib
 import re

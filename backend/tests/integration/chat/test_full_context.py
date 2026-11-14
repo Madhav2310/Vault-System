@@ -1,4 +1,4 @@
-"""S17.07 whole-document answering over the real database: fake provider, mocked reranker, POST /messages."""
+"""Whole-document answering over the real database: fake provider, mocked reranker, POST /messages."""
 
 import json
 import uuid

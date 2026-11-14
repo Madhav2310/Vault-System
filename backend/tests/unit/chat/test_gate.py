@@ -1,4 +1,4 @@
-"""S17.08 evidence gate: the signal, the bypasses and the template text (no model, no database)."""
+"""Evidence gate: the signal, the bypasses and the template text (no model, no database)."""
 
 from dataclasses import dataclass
 

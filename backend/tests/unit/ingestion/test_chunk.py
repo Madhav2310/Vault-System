@@ -1,4 +1,4 @@
-"""S1.22 chunker@1."""
+"""Chunker@1."""
 
 import hashlib
 import itertools

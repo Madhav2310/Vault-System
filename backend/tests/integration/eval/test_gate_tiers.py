@@ -1,4 +1,4 @@
-"""S21.10 AC2: `python -m eval.gate compare` (what `make eval-gate` runs) exits non-zero on a
+"""`python -m eval.gate compare` (what `make eval-gate` runs) exits non-zero on a
 planted regression and zero on an identical candidate. Real subprocess (the exit code is the process exit
 code). No DB, no model."""
 

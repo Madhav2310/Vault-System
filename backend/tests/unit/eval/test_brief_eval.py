@@ -1,4 +1,4 @@
-"""S12.07 pieces without a model: document selection, completeness, sampling, the spend cap, the CLI."""
+"""Pieces without a model: document selection, completeness, sampling, the spend cap, the CLI."""
 
 import uuid
 from decimal import Decimal

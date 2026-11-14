@@ -1,4 +1,4 @@
-"""`GET /v1/runs/{id}` (S18.03): shape, owner scoping, template explanations, leak scan, running state."""
+"""`GET /v1/runs/{id}`: shape, owner scoping, template explanations, leak scan, running state."""
 
 import json
 import uuid

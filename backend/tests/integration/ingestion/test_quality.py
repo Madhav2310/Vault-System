@@ -1,4 +1,4 @@
-"""S1.19 page quality, flags and needs_ocr, through the real extract and quality stages."""
+"""Page quality, flags and needs_ocr, through the real extract and quality stages."""
 
 import uuid
 

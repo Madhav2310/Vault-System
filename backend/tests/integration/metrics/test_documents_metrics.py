@@ -1,4 +1,4 @@
-"""S7.01 GET /v1/metrics/documents: hand-computed values, admin-only global scope, owner isolation."""
+"""GET /v1/metrics/documents: hand-computed values, admin-only global scope, owner isolation."""
 
 import datetime as dt
 import uuid

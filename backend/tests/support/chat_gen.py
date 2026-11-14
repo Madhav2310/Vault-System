@@ -35,7 +35,7 @@ def fake_gateway(
     fast_path: bool = False,
     **settings: Any,
 ) -> tuple[LlmGateway, FakeProvider]:
-    """`fast_path=False` keeps the scripted analysis call of every turn; S17.10 tests pass True."""
+    """`fast_path=False` keeps the scripted analysis call of every turn; fast-path tests pass True."""
     fake = FakeProvider(script=script or [])
     settings = Settings(  # type: ignore[call-arg]
         _env_file=None,

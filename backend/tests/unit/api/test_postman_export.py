@@ -1,4 +1,4 @@
-"""S18.11 AC4: the Postman collection generated from the schema contains every route."""
+"""The Postman collection generated from the schema contains every route."""
 
 import importlib.util
 import pathlib

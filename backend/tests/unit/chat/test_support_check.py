@@ -1,4 +1,4 @@
-"""S17.09 support check: repair of model verdicts, what the model sees, failure policy. FakeProvider only."""
+"""Support check: repair of model verdicts, what the model sees, failure policy. FakeProvider only."""
 
 import json
 import uuid

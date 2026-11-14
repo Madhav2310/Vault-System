@@ -1,4 +1,4 @@
-"""S18.07: conflict validation in code (handles resolve, >= 2 distinct chunks), schema and prompt contract."""
+"""Conflict validation in code (handles resolve, >= 2 distinct chunks), schema and prompt contract."""
 
 import uuid
 

@@ -1,4 +1,4 @@
-"""S16.08: embedding batches and brief map calls run concurrently, deterministically, within the cap."""
+"""Embedding batches and brief map calls run concurrently, deterministically, within the cap."""
 
 import asyncio
 import pathlib

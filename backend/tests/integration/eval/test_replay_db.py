@@ -1,4 +1,4 @@
-"""S11.02 AC4: the replay session is a read-only transaction."""
+"""The replay session is a read-only transaction."""
 
 import pytest
 from eval.replay import open_read_only

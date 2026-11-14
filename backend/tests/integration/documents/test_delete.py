@@ -1,4 +1,4 @@
-"""S1.26 soft delete, purge, refcounted blob removal, and abort of in-flight stages."""
+"""Soft delete, purge, refcounted blob removal, and abort of in-flight stages."""
 
 import uuid
 from collections.abc import AsyncIterator, Callable

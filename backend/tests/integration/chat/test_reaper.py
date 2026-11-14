@@ -1,4 +1,4 @@
-"""S17.11 AC1 chat-run reaper (F-041)."""
+"""Chat-run reaper (F-041)."""
 
 import asyncio
 from collections.abc import Callable

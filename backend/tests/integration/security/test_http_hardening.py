@@ -1,4 +1,4 @@
-"""S21.09: path traversal on the SPA mount (`/app`), header injection (request id, Idempotency-Key, download
+"""Path traversal on the SPA mount (`/app`), header injection (request id, Idempotency-Key, download
 filename), and credential handling. Raw ASGI calls where an HTTP client would normalise the attack away."""
 
 import asyncio

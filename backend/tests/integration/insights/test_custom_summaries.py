@@ -1,4 +1,4 @@
-"""S12.06: custom summaries over a FakeProvider gateway and the real database (no network)."""
+"""Custom summaries over a FakeProvider gateway and the real database (no network)."""
 
 import asyncio
 import datetime as dt

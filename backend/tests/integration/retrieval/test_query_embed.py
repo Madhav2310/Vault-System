@@ -1,4 +1,4 @@
-"""S2.02 query embedding: normalized cache key, lexical fallback, Redis outage (real Redis, unique prefix)."""
+"""Query embedding: normalized cache key, lexical fallback, Redis outage (real Redis, unique prefix)."""
 
 import os
 import pathlib

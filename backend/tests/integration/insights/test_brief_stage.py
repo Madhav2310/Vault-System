@@ -1,4 +1,4 @@
-"""S12.04: the brief stage over a FakeProvider gateway and the real database."""
+"""The brief stage over a FakeProvider gateway and the real database."""
 
 import uuid
 from decimal import Decimal

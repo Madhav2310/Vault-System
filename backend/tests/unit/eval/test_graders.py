@@ -1,4 +1,4 @@
-"""S2.13 AC5: deterministic graders (no LLM): abstention, must_not_contain, exact/set meta, gold-citation
+"""Deterministic graders (no LLM): abstention, must_not_contain, exact/set meta, gold-citation
 overlap, citation integrity, scope; with adversarial inputs."""
 
 from typing import Any

@@ -1,4 +1,4 @@
-"""S1.08 claim, lease and heartbeat."""
+"""Claim, lease and heartbeat."""
 
 import asyncio
 import datetime as dt

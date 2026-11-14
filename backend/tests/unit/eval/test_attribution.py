@@ -1,4 +1,4 @@
-"""S21.08: stage attribution."""
+"""Stage attribution."""
 
 import json
 import pathlib

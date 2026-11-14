@@ -1,4 +1,4 @@
-"""S1.15 reading-order safety: column repair (F2, F3) and footnote separation (F4)."""
+"""Reading-order safety: column repair (F2, F3) and footnote separation (F4)."""
 
 import pathlib
 import re

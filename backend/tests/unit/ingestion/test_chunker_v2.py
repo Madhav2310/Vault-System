@@ -1,4 +1,4 @@
-"""S22.01 chunker@2: structure-aware boundaries, tables whole, I1 preserved."""
+"""Chunker@2: structure-aware boundaries, tables whole, I1 preserved."""
 
 import hashlib
 

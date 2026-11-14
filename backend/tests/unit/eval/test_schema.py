@@ -1,4 +1,4 @@
-"""S2.12 AC1: the golden-item validator rejects an item missing a required field."""
+"""The golden-item validator rejects an item missing a required field."""
 
 from typing import Any
 

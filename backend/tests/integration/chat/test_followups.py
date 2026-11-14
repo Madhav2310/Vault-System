@@ -1,4 +1,4 @@
-"""Follow-ups end to end (S18.04): stored, returned, SSE event before `done`, abstain from briefs."""
+"""Follow-ups end to end: stored, returned, SSE event before `done`, abstain from briefs."""
 
 import json
 from collections.abc import Callable

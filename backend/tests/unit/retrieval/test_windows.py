@@ -1,4 +1,4 @@
-"""S16.03: query-focused rerank windows."""
+"""Query-focused rerank windows."""
 
 import random
 import re

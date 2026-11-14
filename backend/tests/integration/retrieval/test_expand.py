@@ -1,4 +1,4 @@
-"""S2.09 neighbor expansion against the database: adjacent chunk added, same section only, owner-filtered."""
+"""Neighbor expansion against the database: adjacent chunk added, same section only, owner-filtered."""
 
 import uuid
 from collections.abc import Callable

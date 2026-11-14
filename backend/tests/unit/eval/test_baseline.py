@@ -1,4 +1,4 @@
-"""S2.12 AC4: compare_to_baseline fails when a metric drops beyond tolerance."""
+"""Compare_to_baseline fails when a metric drops beyond tolerance."""
 
 import datetime as dt
 import pathlib

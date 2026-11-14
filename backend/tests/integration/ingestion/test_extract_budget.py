@@ -1,4 +1,4 @@
-"""S16.05: PDF extraction time/memory budget on the 121-page AMD 10-K, and the page cap."""
+"""PDF extraction time/memory budget on the 121-page AMD 10-K, and the page cap."""
 
 import pathlib
 import subprocess

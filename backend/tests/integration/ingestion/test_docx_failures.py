@@ -1,4 +1,4 @@
-"""S1.18 AC3: a zip bomb fails through the real runner, fast, without full decompression."""
+"""A zip bomb fails through the real runner, fast, without full decompression."""
 
 import pathlib
 import time

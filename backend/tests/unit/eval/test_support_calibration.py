@@ -1,4 +1,4 @@
-"""S17.09 AC7 tooling: kappa maths and a dry run of the calibration (no network, no spend)."""
+"""Tooling: kappa maths and a dry run of the calibration (no network, no spend)."""
 
 import math
 

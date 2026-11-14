@@ -1,4 +1,4 @@
-"""S3.08 AC3/AC4: refusal and max_tokens handling in the generate node, with a real `llm_calls` ledger."""
+"""Refusal and max_tokens handling in the generate node, with a real `llm_calls` ledger."""
 
 import json
 import uuid
@@ -60,7 +60,7 @@ async def test_stop_refusal(sm: async_sessionmaker[AsyncSession], owners: Callab
     assert len(rows) == 1
     assert (rows[0].purpose, rows[0].prompt_id, rows[0].prompt_version) == ("generate", "answer_rag", 12)
     assert (rows[0].status, rows[0].error_type, rows[0].role) == ("error", "refusal", "balanced")
-    # S17.11: the refusal keeps the usage and the id of the row that was written
+    # the refusal keeps the usage and the id of the row that was written
     assert res.usage.input_tokens == rows[0].input_tokens > 0 and res.cost_usd > 0
     assert len(res.call_ids) == 1
 
@@ -90,7 +90,7 @@ async def test_stop_max_tokens(sm: async_sessionmaker[AsyncSession], owners: Cal
     assert cited == "The Consultant shall provide the Services for twelve months."
     rows = await _rows(sm, owner)
     assert [(r.status, r.error_type) for r in rows] == [("error", "max_tokens")]
-    assert res.usage.input_tokens == rows[0].input_tokens > 0 and len(res.call_ids) == 1  # S17.11
+    assert res.usage.input_tokens == rows[0].input_tokens > 0 and len(res.call_ids) == 1
 
 
 async def test_stop_max_tokens_nothing_complete(

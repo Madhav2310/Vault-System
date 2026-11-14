@@ -1,4 +1,4 @@
-"""S3.05 `analyze_query` node: validation in code, fallback policy, injection stance. FakeProvider only."""
+"""`analyze_query` node: validation in code, fallback policy, injection stance. FakeProvider only."""
 
 import json
 import uuid

@@ -1,4 +1,4 @@
-"""S21.07: clustered CIs, MDE, Clopper-Pearson."""
+"""Clustered CIs, MDE, Clopper-Pearson."""
 
 import math
 

@@ -1,4 +1,4 @@
-"""S21.09 AC1: every route is covered by a cross-owner test. The route list comes from the app's OpenAPI;
+"""Every route is covered by a cross-owner test. The route list comes from the app's OpenAPI;
 a new
 route that is neither covered below nor on the justified allowlist fails `test_every_route` loudly.
 

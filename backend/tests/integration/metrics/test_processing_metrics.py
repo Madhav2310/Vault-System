@@ -1,4 +1,4 @@
-"""S7.02 GET /v1/metrics/processing: values from a seeded job_events fixture, window validation, isolation."""
+"""GET /v1/metrics/processing: values from a seeded job_events fixture, window validation, isolation."""
 
 import json
 import uuid

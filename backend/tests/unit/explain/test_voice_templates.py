@@ -1,4 +1,4 @@
-"""Every user-facing template follows docs/voice.md (S23.01 AC1)."""
+"""Every user-facing template follows docs/voice.md."""
 
 import re
 

@@ -1,4 +1,4 @@
-"""S21.10a: the committed v2 document map covers every document the live items name, and its split lists are
+"""The committed v2 document map covers every document the live items name, and its split lists are
 the ones `splits_v2` computes. Offline and $0 (public PDFs are not needed: only the map is checked)."""
 
 import hashlib

@@ -1,4 +1,4 @@
-"""Sentence segmenter (S1.21, design 6.5). Fixture cases were written before the implementation."""
+"""Sentence segmenter (design 6.5). Fixture cases were written before the implementation."""
 
 from pathlib import Path
 

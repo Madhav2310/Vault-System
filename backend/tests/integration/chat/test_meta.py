@@ -1,4 +1,4 @@
-"""S18.05 meta route end to end: parameterized, owner-scoped SQL; answer composed in code; one model call."""
+"""Meta route end to end: parameterized, owner-scoped SQL; answer composed in code; one model call."""
 
 import json
 import uuid

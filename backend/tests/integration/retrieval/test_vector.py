@@ -1,4 +1,4 @@
-"""S2.03 exact scoped vector search: top-k, brute-force equality, per-doc quota, scope isolation, plan."""
+"""Exact scoped vector search: top-k, brute-force equality, per-doc quota, scope isolation, plan."""
 
 import json
 import random

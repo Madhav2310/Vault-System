@@ -1,4 +1,4 @@
-"""S17.12: binary judge mapping, CIs, scope filter."""
+"""Binary judge mapping, CIs, scope filter."""
 
 import uuid
 

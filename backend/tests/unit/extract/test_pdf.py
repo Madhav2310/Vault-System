@@ -1,4 +1,4 @@
-"""S1.13 PDF elements: headings and offset consistency."""
+"""PDF elements: headings and offset consistency."""
 
 import pathlib
 

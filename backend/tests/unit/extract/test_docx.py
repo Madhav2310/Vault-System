@@ -1,4 +1,4 @@
-"""S1.18 DOCX extractor: sections, tables as markdown, location fields, archive limits."""
+"""DOCX extractor: sections, tables as markdown, location fields, archive limits."""
 
 import pathlib
 import zipfile

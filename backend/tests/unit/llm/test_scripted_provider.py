@@ -1,4 +1,4 @@
-"""ScriptedProvider replies validate against the real strict schemas (S19.02)."""
+"""ScriptedProvider replies validate against the real strict schemas."""
 
 import pathlib
 from typing import Any

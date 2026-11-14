@@ -1,4 +1,4 @@
-"""S12.06 pure parts: parameters and hash, evidence planning, word-limit trimming, the request message."""
+"""Pure parts: parameters and hash, evidence planning, word-limit trimming, the request message."""
 
 import re
 import uuid

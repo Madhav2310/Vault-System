@@ -1,4 +1,4 @@
-"""S17.09 migration 0004: answer_segments.verification / verification_reason."""
+"""Migration 0004: answer_segments.verification / verification_reason."""
 
 import asyncio
 

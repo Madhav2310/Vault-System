@@ -1,4 +1,4 @@
-"""S2.17 AC1: retrieval metrics match hand-computed values on a toy ranking."""
+"""Retrieval metrics match hand-computed values on a toy ranking."""
 
 import pytest
 from eval.mapping import ChunkHit, GoldTarget

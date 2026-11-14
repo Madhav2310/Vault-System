@@ -1,4 +1,4 @@
-"""S1.15 AC4: reading-order repairs reach `pages.flags`."""
+"""Reading-order repairs reach `pages.flags`."""
 
 import uuid
 

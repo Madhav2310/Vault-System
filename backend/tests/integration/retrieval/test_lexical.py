@@ -1,4 +1,4 @@
-"""S2.05 lexical search: ranking, identifier match, safety, scope isolation, and the physical plan."""
+"""Lexical search: ranking, identifier match, safety, scope isolation, and the physical plan."""
 
 import json
 import random

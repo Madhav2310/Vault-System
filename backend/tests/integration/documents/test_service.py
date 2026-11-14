@@ -1,4 +1,4 @@
-"""S1.04 document/version/job creation with per-owner dedupe."""
+"""Document/version/job creation with per-owner dedupe."""
 
 import asyncio
 import pathlib

@@ -1,4 +1,4 @@
-"""S17.10 AC6: `node_latency_ms` in GET /v1/metrics/chat equals hand-computed percentiles on a fixture."""
+"""`node_latency_ms` in GET /v1/metrics/chat equals hand-computed percentiles on a fixture."""
 
 import uuid
 from collections.abc import AsyncIterator, Callable

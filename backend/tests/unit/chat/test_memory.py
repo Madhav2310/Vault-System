@@ -1,4 +1,4 @@
-"""S3.04 working-memory window (pure selection; DB loader: integration/chat/test_memory_db.py)."""
+"""Working-memory window (pure selection; DB loader: integration/chat/test_memory_db.py)."""
 
 from app.chat.memory import Memory, Msg, group_turns, select_window
 

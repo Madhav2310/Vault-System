@@ -1,4 +1,4 @@
-"""S21.10c: each gate criterion on synthetic sidecars (no model call, no DB)."""
+"""Each gate criterion on synthetic sidecars (no model call, no DB)."""
 
 import json
 import pathlib

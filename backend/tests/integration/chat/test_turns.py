@@ -1,4 +1,4 @@
-"""S3.02 turn ownership (CAS with lease). AC4 (no connection held during the generate node) is not testable
+"""Turn ownership (CAS with lease). AC4 (no connection held during the generate node) is not testable
 yet: there is no generate node until S3.1x."""
 
 import asyncio

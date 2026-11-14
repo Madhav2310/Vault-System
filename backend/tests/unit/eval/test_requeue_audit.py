@@ -1,4 +1,4 @@
-"""S21.05b: requeue of the stored audit queue with the current judges, offline (dry gateway, $0)."""
+"""Requeue of the stored audit queue with the current judges, offline (dry gateway, $0)."""
 
 import asyncio
 import pathlib

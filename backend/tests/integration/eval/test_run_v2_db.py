@@ -1,4 +1,4 @@
-"""S21.10a: a v2 run persists like a v1 run: one eval_runs row (config.dataset = v2), one eval_results row per
+"""A v2 run persists like a v1 run: one eval_runs row (config.dataset = v2), one eval_results row per
 item per metric, and a Markdown report with the per-stratum table. FakeProvider judges, $0."""
 
 import json

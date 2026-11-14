@@ -1,4 +1,4 @@
-"""S11.02: offline ranking replay."""
+"""Offline ranking replay."""
 
 import pytest
 from eval.mapping import ChunkHit, GoldTarget

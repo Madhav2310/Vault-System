@@ -1,4 +1,4 @@
-"""S3.01 chat session endpoints."""
+"""Chat session endpoints."""
 
 import uuid
 from collections.abc import Callable

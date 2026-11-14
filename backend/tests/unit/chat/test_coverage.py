@@ -1,4 +1,4 @@
-"""S22.04 plan check (`app/chat/coverage.py`): pure code, no model."""
+"""Plan check (`app/chat/coverage.py`): pure code, no model."""
 
 from typing import Any
 

@@ -1,4 +1,4 @@
-"""S18.09 living answers: `on_version_ready` marks answers, history reports staleness, `reask_of` re-asks."""
+"""Living answers: `on_version_ready` marks answers, history reports staleness, `reask_of` re-asks."""
 
 import uuid
 from collections.abc import Callable

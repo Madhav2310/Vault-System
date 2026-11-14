@@ -1,4 +1,4 @@
-"""LLM_PROVIDER=fake: scripted questions get cited answers through the API with no provider key (S19.02)."""
+"""LLM_PROVIDER=fake: scripted questions get cited answers through the API with no provider key."""
 
 import json
 import pathlib

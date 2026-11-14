@@ -1,4 +1,4 @@
-"""OpenAI Responses adapter over a mocked HTTP transport (no network): wire request and parsing (S0.23)."""
+"""OpenAI Responses adapter over a mocked HTTP transport (no network): wire request and parsing."""
 
 import json
 from collections.abc import Callable

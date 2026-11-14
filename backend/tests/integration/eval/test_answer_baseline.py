@@ -1,4 +1,4 @@
-"""S17.12 AC1/AC5: citation integrity is computed from stored sentence counts, and the budget stop ends the
+"""Citation integrity is computed from stored sentence counts, and the budget stop ends the
 run before the next item once the spend reaches the cap."""
 
 import pathlib

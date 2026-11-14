@@ -1,4 +1,4 @@
-"""S3.09 citation resolver."""
+"""Citation resolver."""
 
 import uuid
 

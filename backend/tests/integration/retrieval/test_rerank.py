@@ -1,4 +1,4 @@
-"""S2.08 rerank client: reordering, top_n, degradation (timeout, 503, down, bad response), request bounds,
+"""Rerank client: reordering, top_n, degradation (timeout, 503, down, bad response), request bounds,
 and one run against the real reranker service when it is reachable."""
 
 import asyncio

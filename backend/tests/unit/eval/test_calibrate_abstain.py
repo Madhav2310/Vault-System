@@ -1,4 +1,4 @@
-"""S22.07 calibration tooling on a synthetic features file (no model, no database)."""
+"""Calibration tooling on a synthetic features file (no model, no database)."""
 
 import json
 import pathlib

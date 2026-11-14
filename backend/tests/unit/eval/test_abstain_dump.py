@@ -1,4 +1,4 @@
-"""S22.07b: a v2 answers run writes `<run_id>.abstain.jsonl` with exactly the fields `eval.calibrate_abstain`
+"""A v2 answers run writes `<run_id>.abstain.jsonl` with exactly the fields `eval.calibrate_abstain`
 reads; the loader round-trips it. Scripted pipeline, FakeProvider judges, $0."""
 
 import json

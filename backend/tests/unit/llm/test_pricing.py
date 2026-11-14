@@ -16,7 +16,7 @@ def _settings(**kw: object) -> Settings:
 
 def test_cost_formula() -> None:
     t = PriceTable(DEFAULT_PRICES)
-    # Sonnet 5.5: $2 in, $10 out, $0.20 cache read, $2.50 cache write (1.25x input), per MTok (design §4)
+    # Sonnet 5.5: $2 in, $10 out, $0.20 cache read, $2.50 cache write (1.25x input), per MTok
     assert t.cost("claude-sonnet-5-5", U) == Decimal("0.017400")  # (2000 + 5000 + 400 + 10000) / 1e6
     # Opus 5.5: $4 / $20 / $0.20 / $5.00
     assert t.cost("claude-opus-5-5", U) == Decimal("0.034400")  # (4000 + 10000 + 400 + 20000) / 1e6
@@ -54,7 +54,7 @@ def test_cost_formula() -> None:
 def test_openai_prices() -> None:
     t = PriceTable(DEFAULT_PRICES)
     u = Usage(input_tokens=10_000, output_tokens=10_000, cache_read_tokens=10_000, cache_write_tokens=10_000)
-    # 10K tokens of each kind; $/MTok in + out + cached read + 30-minute write (1.25x input), design §4.1
+    # 10K tokens of each kind; $/MTok in + out + cached read + 30-minute write (1.25x input)
     assert t.cost("gpt-6-luna", u) == Decimal("0.007350")  # 0.10 + 0.50 + 0.01 + 0.125
     assert t.cost("gpt-6.1-terra", u) == Decimal("0.073000")  # 1.00 + 5.00 + 0.05 + 1.25
     assert t.cost("gpt-6.1-sol", u) == Decimal("0.146000")  # 2.00 + 10.00 + 0.10 + 2.50

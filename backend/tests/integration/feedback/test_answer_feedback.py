@@ -1,4 +1,4 @@
-"""S14.06 POST /v1/feedback: per-answer rating, idempotent per (message, user), owner-scoped."""
+"""POST /v1/feedback: per-answer rating, idempotent per (message, user), owner-scoped."""
 
 import uuid
 from collections.abc import Callable

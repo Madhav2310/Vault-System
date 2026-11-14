@@ -1,4 +1,4 @@
-"""S16.04: evals never silently measure a degraded configuration."""
+"""Evals never silently measure a degraded configuration."""
 
 import argparse
 import json

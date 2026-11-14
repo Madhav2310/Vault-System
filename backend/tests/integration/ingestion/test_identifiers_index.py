@@ -1,4 +1,4 @@
-"""S17.04 identifier tokens at index time: the index stage fills `tsv_ids`; the backfill is idempotent."""
+"""Identifier tokens at index time: the index stage fills `tsv_ids`; the backfill is idempotent."""
 
 from typing import Any
 

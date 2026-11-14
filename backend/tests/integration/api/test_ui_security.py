@@ -1,4 +1,4 @@
-"""S22.11: session cookie (httpOnly, signed, CSRF-guarded) and the /app security headers."""
+"""Session cookie (httpOnly, signed, CSRF-guarded) and the /app security headers."""
 
 import pathlib
 

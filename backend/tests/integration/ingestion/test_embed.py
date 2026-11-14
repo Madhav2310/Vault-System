@@ -1,4 +1,4 @@
-"""S1.24 embed stage."""
+"""Embed stage."""
 
 import pathlib
 
