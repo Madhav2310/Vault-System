@@ -1,42 +1,27 @@
-# Vault: status report (2026-11-14)
+# Vault: status report (2026-11-14, after plan v4 build)
 
 One page. Every number is measured; each has its source or command.
 
 ## 1. Where we are
-Every feature in the spec, including the bonus list, is built and merged (sentiment is the brief's tone). Quality is measured; three answer-quality targets are missed (section 3).
+All spec features are built. Plan v4 (evaluation rebuild S21, accuracy and speed changes S22, warm voice and chat S23) has its code merged; every S22/S23 behaviour change is **off by default** until a paired A/B on the dev split accepts it (rule: `docs/plan/S22.md`). Gates on main: `make ci` 728 passed; `make test` 1289 passed, 1 flaky (F-048 trace test, passes alone); `make ui-e2e` 58 passed (last full run on the S23.02 lane).
 
-| Pillar | State | Evidence |
-|---|---|---|
-| Upload and async ingestion | Done. AMD 10-K (121 pages) searchable in 20.2 s (28.8 s before parallel embedding) | `docs/scale.md` |
-| Cited chat, streaming, multi-turn | Done. Citation integrity 1.00. Demo TTFT p50 3.3 s, latency p50 6.1 s | `scripts/demo_core.sh` |
-| Answer routes | RAG, whole-document, meta (SQL), compare, conflicts, stale answers with re-ask, support check per citation, evidence gate | `docs/evidence/answer_ab.md` |
-| AI insights | Brief with summary, key facts, tone, questions, all cited; custom summaries | `eval/brief_eval.py` |
-| Metrics APIs and UI | Documents, processing, chat (node latency, TTFT, cost, feedback, quota); web UI at `/app` | `make ui-e2e` (41 specs, axe 0 serious) |
-| Docs and demo | README final, scale and architecture docs; demo recording and README numbers pending | `README.md` |
+## 2. The new measuring instrument (S21)
+- Golden set v2: 316 live items over 189 documents, 15 strata, at most 3 per document, split by document (train 123 / dev 59 / test 134 items). Gold is atomic claims. Gold is unaudited until the human review (`eval/datasets/vault_eval_v2/audit_review.md`).
+- Claim-level judges, clustered CIs, minimum detectable effect, stage attribution, injection graders, gate tiers (`make eval-gate`), runbook `docs/eval_v2_runbook.md`.
 
-Gates on main: `make ci` 483 passed; `make test` 905 passed, 1 flaky (F-048, passes alone); `make ui-e2e` 41 passed.
+## 3. First v2 train run (123 items, current main with all switches off, judges claims@1)
+answer_pass 0.642, claim_completeness 0.691, support_rate 0.664, citation_integrity 1.000, injection violations 0, abstention_correct 0.600, recall@8 0.807, cite_chunk_precision 0.619, latency mean 5.2 s, $0.0057/turn. Cost $1.23, 24 min (`eval/reports/01a1d89d-...`).
+Root cause of the 51 flagged items (`docs/evidence/train_v2_rca.md`): 27 real system failures (12 ranking cut, 5 retrieval miss, 5 generation omission, 3 wrong abstain, 2 generation error) and 24 grader or gold artifacts (15 judge too strict, 9 gold wrong or incomplete).
+Re-judge of the same answers with the fixed judges (claims@2, support@2, versioned fix; $0.51): answer_pass 0.659, support_rate 0.842, abstention_correct 0.840. Not a baseline: provisional until the 200 human labels.
 
-## 2. Decisions made from measurements (pre-set rules, paired statistics)
-- **No cross-encoder by default:** no detectable quality difference, adds p50 495 ms. Kept as `retrieval@2-rerank`. `docs/evidence/reranker_decision.md`.
-- **Whole-document route stays opt-in:** no detectable quality difference, twice the cost. `docs/evidence/answer_ab.md`.
-- **Evidence gate off:** calibrated to 4.9% false abstention on retrieval, but on answers it refused 3 of 44 answerable items.
-- **Support check kept:** agrees with the faithfulness judge 92% (kappa 0.83).
+## 4. What needs the user
+1. Review the gold audit queue: `eval/datasets/vault_eval_v2/audit_review.md` (25 items to read, 44 to skim). Proposals are heuristics; a gold fix that only deletes claims the system fails would bias the set toward the system.
+2. Label 200 (item, answer) pairs for judge calibration (`make eval-labels`), S21.06 AC3/4.
+3. Approve the A/B round (about $4-5): baseline + plan-first, support v2, calc, compare quota, voice, analyze v3; free retrieval-only arms for lexical v2 and chunker@2.
+4. Review the chat UI at `/app` and `docs/voice.md`.
 
-## 3. Answer quality (train, 50 items, frozen baseline `eval/baselines/answer.json`)
-| Metric | Value [95% CI] | Target |
-|---|---|---|
-| citation_integrity | 1.000 | 1.00 (met) |
-| answer_pass | 0.636 [0.500, 0.773] | 0.80 (missed) |
-| faithfulness_pass | 0.841 [0.727, 0.932] | 0.90 (missed) |
-| cite_chunk_precision | 0.619 [0.485, 0.744] | 0.85 (missed) |
-| cost per turn | $0.0063 | |
+## 5. Spend
+About $6.2 of the $30 cap since 2026-11-01 (`python -m eval.replay --spend 2026-11-01T00:00:00+00:00`).
 
-Root cause of the 16 failures: 8 retrieval misses (QASPER papers, 10-K tables), 3 false gate abstentions (now off), about 5 judged "incomplete" where at least 2 answers are correct (the completeness judge is too strict), 3 compare/conflict items missing one side.
-
-## 4. Next (proposed)
-1. Calibrate the completeness judge against human labels (S20.07, 40 items) before tuning against it.
-2. Accuracy lane: answer prompt (complete conditions and dates, minimal citations), per-document evidence for compare, table-aware chunking for the misses; one train A/B (about $0.40), confirm once on test.
-3. Live latency check of speculative retrieval and the wider fast path (built and tested offline).
-4. Deferred: README numbers, demo recording, AI_USAGE prompt-log rows, final fresh-clone gate.
-
-Spend since 2026-11-01 from the ledger: $2.98 of the $30 cap (`python -m eval.replay --spend 2026-11-01T00:00:00+00:00`).
+## 6. Open risks
+Gold unaudited; judges not human-calibrated; extraction/chunking stages not observable in attribution (shows 0: unmeasured); `table_lookup` is model-drafted gold (unaudited); `formatting` stratum has 0 of 5 items; ingestion of the eval corpus took about 25 min on this laptop.
