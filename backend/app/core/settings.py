@@ -6,7 +6,7 @@ Later slices add their fields here; `tests/unit/core/test_settings.py` keeps `.e
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr, model_validator
+from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -151,6 +151,12 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
+
+    @field_validator("chat_support_version", "chat_analyze_version", mode="before")
+    @classmethod
+    def _int_from_env(cls, v: object) -> object:
+        """Env vars arrive as strings ("2"); the Literal[int] fields need the int."""
+        return int(v) if isinstance(v, str) and v.strip().isdigit() else v
 
     @model_validator(mode="after")
     def _no_fake_in_prod(self) -> "Settings":
