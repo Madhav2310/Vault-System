@@ -4,6 +4,13 @@ import type { ChatEvent, EvidenceOut } from "../api/types";
 import {
   decodeChatEvent,
   describeFailure,
+  dropLastTurn,
+  formatCopy,
+  isNearBottom,
+  lastUser,
+  markStopped,
+  suggestionsFor,
+  userMsg,
   fromHistory,
   numberEvidence,
   numberMessage,
@@ -142,9 +149,9 @@ describe("trust, labels, failures", () => {
   it("429 names the retry time and 409/503/network are friendly", () => {
     expect(describeFailure({ http: 429, code: "rate_limited", retryAfterS: 30 }).message).toContain("30 seconds");
     expect(describeFailure({ http: 429, code: "rate_limited", retryAfterS: 300 }).message).toContain("5 minutes");
-    expect(describeFailure({ http: 409, code: "turn_in_progress", retryAfterS: null }).message).toContain("Another question");
+    expect(describeFailure({ http: 409, code: "turn_in_progress", retryAfterS: null }).message).toContain("still answering");
     expect(describeFailure({ http: 503, code: "x", retryAfterS: null }).reuseId).toBe(true);
-    expect(describeFailure({ network: true }).message).toContain("Could not reach");
+    expect(describeFailure({ network: true }).message).toContain("could not reach");
   });
 
   it("history restore keeps evidence and flags staleness", () => {
@@ -197,5 +204,61 @@ describe("trust, labels, failures", () => {
     expect(f.message).toContain("about 5 hours");
     expect(f.message).toContain("Your question is kept");
     expect(describeFailure({ http: 429, code: "quota_exceeded", retryAfterS: null }).message).toContain("resets at midnight UTC.");
+  });
+});
+
+describe("S23.03 interaction logic", () => {
+  const answer = (): Msg => {
+    const m = pendingAssistant("a1");
+    return {
+      ...m,
+      streaming: false,
+      content: "x",
+      segments: [
+        { index: 0, text: "Either side can leave.", support: "cited", evidence: [ev("c1", 1, 2, "Thirty days notice."), ev("c2", 0, 1, "Fees monthly.")] },
+        { index: 1, text: "Fees are monthly.", support: "cited", evidence: [ev("c2", 0, 1, "Fees monthly.")] },
+      ],
+    };
+  };
+
+  it("copies the answer with numbered markers, sources and quotes", () => {
+    const out = formatCopy(answer());
+    expect(out).toContain("Either side can leave. [1] [2] Fees are monthly. [2]");
+    expect(out).toContain('[1] Doc, v1, p. 2: "Thirty days notice."');
+    expect(out).toContain('[2] Doc, v1, p. 2: "Fees monthly."');
+    expect(out.split("Sources")).toHaveLength(2);
+  });
+
+  it("copies plain content when there are no segments", () => {
+    expect(formatCopy({ ...pendingAssistant("a"), content: "Not found.", streaming: false })).toBe("Not found.");
+  });
+
+  it("markStopped keeps segments and only touches a streaming message", () => {
+    const live = { ...answer(), streaming: true };
+    const s = markStopped(live);
+    expect(s.stopped).toBe(true);
+    expect(s.streaming).toBe(false);
+    expect(s.segments).toHaveLength(2);
+    const done = answer();
+    expect(markStopped(done)).toBe(done);
+  });
+
+  it("dropLastTurn removes the last question and what follows", () => {
+    const msgs = [userMsg("u1", "a"), answer(), userMsg("u2", "b"), pendingAssistant("a2")];
+    expect(dropLastTurn(msgs).map((m) => m.id)).toEqual(["u1", "a1"]);
+    expect(lastUser(msgs)?.content).toBe("b");
+    expect(lastUser([])).toBeNull();
+  });
+
+  it("isNearBottom follows within the threshold only", () => {
+    expect(isNearBottom(952, 800, 1800)).toBe(true);
+    expect(isNearBottom(900, 800, 1800)).toBe(false);
+  });
+
+  it("suggests questions from document titles, scoped when scoped", () => {
+    const docs = [{ id: "1", title: "Lease" }, { id: "2", title: "Memo" }, { id: "3", title: "NDA" }];
+    expect(suggestionsFor(docs, [])).toEqual(['What is "Lease" about?', 'What is "Memo" about?', "What are the key dates and deadlines across my documents?"]);
+    expect(suggestionsFor(docs, ["3"])).toEqual(['What is "NDA" about?', 'What are the key dates and deadlines in "NDA"?']);
+    expect(suggestionsFor([], [])).toEqual(["What are the key dates and deadlines across my documents?"]);
   });
 });

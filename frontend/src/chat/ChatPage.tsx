@@ -8,14 +8,19 @@ import { friendlyError } from "../source/types";
 import { chatApi } from "./api";
 import {
   describeFailure,
+  dropLastTurn,
   fromHistory,
+  lastUser,
+  markStopped,
   pendingAssistant,
   reduceTurn,
   sessionLabel,
   sessionPath,
+  suggestionsFor,
   userMsg,
   type Msg,
 } from "./logic";
+import { useFollowScroll } from "./follow";
 import { MessageView, type Open } from "./MessageView";
 import { WhyPanel } from "./WhyPanel";
 import "./chat.css";
@@ -29,6 +34,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
   const sessionId = route.params.get("s");
   const q = route.params.get("q");
   const docParam = route.params.get("doc");
+  const pickScope = route.params.get("pick") === "1";
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [docs, setDocs] = useState<DocumentListItem[]>([]);
@@ -40,13 +46,18 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
   const [loadError, setLoadError] = useState<string | null>(null);
   const [source, setSource] = useState<Open | null>(null);
   const [why, setWhy] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false); // the composer holds the last question being edited
+  const [docsLoaded, setDocsLoaded] = useState(false);
 
   const [activeScope, setActiveScope] = useState<string[] | null>(null);
   const abort = useRef<AbortController | null>(null);
   const pendingId = useRef<{ key: string; id: string } | null>(null); // client_message_id kept for a retry of the same turn
   const live = useRef<string | null>(null); // session id whose messages are local (just created or streaming)
   const autoStarted = useRef<string | null>(null);
-  const logRef = useRef<HTMLOListElement>(null);
+  const messagesRef = useRef<Msg[]>([]);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  messagesRef.current = messages;
+  const { showJump, jump, resume } = useFollowScroll(messages);
 
   const unauth = useCallback(
     (e: unknown) => {
@@ -68,7 +79,8 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
     api
       .listDocuments({ limit: 100 })
       .then((l) => setDocs(l.items))
-      .catch(unauth);
+      .catch(unauth)
+      .finally(() => setDocsLoaded(true));
   }, [refreshSessions, unauth]);
 
   // Restore history when the URL points at a session we did not just create.
@@ -96,27 +108,25 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
     return () => ctl.abort();
   }, [sessionId, unauth]);
 
-  useEffect(() => {
-    logRef.current?.lastElementChild?.scrollIntoView?.({ block: "nearest" });
-  }, [messages]);
-
   useEffect(() => () => abort.current?.abort(), []);
 
   /** One turn: a typed question, or a re-ask of an earlier message (`question` is only what the pair shows). */
   const send = useCallback(
-    async (turn: { content: string } | { reaskOf: string; question: string }, sid: string) => {
+    async (turn: { content: string } | { reaskOf: string; question: string }, sid: string, replaceLast = false) => {
       const reaskOf = "reaskOf" in turn ? turn.reaskOf : null;
       const text = ("content" in turn ? turn.content : turn.question).trim();
       if (!text) return;
       setFailure(null);
       setBusy(true);
+      resume();
+      const before = messagesRef.current;
       const key = reaskOf ? `reask:${reaskOf}` : `ask:${text}`;
       // A retry of the same turn reuses its client_message_id; a different turn gets a new one.
       const clientId = pendingId.current?.key === key ? pendingId.current.id : crypto.randomUUID();
       pendingId.current = { key, id: clientId };
       const userId = `u-${clientId}`;
       const tmp = `a-${clientId}`;
-      setMessages((m) => [...m.filter((x) => x.id !== userId && x.id !== tmp), userMsg(userId, text), pendingAssistant(tmp)]);
+      setMessages((m) => [...(replaceLast ? dropLastTurn(m) : m).filter((x) => x.id !== userId && x.id !== tmp), userMsg(userId, text), pendingAssistant(tmp)]);
       const ctl = new AbortController();
       abort.current = ctl;
       let ended = false;
@@ -137,14 +147,17 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
         if (!reaskOf) setInput("");
         void refreshSessions();
       } catch (e) {
-        if (e instanceof DOMException && e.name === "AbortError") return;
+        if (e instanceof DOMException && e.name === "AbortError") {
+          if (!reaskOf) setInput(""); // stopped: the partial answer stays, so the question is not pending any more
+          return;
+        }
         unauth(e);
         const f =
           e instanceof ApiError
             ? describeFailure({ http: e.status, code: e.code, retryAfterS: e.retryAfterS })
             : describeFailure({ network: true });
-        // Pre-stream failures never produced an answer: drop the optimistic pair and keep the text.
-        setMessages((m) => m.filter((x) => x.id !== userId && x.id !== tmp));
+        // Pre-stream failures never produced an answer: restore the log as it was and keep the text.
+        setMessages(before);
         setFailure(f.message);
         if (!reaskOf) setInput(text);
         if (!f.reuseId) pendingId.current = null;
@@ -152,7 +165,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
         setBusy(false);
       }
     },
-    [refreshSessions, unauth],
+    [refreshSessions, unauth, resume],
   );
 
   const startSession = useCallback(
@@ -190,10 +203,43 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
           return;
         }
       }
-      await send({ content: text }, sid);
+      const replace = editing;
+      setEditing(false);
+      await send({ content: text }, sid, replace);
     },
-    [busy, sessionId, scope, startSession, send],
+    [busy, sessionId, scope, startSession, send, editing],
   );
+
+  const stop = useCallback(() => {
+    abort.current?.abort();
+    pendingId.current = null; // a stopped turn is finished: the next ask is a new message
+    setMessages((m) => m.map(markStopped));
+  }, []);
+
+  const regenerate = useCallback(async () => {
+    const q = lastUser(messagesRef.current);
+    if (busy || !sessionId || !q) return;
+    pendingId.current = null; // a new client_message_id, same scope (the session's)
+    await send({ content: q.content }, sessionId, true);
+  }, [busy, sessionId, send]);
+
+  const editLast = useCallback(() => {
+    const q = lastUser(messagesRef.current);
+    if (busy || !sessionId || !q) return;
+    setInput(q.content);
+    setEditing(true);
+    inputRef.current?.focus();
+  }, [busy, sessionId]);
+
+  // Esc stops a running answer from anywhere on the page.
+  useEffect(() => {
+    if (!busy) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && !e.defaultPrevented) stop();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [busy, stop]);
 
   const reask = useCallback(
     async (messageId: string) => {
@@ -249,7 +295,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
       <section className="chat-main" aria-label="Conversation">
         <h1>Chat</h1>
         {!sessionId && (
-          <details className="scope" data-testid="scope-picker">
+          <details className="scope" data-testid="scope-picker" open={pickScope || undefined}>
             <summary>{scopeText}</summary>
             <fieldset>
               <legend className="sr-only">Documents to search</legend>
@@ -284,21 +330,52 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
           </p>
         )}
         {!sessionId && messages.length === 0 && !busy && (
-          <p className="hint">Ask a question about your documents. Every claim links to the exact passage it came from.</p>
+          <div className="empty" data-testid="chat-empty">
+            <p className="empty-lead">Ask anything about your documents. Every claim points back to the passage it came from.</p>
+            {docsLoaded && docs.length === 0 ? (
+              <p className="hint">Nothing here yet. Add a document in your library, then come back and ask.</p>
+            ) : (
+              docsLoaded && (
+                <ul className="chips" aria-label="Suggested questions" data-testid="suggestions">
+                  {suggestionsFor(docs, scope).map((t) => (
+                    <li key={t}>
+                      <button type="button" className="chip" onClick={() => void ask(t)}>
+                        {t}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )
+            )}
+          </div>
         )}
-        <ol className="msgs" ref={logRef} aria-label="Messages" data-testid="messages">
-          {messages.map((m) => (
-            <MessageView
-              key={m.id}
-              msg={m}
-              docCount={scopeCount}
-              onOpen={setSource}
-              onAsk={(t) => void ask(t)}
-              onWhy={setWhy}
-              {...(m.role === "assistant" && !busy && sessionId ? { onReask: (id: string) => void reask(id) } : {})}
-            />
-          ))}
+        <ol className="msgs" aria-label="Messages" data-testid="messages">
+          {messages.map((m, i) => {
+            const last = i === messages.length - 1;
+            const lastUserId = lastUser(messages)?.id;
+            const idle = !busy && !!sessionId;
+            return (
+              <MessageView
+                key={m.id}
+                msg={m}
+                docCount={scopeCount}
+                busy={busy}
+                isLast={last}
+                onOpen={setSource}
+                onAsk={(t) => void ask(t)}
+                onWhy={setWhy}
+                {...(m.role === "assistant" && idle ? { onReask: (id: string) => void reask(id) } : {})}
+                {...(m.role === "assistant" && idle && last && !m.streaming ? { onRegenerate: () => void regenerate() } : {})}
+                {...(m.role === "user" && idle && m.id === lastUserId ? { onEdit: editLast } : {})}
+              />
+            );
+          })}
         </ol>
+        {showJump && (
+          <button type="button" className="btn jump" onClick={jump} data-testid="jump-latest">
+            Jump to latest
+          </button>
+        )}
         {failure && (
           <p className="notice notice-error" role="alert" data-testid="chat-error">
             {failure}
@@ -312,22 +389,46 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
           }}
         >
           <label className="field">
-            Your question
+            {editing ? "Edit your question" : "Your question"}
             <textarea
+              ref={inputRef}
               value={input}
               rows={2}
+              aria-describedby="composer-hint"
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
+                if (e.nativeEvent.isComposing) return;
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
                   void ask(input);
+                } else if (e.key === "Escape" && editing && !busy) {
+                  setEditing(false);
+                  setInput("");
+                } else if (e.key === "ArrowUp" && input === "" && !busy) {
+                  e.preventDefault();
+                  editLast();
                 }
               }}
             />
           </label>
-          <button className="btn btn-primary" disabled={busy || !input.trim()}>
-            {busy ? "Answering…" : "Ask"}
-          </button>
+          <div className="composer-row">
+            {busy ? (
+              <button type="button" className="btn" onClick={stop} data-testid="stop">
+                Stop
+              </button>
+            ) : (
+              <button className="btn btn-primary" disabled={!input.trim()}>
+                {editing ? "Resend" : "Ask"}
+              </button>
+            )}
+            <p className="hint" id="composer-hint">
+              {busy
+                ? "Esc stops the answer."
+                : editing
+                  ? "Resending replaces your last question and its answer. Esc cancels."
+                  : "Enter sends, Shift+Enter adds a line, and the up arrow edits your last question."}
+            </p>
+          </div>
         </form>
       </section>
 

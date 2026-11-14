@@ -234,3 +234,162 @@
 .feedback .notice {
   margin: 0;
 }
+
+/* ---- S23.03 interaction polish ------------------------------------------------------------ */
+.empty {
+  margin: var(--s5) 0;
+}
+.empty-lead {
+  font: 500 20px/1.35 var(--font-head);
+  color: var(--ink);
+  max-width: 36ch;
+  margin: 0 0 var(--s3);
+}
+.chip:focus-visible,
+.chip-small:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.chip:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.chip:disabled:hover {
+  background: var(--surface);
+  color: var(--ink);
+}
+.chip-small {
+  border-color: var(--line);
+  color: var(--muted);
+  padding: 2px var(--s2);
+  font-size: 13px;
+}
+.chip-small[aria-pressed="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.feedback-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.feedback-nudge {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--ink);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2) var(--s3);
+  margin-top: var(--s3);
+}
+.actions .btn,
+.msg-edit {
+  padding: 4px 10px;
+  font-size: 13px;
+}
+.action-status {
+  font-size: 13px;
+  color: var(--muted);
+  min-width: 0;
+}
+.msg-user {
+  display: grid;
+  gap: var(--s2);
+  justify-items: end;
+}
+.stopped-note {
+  margin-top: var(--s2) !important;
+  color: var(--muted);
+  font-size: 14px;
+  border-left: 2px solid var(--line);
+  padding-left: var(--s3);
+}
+.composer-row {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+.composer-row .hint {
+  margin: 0;
+}
+.composer {
+  position: sticky;
+  bottom: 0;
+  background: var(--paper);
+  padding: var(--s3) 0;
+}
+.jump {
+  position: fixed;
+  left: 50%;
+  bottom: 148px;
+  transform: translateX(-50%);
+  background: var(--paper);
+  border-color: var(--ink);
+  z-index: 5;
+}
+
+/* skeleton before the first token: three lines, same height as the first answer lines (no shift) */
+.skeleton {
+  display: grid;
+  gap: 10px;
+  padding: 6px 0;
+}
+.skeleton span {
+  display: block;
+  height: 12px;
+  background: var(--line);
+  border-radius: var(--radius);
+}
+.skeleton span:nth-child(1) {
+  width: 92%;
+}
+.skeleton span:nth-child(2) {
+  width: 78%;
+}
+.skeleton span:nth-child(3) {
+  width: 56%;
+}
+.answer-live {
+  min-height: 4.8em;
+}
+.marks[data-pending] {
+  opacity: 0;
+  visibility: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .seg-in {
+    animation: seg-in 160ms ease-out both;
+  }
+  .marks {
+    transition: opacity 160ms ease-out;
+  }
+  .skeleton span {
+    animation: skeleton-pulse 1.4s ease-in-out infinite;
+  }
+  .stopped-note {
+    animation: seg-in 160ms ease-out both;
+  }
+}
+@keyframes seg-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
