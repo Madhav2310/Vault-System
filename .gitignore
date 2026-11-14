@@ -39,3 +39,6 @@ eval/.cache/
 eval/reports/*
 !eval/reports/.gitkeep
 eval/.reuse*.json
+
+# local working notes (plans, scratch)
+.work/
