@@ -7,6 +7,13 @@ export interface Fact {
   evidence: Citation[];
 }
 
+export interface Tone {
+  label: string;
+  note: string;
+  status: string;
+  evidence: Citation[];
+}
+
 export interface Brief {
   status: "pending" | "ready" | "failed" | "partial";
   version_id: string | null;
@@ -16,6 +23,8 @@ export interface Brief {
   summary: string | null;
   suggested_questions: string[];
   facts: Fact[];
+  /** Overall tone with cited evidence; absent or null for older briefs. */
+  tone?: Tone | null;
 }
 
 export interface SummarySegment {
@@ -75,7 +84,7 @@ export function chatPath(documentId: string, question: string): string {
 }
 
 export interface Route {
-  name: "library" | "document" | "chat";
+  name: "library" | "document" | "chat" | "metrics";
   id?: string;
   params: URLSearchParams;
 }
@@ -88,5 +97,6 @@ export function parseRoute(pathname: string, search: string, base = "/app/"): Ro
   const doc = /^\/documents\/([^/]+)$/.exec(p);
   if (doc) return { name: "document", id: decodeURIComponent(doc[1]!), params };
   if (p === "/chat") return { name: "chat", params };
+  if (p === "/metrics") return { name: "metrics", params };
   return { name: "library", params };
 }

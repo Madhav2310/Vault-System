@@ -6,6 +6,7 @@ import {
   describeFailure,
   fromHistory,
   numberEvidence,
+  numberMessage,
   pendingAssistant,
   reduceTurn,
   staleInfo,
@@ -149,12 +150,52 @@ describe("trust, labels, failures", () => {
   it("history restore keeps evidence and flags staleness", () => {
     const m = fromHistory({
       id: "m", role: "assistant", content: "A.", created_at: "", response_type: "answer", coverage_state: null,
-      staleness: { stale: true, current_version_no: 3 }, run_id: "r",
+      staleness: { stale: true, since: "2026-11-13T10:00:00Z", newer_version_no: 3 }, run_id: "r",
       segments: [{ ordinal: 0, text: "A.", support: "cited", evidence: [ev("c")] }], followups: ["Q?"],
     });
     expect(m.segments[0]!.index).toBe(0);
     expect(m.followups).toEqual(["Q?"]);
     expect(staleInfo(m)).toEqual({ versionNo: 3 });
     expect(staleInfo({ ...m, staleness: null })).toBeNull();
+    expect(staleInfo({ ...m, staleness: { stale: true, since: "", newer_version_no: null } })).toEqual({ versionNo: null });
+  });
+
+  it("history restore reads the support-check verdict and reason; unchecked means none", () => {
+    const seg = (ordinal: number, verification: string | null, verification_reason: string | null) => ({
+      ordinal, text: "T.", support: "cited", evidence: [ev("c")], verification, verification_reason,
+    });
+    const m = fromHistory({
+      id: "m", role: "assistant", content: "A.", created_at: "", response_type: "answer", coverage_state: null,
+      staleness: null, run_id: "r",
+      segments: [seg(0, "unsupported", "The passage says 60 days."), seg(1, "partial", null), seg(2, "supported", null), seg(3, "unchecked", null), seg(4, null, null)],
+    });
+    expect(m.segments.map((s) => s.verdict)).toEqual(["unsupported", "partial", "supported", undefined, undefined]);
+    expect(m.segments[0]!.reason).toBe("The passage says 60 days.");
+    expect(m.segments.map(trustOf)).toEqual(["unsupported", "partial", "ok", "ok", "ok"]);
+  });
+
+  it("conflicts come from done and from history, and share one numbering with the answer", () => {
+    const conflict = { topic: "Monthly fee", side_a: [ev("c1")], side_b: [ev("c2")] };
+    const done = reduceTurn(pendingAssistant("a"), {
+      type: "done", run_id: "r", message_id: "m", response_type: "answer", content: "x", reason_codes: [],
+      usage: { input_tokens: 1, output_tokens: 1, cost_usd: 0 }, latency_ms: null, ttft_ms: null, conflicts: [conflict],
+    });
+    expect(done.conflicts).toEqual([conflict]);
+    const noConflicts = reduceTurn(pendingAssistant("a"), {
+      type: "done", run_id: "r", message_id: "m", response_type: "answer", content: "x", reason_codes: [],
+      usage: { input_tokens: 1, output_tokens: 1, cost_usd: 0 }, latency_ms: null, ttft_ms: null,
+    });
+    expect(noConflicts.conflicts).toEqual([]);
+    const n = numberMessage([{ evidence: [ev("c2")] }], [conflict]);
+    expect(n.segments).toEqual([[1]]);
+    expect(n.conflicts).toEqual([{ a: [2], b: [1] }]);
+  });
+
+  it("quota_exceeded gets its own message with the reset time and keeps no stale id", () => {
+    const f = describeFailure({ http: 429, code: "quota_exceeded", retryAfterS: 5 * 3600 });
+    expect(f.message).toContain("midnight UTC");
+    expect(f.message).toContain("about 5 hours");
+    expect(f.message).toContain("Your question is kept");
+    expect(describeFailure({ http: 429, code: "quota_exceeded", retryAfterS: null }).message).toContain("resets at midnight UTC.");
   });
 });

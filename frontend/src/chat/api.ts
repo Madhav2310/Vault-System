@@ -1,5 +1,13 @@
 import { ApiError, getApiKey, NetworkError } from "../api/client";
-import type { ChatEvent, ChatSession, ChatSessionList, HistoryList, RunView } from "../api/types";
+import type {
+  ChatEvent,
+  ChatSession,
+  ChatSessionList,
+  FeedbackRating,
+  FeedbackReason,
+  HistoryList,
+  RunView,
+} from "../api/types";
 import { getJson } from "../source/types";
 import { SseHttpError, streamEvents } from "../sse";
 import { decodeChatEvent } from "./logic";
@@ -41,10 +49,16 @@ export const chatApi = {
     return (await getJson<RunView>(`/v1/runs/${runId}`, init)).data;
   },
 
+  /** Rate an answer. Idempotent per message: posting again replaces the earlier rating. */
+  async feedback(messageId: string, rating: FeedbackRating, reason?: FeedbackReason): Promise<void> {
+    const body = { message_id: messageId, rating, ...(rating === "down" && reason ? { reason } : {}) };
+    await getJson("/v1/feedback", { method: "POST", body });
+  },
+
   /** Stream one turn. Pre-stream 404/409/422/429/503 reject with ApiError; a dropped connection with NetworkError. */
   async *send(
     sessionId: string,
-    content: string,
+    turn: { content: string } | { reaskOf: string },
     clientMessageId: string,
     signal?: AbortSignal,
   ): AsyncGenerator<ChatEvent> {
@@ -52,7 +66,10 @@ export const chatApi = {
     const opts: Parameters<typeof streamEvents<ChatEvent>>[1] = {
       method: "POST",
       headers: key ? { Authorization: `Bearer ${key}` } : {},
-      body: { content, client_message_id: clientMessageId },
+      body:
+        "content" in turn
+          ? { content: turn.content, client_message_id: clientMessageId }
+          : { reask_of: turn.reaskOf, client_message_id: clientMessageId },
       decode: decodeChatEvent,
     };
     if (signal) opts.signal = signal;

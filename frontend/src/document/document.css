@@ -80,3 +80,10 @@
 .summary-body p {
   max-width: 68ch;
 }
+
+.versions {
+  margin: var(--s5) 0;
+}
+.doc-danger {
+  margin: var(--s5) 0 0;
+}

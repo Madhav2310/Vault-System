@@ -1,6 +1,10 @@
 import { SseHttpError, streamEvents, type SseFrame } from "../sse";
 import type {
   DocumentList,
+  ChatMetrics,
+  DocumentsMetrics,
+  MetricsWindow,
+  ProcessingMetrics,
   ErrorResponse,
   ProcessingEvent,
   UploadResponse,
@@ -99,6 +103,34 @@ export const api = {
     return (
       await request("/v1/documents", { method: "POST", body: form, headers: { "Idempotency-Key": key } })
     ).json() as Promise<UploadResponse>;
+  },
+
+  /** `POST /v1/documents/{id}/versions`: 202 for a new version, 200 with `deduplicated` for identical bytes. */
+  async uploadVersion(documentId: string, file: File): Promise<UploadResponse> {
+    const form = new FormData();
+    form.append("file", file);
+    return (
+      await request(`/v1/documents/${documentId}/versions`, {
+        method: "POST",
+        body: form,
+        headers: { "Idempotency-Key": crypto.randomUUID() },
+      })
+    ).json() as Promise<UploadResponse>;
+  },
+
+  async documentsMetrics(signal?: AbortSignal): Promise<DocumentsMetrics> {
+    const init: RequestInit = signal ? { signal } : {};
+    return (await request("/v1/metrics/documents", init)).json() as Promise<DocumentsMetrics>;
+  },
+
+  async processingMetrics(window: MetricsWindow, signal?: AbortSignal): Promise<ProcessingMetrics> {
+    const init: RequestInit = signal ? { signal } : {};
+    return (await request(`/v1/metrics/processing?window=${window}`, init)).json() as Promise<ProcessingMetrics>;
+  },
+
+  async chatMetrics(window: MetricsWindow, signal?: AbortSignal): Promise<ChatMetrics> {
+    const init: RequestInit = signal ? { signal } : {};
+    return (await request(`/v1/metrics/chat?window=${window}`, init)).json() as Promise<ChatMetrics>;
   },
 
   async deleteDocument(id: string): Promise<void> {

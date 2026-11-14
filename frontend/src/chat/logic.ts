@@ -1,6 +1,7 @@
 /** Pure chat logic: SSE event decoding, the turn reducer, marker numbering, labels. No React, no fetch. */
+import type { Citation } from "../source";
 import type { SseFrame } from "../sse";
-import type { ChatEvent, ChatStage, EvidenceOut, HistoryMessage } from "../api/types";
+import type { ChatEvent, ChatStage, ConflictView, EvidenceOut, HistoryMessage, Staleness } from "../api/types";
 
 export const EVENT_TYPES = ["run.started", "status", "segment", "verification", "followups", "done", "error"] as const;
 
@@ -20,7 +21,10 @@ export interface Seg {
   text: string;
   support: string;
   evidence: EvidenceOut[];
+  /** Support-check verdict (`supported`, `partial`, `unsupported`); absent when no check ran. */
   verdict?: string;
+  /** Why the check gave its verdict, when the API provides it (history only). */
+  reason?: string;
 }
 
 /** One chat message as the UI shows it, live or restored from history. */
@@ -32,7 +36,8 @@ export interface Msg {
   segments: Seg[];
   followups: string[];
   runId: string | null;
-  staleness: Record<string, unknown> | null;
+  staleness: Staleness | null;
+  conflicts: ConflictView[];
   /** True while the turn is still streaming. */
   streaming: boolean;
   stage: ChatStage | null;
@@ -51,6 +56,7 @@ export function pendingAssistant(id: string): Msg {
     followups: [],
     runId: null,
     staleness: null,
+    conflicts: [],
     streaming: true,
     stage: null,
     errorCode: null,
@@ -91,6 +97,7 @@ export function reduceTurn(m: Msg, e: ChatEvent): Msg {
         content: e.content,
         responseType: e.response_type,
         reasonCodes: e.reason_codes,
+        conflicts: isError ? [] : (e.conflicts ?? []),
         // An error after streamed segments replaces what was shown with the stored content.
         segments: isError ? [] : m.segments,
         followups: isError ? [] : m.followups,
@@ -101,6 +108,12 @@ export function reduceTurn(m: Msg, e: ChatEvent): Msg {
     case "error":
       return { ...m, streaming: false, stage: null, errorCode: e.code };
   }
+}
+
+/** A stored verification: null or `unchecked` means no check ran, so there is no verdict to show. */
+function checkOf(verification: string | null | undefined, reason: string | null | undefined): Partial<Seg> {
+  if (!verification || verification === "unchecked") return {};
+  return { verdict: verification, ...(reason ? { reason } : {}) };
 }
 
 export function fromHistory(h: HistoryMessage): Msg {
@@ -114,10 +127,12 @@ export function fromHistory(h: HistoryMessage): Msg {
       text: s.text,
       support: s.support,
       evidence: s.evidence ?? [],
+      ...checkOf(s.verification, s.verification_reason),
     })),
     followups: h.followups ?? [],
     runId: h.run_id,
     staleness: h.staleness,
+    conflicts: h.conflicts ?? [],
     streaming: false,
     stage: null,
     errorCode: null,
@@ -163,6 +178,22 @@ export function numberEvidence(segments: { evidence: EvidenceOut[] }[]): number[
   );
 }
 
+export interface MessageNumbers {
+  segments: number[][];
+  conflicts: { a: number[]; b: number[] }[];
+}
+
+/** One numbering across the answer and its conflict callouts, so the same passage keeps the same `[n]` everywhere. */
+export function numberMessage(segments: { evidence: EvidenceOut[] }[], conflicts: ConflictView[]): MessageNumbers {
+  const groups = [...segments.map((s) => s.evidence), ...conflicts.flatMap((c) => [c.side_a, c.side_b])];
+  const all = numberEvidence(groups.map((evidence) => ({ evidence })));
+  const n = segments.length;
+  return {
+    segments: all.slice(0, n),
+    conflicts: conflicts.map((_, i) => ({ a: all[n + 2 * i]!, b: all[n + 2 * i + 1]! })),
+  };
+}
+
 /** A segment's markers with duplicates (same item cited twice in one segment) collapsed. */
 export function uniqueMarkers(evidence: EvidenceOut[], numbers: number[]): { n: number; ev: EvidenceOut }[] {
   const out = new Map<number, EvidenceOut>();
@@ -183,14 +214,14 @@ export function trustOf(s: Seg): Trust {
 
 export const UNSUPPORTED_REASON =
   "The cited passage does not back this statement. Open the source to check it yourself.";
+export const SUPPORTED_REASON = "An automatic check found that the cited passage backs this statement.";
 export const PARTIAL_REASON = "The cited passage backs only part of this statement.";
 
-/** Stale banner data when the message says so; the backend shape is not pinned, so read defensively. */
+/** Stale banner data (`staleness.stale`); `versionNo` is the newer current version, null when none is current. */
 export function staleInfo(m: Msg): { versionNo: number | null } | null {
   const s = m.staleness;
-  if (!s || s["stale"] === false) return null;
-  const n = s["current_version_no"] ?? s["version_no"];
-  return { versionNo: typeof n === "number" ? n : null };
+  if (!s || !s.stale) return null;
+  return { versionNo: typeof s.newer_version_no === "number" ? s.newer_version_no : null };
 }
 
 export interface SendFailure {
@@ -211,6 +242,14 @@ export function describeFailure(kind: FailureKind): SendFailure {
   }
   if ("stream" in kind) {
     return { message: "Something went wrong while answering. You can ask again. Your question is kept.", reuseId: true };
+  }
+  if (kind.http === 429 && kind.code === "quota_exceeded") {
+    return {
+      message: `You have used today's allowance. It resets at midnight UTC${
+        kind.retryAfterS ? ` (in about ${retryTime(kind.retryAfterS)})` : ""
+      }. Your question is kept.`,
+      reuseId: false,
+    };
   }
   switch (kind.http) {
     case 409:
@@ -236,7 +275,9 @@ export function describeFailure(kind: FailureKind): SendFailure {
 
 export function retryTime(s: number): string {
   if (s < 90) return `${Math.ceil(s)} second${Math.ceil(s) === 1 ? "" : "s"}`;
-  return `${Math.ceil(s / 60)} minutes`;
+  if (s < 5400) return `${Math.ceil(s / 60)} minutes`;
+  const h = Math.round(s / 3600);
+  return `${h} hour${h === 1 ? "" : "s"}`;
 }
 
 export function sessionLabel(title: string | null, updatedAt: string): string {
@@ -247,3 +288,22 @@ export function sessionLabel(title: string | null, updatedAt: string): string {
 
 /** `/chat?s=SESSION` path used once a session exists. */
 export const sessionPath = (id: string): string => `/chat?${new URLSearchParams({ s: id })}`;
+
+/** A source-viewer target: one chunk and the cited sentence range. */
+export interface Open {
+  chunkId: string;
+  sentenceStart: number;
+  sentenceEnd: number;
+}
+
+export function toCitation(e: EvidenceOut): Citation {
+  return {
+    chunk_id: e.chunk_id,
+    version_no: e.version_no ?? 0,
+    pages: e.pages,
+    section_path: null,
+    sentence_start: e.sentence_start,
+    sentence_end: e.sentence_end,
+    cited_text: e.cited_text ?? "",
+  };
+}

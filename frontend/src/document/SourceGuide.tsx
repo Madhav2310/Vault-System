@@ -13,7 +13,8 @@ interface Props {
 /** Source guide card: summary, type, tags, key facts with citations, and suggested-question chips. */
 export function SourceGuide({ documentId, title, brief, onOpen }: Props) {
   const groups = groupFacts(brief.facts);
-  const numbers = numberCitations(brief.facts.map((f) => f.evidence));
+  const tone = brief.tone ?? null;
+  const numbers = numberCitations([...brief.facts.map((f) => f.evidence), tone?.evidence ?? []]);
   const numberOf = new Map<unknown, number[]>(brief.facts.map((f, i) => [f, numbers[i]!]));
 
   return (
@@ -31,6 +32,22 @@ export function SourceGuide({ documentId, title, brief, onOpen }: Props) {
           </span>
         ))}
       </p>
+
+      {tone && (
+        <p className="guide-tone" data-testid="tone">
+          <strong>Tone:</strong> {tone.label}
+          {tone.note && ` \u2014 ${tone.note}`}
+          {tone.status !== "verified" && (
+            <>
+              {" "}
+              <span className="chip chip-unverified">unverified</span>
+            </>
+          )}
+          {tone.evidence.map((c, j) => (
+            <CitationMarker key={j} index={numbers[brief.facts.length]![j]!} citation={c} docTitle={title} onOpen={onOpen} />
+          ))}
+        </p>
+      )}
 
       {groups.length > 0 && (
         <>

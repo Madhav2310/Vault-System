@@ -55,6 +55,7 @@ describe("routing", () => {
     const c = parseRoute("/app/chat", "?q=hi&doc=d1");
     expect(c.name).toBe("chat");
     expect(c.params.get("doc")).toBe("d1");
+    expect(parseRoute("/app/metrics", "").name).toBe("metrics");
   });
   it("parses without a base (dev server root)", () => {
     expect(parseRoute("/documents/abc/", "", "/")).toMatchObject({ name: "document", id: "abc" });

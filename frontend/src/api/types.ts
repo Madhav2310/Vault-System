@@ -92,6 +92,13 @@ export interface EvidenceOut {
 
 export type Verdict = "supported" | "partial" | "unsupported";
 
+/** Two sources that disagree: the evidence of each side (`ConflictView` in `app/chat/conflicts.py`). */
+export interface ConflictView {
+  topic: string;
+  side_a: EvidenceOut[];
+  side_b: EvidenceOut[];
+}
+
 export type ChatEvent =
   | { type: "run.started"; run_id: string; message_id: string }
   | { type: "status"; run_id: string; stage: ChatStage }
@@ -108,6 +115,7 @@ export type ChatEvent =
       usage: { input_tokens: number; output_tokens: number; cost_usd: number };
       latency_ms: number | null;
       ttft_ms: number | null;
+      conflicts?: ConflictView[];
     }
   | { type: "error"; run_id: string; code: string; retryable: boolean };
 
@@ -131,6 +139,16 @@ export interface HistorySegment {
   text: string;
   support: string;
   evidence: EvidenceOut[];
+  /** Support-check verdict: `supported`, `partial`, `unsupported`; null when no check ran. */
+  verification?: string | null;
+  verification_reason?: string | null;
+}
+
+/** `{stale, since, newer_version_no}` (`history._staleness`); `newer_version_no` is null when no newer version is current. */
+export interface Staleness {
+  stale: boolean;
+  since: string;
+  newer_version_no: number | null;
 }
 
 export interface HistoryMessage {
@@ -140,11 +158,11 @@ export interface HistoryMessage {
   created_at: string;
   response_type: string | null;
   coverage_state: string | null;
-  /** Shape not pinned by the backend yet (null today); the UI reads `stale` and `current_version_no` defensively. */
-  staleness: Record<string, unknown> | null;
+  staleness: Staleness | null;
   run_id: string | null;
   segments: HistorySegment[];
   followups?: string[];
+  conflicts?: ConflictView[];
 }
 
 export interface HistoryList {
@@ -165,3 +183,63 @@ export interface RunView {
   steps: { node: string; status: string; duration_ms?: number | null }[];
   usage: { calls?: number; input_tokens?: number; output_tokens?: number; cost_usd?: number };
 }
+
+export interface DocumentDetail {
+  id: string;
+  title: string;
+  status: VersionStatus | null;
+  current_version_id: string | null;
+  versions: VersionJson[];
+}
+
+export type FeedbackRating = "up" | "down";
+export type FeedbackReason = "wrong" | "unsupported" | "incomplete" | "other";
+
+/** `GET /v1/metrics/{documents,processing,chat}` (`app/api/schemas.py`). Fields the page does not read are omitted. */
+export interface Percentiles {
+  p50: number | null;
+  p95: number | null;
+}
+
+export interface DocumentsMetrics {
+  scope: string;
+  documents: number;
+  by_status: Record<string, number>;
+  by_mime: Record<string, number>;
+  needs_ocr: number;
+  pages: number;
+  chunks: { total?: number } | null;
+  storage_bytes: number;
+  time_to_ready_seconds: Percentiles;
+  enriched: number;
+  by_category: Record<string, number>;
+  facts: { total?: number; verified_ratio?: number | null };
+}
+
+export interface ProcessingMetrics {
+  scope: string;
+  window: string;
+  throughput: { jobs_completed?: number; stage_runs?: number; jobs_per_hour?: number };
+  stage_duration_ms: Record<string, { count?: number; p50?: number | null; p95?: number | null }>;
+  failures_by_error_code: Record<string, number>;
+  retries: unknown;
+  oldest_pending_age_seconds: number | null;
+}
+
+export interface ChatMetrics {
+  scope: string;
+  window: string;
+  /** UTC day, independent of `window`; `limit_usd` null = unlimited. */
+  quota?: { limit_usd: number | null; spent_today_usd: number | null };
+  turns: number;
+  outcomes: Record<string, number>;
+  coverage: Record<string, number>;
+  latency_ms: Percentiles;
+  ttft_ms: Percentiles;
+  cost_per_turn_usd: Percentiles;
+  degraded: Record<string, number>;
+  feedback: { up: number; down: number; by_reason: Record<string, number> };
+  llm: { calls: number; total_cost_usd: number | null; cache_hit_ratio: number | null };
+}
+
+export type MetricsWindow = "1h" | "24h" | "7d";

@@ -71,6 +71,14 @@ for (const scheme of ["light", "dark"] as const) {
       }
     });
 
+    test(`metrics (${scheme})`, async ({ page }) => {
+      await page.goto("/app/metrics");
+      await expect(page.getByTestId("stat-turns")).toBeVisible();
+      await expect(page.getByTestId("stat-jobs")).toBeVisible();
+      await expect(page.getByTestId("stat-documents")).toBeVisible();
+      expect(await audit(page, `metrics ${scheme}`)).toEqual([]);
+    });
+
     test(`chat (${scheme})`, async ({ page }) => {
       await ask(page);
       expect(await audit(page, `chat ${scheme}`)).toEqual([]);
@@ -175,5 +183,9 @@ for (const width of [1280, 768]) {
     await page.getByTestId("citation-marker").first().click();
     await expect(page.getByTestId("cited-sentence")).toBeVisible();
     expect(await overflow(), "chat").toBeLessThanOrEqual(0);
+
+    await page.goto("/app/metrics");
+    await expect(page.getByTestId("stat-turns")).toBeVisible();
+    expect(await overflow(), "metrics").toBeLessThanOrEqual(0);
   });
 }

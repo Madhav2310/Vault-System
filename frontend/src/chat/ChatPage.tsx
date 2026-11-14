@@ -43,7 +43,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
 
   const [activeScope, setActiveScope] = useState<string[] | null>(null);
   const abort = useRef<AbortController | null>(null);
-  const pendingId = useRef<string | null>(null);
+  const pendingId = useRef<{ key: string; id: string } | null>(null); // client_message_id kept for a retry of the same turn
   const live = useRef<string | null>(null); // session id whose messages are local (just created or streaming)
   const autoStarted = useRef<string | null>(null);
   const logRef = useRef<HTMLOListElement>(null);
@@ -102,14 +102,18 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
 
   useEffect(() => () => abort.current?.abort(), []);
 
+  /** One turn: a typed question, or a re-ask of an earlier message (`question` is only what the pair shows). */
   const send = useCallback(
-    async (content: string, sid: string) => {
-      const text = content.trim();
+    async (turn: { content: string } | { reaskOf: string; question: string }, sid: string) => {
+      const reaskOf = "reaskOf" in turn ? turn.reaskOf : null;
+      const text = ("content" in turn ? turn.content : turn.question).trim();
       if (!text) return;
       setFailure(null);
       setBusy(true);
-      const clientId = pendingId.current ?? crypto.randomUUID();
-      pendingId.current = clientId;
+      const key = reaskOf ? `reask:${reaskOf}` : `ask:${text}`;
+      // A retry of the same turn reuses its client_message_id; a different turn gets a new one.
+      const clientId = pendingId.current?.key === key ? pendingId.current.id : crypto.randomUUID();
+      pendingId.current = { key, id: clientId };
       const userId = `u-${clientId}`;
       const tmp = `a-${clientId}`;
       setMessages((m) => [...m.filter((x) => x.id !== userId && x.id !== tmp), userMsg(userId, text), pendingAssistant(tmp)]);
@@ -118,7 +122,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
       let ended = false;
       let streamError: string | null = null;
       try {
-        for await (const e of chatApi.send(sid, text, clientId, ctl.signal)) {
+        for await (const e of chatApi.send(sid, reaskOf ? { reaskOf } : { content: text }, clientId, ctl.signal)) {
           if (e.type === "done") ended = true;
           if (e.type === "error") streamError = e.code;
           setMessages((m) => m.map((x) => (x.id === tmp || (x.streaming && x.role === "assistant") ? reduceTurn(x, e) : x)));
@@ -126,11 +130,11 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
         if (!ended && !streamError) throw new NetworkError("Network error: the stream ended early.");
         if (streamError && !ended) {
           setFailure(describeFailure({ stream: streamError }).message);
-          setInput(text);
+          if (!reaskOf) setInput(text);
           return;
         }
         pendingId.current = null;
-        setInput("");
+        if (!reaskOf) setInput("");
         void refreshSessions();
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") return;
@@ -142,7 +146,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
         // Pre-stream failures never produced an answer: drop the optimistic pair and keep the text.
         setMessages((m) => m.filter((x) => x.id !== userId && x.id !== tmp));
         setFailure(f.message);
-        setInput(text);
+        if (!reaskOf) setInput(text);
         if (!f.reuseId) pendingId.current = null;
       } finally {
         setBusy(false);
@@ -186,9 +190,19 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
           return;
         }
       }
-      await send(text, sid);
+      await send({ content: text }, sid);
     },
     [busy, sessionId, scope, startSession, send],
+  );
+
+  const reask = useCallback(
+    async (messageId: string) => {
+      if (busy || !sessionId) return;
+      const i = messages.findIndex((m) => m.id === messageId);
+      const question = messages[i]?.role === "user" ? messages[i]!.content : (messages[i - 1]?.content ?? "");
+      await send({ reaskOf: messageId, question: question || "Re-asked on the latest version" }, sessionId);
+    },
+    [busy, sessionId, messages, send],
   );
 
   // ?q= and ?doc= from the document page: create a scoped session and send the question once.
@@ -273,7 +287,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
           <p className="hint">Ask a question about your documents. Every claim links to the exact passage it came from.</p>
         )}
         <ol className="msgs" ref={logRef} aria-label="Messages" data-testid="messages">
-          {messages.map((m, i) => (
+          {messages.map((m) => (
             <MessageView
               key={m.id}
               msg={m}
@@ -281,7 +295,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
               onOpen={setSource}
               onAsk={(t) => void ask(t)}
               onWhy={setWhy}
-              {...(m.role === "assistant" && i > 0 ? { onReask: () => void ask(messages[i - 1]!.content) } : {})}
+              {...(m.role === "assistant" && !busy && sessionId ? { onReask: (id: string) => void reask(id) } : {})}
             />
           ))}
         </ol>

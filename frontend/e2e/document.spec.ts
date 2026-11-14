@@ -41,6 +41,7 @@ function brief(chunk: string, pages: number[]) {
       { field: "termination", value: "30 days notice", status: "verified", evidence: [cite(chunk, pages)] },
       { field: "governing_law", value: "Delaware", status: "unverified", evidence: [cite(chunk, pages)] },
     ],
+    tone: { label: "formal", note: "Precise legal drafting.", status: "verified", evidence: [cite(chunk, pages)] },
     model: "fake",
     created_at: null,
   };
@@ -96,6 +97,15 @@ test("fact citation highlights sentence", async ({ page }) => {
   await expect(viewer).toContainText("8 › Termination");
 });
 
+test("tone shown with its citation", async ({ page }) => {
+  await mock(page, { doc: DOC, chunk: CHUNK, pages: [3, 3] });
+  await page.goto(`/app/documents/${DOC}`);
+  const tone = page.getByTestId("tone");
+  await expect(tone).toContainText("formal");
+  await tone.getByRole("button", { name: /Citation/ }).click();
+  await expect(page.getByTestId("source-viewer").getByTestId("cited-sentence")).toHaveText(TERMINATE);
+});
+
 test("unverified labelled", async ({ page }) => {
   await mock(page, { doc: DOC, chunk: CHUNK, pages: [3, 3] });
   await page.goto(`/app/documents/${DOC}`);
@@ -139,4 +149,94 @@ test("no page zero", async ({ page }) => {
   await expect(viewer.getByTestId("cited-sentence")).toHaveText(TERMINATE);
   await expect(viewer).not.toContainText(/page\s*0/i);
   await expect(viewer.getByText("Page", { exact: true })).toHaveCount(0);
+});
+
+// --- S19.04 follow-up: new version upload with status, and delete -----------------------------------------
+
+const PROC = "**/v1/versions/*/processing/stream";
+const sse = (event: string, data: object) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+
+function versionJson(no: number, status: string) {
+  return {
+    id: `ver-${no}`, version_no: no, filename: `msa-v${no}.txt`, mime: "text/plain", size_bytes: 100, page_count: null,
+    status, quality: null, error_code: null, created_at: "2026-11-13T10:00:00Z", ready_at: null,
+  };
+}
+
+async function mockVersions(page: Page, state: { versions: ReturnType<typeof versionJson>[]; current: string; uploads: string[]; deletes: number }) {
+  await page.addInitScript(() => localStorage.setItem("vault.apiKey", "vk_test_demo"));
+  const json = (body: unknown, status = 200) => ({ status, contentType: "application/json", body: JSON.stringify(body) });
+  await page.route("**/v1/documents?**", (r) => r.fulfill(json({ items: [], next_cursor: null })));
+  await page.route("**/v1/documents/**", (r) => {
+    const req = r.request();
+    const path = new URL(req.url()).pathname;
+    if (req.method() === "DELETE") {
+      state.deletes++;
+      return r.fulfill({ status: 204 });
+    }
+    if (req.method() === "POST" && path.endsWith("/versions")) {
+      state.uploads.push(req.headers()["content-type"] ?? "");
+      state.versions = [...state.versions, versionJson(2, "processing")];
+      return r.fulfill(json({ document_id: DOC, version_id: "ver-2", job_id: "j", status: "processing", deduplicated: false }, 202));
+    }
+    if (path.endsWith("/brief")) return r.fulfill(json({ status: "failed", version_id: null, tags: [], suggested_questions: [], facts: [] }));
+    return r.fulfill(json({ id: DOC, title: "Master services agreement", status: "enriched", current_version_id: state.current, versions: state.versions }));
+  });
+}
+
+test("upload a new version with status", async ({ page }) => {
+  const state = { versions: [versionJson(1, "enriched")], current: "ver-1", uploads: [] as string[], deletes: 0 };
+  await mockVersions(page, state);
+  // The processing stream stays open until the test releases it, so the reload after `done` is deterministic.
+  let release: () => void = () => {};
+  const gate = new Promise<void>((res) => (release = res));
+  await page.route(PROC, async (r) => {
+    await gate;
+    await r.fulfill({
+      status: 200,
+      contentType: "text/event-stream",
+      body: sse("stage", { name: "extract", status: "succeeded", attempt: 1, at: "t" }) + sse("done", { status: "enriched", error_code: null }),
+    });
+  });
+  await page.goto(`/app/documents/${DOC}`);
+  const rows = page.getByTestId("version-row");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText("Version 1 (current)");
+
+  await page.getByLabel("Upload a new version").setInputFiles({ name: "msa-v2.txt", mimeType: "text/plain", buffer: Buffer.from("Updated terms.\n") });
+  await expect(page.getByTestId("version-message")).toContainText("New version uploaded");
+  expect(state.uploads).toHaveLength(1);
+  expect(state.uploads[0]).toContain("multipart/form-data");
+  await expect(rows).toHaveCount(2);
+  await expect(rows.first()).toContainText("Version 2");
+  // The processing stream finishes: the version list reloads and shows it as ready and current.
+  state.versions = [{ ...versionJson(1, "superseded") }, { ...versionJson(2, "enriched") }];
+  state.current = "ver-2";
+  release();
+  await expect(rows.first()).toContainText("Version 2 (current)");
+  await expect(rows.first()).toHaveAttribute("data-status", "enriched");
+  await expect(rows.last()).toHaveAttribute("data-status", "superseded");
+});
+
+test("new version rejects an oversized file client-side", async ({ page }) => {
+  const state = { versions: [versionJson(1, "enriched")], current: "ver-1", uploads: [] as string[], deletes: 0 };
+  await mockVersions(page, state);
+  await page.goto(`/app/documents/${DOC}`);
+  await page.getByLabel("Upload a new version").setInputFiles({ name: "big.txt", mimeType: "text/plain", buffer: Buffer.alloc(26 * 1024 * 1024, "a") });
+  await expect(page.getByRole("alert").filter({ hasText: "25 MB" })).toBeVisible();
+  expect(state.uploads).toHaveLength(0);
+});
+
+test("delete document", async ({ page }) => {
+  const state = { versions: [versionJson(1, "enriched")], current: "ver-1", uploads: [] as string[], deletes: 0 };
+  await mockVersions(page, state);
+  await page.goto(`/app/documents/${DOC}`);
+  await page.getByRole("button", { name: "Delete document" }).click();
+  await expect(page.getByRole("dialog")).toContainText("Delete this document?");
+  await page.getByRole("button", { name: "Cancel" }).click();
+  expect(state.deletes).toBe(0);
+  await page.getByRole("button", { name: "Delete document" }).click();
+  await page.getByRole("dialog").getByRole("button", { name: "Delete" }).click();
+  await expect(page).toHaveURL(/\/app\/?$/);
+  expect(state.deletes).toBe(1);
 });
