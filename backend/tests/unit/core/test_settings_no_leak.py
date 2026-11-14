@@ -73,17 +73,18 @@ def test_answer_version_8_is_selectable_and_only_adds_the_relabel_rule(
     assert "own label" in added[0] and "do not abstain" in added[0]
 
 
-def test_answer_version_9_selects_the_detail_discipline_prompt(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.mark.parametrize("version", [9, 10, 11])
+def test_answer_versions_9_to_11_select_their_prompt(monkeypatch: pytest.MonkeyPatch, version: int) -> None:
     from app.chat.nodes.generate import answer_prompt
     from app.llm.prompts import default_registry
 
     monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://u:p@h/db")
     monkeypatch.setenv("REDIS_URL", "redis://h/0")
-    monkeypatch.setenv("CHAT_ANSWER_VERSION", "9")
+    monkeypatch.setenv("CHAT_ANSWER_VERSION", str(version))
     s = Settings(_env_file=None)  # type: ignore[call-arg]
-    assert answer_prompt(s) == ("answer_rag", 9)
+    assert answer_prompt(s) == ("answer_rag", version)
     reg = default_registry()
-    v7, v9 = reg.get("answer_rag", 7), reg.get("answer_rag", 9)
+    v7, v9 = reg.get("answer_rag", 7), reg.get("answer_rag", version)
     assert (v9.role, v9.purpose, v9.output, v9.effort, v9.max_tokens) == (
         v7.role,
         v7.purpose,
@@ -91,3 +92,12 @@ def test_answer_version_9_selects_the_detail_discipline_prompt(monkeypatch: pyte
         v7.effort,
         v7.max_tokens,
     )
+
+
+def test_answer_prompt_11_is_7_with_only_the_example_replaced() -> None:
+    from app.llm.prompts import default_registry
+
+    reg = default_registry()
+    seven, eleven = reg.get("answer_rag", 7).body.splitlines(), reg.get("answer_rag", 11).body.splitlines()
+    changed = [(a, b) for a, b in zip(seven, eleven, strict=True) if a != b]
+    assert len(changed) == 1 and "Norden" in changed[0][0] and "Norden" not in changed[0][1]
