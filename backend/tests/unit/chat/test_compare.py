@@ -76,6 +76,6 @@ def test_name_missing_sides() -> None:
 
 
 def test_prompt_contract() -> None:
-    p = default_registry().get("answer_compare", 1)
+    p = default_registry().get("answer_compare", 3)
     assert (p.output, p.role, p.purpose, p.version) == ("segments", "balanced", "generate", 1)
     assert "markdown table" in p.body and "Nothing was found" in p.body
