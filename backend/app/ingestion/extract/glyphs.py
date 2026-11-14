@@ -208,7 +208,8 @@ def dedupe_chars_fast(
 
     Same selection (cluster identical glyphs by text/font/size and position within `tolerance`, keep the
     leftmost of each cluster) and the same output order (original order); the order comes from an id->index
-    map instead of `list.index`. Profiled on a 121-page 10-K: ~25 s of 37 s (docs/progress.md S16.05)."""
+    map instead of `list.index`. Profiled on a 121-page 10-K: ~25 s of 37 s
+    (docs/status/progress.md S16.05)."""
     import itertools
     from operator import itemgetter
 

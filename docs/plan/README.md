@@ -22,7 +22,7 @@ Deps: S1.01 · Design: §6.1 · Files: app/documents/sniff.py
 Do: one or two sentences of scope.
 - [ ] AC1 <one observable fact> — <verification>
 - [ ] AC2 …
-Evidence: what to paste into docs/progress.md
+Evidence: what to paste into docs/status/progress.md
 ```
 - **Atomic task**: one cohesive change, reviewable on its own, usually ≤ ~300 changed lines. If a task grows past that, split it and give the new tasks IDs like `S1.12a` / `S1.12b`.
 - **Atomic AC**: checks **exactly one** observable fact, verified by **exactly one** of:
@@ -34,7 +34,7 @@ Evidence: what to paste into docs/progress.md
 
 ### Threshold policy
 - **[A] absolute**: correctness invariants, e.g. citation integrity = 100%, zero duplicate rows, cross-user access → 404. Never relaxed.
-- **[T] target**: a numeric target chosen now from research estimates, e.g. scoped vector query p95 < 50 ms. If a [T] isn't met, record the measured value, stop, and ask the user. **A [T] value may only change with user approval, logged in `docs/progress.md`.**
+- **[T] target**: a numeric target chosen now from research estimates, e.g. scoped vector query p95 < 50 ms. If a [T] isn't met, record the measured value, stop, and ask the user. **A [T] value may only change with user approval, logged in `docs/status/progress.md`.**
 - **[R] relative**: comparisons where no absolute number is known in advance, e.g. "hybrid recall@8 ≥ vector-only recall@8", or "≤ 2 pp below frozen baseline".
 - **Baselines**: the first passing run of an eval metric is frozen to `eval/baselines/<metric>.json` (git-committed). Later tasks compare against it. Re-baselining needs user approval.
 - No AC may say "report X". Every AC states a pass condition.
@@ -42,7 +42,7 @@ Evidence: what to paste into docs/progress.md
 ### Definition of done (per task)
 1. All its ACs are checked.
 2. `make lint typecheck test` passes.
-3. A `docs/progress.md` entry exists: task ID, commit SHA, commands run, real output summary, anything left UNVERIFIED.
+3. A `docs/status/progress.md` entry exists: task ID, commit SHA, commands run, real output summary, anything left UNVERIFIED.
 4. `AI_USAGE.md` is updated if Claude-assisted work involved corrections or prompt iterations.
 5. One commit per task, with the message prefixed by the task ID (`S1.02: magic-byte sniffing`).
 
@@ -93,7 +93,7 @@ Balanced (user decision 2026-11-12; re-based on OpenAI 2026-11-13, research 06 �
 8. **S9.14–S9.16** (Tier B screens, S9 gate)
 9. **S10** (starts with the user's golden-set review S10.01 and the post-review re-evaluation S10.02)
 
-### Plan v3 — plan of record from 2026-11-13 (user decision, after the research in `reports/Vault rebuild strategy research.md`)
+### Plan v3 — plan of record from 2026-11-13 (user decision, after the research in `docs/research/reports/Vault rebuild strategy research.md`)
 **Read `docs/plan/v3.md` first** (execution guide: rules, commands, root-cause notes, gotchas). Order: **S16 → S17 → S18 → S19 → S20**. Unfinished tasks of S11, S13, S14 (S14.02, S14.04, S14.06 AC4-5, S14.07) and S15 are superseded by v3 tasks (each superseded AC names its replacement). S12 leftovers (live ACs) are run inside S17.
 
 ### Plan v2 — superseded by v3 (kept for history) from 2026-11-13 (user decision)
@@ -119,7 +119,7 @@ Why: after S0 nothing the spec asks for existed yet, and the spec prefers "a ful
 | C3 chat and metrics (= M0) | S3.01 S3.02 S3.03 S3.04 S3.05 S3.06 S3.07 S3.08 S3.09 S3.10 S3.11 S3.15 S7.01 S7.02 S7.03 | `scripts/demo_core.sh` (upload → ready → ask → cited answer → history → metrics) exits 0; sampled grounding baseline; review pass |
 
 Rules for the core path:
-- **Dependency overrides**: a dependency on a slice gate (S1.32, S2.21) or on S5.16 is satisfied by the core tasks of the earlier checkpoints plus green `make ci && make test`. All other dependencies of core tasks are themselves core tasks (checked with the closure script recorded in `docs/progress.md`).
+- **Dependency overrides**: a dependency on a slice gate (S1.32, S2.21) or on S5.16 is satisfied by the core tasks of the earlier checkpoints plus green `make ci && make test`. All other dependencies of core tasks are themselves core tasks (checked with the closure script recorded in `docs/status/progress.md`).
 - **ACs that need deferred tasks stay open** and are listed in the checkpoint report (e.g. S3.15 AC5 highlight precision needs S1.28–S1.30). A task with such an AC is "core-done", not done, and its checkbox stays empty until the AC passes.
 - **Review pass at every checkpoint**: a code review of the diff since the previous checkpoint before reporting (the post-S0 self-review found three bugs that the tests missed, F-023).
 - Live calls stay sampled and capped (`--max-usd`), within the $30 engine budget.
