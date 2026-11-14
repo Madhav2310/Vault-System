@@ -90,3 +90,20 @@ def test_collapse_takes_the_number_only_sentences_after_the_label() -> None:
     on = focus_window(text, spans, q, 8, 1050, collapse=True)
     assert "2,213,556" not in off
     assert "2,213,556" in on and "2,494,435" in on and "1,907,231" not in on
+
+
+def test_chunk_without_leaders_gets_the_same_window_with_collapse_on() -> None:
+    parts = [
+        "Intro text about the agreement.",
+        "The fee is payable within",
+        "30",
+        "45",
+        "Other terms follow.",
+    ]
+    parts += ["Unrelated clause about notices and addresses for service."] * 6
+    text, spans = "", []
+    for r in parts:
+        text += (" " if text else "") + r
+        spans.append((len(text) - len(r), len(text)))
+    q = "fee payable within"
+    assert focus_window(text, spans, q, 8, 1050, collapse=True) == focus_window(text, spans, q, 8, 1050)

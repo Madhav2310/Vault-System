@@ -87,11 +87,15 @@ def focus_window(
     at the word limit. The result is also capped at `max_chars` (word boundary): the reranker input limit.
 
     `collapse` first collapses dot leaders (see `collapse_leaders`) so the character budget goes to labels and
-    numbers, and the window then also takes the number-only sentences that follow its last sentence (the row's
-    values: they add no query stem, so the stem count alone never reaches them); off, the output is unchanged.
+    numbers, and, only when a leader was collapsed, the window then also takes the number-only sentences that
+    follow its last sentence (the row's values: they add no query stem, so the stem count alone never reaches
+    them); a chunk without leaders, or `collapse` off, gets the unchanged window.
     Reranker input only, never evidence (I1)."""
+    collapsed = False
     if collapse:
-        text, sentences = collapse_leaders(text, sentences)
+        new_text, new_sentences = collapse_leaders(text, sentences)
+        collapsed = new_text != text  # a chunk without leaders keeps exactly the uncollapsed window
+        text, sentences = new_text, new_sentences
     if _words(text) <= max_words and len(text) <= max_chars:
         return text
     q = stems(query)
@@ -115,7 +119,7 @@ def focus_window(
     assert best is not None
     score, neg_i, j = best
     i = -neg_i
-    while collapse and j + 1 < len(spans) and not _LETTERS.search(text[spans[j + 1][0] : spans[j + 1][1]]):
+    while collapsed and j + 1 < len(spans) and not _LETTERS.search(text[spans[j + 1][0] : spans[j + 1][1]]):
         grown = text[spans[i][0] : spans[j + 1][1]]  # numeric-only sentences are the cells of the last row
         if _words(grown) > max_words or len(grown) > max_chars:
             break
