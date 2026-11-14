@@ -68,6 +68,7 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
         )
     if floor_on(deps.gateway.settings):
         result = floor_per_doc(result, state.scope)
+    carry_info: dict[str, int] = {}
     async with deps.sm() as s:
         state.chunks = await load_evidence_chunks(s, ctx.owner_id, list(result.selected))
         carry = deps.gateway.settings.chat_memory_carry_evidence
@@ -76,7 +77,13 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
                 s, ctx.owner_id, ctx.session_id, ctx.run_id, limit=carry
             )
             carried = await load_evidence_chunks(s, ctx.owner_id, prior)
+            before = len(state.chunks)
             state.chunks = merge_carried(state.chunks, carried, set(state.scope.version_ids), limit=carry)
+            carry_info = {
+                "carry_prior": len(prior),
+                "carry_loaded": len(carried),
+                "carried": len(state.chunks) - before,
+            }
     state.retrieval = result
     _near_tie(state, ctx, result)
     state.degraded += result.degraded
@@ -86,6 +93,7 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
         "embed_reused": emb is not None,
         "cache_hit": result.cache_hit,
         "speculative": speculative,
+        **carry_info,
         **result.timings,
     }
     return state
