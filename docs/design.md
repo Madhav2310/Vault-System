@@ -912,7 +912,7 @@ No Kubernetes required; any container platform works. Beyond ~10k DAU: see §23.
 | D25 | Scale validated by calibrated simulation | Full 4.5M-row / 100-user runs on a laptop | User decision; laptop runs would skew results anyway |
 | D26 | Role-based model routing chosen by code per node, route and mode | One model for everything; LLM-chosen routing | Price differs 100× across the line, and per-node quality is measurable (stage E) |
 | D27 | Anthropic adapter kept dormant, enabled only by configuration | Delete it | Already built and tested (S0.13); becomes a stage E comparison if a key arrives |
-| S17.02 | The cross-encoder reranker is not part of the default retrieval (`retrieval@2` is `rerank.kind: none`; `retrieval@2-rerank` keeps it). Rule (pre-set in plan S17.02): keep it only if it is better, or not detectably different with MRR@40 up 0.03 or more, and adds p50 <= 400 ms. Measured on train: recall@8 0.733 without vs 0.683 with (p=0.38); MRR@40 0.480 vs 0.554 (p=0.17); added p50 495 ms. Evidence: `docs/evidence/retrieval_ab.md`, `docs/evidence/reranker_decision.md`. |
+| D28 | Default retrieval has no cross-encoder reranker (`retrieval@2` = `rerank.kind: none`; `retrieval@2-rerank` keeps it) | Always rerank with MiniLM | Pre-set rule (plan S17.02): keep only if better, or not detectably different with MRR@40 up 0.03+ and p50 added latency <= 400 ms. Train: recall@8 0.733 vs 0.683 (p=0.38), MRR@40 0.480 vs 0.554 (p=0.17), added p50 495 ms. See `docs/evidence/reranker_decision.md` |
 
 ---
 
