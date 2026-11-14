@@ -41,7 +41,7 @@ COMPLETE_PROMPT = (
 
 def answer_prompt(settings: Any) -> tuple[str, int]:
     version = getattr(settings, "chat_answer_version", 3)
-    return ("answer_rag", version) if version in (6, 7) else PROMPT
+    return ("answer_rag", version) if version in (6, 7, 8) else PROMPT
 
 
 @dataclass(frozen=True)
