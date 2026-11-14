@@ -1,0 +1,59 @@
+.metrics-window {
+  max-width: 220px;
+  margin: var(--s3) 0;
+}
+.metrics-section {
+  margin: var(--s5) 0;
+  padding-top: var(--s4);
+  border-top: 1px solid var(--line);
+}
+.stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: var(--s3);
+  margin: var(--s3) 0;
+}
+.stat {
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: var(--s3);
+}
+.stat dt {
+  font-size: 13px;
+  color: var(--muted);
+}
+.stat dd {
+  margin: var(--s1) 0 0;
+  font: 500 20px var(--font-head);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.counts-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s5);
+  align-items: flex-start;
+}
+.counts {
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: var(--s3) 0;
+  min-width: 220px;
+}
+.counts caption {
+  text-align: left;
+  font-weight: 500;
+  color: var(--ink);
+  padding-bottom: var(--s1);
+}
+.counts th,
+.counts td {
+  text-align: left;
+  padding: var(--s1) var(--s3) var(--s1) 0;
+  border-bottom: 1px solid var(--line);
+  font-weight: 400;
+}
+.counts thead th {
+  color: var(--muted);
+  font-size: 13px;
+}

@@ -75,7 +75,7 @@ export function chatPath(documentId: string, question: string): string {
 }
 
 export interface Route {
-  name: "library" | "document" | "chat";
+  name: "library" | "document" | "chat" | "metrics";
   id?: string;
   params: URLSearchParams;
 }
@@ -88,5 +88,6 @@ export function parseRoute(pathname: string, search: string, base = "/app/"): Ro
   const doc = /^\/documents\/([^/]+)$/.exec(p);
   if (doc) return { name: "document", id: decodeURIComponent(doc[1]!), params };
   if (p === "/chat") return { name: "chat", params };
+  if (p === "/metrics") return { name: "metrics", params };
   return { name: "library", params };
 }

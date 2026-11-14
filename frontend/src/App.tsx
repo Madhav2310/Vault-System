@@ -4,6 +4,7 @@ import { ChatPage } from "./chat/ChatPage";
 import { DocumentPage } from "./document/DocumentPage";
 import { hrefFor, linkClick, useRoute } from "./document/nav";
 import { Library } from "./library/Library";
+import { MetricsPage } from "./metrics/MetricsPage";
 
 /** Demo auth assumption (S19): the API key is typed here and kept in localStorage. */
 function KeyScreen({ onSaved }: { onSaved: () => void }) {
@@ -78,7 +79,7 @@ export function App() {
               <a
                 href={hrefFor("/")}
                 onClick={linkClick("/")}
-                aria-current={route.name !== "chat" ? "page" : undefined}
+                aria-current={route.name === "library" || route.name === "document" ? "page" : undefined}
               >
                 Library
               </a>
@@ -88,6 +89,13 @@ export function App() {
                 aria-current={route.name === "chat" ? "page" : undefined}
               >
                 Chat
+              </a>
+              <a
+                href={hrefFor("/metrics")}
+                onClick={linkClick("/metrics")}
+                aria-current={route.name === "metrics" ? "page" : undefined}
+              >
+                Metrics
               </a>
             </nav>
           )}
@@ -110,6 +118,8 @@ export function App() {
             <DocumentPage id={route.id} onUnauthenticated={onUnauth} />
           ) : route.name === "chat" ? (
             <ChatPage route={route} onUnauthenticated={onUnauth} />
+          ) : route.name === "metrics" ? (
+            <MetricsPage onUnauthenticated={onUnauth} />
           ) : (
             <Library onUnauthenticated={onUnauth} />
           )}

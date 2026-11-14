@@ -1,22 +1,21 @@
 import { CitationMarker } from "../source";
-import type { Citation } from "../source";
-import type { EvidenceOut } from "../api/types";
+import { ConflictCallout } from "./ConflictCallout";
+import { Feedback } from "./Feedback";
 import {
-  numberEvidence,
+  numberMessage,
   PARTIAL_REASON,
   staleInfo,
   statusLabel,
+  SUPPORTED_REASON,
+  toCitation,
   trustOf,
   uniqueMarkers,
   UNSUPPORTED_REASON,
   type Msg,
+  type Open,
 } from "./logic";
 
-export interface Open {
-  chunkId: string;
-  sentenceStart: number;
-  sentenceEnd: number;
-}
+export type { Open };
 
 interface Props {
   msg: Msg;
@@ -24,19 +23,8 @@ interface Props {
   onOpen: (o: Open) => void;
   onAsk: (q: string) => void;
   onWhy: (runId: string) => void;
-  onReask?: () => void;
-}
-
-function toCitation(e: EvidenceOut): Citation {
-  return {
-    chunk_id: e.chunk_id,
-    version_no: e.version_no ?? 0,
-    pages: e.pages,
-    section_path: null,
-    sentence_start: e.sentence_start,
-    sentence_end: e.sentence_end,
-    cited_text: e.cited_text ?? "",
-  };
+  /** Ask the question of message `id` again on the current document versions. */
+  onReask?: (id: string) => void;
 }
 
 export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask }: Props) {
@@ -47,7 +35,7 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask }: Pr
       </li>
     );
   }
-  const numbers = numberEvidence(msg.segments);
+  const { segments: numbers, conflicts: conflictNumbers } = numberMessage(msg.segments, msg.conflicts);
   const abstain = msg.responseType === "abstain";
   const stale = staleInfo(msg);
   const failed = msg.errorCode !== null || msg.responseType === "error";
@@ -63,7 +51,7 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask }: Pr
         <p className="notice" data-testid="stale-banner">
           This answer used an older version of a document.{" "}
           {onReask && (
-            <button type="button" className="btn btn-quiet" onClick={onReask}>
+            <button type="button" className="btn btn-quiet" onClick={() => onReask(msg.id)}>
               {stale.versionNo ? `Re-ask on v${stale.versionNo}` : "Re-ask on the latest version"}
             </button>
           )}
@@ -105,13 +93,18 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask }: Pr
                   <span
                     className="tag tag-warn"
                     tabIndex={0}
-                    title={trust === "unsupported" ? UNSUPPORTED_REASON : PARTIAL_REASON}
+                    title={`${trust === "unsupported" ? UNSUPPORTED_REASON : PARTIAL_REASON}${s.reason ? ` ${s.reason}` : ""}`}
                     aria-label={`${trust === "unsupported" ? "Not supported by its source" : "Partly supported"}. ${
                       trust === "unsupported" ? UNSUPPORTED_REASON : PARTIAL_REASON
-                    }`}
+                    }${s.reason ? ` ${s.reason}` : ""}`}
                     data-testid={`tag-${trust}`}
                   >
                     {trust === "unsupported" ? "not supported by its source" : "partly supported"}
+                  </span>
+                )}
+                {trust === "ok" && s.verdict === "supported" && (
+                  <span className="tag tag-ok" title={SUPPORTED_REASON} data-testid="tag-supported">
+                    supported
                   </span>
                 )}{" "}
               </span>
@@ -121,6 +114,9 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask }: Pr
       ) : (
         msg.content && !msg.streaming && <p>{msg.content}</p>
       )}
+      {msg.conflicts.map((c, i) => (
+        <ConflictCallout key={`${i}-${c.topic}`} conflict={c} numbers={conflictNumbers[i]!} onOpen={onOpen} />
+      ))}
       {msg.errorCode && msg.segments.length > 0 && (
         <p className="notice notice-error" role="alert">
           The answer was cut short. You can ask again.
@@ -144,6 +140,7 @@ export function MessageView({ msg, docCount, onOpen, onAsk, onWhy, onReask }: Pr
           </button>
         </p>
       )}
+      {!msg.streaming && !failed && !msg.id.startsWith("a-") && <Feedback key={msg.id} messageId={msg.id} />}
     </li>
   );
 }

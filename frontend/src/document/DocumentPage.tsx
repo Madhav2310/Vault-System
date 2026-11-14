@@ -1,28 +1,40 @@
-import { useEffect, useState } from "react";
-import { ApiError } from "../api/client";
+import { useCallback, useEffect, useState } from "react";
+import { api, ApiError } from "../api/client";
+import type { DocumentDetail } from "../api/types";
+import { ConfirmDialog } from "../library/ConfirmDialog";
 import { SourceViewer } from "../source/SourceViewer";
 import { friendlyError, getJson, type Citation } from "../source/types";
 import { CustomSummary } from "./CustomSummary";
 import type { Brief } from "./logic";
-import { hrefFor, linkClick } from "./nav";
+import { hrefFor, linkClick, navigate } from "./nav";
 import { SourceGuide } from "./SourceGuide";
+import { Versions } from "./Versions";
 import "./document.css";
 
 const BRIEF_POLL_MS = 3000;
 const BRIEF_POLL_MAX = 40;
 
 export function DocumentPage({ id, onUnauthenticated }: { id: string; onUnauthenticated: () => void }) {
-  const [title, setTitle] = useState<string | null>(null);
+  const [detail, setDetail] = useState<DocumentDetail | null>(null);
   const [brief, setBrief] = useState<Brief | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState<Citation | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  /** Bumped when a version is added or finishes processing: reload the detail and the brief in place. */
+  const [tick, setTick] = useState(0);
+  const refresh = useCallback(() => setTick((t) => t + 1), []);
 
   useEffect(() => {
-    const ctl = new AbortController();
-    setTitle(null);
+    setDetail(null);
     setBrief(null);
     setError(null);
     setOpen(null);
+    setTick(0);
+  }, [id]);
+
+  useEffect(() => {
+    const ctl = new AbortController();
 
     const fail = (e: unknown) => {
       if (e instanceof DOMException && e.name === "AbortError") return;
@@ -30,8 +42,8 @@ export function DocumentPage({ id, onUnauthenticated }: { id: string; onUnauthen
       setError(friendlyError(e, "This document"));
     };
 
-    getJson<{ title: string }>(`/v1/documents/${id}`, { signal: ctl.signal })
-      .then(({ data }) => setTitle(data.title))
+    getJson<DocumentDetail>(`/v1/documents/${id}`, { signal: ctl.signal })
+      .then(({ data }) => setDetail(data))
       .catch(fail);
 
     (async () => {
@@ -45,8 +57,21 @@ export function DocumentPage({ id, onUnauthenticated }: { id: string; onUnauthen
     })().catch(fail);
 
     return () => ctl.abort();
-  }, [id, onUnauthenticated]);
+  }, [id, tick, onUnauthenticated]);
 
+  async function remove() {
+    setConfirmDelete(false);
+    setDeleteError(null);
+    try {
+      await api.deleteDocument(id);
+      navigate("/");
+    } catch (e) {
+      if (e instanceof ApiError && e.status === 401) return onUnauthenticated();
+      setDeleteError(e instanceof ApiError && e.status === 404 ? "This document was already removed." : "Could not delete the document. Try again.");
+    }
+  }
+
+  const title = detail?.title ?? null;
   const shownTitle = title ?? "Document";
 
   return (
@@ -62,6 +87,11 @@ export function DocumentPage({ id, onUnauthenticated }: { id: string; onUnauthen
           {error}
         </p>
       )}
+      {deleteError && (
+        <p className="notice notice-error" role="alert">
+          {deleteError}
+        </p>
+      )}
       <div className={open ? "doc-grid doc-grid-open" : "doc-grid"}>
         <div className="doc-main">
           {!brief && !error && <p className="hint">Loading the source guide…</p>}
@@ -73,6 +103,19 @@ export function DocumentPage({ id, onUnauthenticated }: { id: string; onUnauthen
             <SourceGuide documentId={id} title={shownTitle} brief={brief} onOpen={setOpen} />
           )}
           <CustomSummary documentId={id} title={shownTitle} onOpen={setOpen} />
+          {detail && (
+            <Versions
+              documentId={id}
+              versions={detail.versions ?? []}
+              currentVersionId={detail.current_version_id ?? null}
+              onChanged={refresh}
+            />
+          )}
+          <p className="doc-danger">
+            <button type="button" className="btn btn-quiet btn-danger" onClick={() => setConfirmDelete(true)}>
+              Delete document
+            </button>
+          </p>
         </div>
         {open && (
           <div className="doc-side">
@@ -86,6 +129,15 @@ export function DocumentPage({ id, onUnauthenticated }: { id: string; onUnauthen
           </div>
         )}
       </div>
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Delete this document?"
+          body={`"${shownTitle}" and its answers' sources will be deleted. This cannot be undone.`}
+          confirmLabel="Delete"
+          onConfirm={() => void remove()}
+          onCancel={() => setConfirmDelete(false)}
+        />
+      )}
     </div>
   );
 }

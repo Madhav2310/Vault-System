@@ -1,3 +1,4 @@
+import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 // Written for S19.05; run by `make ui-e2e`. The API is mocked with page.route (deterministic, no fixtures).
@@ -62,6 +63,9 @@ interface Opts {
   stream?: string;
   postStatus?: { status: number; body: object; headers?: Record<string, string> };
   history?: unknown[];
+  /** Filled with the JSON body of every message POST and every feedback POST. */
+  posts?: Record<string, unknown>[];
+  feedback?: Record<string, unknown>[];
 }
 
 async function mock(page: Page, o: Opts = {}) {
@@ -74,8 +78,14 @@ async function mock(page: Page, o: Opts = {}) {
   await page.route(`**/v1/chat/sessions/${SESSION}`, (r) => r.fulfill(json(session)));
   await page.route(`**/v1/chat/sessions/${SESSION}/messages**`, (r: Route) => {
     if (r.request().method() === "GET") return r.fulfill(json({ items: o.history ?? [], next_cursor: null }));
+    o.posts?.push(r.request().postDataJSON() as Record<string, unknown>);
     if (o.postStatus) return r.fulfill(json(o.postStatus.body, o.postStatus.status, o.postStatus.headers));
     return r.fulfill({ status: 200, contentType: "text/event-stream", body: o.stream ?? answerStream });
+  });
+  await page.route("**/v1/feedback", (r) => {
+    const body = r.request().postDataJSON() as Record<string, unknown>;
+    o.feedback?.push(body);
+    return r.fulfill(json({ id: "f1", message_id: body["message_id"], rating: body["rating"], reason: body["reason"] ?? null, segment_ordinal: null, note: null }));
   });
   await page.route("**/v1/chunks/*", (r) =>
     r.fulfill(
@@ -184,4 +194,155 @@ test("history restored", async ({ page }) => {
   await expect(page.getByTestId("user-message")).toContainText("How can the contract end?");
   await page.getByTestId("citation-marker").click();
   await expect(page.getByTestId("cited-sentence")).toHaveText(CITED);
+});
+
+// --- S19.05 follow-up: UI for conflicts, staleness, feedback, quota and the support-check verdict ---------
+
+const CHUNK_B = "77777777-7777-4777-8777-777777777777";
+const FEE_A = "The Services Agreement sets the monthly fee at 4,500 dollars.";
+const FEE_B = "The Pricing Memo states a monthly fee of 5,200 dollars.";
+const side = (chunk: string, title: string, text: string) => ({
+  chunk_id: chunk, document_id: DOC, document_title: title, version_no: 1, pages: null,
+  sentence_start: 0, sentence_end: 1, cited_text: text,
+});
+const conflict = {
+  topic: "Monthly fee",
+  side_a: [side(CHUNK, "Services Agreement", FEE_A)],
+  side_b: [side(CHUNK_B, "Pricing Memo", FEE_B)],
+};
+const histUser = { id: "m-u1", role: "user", content: "What is the monthly fee?", created_at: "2026-11-13T10:00:00Z", response_type: null, coverage_state: null, staleness: null, run_id: null, segments: [], conflicts: [] };
+const histAnswer = (extra: Record<string, unknown> = {}, segments: unknown[] = [{ ordinal: 0, text: "Either side can leave on 30 days notice.", support: "cited", evidence: [evidence] }]) => ({
+  id: "m-a1", role: "assistant", content: "Either side can leave on 30 days notice.", created_at: "2026-11-13T10:00:05Z",
+  response_type: "answer", coverage_state: null, staleness: null, run_id: RUN, followups: [], conflicts: [], segments, ...extra,
+});
+
+test("conflict callout cites both sides", async ({ page }) => {
+  const stream = [
+    frame("run.started", { message_id: "m-u1" }),
+    frame("segment", { index: 0, text: "The sources disagree about the fee.", support: "cited", evidence: [side(CHUNK, "Services Agreement", FEE_A)] }),
+    done("answer", "The sources disagree about the fee.").replace('"latency_ms":900', '"latency_ms":900,"conflicts":' + JSON.stringify([conflict])),
+  ].join("");
+  await mock(page, { stream });
+  await ask(page, "What is the monthly fee?");
+  const callout = page.getByTestId("conflict");
+  await expect(callout).toContainText("Sources disagree");
+  await expect(callout).toContainText("Monthly fee");
+  const sides = callout.getByTestId("conflict-side");
+  await expect(sides).toHaveCount(2);
+  await expect(sides.nth(0)).toContainText(FEE_A);
+  await expect(sides.nth(0)).toContainText("Services Agreement");
+  await expect(sides.nth(1)).toContainText(FEE_B);
+  await expect(sides.nth(1)).toContainText("Pricing Memo");
+  // The passage cited in the answer keeps its number [1] in the callout; the other side is [2].
+  await expect(sides.nth(0).getByTestId("citation-marker")).toHaveText("[1]");
+  await expect(sides.nth(1).getByTestId("citation-marker")).toHaveText("[2]");
+  await sides.nth(1).getByTestId("citation-marker").click();
+  await expect(page.getByTestId("source-viewer")).toBeVisible();
+  for (const scheme of ["light", "dark"] as const) {
+    await page.emulateMedia({ colorScheme: scheme, reducedMotion: "reduce" });
+    const bad = (await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"]).analyze()).violations.filter(
+      (v) => v.impact === "serious" || v.impact === "critical",
+    );
+    expect(bad.map((v) => v.id), `axe ${scheme}`).toEqual([]);
+  }
+});
+
+test("conflicts are restored from history", async ({ page }) => {
+  await mock(page, { history: [histUser, histAnswer({ conflicts: [conflict] })] });
+  await page.goto(`/app/chat?s=${SESSION}`);
+  await expect(page.getByTestId("conflict-side")).toHaveCount(2);
+  await expect(page.getByTestId("conflict")).toContainText(FEE_B);
+});
+
+test("stale banner re-asks on the newer version", async ({ page }) => {
+  const posts: Record<string, unknown>[] = [];
+  await mock(page, {
+    posts,
+    stream: answerStream.replace('"message_id":"m-a1"', '"message_id":"m-a2"'),
+    history: [histUser, histAnswer({ staleness: { stale: true, since: "2026-11-13T11:00:00Z", newer_version_no: 2 } })],
+  });
+  await page.goto(`/app/chat?s=${SESSION}`);
+  await expect(page.getByTestId("stale-banner")).toContainText("older version");
+  await page.getByRole("button", { name: "Re-ask on v2" }).click();
+  await expect(page.getByTestId("segment")).toHaveCount(4); // 1 restored + 3 streamed
+  expect(posts).toHaveLength(1);
+  expect(posts[0]!["reask_of"]).toBe("m-a1");
+  expect("content" in posts[0]!).toBe(false);
+  expect(typeof posts[0]!["client_message_id"]).toBe("string");
+  await expect(page.getByTestId("user-message")).toHaveCount(2); // the original question is shown again
+  await expect(page.getByTestId("user-message").last()).toContainText("What is the monthly fee?");
+});
+
+test("no stale banner for a current answer", async ({ page }) => {
+  await mock(page, { history: [histUser, histAnswer()] });
+  await page.goto(`/app/chat?s=${SESSION}`);
+  await expect(page.getByTestId("citation-marker")).toBeVisible();
+  await expect(page.getByTestId("stale-banner")).toHaveCount(0);
+});
+
+test("feedback up and down with a reason", async ({ page }) => {
+  const feedback: Record<string, unknown>[] = [];
+  await mock(page, { feedback });
+  await ask(page);
+  const fb = page.getByTestId("feedback");
+  await fb.getByRole("button", { name: "Helpful", exact: true }).click();
+  await expect(page.getByTestId("feedback-status")).toContainText("saved");
+  expect(feedback).toEqual([{ message_id: "m-a1", rating: "up" }]);
+  await expect(fb.getByRole("button", { name: "Helpful", exact: true })).toHaveAttribute("aria-pressed", "true");
+
+  await fb.getByRole("button", { name: "Not helpful" }).click();
+  await expect(fb.getByRole("button", { name: "Not helpful" })).toHaveAttribute("aria-pressed", "true");
+  await fb.getByLabel("What was wrong? (optional)").selectOption("unsupported");
+  await expect.poll(() => feedback.length).toBe(3);
+  expect(feedback[1]).toEqual({ message_id: "m-a1", rating: "down" });
+  expect(feedback[2]).toEqual({ message_id: "m-a1", rating: "down", reason: "unsupported" });
+});
+
+test("feedback failure is reported", async ({ page }) => {
+  await mock(page);
+  await page.route("**/v1/feedback", (r) => r.fulfill(json({ type: "about:blank", title: "Not found", status: 404, code: "not_found", detail: null, retryable: false }, 404)));
+  await ask(page);
+  await page.getByTestId("feedback").getByRole("button", { name: "Helpful", exact: true }).click();
+  await expect(page.getByTestId("feedback")).toContainText("could not be saved");
+});
+
+test("quota exceeded", async ({ page }) => {
+  await mock(page, {
+    postStatus: {
+      status: 429,
+      headers: { "Retry-After": String(5 * 3600) },
+      body: { type: "about:blank", title: "Quota exceeded", status: 429, code: "quota_exceeded", detail: "Daily cost quota reached", retryable: true },
+    },
+  });
+  await ask(page, "Keep me too");
+  const err = page.getByTestId("chat-error");
+  await expect(err).toContainText("midnight UTC");
+  await expect(err).toContainText("about 5 hours");
+  await expect(err).not.toContainText("too quickly");
+  await expect(page.getByLabel("Your question")).toHaveValue("Keep me too");
+});
+
+test("support-check verdict and reason from history", async ({ page }) => {
+  const seg = (ordinal: number, verification: string | null, verification_reason: string | null) => ({
+    ordinal, text: `Claim ${ordinal}.`, support: "cited", evidence: [evidence], verification, verification_reason,
+  });
+  await mock(page, {
+    history: [
+      histUser,
+      histAnswer({}, [
+        seg(0, "supported", null),
+        seg(1, "partial", "The passage gives 30 days but not the form of notice."),
+        seg(2, "unsupported", "The passage does not mention fees rising."),
+        seg(3, null, null),
+      ]),
+    ],
+  });
+  await page.goto(`/app/chat?s=${SESSION}`);
+  await expect(page.getByTestId("segment")).toHaveCount(4);
+  await expect(page.getByTestId("tag-supported")).toHaveCount(1);
+  await expect(page.getByTestId("tag-partial")).toHaveText("partly supported");
+  await expect(page.getByTestId("tag-partial")).toHaveAttribute("title", /not the form of notice/);
+  await expect(page.getByTestId("tag-unsupported")).toHaveText("not supported by its source");
+  await expect(page.getByTestId("tag-unsupported")).toHaveAttribute("title", /does not mention fees rising/);
+  await expect(page.getByTestId("segment").nth(3).getByTestId("tag-supported")).toHaveCount(0); // no check ran: no label
 });
