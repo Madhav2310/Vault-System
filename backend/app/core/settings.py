@@ -116,6 +116,10 @@ class Settings(BaseSettings):
     # --- compare quotas + coverage gate (S22.05): answer_compare@2 + repair; off until the A/B decides ---
     chat_compare_quota: bool = False
 
+    # --- scored abstention (S22.07): logistic combiner (config/abstain@1.yaml) replaces the binary gate;
+    # off until calibrated on a v2 run and the paired A/B accepts it ---
+    chat_abstain_scored: bool = False
+
     # --- warm voice (S23.01): appends prompts/voice@1.md to the answer prompts; off until the A/B decides ---
     chat_voice: bool = False
 
