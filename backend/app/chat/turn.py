@@ -127,7 +127,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
             "prompts": [
                 "analyze_query@2",
                 "answer_compare@1" if state.compare else "answer_rag@3",
-                "support_check@1",
+                f"support_check@{deps.gateway.settings.chat_support_version}",
                 *(recorded_voice(deps.gateway.settings) if gen.call_ids else []),
             ],
             "models": _models(deps.gateway),

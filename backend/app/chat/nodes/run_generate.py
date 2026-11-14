@@ -15,26 +15,32 @@ from app.chat.voice import generate_call as voice_call
 from app.llm.errors import LlmError
 
 
+def generate_kwargs(state: TurnState, ctx: TurnCtx) -> dict[str, Any]:
+    """Every `generate` argument of this turn except `on_segment` (shared with the S22.06 regeneration)."""
+    assert state.analysis is not None
+    full = state.mode == "full_context"
+    call: dict[str, Any] = {"route": state.analysis.intent if full else "qa"}
+    call.update(compare_call(state) if state.compare else {})  # S18.06: route, prompt, coverage
+    call.update(plan_call(state, ctx.deps.gateway.settings, full))  # S22.04: empty unless switched on
+    call.update(voice_call(ctx.deps.gateway.settings))  # S23.01: empty unless switched on
+    return dict(
+        gateway=ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
+        question=state.analysis.standalone_query, **call,
+        mode="full_context" if full else "rag", memory=state.memory,
+        run_id=ctx.run_id, budget=ctx.budget,
+    )  # fmt: skip
+
+
 async def generate(state: TurnState, ctx: TurnCtx) -> TurnState:
     assert state.analysis is not None
     state.evidence = build_evidence(state.chunks)
-    full = state.mode == "full_context"
 
     async def on_segment(seg: ResolvedSegment) -> None:
         ctx.mark_first_segment()
         await emit_segment(ctx, seg, state.evidence)
 
     try:
-        call: dict[str, Any] = {"route": state.analysis.intent if full else "qa"}
-        call.update(compare_call(state) if state.compare else {})  # S18.06: route, prompt, coverage
-        call.update(plan_call(state, ctx.deps.gateway.settings, full))  # S22.04: empty unless switched on
-        call.update(voice_call(ctx.deps.gateway.settings))  # S23.01: empty unless switched on
-        gen = await generate_answer(
-            ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
-            question=state.analysis.standalone_query, **call,
-            mode="full_context" if full else "rag", memory=state.memory,
-            run_id=ctx.run_id, budget=ctx.budget, on_segment=on_segment,
-        )  # fmt: skip
+        gen = await generate_answer(**generate_kwargs(state, ctx), on_segment=on_segment)
     except LlmError as e:  # a handled failure: the turn completes with an error response
         state.generation = plain("error", ERROR_TEXT, (TURN_ERROR, e.error_type))
         state.last_status, state.last_error = "failed", e.error_type
