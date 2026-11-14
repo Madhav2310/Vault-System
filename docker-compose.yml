@@ -82,7 +82,7 @@ services:
     environment:
       <<: *app-env
       OTEL_SERVICE_NAME: vault-worker-ai
-    command: ["celery", "-A", "app.worker.celery_app", "worker", "-Q", "ai,maintenance", "-c", "2", "-n", "ai@%h", "--loglevel", "INFO"]
+    command: ["celery", "-A", "app.worker.celery_app", "worker", "-Q", "ai,maintenance", "-c", "${AI_WORKER_CONCURRENCY:-4}", "-n", "ai@%h", "--loglevel", "INFO"]
     healthcheck:
       <<: *celery-health
       test: ["CMD-SHELL", "celery -A app.worker.celery_app inspect ping -d ai@$$HOSTNAME --timeout 10"]
