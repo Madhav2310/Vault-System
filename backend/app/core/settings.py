@@ -125,9 +125,6 @@ class Settings(BaseSettings):
     # --- support check (S22.06): 2 = support_check@2 (prunes unneeded citations, removes unsupported
     # segments, one regeneration if every segment fails); 1 until the paired A/B accepts it ---
     chat_support_version: Literal[1, 2] = 1
-    # --- analysis prompt: 4 = analyze_query@4 (the default: @2 with neutral document names in its examples);
-    # 3 = analyze_query@3 (shorter prompt and output budget); 2 = the earlier default ---
-    chat_analyze_version: Literal[2, 3, 4] = 4
 
     # --- scored abstention (S22.07): logistic combiner (config/abstain@1.yaml) replaces the binary gate;
     # off until calibrated on a v2 run and the paired A/B accepts it ---
@@ -149,7 +146,7 @@ class Settings(BaseSettings):
     otel_service_name: str = "vault-api"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 
-    @field_validator("chat_support_version", "chat_analyze_version", mode="before")
+    @field_validator("chat_support_version", mode="before")
     @classmethod
     def _int_from_env(cls, v: object) -> object:
         """Env vars arrive as strings ("2"); the Literal[int] fields need the int."""

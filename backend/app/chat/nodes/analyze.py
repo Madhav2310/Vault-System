@@ -24,7 +24,7 @@ from app.llm.gateway import Budget, LlmGateway
 
 _log = get_logger("vault.chat.analyze")
 
-PROMPT: tuple[str, int] = ("analyze_query", 4)  # the default; `chat_analyze_version` selects another
+PROMPT: tuple[str, int] = ("analyze_query", 4)
 
 # Static first (S22.09): what rarely changes within a session comes first and the question last, so the
 # provider's prompt cache covers the system prompt plus the documents/summary/history prefix.
@@ -39,7 +39,7 @@ INPUT_ORDER = (
 
 
 def prompt_for(gateway: LlmGateway) -> tuple[str, int]:
-    return ("analyze_query", gateway.settings.chat_analyze_version)
+    return PROMPT
 
 
 def render_ordered(inputs: Mapping[str, Any]) -> str:

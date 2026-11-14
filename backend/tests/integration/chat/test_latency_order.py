@@ -1,4 +1,4 @@
-"""S22.09 latency order: cache-friendly request prefixes (static first) and segments streamed before the
+"""Latency order: cache-friendly request prefixes (static first) and segments streamed before the
 support check is called (verdict labels arrive after). Fake provider only."""
 
 import json
@@ -65,10 +65,9 @@ def test_compose_puts_question_last() -> None:
     assert msg.index("<question>") > max(msg.index(t) for t in ("<route>", "<coverage>", "<conflicts>"))
 
 
-@pytest.mark.parametrize("version", [2, 3])
-async def test_analyze_prefix_is_byte_identical_across_questions(version: int) -> None:
+async def test_analyze_prefix_is_byte_identical_across_questions() -> None:
     docs = [ScopeDoc(uuid.uuid4(), "Medalist consulting agreement"), ScopeDoc(uuid.uuid4(), "Pey Dirt")]
-    gw, fake = fake_gateway([structured(OUT), structured(OUT)], chat_analyze_version=version)
+    gw, fake = fake_gateway([structured(OUT), structured(OUT)])
     for q in ("When does it expire?", "Who are the parties?"):
         await analyze_query(gw, question=q, memory=MEM, documents=docs, owner_id=OWNER)
     a, b = fake.requests

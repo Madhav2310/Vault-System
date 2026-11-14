@@ -1,6 +1,6 @@
 """Meta route (design 8.3, S18.05): questions about the vault, answered by allowlisted SQL.
 
-`analyze_query@2` returns a loosely typed `meta_op` (`MetaOpOut`); `validate_op` turns it into a `MetaOp` or
+`analyze_query` returns a loosely typed `meta_op` (`MetaOpOut`); `validate_op` turns it into a `MetaOp` or
 rejects it (`META_OP_REJECTED`, the turn then routes as qa). `run_op` runs one parameterized, owner-scoped
 query per op and composes the answer in code from the rows. The model never writes SQL and never sees rows.
 Key dates cite the verified brief facts' stored evidence (`cited_text` comes from stored sentences).

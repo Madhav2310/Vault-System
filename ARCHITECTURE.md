@@ -397,7 +397,6 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 | Prompt | Role | Purpose | Selected when |
 |---|---|---|---|
 | `analyze_query@4` | fast | Intent, standalone query, dimensions, optional document narrowing, optional meta operation, clarification hint | Default (`backend/app/chat/nodes/analyze.py`) |
-| `analyze_query@3` | fast | The same job in a shorter prompt (about 25% fewer tokens, question last, 500 max tokens) | Switch `CHAT_ANALYZE_VERSION=3` |
 | `answer_rag@12` | balanced | Segments with evidence handles, conflicts and follow-ups; answers every part the question asks, keeps qualifiers and every cited detail, names a document that has no such statement and gives what it does say on the point, stays within the version or document the question names (latest version for current-terms questions), and states no label, superlative, unit, count or figure the cited sentences do not contain | Default (`backend/app/chat/nodes/generate.py`) |
 | `answer_rag@3` | balanced | The short-answer wording ("as short as the question allows"); the plan and calc prompts below build on it | Base of the plan-first and calc prompts |
 | `answer_rag@4` | balanced | `answer_rag@3` plus a `plan` of required elements; code decides coverage | Switch `CHAT_PLAN_FIRST` |
@@ -427,7 +426,6 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 | `CHAT_PLAN_FIRST` | `false` | `answer_rag@4`: a coverage plan, with `ELEMENT_NOT_FOUND` segments for required elements the evidence lacks | Paired dev evaluation |
 | `CHAT_CALC` | `false` | `answer_rag@5`: typed calculations computed in code with `Decimal` (`backend/app/chat/calc.py`) | Paired dev evaluation on the numeric stratum |
 | `CHAT_SUPPORT_VERSION` | `1` | `2` selects `support_check@2`: prune, remove unsupported segments and regenerate once | Paired dev evaluation |
-| `CHAT_ANALYZE_VERSION` | `4` | `3` selects the shorter `analyze_query@3`; `2` is `4` with example document names taken from the evaluation set | Paired dev evaluation plus a live time-to-first-token measurement |
 | `CHAT_ABSTAIN_SCORED` | `false` | Logistic abstention (`backend/config/abstain@1.yaml`, `fitted: false`) in place of the floor gate | Calibration on the train split, then a paired dev evaluation |
 | `CHAT_LOCATE` (+ `CHAT_LOCATE_MIN_CHUNKS` 150, `CHAT_LOCATE_MIN_PAGES` 60) | `false` | Locate loop for long single documents | Paired dev evaluation on long-filing strata |
 | `CHAT_CLARIFY` | `false` | Code-decided clarification chips | Review of the interaction in the UI |

@@ -24,6 +24,7 @@ from app.chat.graph import END, TURN_ERROR, Graph, TurnCtx, TurnDeps, TurnState,
 from app.chat.harness import DEFAULT_LIMITS, TurnBudget
 from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_turn
 from app.chat.nodes._common import ERROR_TEXT, NO_DOCUMENTS, NO_EVIDENCE, flush_segments, plain
+from app.chat.nodes.analyze import PROMPT as ANALYZE_PROMPT
 from app.chat.nodes.compare_retrieve import compare_retrieve
 from app.chat.nodes.gate import gate
 from app.chat.nodes.generate import answer_prompt
@@ -155,7 +156,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
         generation=gen,
         config={
             "prompts": [
-                f"analyze_query@{deps.gateway.settings.chat_analyze_version}",
+                f"analyze_query@{ANALYZE_PROMPT[1]}",
                 f"answer_compare@{compare_prompt(deps.gateway.settings)[1]}"
                 if state.compare
                 else f"answer_rag@{answer_prompt(deps.gateway.settings)[1]}",

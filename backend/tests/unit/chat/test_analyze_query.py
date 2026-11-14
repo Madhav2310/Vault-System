@@ -81,7 +81,7 @@ async def run(*script: Step, question: str = "q?", memory: Memory = NO_MEMORY, d
 
 
 def test_analyze_query_frontmatter() -> None:
-    p = default_registry().get("analyze_query", 2)
+    p = default_registry().get("analyze_query", 4)
     assert (p.role, p.effort, p.output, p.purpose) == ("fast", "none", "schema", "analyze_query")
     assert "untrusted" in p.body.lower() and "<inputs>" in p.body
 
