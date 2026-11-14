@@ -605,7 +605,6 @@ EXPECTED_BEHAVIOUR: dict[str, str] = {
     "false_premise": "Rejects or corrects the false premise instead of answering as if it held.",
     "versioned": "Answers for the document version or date the question depends on, without mixing versions.",
 }
-JUDGES_V2 = ("claims", "support", "abstain")
 CONCURRENCY = 8
 
 

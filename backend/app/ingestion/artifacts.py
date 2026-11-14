@@ -7,7 +7,3 @@ import uuid
 
 def extracted_key(version_id: uuid.UUID) -> str:
     return f"extracted/{version_id}.json.gz"
-
-
-def layout_key(version_id: uuid.UUID) -> str:
-    return f"layouts/{version_id}.json.gz"

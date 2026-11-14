@@ -18,7 +18,6 @@ from opentelemetry.instrumentation.celery import CeleryInstrumentor
 from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
 from opentelemetry.instrumentation.httpx import HTTPXClientInstrumentor
 from opentelemetry.instrumentation.redis import RedisInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
 from opentelemetry.sdk._logs import LoggerProvider, LoggingHandler
 from opentelemetry.sdk._logs.export import BatchLogRecordProcessor
 from opentelemetry.sdk.metrics import MeterProvider
@@ -80,7 +79,3 @@ def setup_telemetry(
 
 def instrument_fastapi(app: FastAPI, tracer_provider: Any = None) -> None:
     FastAPIInstrumentor.instrument_app(app, excluded_urls=EXCLUDED_URLS, tracer_provider=tracer_provider)
-
-
-def instrument_sqlalchemy(engine: Any, tracer_provider: Any = None) -> None:
-    SQLAlchemyInstrumentor().instrument(engine=engine.sync_engine, tracer_provider=tracer_provider)

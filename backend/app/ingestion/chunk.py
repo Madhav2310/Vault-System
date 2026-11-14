@@ -11,7 +11,6 @@ piece back to (page, page_start, page_end), so the text never needs re-normalizi
 """
 
 import hashlib
-import statistics
 from collections.abc import Iterator, Sequence
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -327,8 +326,3 @@ def _chunk_document_v1(doc: ExtractedDocument, title: str) -> list[ChunkDraft]:
             )
         )
     return out
-
-
-def median_tokens(chunks: Sequence[ChunkDraft], kind: str = "text") -> float:
-    sizes = [c.token_count for c in chunks if c.kind == kind]
-    return statistics.median(sizes) if sizes else 0.0

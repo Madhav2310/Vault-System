@@ -12,7 +12,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.logging import get_logger
 from app.ingestion.jobs import DISPATCH_GRACE_S, Enqueue, dispatch
 
-SWEEP_EVERY_S = 60.0
 BATCH = 500
 _log = get_logger("vault.ingestion.sweeper")
 
