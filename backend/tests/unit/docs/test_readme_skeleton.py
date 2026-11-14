@@ -1,4 +1,4 @@
-"""S16.06: quickstart script. The README sections are checked by test_readme.py (S20.01)."""
+"""The quickstart script refuses to run without Docker. The README is checked by test_readme.py."""
 
 import pathlib
 import subprocess

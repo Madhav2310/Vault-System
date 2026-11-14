@@ -4,7 +4,7 @@ Spends real money (asserted: all three documents together < $0.10, each capped b
 `uv run pytest tests/live/insights/test_brief_live.py -s -m live`; excluded from `make ci`. Needs the corpus
 sources in `eval/sources/` (`make eval-fetch`; a worktree falls back to the main checkout's copy) and fails,
 does not skip, when they or OPENAI_API_KEY are missing. Set `BRIEF_SAMPLES_OUT=<path>` to also write the
-briefs (public corpus documents only) as JSON for `docs/evidence/brief_samples.json`.
+briefs (public corpus documents only) as JSON for `eval/baselines/brief_samples.json`.
 """
 
 import asyncio

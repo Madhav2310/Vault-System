@@ -1,4 +1,4 @@
-"""S20.02: the committed chat-turn diagram is generated from the real turn graph."""
+"""The committed chat-turn diagram is generated from the real turn graph."""
 
 import pathlib
 import re

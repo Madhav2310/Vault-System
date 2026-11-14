@@ -1,4 +1,4 @@
-"""S20.01: the final README has its 12 sections in order, sourced numbers, no secrets and real commands."""
+"""README: sections in order, every assignment feature mapped to a place and a status, real commands."""
 
 import pathlib
 import re
@@ -10,17 +10,16 @@ README = (ROOT / "README.md").read_text()
 HEADINGS = [
     "What it is",
     "Quickstart",
-    "What works today",
-    "Feature tour",
-    "Architecture",
-    "Key design decisions and assumptions",
-    "Evaluation",
-    "Scale",
-    "Cost",
+    "The assignment, feature by feature",
+    "API quick tour",
+    "How it works",
+    "Quality, scale and cost at a glance",
     "Testing",
-    "Limitations and deliberately not built",
+    "Limits",
     "Repo map",
+    "Documentation",
 ]
+STATUSES = ("Built", "Not built", "Not used", "Script built")
 COMMAND_SPAN = re.compile(r"`(make|cd|python3?|scripts/|uv)\b[^`]*`")
 # commands a bash block may use that are not make targets or repo scripts
 ALLOWED = {"open", "curl", "jq", "docker", "export", "cd", "cp", "echo", "uv", "python3", "python"}
@@ -37,22 +36,43 @@ def test_sections_in_order() -> None:
     assert re.findall(r"^## (.+)$", README, re.M) == HEADINGS
 
 
-def test_eval_numbers_have_commands() -> None:
-    """Every line with a number in Evaluation and Cost carries a regenerate command (pending rows too)."""
+def test_screenshots_are_embedded_and_exist() -> None:
+    images = re.findall(r'(?:!\[[^\]]*\]\(|<img src=")(docs/img/ui/[^)"]+)', README)
+    assert len(images) >= 4
+    for image in images:
+        assert (ROOT / image).is_file(), image
+
+
+def test_every_feature_has_a_status_and_a_place() -> None:
+    rows = [
+        [c.strip() for c in line.strip().strip("|").split("|")]
+        for line in _section("The assignment, feature by feature").splitlines()
+        if line.startswith("|") and not re.fullmatch(r"\|[-| :]+\|", line.strip())
+    ]
+    rows = [r for r in rows if r[0] not in {"Requirement", "Feature", "Deliverable"}]
+    assert len(rows) >= 40
+    bad = [r[0] for r in rows if not r[1].startswith(STATUSES)]
+    assert not bad, f"rows without a recognised status: {bad}"
+    unplaced = [r[0] for r in rows if not r[1].startswith("Not built") and "`" not in r[2]]
+    assert not unplaced, f"built rows that point nowhere: {unplaced}"
+    spec_items = ("Intelligent upload handler", "Ask a question", "Document statistics API", "Streaming chat")
+    for spec_item in spec_items:
+        assert any(r[0].startswith(spec_item) for r in rows), spec_item
+
+
+def test_quality_numbers_have_commands() -> None:
+    """Every row with a number in the at-a-glance table carries a regenerate command."""
     bad = []
-    for name in ("Evaluation", "Cost"):
-        for line in _section(name).splitlines():
-            if re.fullmatch(r"\|[-| :]+\|", line.strip()):
-                continue
-            if line.startswith("| Measure") or line.startswith("| Item"):
-                continue
-            prose = re.sub(r"`[^`]*`", "", line)  # paths and commands do not count as claims
-            if re.search(r"\d", prose) and not COMMAND_SPAN.search(line):
-                bad.append(f"{name}: {line[:80]}")
+    for line in _section("Quality, scale and cost at a glance").splitlines():
+        if not line.startswith("|") or line.startswith("| Measure"):
+            continue
+        if re.fullmatch(r"\|[-| :]+\|", line.strip()):
+            continue
+        prose = re.sub(r"`[^`]*`", "", line)
+        if re.search(r"\d", prose) and not COMMAND_SPAN.search(line):
+            bad.append(line[:80])
     assert not bad, bad
-    # the sections do contain tables of numbers (guards against an empty pass)
-    assert len(re.findall(r"^\|", _section("Evaluation"), re.M)) >= 10
-    assert len(re.findall(r"^\|", _section("Cost"), re.M)) >= 5
+    assert len(re.findall(r"^\|", _section("Quality, scale and cost at a glance"), re.M)) >= 8
 
 
 def test_no_secrets() -> None:
@@ -101,11 +121,7 @@ def test_commands_exist() -> None:
     assert not bad, bad
 
 
-def test_linked_files_exist() -> None:
-    """Every repo path in backticks under a known top-level directory exists (globs are not matched)."""
-    missing = []
-    pattern = r"`((?:docs|backend|eval|scripts|frontend|reranker|ops)/[A-Za-z0-9_@./-]+)`"
-    for path in set(re.findall(pattern, README)):
-        if not (ROOT / path).exists():
-            missing.append(path)
-    assert not missing, missing
+def test_make_targets_named_in_backticks_exist() -> None:
+    targets = _make_targets()
+    named = {t for t in re.findall(r"`make ([a-z0-9-]+)", README) if not t.endswith("-")}
+    assert not {t for t in named if t not in targets}

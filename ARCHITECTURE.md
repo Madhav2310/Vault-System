@@ -7,7 +7,7 @@ How Vault is built, why each part exists, which models do what, and how any answ
 - **New to the project?** Read the TL;DR, then [section 2](#2-system-map) (the picture), [section 6](#6-chat-turn-graph) (what happens on a question) and [section 8](#8-reasoning-and-explainability) (why every answer can be checked). The rest is reference.
 - **Looking for a rule?** The hard rules are in [section 1](#1-what-vault-is-and-the-principles-behind-it), each with its reason. `CLAUDE.md` repeats them as a checklist for contributors.
 - **Looking for numbers?** Quality and its measurement are in `docs/evaluation.md`; speed, scale, cost and operations are in `docs/operations.md`. This file links to them rather than repeating them.
-- **About to change something?** The table at the end of [section 13](#13-repo-map-and-how-to-run-it), "If you change X, read Y", names the code, the tests and the sections to read first.
+- **About to change something?** The table at the end of [section 13](#13-repo-map-how-to-run-it-and-where-to-look-when-changing-things), "If you change X, read Y", names the code, the tests and the sections to read first.
 
 ## TL;DR
 
