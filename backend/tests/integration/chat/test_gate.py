@@ -18,7 +18,7 @@ ONE = (("Twelve months.", ["E1.0"]),)
 
 
 def cfg(floor: float, enabled: bool = True) -> RetrievalConfig:
-    return get_config("retrieval@2").model_copy(
+    return get_config("retrieval@2-rerank").model_copy(
         update={"gate": GateCfg(high=0.0, floor=floor, enabled=enabled)}
     )
 

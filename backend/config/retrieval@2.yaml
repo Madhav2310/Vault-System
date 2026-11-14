@@ -19,4 +19,4 @@ cache_ttl_s: 3600
 gate:
   high: 0.0              # placeholder (the high-confidence skip is not implemented)
   floor: 0.3803             # top_score below this abstains without generating; set by `python -m eval.calibrate_gate --write`
-  enabled: true         # `--write` turns the gate on together with a calibrated floor
+  enabled: false        # off: on answers it refused 3 of 44 answerable train items (S17.13 RCA); `--write` turns the gate on together with a calibrated floor

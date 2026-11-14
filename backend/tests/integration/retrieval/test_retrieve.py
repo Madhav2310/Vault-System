@@ -23,6 +23,16 @@ from tests.support.llm import make_gateway
 from tests.support.retrieval import seed_text_chunk
 from tests.support.vectors import seed_vectors, unit_vector
 
+
+@pytest.fixture(autouse=True)
+def _rerank_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests exercise the cross-encoder: default `retrieval@2` is `kind: none` since S17.02."""
+    import app.retrieval.retrieve as rmod
+    from app.retrieval.config import get_config as real
+
+    monkeypatch.setattr(rmod, "get_config", lambda v=None: real(v or "retrieval@2-rerank"))
+
+
 SM = async_sessionmaker[AsyncSession]
 
 
@@ -64,7 +74,7 @@ async def test_candidate_fields_complete(
         scope = await compute_scope(s, o.id, None)
         res = await r.retrieve(s, o.id, scope, "indemnification clause")
         assert not res.degraded and not res.cache_hit
-        cfg = get_config()
+        cfg = get_config("retrieval@2-rerank")
         sel = [c for c in res.candidates if c.selected]
         assert (
             0

@@ -11,6 +11,7 @@ from collections.abc import AsyncGenerator, Callable, Sequence
 from typing import Any
 
 import httpx
+import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
@@ -38,6 +39,16 @@ from tests.support.retrieval import seed_text_chunk
 from tests.support.vectors import seed_vectors, unit_vector
 
 __all__ = ["ledger_owners"]  # fixture import
+
+
+@pytest.fixture(autouse=True)
+def _rerank_config(monkeypatch: pytest.MonkeyPatch) -> None:
+    """These tests exercise the cross-encoder: default `retrieval@2` is `kind: none` since S17.02."""
+    import app.retrieval.retrieve as rmod
+    from app.retrieval.config import get_config as real
+
+    monkeypatch.setattr(rmod, "get_config", lambda v=None: real(v or "retrieval@2-rerank"))
+
 
 SM = async_sessionmaker[AsyncSession]
 BODY = (
