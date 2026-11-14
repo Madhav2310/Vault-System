@@ -17,7 +17,6 @@ from app.retrieval.load import load_evidence_chunks
 from app.retrieval.scope import Scope
 
 FULL_CONTEXT_TOO_LARGE = "FULL_CONTEXT_TOO_LARGE"
-AUTO_INTENTS = frozenset({"qa", "summarize", "compare"})
 PROMPT_MARGIN_TOKENS = 4_000  # the full prompt may exceed the evidence budget by this much
 
 
@@ -33,24 +32,17 @@ def plan_mode(
     versions_tokens: Sequence[int | None],
     settings: Settings,
 ) -> Plan:
-    """Full context when requested, or when `full_context_auto` and the scope is small and the intent fits;
-    and in both cases only if the scope fits `full_context_max_tokens` (unknown size counts as too large).
-    A requested full context that is too large falls back to RAG with `FULL_CONTEXT_TOO_LARGE`."""
-    if not scope.entries:
-        return Plan("rag", None)
-    requested = requested_mode == "full_context"
-    eligible = (
-        settings.full_context_auto
-        and len(scope.entries) <= settings.full_context_max_docs
-        and analysis.intent in AUTO_INTENTS
-    )
-    if not (requested or eligible):
+    """Full context only when the user requests it and the scope fits `full_context_max_tokens` (unknown size
+    counts as too large); a requested full context that is too large falls back to RAG with
+    `FULL_CONTEXT_TOO_LARGE`. Retrieval is the default: automatic whole-document mode showed no gain at about
+    twice the cost per turn (docs/evaluation.md)."""
+    if not scope.entries or requested_mode != "full_context":
         return Plan("rag", None)
     if (
         any(t is None for t in versions_tokens)
         or sum(t or 0 for t in versions_tokens) > settings.full_context_max_tokens
     ):
-        return Plan("rag", FULL_CONTEXT_TOO_LARGE if requested else None)
+        return Plan("rag", FULL_CONTEXT_TOO_LARGE)
     return Plan("full_context", None)
 
 

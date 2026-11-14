@@ -101,7 +101,7 @@ Source: `docs/spec/case-study.pdf`. Status is one of **built**, **built, switche
 | "Why this answer" panel from reason codes and templates | Built | `GET /v1/runs/{id}`; `backend/app/explain/` |
 | Support check per cited segment | Built | `backend/app/chat/support_check.py`; verdicts shown next to each segment |
 | Meta questions about your library, answered by owner-scoped SQL | Built | `backend/app/chat/meta.py` |
-| Whole-document answering for small scopes | Built, on request only | `backend/app/chat/full_context.py`; automatic use is off (`FULL_CONTEXT_AUTO`), because it showed no gain for twice the cost |
+| Whole-document answering for small scopes | Built, on request only | `backend/app/chat/full_context.py`; it is not automatic, because it showed no gain for twice the cost |
 | Evidence gate before answering | Built, switched off | `backend/app/chat/gate.py`; it refused answerable questions |
 | Plan-first answers, calculation segments, scored abstention, locate loop, clarification chips, warm voice | Built, switched off | `ARCHITECTURE.md` section 7.3 |
 | Accessibility checks on the UI | Built | Automated axe scans and a keyboard-flow test in `frontend/e2e/a11y.spec.ts`; there has been no manual screen-reader audit |

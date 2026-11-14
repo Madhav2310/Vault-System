@@ -110,9 +110,7 @@ class Settings(BaseSettings):
     # --- retrieval config file under backend/config (design §7.3), e.g. retrieval@2 ---
     retrieval_config: str = "retrieval@5"
 
-    # --- whole-document answering (design §8.2, S17.07) ---
-    full_context_auto: bool = False  # off until the answer A/B decides (docs/evidence/answer_ab.md)
-    full_context_max_docs: int = 3
+    # --- whole-document answering, on request only: the token cap of the scope ---
     full_context_max_tokens: int = 50_000
 
     # --- fast path (design §8.2, S17.10): false = always run analyze_query (kill switch) ---

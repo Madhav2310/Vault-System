@@ -1,4 +1,4 @@
-"""S17.07 plan_mode decision table (pure)."""
+"""plan_mode: whole-document mode only on request and only when the scope fits the token cap (pure)."""
 
 import uuid
 from types import SimpleNamespace
@@ -23,49 +23,37 @@ def _an(intent: str) -> Any:
     return SimpleNamespace(intent=intent)
 
 
-# (docs, intent, requested, tokens, auto, expected mode, expected reason)
-CASES: list[tuple[int, str, str, list[int | None], bool, str, str | None]] = [
-    (1, "qa", "auto", [10_000], False, "rag", None),  # auto is off
-    (1, "qa", "auto", [10_000], True, "full_context", None),
-    (3, "compare", "auto", [10_000, 10_000, 10_000], True, "full_context", None),
-    (4, "qa", "auto", [1, 1, 1, 1], True, "rag", None),  # too many documents
-    (1, "meta", "auto", [100], True, "rag", None),  # intent not eligible
-    (1, "qa", "auto", [50_001], True, "rag", None),  # auto and too large: silent RAG
-    (1, "qa", "full_context", [10_000], False, "full_context", None),  # requested wins over auto=false
+# (docs, intent, requested, tokens, expected mode, expected reason)
+CASES: list[tuple[int, str, str, list[int | None], str, str | None]] = [
+    (1, "qa", "auto", [10_000], "rag", None),  # not requested: retrieval
+    (1, "qa", "full_context", [10_000], "full_context", None),
     (
         4,
         "meta",
         "full_context",
         [100, 100, 100, 100],
-        False,
         "full_context",
         None,
-    ),  # requested skips docs/intent
-    (2, "qa", "full_context", [30_000, 30_000], False, "rag", FULL_CONTEXT_TOO_LARGE),
-    (1, "qa", "full_context", [None], False, "rag", FULL_CONTEXT_TOO_LARGE),  # unknown size is too large
+    ),  # a request skips docs and intent
+    (2, "qa", "full_context", [30_000, 30_000], "rag", FULL_CONTEXT_TOO_LARGE),
+    (1, "qa", "full_context", [None], "rag", FULL_CONTEXT_TOO_LARGE),  # unknown size is too large
 ]
 
 
-@pytest.mark.parametrize("docs,intent,requested,tokens,auto,mode,reason", CASES)
+@pytest.mark.parametrize("docs,intent,requested,tokens,mode,reason", CASES)
 def test_decision_table(
-    docs: int,
-    intent: str,
-    requested: str,
-    tokens: list[int | None],
-    auto: bool,
-    mode: str,
-    reason: str | None,
+    docs: int, intent: str, requested: str, tokens: list[int | None], mode: str, reason: str | None
 ) -> None:
-    plan = plan_mode(_scope(docs), _an(intent), requested, tokens, _settings(full_context_auto=auto))
+    plan = plan_mode(_scope(docs), _an(intent), requested, tokens, _settings())
     assert (plan.mode, plan.reason) == (mode, reason)
 
 
 def test_empty_scope_is_rag() -> None:
-    plan = plan_mode(Scope.empty, _an("qa"), "full_context", [], _settings(full_context_auto=True))
+    plan = plan_mode(Scope.empty, _an("qa"), "full_context", [], _settings())
     assert (plan.mode, plan.reason) == ("rag", None)
 
 
-def test_boundary_is_inclusive() -> None:
-    s = _settings(full_context_auto=True, full_context_max_tokens=1000)
-    assert plan_mode(_scope(1), _an("qa"), "auto", [1000], s).mode == "full_context"
-    assert plan_mode(_scope(1), _an("qa"), "auto", [1001], s).mode == "rag"
+def test_token_cap_is_inclusive() -> None:
+    s = _settings(full_context_max_tokens=1000)
+    assert plan_mode(_scope(1), _an("qa"), "full_context", [1000], s).mode == "full_context"
+    assert plan_mode(_scope(1), _an("qa"), "full_context", [1001], s).mode == "rag"

@@ -265,7 +265,7 @@ flowchart LR
 | **Reranker off** (`rerank.kind: none`). | The rule was fixed before measuring: keep it only if it is better, or not different with MRR@40 up by 0.03, and it adds at most 400 ms at p50. There is no detectable quality difference and it adds 495 ms at p50. |
 | **Evidence gate off** (`gate.enabled: false`). | The calibrated floor refused 3 of 44 answerable train items. The floor value 0.3803 stays in the file for use with scored abstention. |
 | Number-aware lexical matching off. | No detectable difference on the retrieval set, which has few numeric queries. |
-| Whole-document mode not automatic (`FULL_CONTEXT_AUTO=false`). | No gain at about twice the cost per turn. |
+| Whole-document mode only on request. | Automatic use showed no gain at about twice the cost per turn. |
 
 The largest known quality lever is ranking: on the train split, 12 of 27 real failures retrieved the gold chunk but did not keep it in the evidence set (`docs/evaluation.md` section 3).
 
@@ -429,7 +429,7 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 | `CHAT_ABSTAIN_SCORED` | `false` | Logistic abstention (`backend/config/abstain@1.yaml`, `fitted: false`) in place of the floor gate | Calibration on the train split, then a paired dev evaluation |
 | `CHAT_LOCATE` (+ `CHAT_LOCATE_MIN_CHUNKS` 150, `CHAT_LOCATE_MIN_PAGES` 60) | `false` | Locate loop for long single documents | Paired dev evaluation on long-filing strata |
 | `CHAT_CLARIFY` | `false` | Code-decided clarification chips | Review of the interaction in the UI |
-| `FULL_CONTEXT_AUTO` (+ `FULL_CONTEXT_MAX_DOCS` 3, `FULL_CONTEXT_MAX_TOKENS` 50,000) | `false` | Automatic whole-document mode | Measured: no gain at twice the cost, so it stays off (`docs/evaluation.md` section 4) |
+| `FULL_CONTEXT_MAX_TOKENS` | `50000` | The largest scope whole-document mode accepts on request | Measured: automatic whole-document mode showed no gain at twice the cost (`docs/evaluation.md` section 4) |
 | `CHUNKER_VERSION` | `chunker@1` | `chunker@2`, `chunker@2-overlap25` | Retrieval-only paired evaluation after a re-ingest |
 | `INDEX_CONTEXT` | `none` | `deterministic` or `llm` index-only headers | Retrieval-only paired evaluation after a re-ingest |
 | `CONTEXTUALIZE_VARIANT` (+ `CONTEXTUALIZE_MAX_USD` $0.02) | `off` | Alias for the same stage as `INDEX_CONTEXT`; `INDEX_CONTEXT` wins when both are set | As `INDEX_CONTEXT` |
