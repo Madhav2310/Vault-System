@@ -179,7 +179,12 @@ async def setup(
                 raise RuntimeError(f"stream ended without done: {res.error or res.events}")
             ms, ttft, msg_id = res.latency_ms or 0.0, res.ttft_ms, res.message_id
         else:
-            r = await http.post(f"/v1/chat/sessions/{sid}/messages", json=body)
+            for _attempt in range(6):  # the chat route is rate limited per user (20/min): wait as told, retry
+                t0 = time.monotonic()
+                r = await http.post(f"/v1/chat/sessions/{sid}/messages", json=body)
+                if r.status_code != 429:
+                    break
+                await asyncio.sleep(min(float(r.headers.get("retry-after", "5")) + 1, 65))
             r.raise_for_status()
             ms = (time.monotonic() - t0) * 1000
             msg_id = r.json()["message"]["id"]
