@@ -75,21 +75,27 @@ class ChunkDraft:
     extras: dict[str, Any] = field(default_factory=dict)
 
 
-def _units(doc: ExtractedDocument, el: Element) -> list[Unit]:
+def _units(
+    doc: ExtractedDocument, el: Element, max_tokens: int = MAX_TOKENS, target_tokens: int = TARGET_TOKENS
+) -> list[Unit]:
     text = doc.pages[el.page_index].text
     kind: Literal["text", "table"] = "table" if el.kind == "table" else "text"
     out: list[Unit] = []
     for s, e in split_sentences(text[el.start : el.end], kind=kind):
         a, b = el.start + s, el.start + e
         tokens = count_tokens(text[a:b])
-        if tokens <= MAX_TOKENS:
+        if tokens <= max_tokens:
             out.append(Unit(el.page_index, a, b, tokens))
             continue
-        out.extend(_hard_split(doc, el.page_index, a, b))  # a run-on "sentence" (e.g. an unpunctuated list)
+        out.extend(
+            _hard_split(doc, el.page_index, a, b, target_tokens)
+        )  # a run-on "sentence" (e.g. an unpunctuated list)
     return out
 
 
-def _hard_split(doc: ExtractedDocument, page_index: int, a: int, b: int) -> Iterator[Unit]:
+def _hard_split(
+    doc: ExtractedDocument, page_index: int, a: int, b: int, target: int = TARGET_TOKENS
+) -> Iterator[Unit]:
     """Split an over-long sentence into pieces of at most TARGET_TOKENS: at whitespace when there is some in
     the last fifth of the window, otherwise at the token boundary itself (CJK text has no spaces)."""
     text = doc.pages[page_index].text
@@ -99,13 +105,13 @@ def _hard_split(doc: ExtractedDocument, page_index: int, a: int, b: int) -> Iter
             start += 1
         if start >= b:
             return
-        if count_tokens(text[start:b]) <= TARGET_TOKENS:
+        if count_tokens(text[start:b]) <= target:
             end = b
         else:
-            lo, hi = start + 1, b  # largest end with count_tokens(text[start:end]) <= TARGET_TOKENS
+            lo, hi = start + 1, b  # largest end with count_tokens(text[start:end]) <= target
             while lo < hi:
                 mid = (lo + hi + 1) // 2
-                if count_tokens(text[start:mid]) <= TARGET_TOKENS:
+                if count_tokens(text[start:mid]) <= target:
                     lo = mid
                 else:
                     hi = mid - 1
@@ -245,7 +251,16 @@ def _header_unit(
     return None
 
 
-def chunk_document(doc: ExtractedDocument, title: str) -> list[ChunkDraft]:
+def chunk_document(doc: ExtractedDocument, title: str, version: str = CHUNKER_VERSION) -> list[ChunkDraft]:
+    """Chunk with `version` (default `chunker@1`); `chunker@2` arms live in `chunk_rules` (S22.01)."""
+    if version != CHUNKER_VERSION:
+        from app.ingestion.chunk_rules import chunk_document_v2
+
+        return chunk_document_v2(doc, title, version)
+    return _chunk_document_v1(doc, title)
+
+
+def _chunk_document_v1(doc: ExtractedDocument, title: str) -> list[ChunkDraft]:
     drafts: list[tuple[Literal["text", "table"], list[str], list[Unit]]] = []
     group: list[Unit] = []
     group_path: list[str] | None = None
