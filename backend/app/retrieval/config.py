@@ -7,6 +7,7 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
+from app.core.settings import get_settings
 from app.retrieval import fusion
 
 CONFIG_DIR = pathlib.Path(__file__).resolve().parents[2] / "config"
@@ -64,5 +65,10 @@ def load_config(path: pathlib.Path) -> RetrievalConfig:
 
 
 @lru_cache(maxsize=8)
-def get_config(version: str = "retrieval@1") -> RetrievalConfig:
+def _load_version(version: str) -> RetrievalConfig:
     return load_config(CONFIG_DIR / f"{version}.yaml")
+
+
+def get_config(version: str | None = None) -> RetrievalConfig:
+    """The named config, or the `retrieval_config` setting (default retrieval@2) when none is named."""
+    return _load_version(version or get_settings().retrieval_config)
