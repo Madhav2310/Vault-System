@@ -1,9 +1,9 @@
 /** Pure chat logic: SSE event decoding, the turn reducer, marker numbering, labels. No React, no fetch. */
 import type { Citation } from "../source";
 import type { SseFrame } from "../sse";
-import type { ChatEvent, ChatStage, ConflictView, EvidenceOut, FeedbackReason, HistoryMessage, Staleness } from "../api/types";
+import type { ChatEvent, ChatStage, ClarifyOption, ConflictView, EvidenceOut, FeedbackReason, HistoryMessage, Staleness } from "../api/types";
 
-export const EVENT_TYPES = ["run.started", "status", "segment", "verification", "followups", "done", "error"] as const;
+export const EVENT_TYPES = ["run.started", "status", "segment", "verification", "followups", "clarify", "done", "error"] as const;
 
 /** Frame -> typed event. Unknown event names and bad JSON are skipped (forward compatible). */
 export function decodeChatEvent(f: SseFrame): ChatEvent | null {
@@ -38,6 +38,8 @@ export interface Msg {
   runId: string | null;
   staleness: Staleness | null;
   conflicts: ConflictView[];
+  /** Document options of a clarification (S23.02); empty for every other message. */
+  clarify: ClarifyOption[];
   /** True while the turn is still streaming. */
   streaming: boolean;
   stage: ChatStage | null;
@@ -61,6 +63,7 @@ export function pendingAssistant(id: string): Msg {
     runId: null,
     staleness: null,
     conflicts: [],
+    clarify: [],
     streaming: true,
     stage: null,
     errorCode: null,
@@ -94,6 +97,8 @@ export function reduceTurn(m: Msg, e: ChatEvent): Msg {
     }
     case "followups":
       return { ...m, followups: e.questions };
+    case "clarify":
+      return { ...m, clarify: e.options };
     case "done": {
       const isError = e.response_type === "error";
       return {
@@ -139,6 +144,7 @@ export function fromHistory(h: HistoryMessage): Msg {
     runId: h.run_id,
     staleness: h.staleness,
     conflicts: h.conflicts ?? [],
+    clarify: h.clarify_options ?? [],
     streaming: false,
     stage: null,
     errorCode: null,
@@ -325,6 +331,15 @@ export function markStopped(m: Msg): Msg {
 export function dropLastTurn(msgs: Msg[]): Msg[] {
   for (let i = msgs.length - 1; i >= 0; i--) if (msgs[i]!.role === "user") return msgs.slice(0, i);
   return msgs;
+}
+
+/** Id of the newest assistant message the server stored (not a streaming placeholder), or null. */
+export function lastServerAnswer(msgs: Msg[]): string | null {
+  for (let i = msgs.length - 1; i >= 0; i--) {
+    const m = msgs[i]!;
+    if (m.role === "assistant") return m.streaming || m.id.startsWith("a-") ? null : m.id;
+  }
+  return null;
 }
 
 export function lastUser(msgs: Msg[]): Msg | null {

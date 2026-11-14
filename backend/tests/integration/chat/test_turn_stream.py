@@ -235,5 +235,14 @@ async def test_schema_endpoint(
     assert r.status_code == 200
     schema = r.json()
     mapping = schema["discriminator"]["mapping"]
-    assert set(mapping) == {"run.started", "status", "segment", "verification", "followups", "done", "error"}
+    assert set(mapping) == {
+        "run.started",
+        "status",
+        "segment",
+        "verification",
+        "followups",
+        "clarify",
+        "done",
+        "error",
+    }
     assert (await api.get("/v1/chat/events/schema")).status_code == 401

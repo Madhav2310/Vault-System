@@ -63,17 +63,28 @@ export const chatApi = {
   /** Stream one turn. Pre-stream 404/409/422/429/503 reject with ApiError; a dropped connection with NetworkError. */
   async *send(
     sessionId: string,
-    turn: { content: string } | { reaskOf: string },
+    turn: ({ content: string } | { reaskOf: string } | { clarifyChoice: { messageId: string; option: number } }) & {
+      /** A message of the turn this one replaces (Regenerate, Edit and resend): the server hides the old pair. */
+      replaces?: string;
+    },
     clientMessageId: string,
     signal?: AbortSignal,
   ): AsyncGenerator<ChatEvent> {
+    const replaces = turn.replaces ? { replaces: turn.replaces } : {};
     const opts: Parameters<typeof streamEvents<ChatEvent>>[1] = {
       method: "POST",
       headers: CSRF_HEADERS,
-      body:
-        "content" in turn
+      body: {
+        ...replaces,
+        ..."content" in turn
           ? { content: turn.content, client_message_id: clientMessageId }
-          : { reask_of: turn.reaskOf, client_message_id: clientMessageId },
+          : "reaskOf" in turn
+            ? { reask_of: turn.reaskOf, client_message_id: clientMessageId }
+            : {
+                clarify_choice: { message_id: turn.clarifyChoice.messageId, option: turn.clarifyChoice.option },
+                client_message_id: clientMessageId,
+              },
+      },
       decode: decodeChatEvent,
     };
     if (signal) opts.signal = signal;

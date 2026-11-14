@@ -23,6 +23,16 @@ import {
   type Msg,
 } from "./logic";
 
+describe("clarify (S23.02)", () => {
+  it("keeps the options from the clarify event and from history", () => {
+    const opts = [{ label: "A", document_id: "d1" }, { label: "B", document_id: "d2" }];
+    const m = reduceTurn(pendingAssistant("a"), { type: "clarify", run_id: "r", question: "Which?", options: opts });
+    expect(m.clarify).toEqual(opts);
+    const h = fromHistory({ id: "x", role: "assistant", content: "Which?", created_at: "", response_type: "clarify", coverage_state: null, staleness: null, run_id: "r", segments: [], clarify_options: opts });
+    expect(h.clarify).toEqual(opts);
+  });
+});
+
 const ev = (chunk: string, s = 0, e = 1, text: string | null = "t"): EvidenceOut => ({
   chunk_id: chunk,
   document_id: "d",

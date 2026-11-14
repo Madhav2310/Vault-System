@@ -10,6 +10,7 @@ import {
   describeFailure,
   dropLastTurn,
   fromHistory,
+  lastServerAnswer,
   lastUser,
   markStopped,
   pendingAssistant,
@@ -110,17 +111,28 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
 
   useEffect(() => () => abort.current?.abort(), []);
 
-  /** One turn: a typed question, or a re-ask of an earlier message (`question` is only what the pair shows). */
+  /** One turn: a typed question, a re-ask of an earlier message, or an option picked from a clarification
+   * (`question` is only what the pair shows; the server resolves the scope from the option). */
   const send = useCallback(
-    async (turn: { content: string } | { reaskOf: string; question: string }, sid: string, replaceLast = false) => {
+    async (
+      turn: (
+        | { content: string }
+        | { reaskOf: string; question: string }
+        | { clarify: { messageId: string; option: number }; question: string }
+      ) & { replaces?: string },
+      sid: string,
+      replaceLast = false,
+    ) => {
+      const typed = "content" in turn;
       const reaskOf = "reaskOf" in turn ? turn.reaskOf : null;
-      const text = ("content" in turn ? turn.content : turn.question).trim();
+      const clarify = "clarify" in turn ? turn.clarify : null;
+      const text = (typed ? turn.content : turn.question).trim();
       if (!text) return;
       setFailure(null);
       setBusy(true);
       resume();
       const before = messagesRef.current;
-      const key = reaskOf ? `reask:${reaskOf}` : `ask:${text}`;
+      const key = reaskOf ? `reask:${reaskOf}` : clarify ? `clarify:${clarify.messageId}:${clarify.option}` : `ask:${text}`;
       // A retry of the same turn reuses its client_message_id; a different turn gets a new one.
       const clientId = pendingId.current?.key === key ? pendingId.current.id : crypto.randomUUID();
       pendingId.current = { key, id: clientId };
@@ -132,7 +144,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
       let ended = false;
       let streamError: string | null = null;
       try {
-        for await (const e of chatApi.send(sid, reaskOf ? { reaskOf } : { content: text }, clientId, ctl.signal)) {
+        for await (const e of chatApi.send(sid, { ...(typed ? { content: text } : reaskOf ? { reaskOf } : { clarifyChoice: clarify! }), ...(turn.replaces ? { replaces: turn.replaces } : {}) }, clientId, ctl.signal)) {
           if (e.type === "done") ended = true;
           if (e.type === "error") streamError = e.code;
           setMessages((m) => m.map((x) => (x.id === tmp || (x.streaming && x.role === "assistant") ? reduceTurn(x, e) : x)));
@@ -140,15 +152,15 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
         if (!ended && !streamError) throw new NetworkError("Network error: the stream ended early.");
         if (streamError && !ended) {
           setFailure(describeFailure({ stream: streamError }).message);
-          if (!reaskOf) setInput(text);
+          if (typed) setInput(text);
           return;
         }
         pendingId.current = null;
-        if (!reaskOf) setInput("");
+        if (typed) setInput("");
         void refreshSessions();
       } catch (e) {
         if (e instanceof DOMException && e.name === "AbortError") {
-          if (!reaskOf) setInput(""); // stopped: the partial answer stays, so the question is not pending any more
+          if (typed) setInput(""); // stopped: the partial answer stays, so the question is not pending any more
           return;
         }
         unauth(e);
@@ -159,7 +171,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
         // Pre-stream failures never produced an answer: restore the log as it was and keep the text.
         setMessages(before);
         setFailure(f.message);
-        if (!reaskOf) setInput(text);
+        if (typed) setInput(text);
         if (!f.reuseId) pendingId.current = null;
       } finally {
         setBusy(false);
@@ -205,7 +217,8 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
       }
       const replace = editing;
       setEditing(false);
-      await send({ content: text }, sid, replace);
+      const old = replace ? lastServerAnswer(messagesRef.current) : null;
+      await send({ content: text, ...(old ? { replaces: old } : {}) }, sid, replace);
     },
     [busy, sessionId, scope, startSession, send, editing],
   );
@@ -220,7 +233,9 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
     const q = lastUser(messagesRef.current);
     if (busy || !sessionId || !q) return;
     pendingId.current = null; // a new client_message_id, same scope (the session's)
-    await send({ content: q.content }, sessionId, true);
+    const old = lastServerAnswer(messagesRef.current);
+    // The server re-asks the stored question and hides the replaced pair, so a reload shows one answer.
+    await send(old ? { reaskOf: old, question: q.content, replaces: old } : { content: q.content }, sessionId, true);
   }, [busy, sessionId, send]);
 
   const editLast = useCallback(() => {
@@ -249,6 +264,17 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
       await send({ reaskOf: messageId, question: question || "Re-asked on the latest version" }, sessionId);
     },
     [busy, sessionId, messages, send],
+  );
+
+  /** A chip of a clarification: ask the clarified question again, scoped by the server to the chosen document. */
+  const pickOption = useCallback(
+    async (messageId: string, option: number) => {
+      if (busy || !sessionId) return;
+      const i = messagesRef.current.findIndex((m) => m.id === messageId);
+      const question = messagesRef.current.slice(0, Math.max(i, 0)).reverse().find((m) => m.role === "user")?.content ?? "";
+      await send({ clarify: { messageId, option }, question: question || "Your question" }, sessionId);
+    },
+    [busy, sessionId, send],
   );
 
   // ?q= and ?doc= from the document page: create a scoped session and send the question once.
@@ -364,6 +390,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
                 onOpen={setSource}
                 onAsk={(t) => void ask(t)}
                 onWhy={setWhy}
+                onPick={(option) => void pickOption(m.id, option)}
                 {...(m.role === "assistant" && idle ? { onReask: (id: string) => void reask(id) } : {})}
                 {...(m.role === "assistant" && idle && last && !m.streaming ? { onRegenerate: () => void regenerate() } : {})}
                 {...(m.role === "user" && idle && m.id === lastUserId ? { onEdit: editLast } : {})}
