@@ -44,6 +44,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/chat/events/schema": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * JSON Schema of the SSE turn events
+         * @description JSON Schema of the SSE turn events (`TurnEvent`, discriminated on `type`), to generate client types.
+         */
+        get: operations["events_schema_v1_chat_events_schema_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/chat/sessions": {
         parameters: {
             query?: never;
@@ -59,7 +79,8 @@ export interface paths {
         put?: never;
         /**
          * Create a chat session
-         * @description Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404.
+         * @description Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404. A retry
+         *     with the same `Idempotency-Key` returns the same session (design §14).
          */
         post: operations["create_session_v1_chat_sessions_post"];
         delete?: never;
@@ -105,8 +126,9 @@ export interface paths {
          * Post a message and get a cited answer
          * @description Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
          *     while running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion
-         *     before the response (non-streaming; SSE comes with S5) and returns 200 with the assistant message; it
-         *     keeps running and persists even if the client disconnects.
+         *     before the response and returns 200 with the assistant message; it keeps running and persists even if the
+         *     client disconnects. With `Accept: text/event-stream` the turn streams events instead (S18.01): the
+         *     status codes above are decided before the stream starts and the stream itself answers 200.
          */
         post: operations["post_message_v1_chat_sessions__session_id__messages_post"];
         delete?: never;
@@ -353,6 +375,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/v1/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Why this answer
+         * @description Why this answer: status, route, reason codes, a template-rendered explanation, the sources used, the
+         *     node steps, usage and (when finished) the stored message. `status: running` means the turn is still
+         *     working (a client that lost its stream polls this). Another owner's run is 404.
+         */
+        get: operations["get_run_v1_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/v1/versions/{version_id}/file": {
         parameters: {
             query?: never;
@@ -474,6 +518,8 @@ export interface components {
              * @default []
              */
             tags: string[];
+            /** @description Overall tone with its cited evidence; null while pending or failed, for briefs made before tone existed, and (with `include_unverified=false`) when its citation did not resolve */
+            tone?: components["schemas"]["ToneOut"] | null;
             /** Version Id */
             version_id?: string | null;
         } & {
@@ -493,6 +539,13 @@ export interface components {
             feedback: components["schemas"]["FeedbackSummary"];
             latency_ms: components["schemas"]["Percentiles"];
             llm: components["schemas"]["LlmMetrics"];
+            /**
+             * Node Latency Ms
+             * @description Per-node step duration percentiles over the same turns, keyed by node name (`analyze`, `retrieve`, `gate`, `generate`, `verify`, `persist`, ...). Steps skipped by the fast path are not counted; a node that did not run in the window is absent.
+             */
+            node_latency_ms?: {
+                [key: string]: components["schemas"]["Percentiles"];
+            };
             /** Outcomes */
             outcomes: {
                 [key: string]: number;
@@ -731,6 +784,13 @@ export interface components {
              */
             type: string;
         };
+        /** EventSchemaOut */
+        EventSchemaOut: {
+            /** Title */
+            title?: string | null;
+        } & {
+            [key: string]: unknown;
+        };
         /** FeedbackIn */
         FeedbackIn: {
             /**
@@ -858,13 +918,16 @@ export interface components {
             run_id?: string | null;
             /**
              * Segments
-             * @description Assistant answers: segments with citations
+             * @description Assistant answers: segments with citations. Each segment carries `verification` (`supported`, `partial`, `unsupported` or `unchecked`; null when no support check ran) and a short `verification_reason`.
              * @default []
              */
             segments: {
                 [key: string]: unknown;
             }[];
-            /** Staleness */
+            /**
+             * Staleness
+             * @description `null` for a fresh answer. When a document the answer used has a newer version: `{stale: true, since: ISO timestamp, newer_version_no: int | null}`. Re-ask with `reask_of`.
+             */
             staleness?: {
                 [key: string]: unknown;
             } | null;
@@ -918,14 +981,22 @@ export interface components {
         PostMessage: {
             /** Client Message Id */
             client_message_id: string;
-            /** Content */
-            content: string;
+            /**
+             * Content
+             * @description The question. Omit it when `reask_of` is set.
+             */
+            content?: string | null;
             /**
              * Mode
              * @default auto
              * @enum {string}
              */
             mode: "auto" | "full_context";
+            /**
+             * Reask Of
+             * @description Id of an earlier message of this session (a stale answer or its question): its question is asked again as a new turn on the current versions of the documents.
+             */
+            reask_of?: string | null;
         };
         /** PostMessageOut */
         PostMessageOut: {
@@ -1019,6 +1090,56 @@ export interface components {
              * @enum {string}
              */
             status: "ok" | "degraded" | "fail";
+        };
+        /** RunViewOut */
+        RunViewOut: {
+            /**
+             * Explanation
+             * @description Template-rendered sentences, never model-written
+             */
+            explanation: string[];
+            /**
+             * Message
+             * @description The stored assistant message when done
+             */
+            message?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Mode
+             * @description `rag`, `full_context`, `meta`, ...
+             */
+            mode?: string | null;
+            /** Reason Codes */
+            reason_codes?: string[];
+            /** Response Type */
+            response_type?: string | null;
+            /** Route */
+            route?: string | null;
+            /**
+             * Run Id
+             * Format: uuid
+             */
+            run_id: string;
+            /** Sources */
+            sources?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Status
+             * @description `running` or a terminal status
+             */
+            status: string;
+            /** Steps */
+            steps?: {
+                [key: string]: unknown;
+            }[];
+            /** Usage */
+            usage?: {
+                [key: string]: unknown;
+            };
+        } & {
+            [key: string]: unknown;
         };
         /** SessionList */
         SessionList: {
@@ -1135,6 +1256,33 @@ export interface components {
              */
             tone: "neutral" | "executive" | "plain";
         };
+        /** ToneOut */
+        ToneOut: {
+            /**
+             * Evidence
+             * @description Citations (up to 3) copied by the application from the stored sentences
+             */
+            evidence: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Label
+             * @description Overall tone: `neutral`, `formal`, `adversarial`, `positive`, `negative` or `mixed`
+             */
+            label: string;
+            /**
+             * Note
+             * @description One line saying what drives the tone
+             */
+            note: string;
+            /**
+             * Status
+             * @description `verified` when the application resolved at least one citation for it, else `unverified`
+             */
+            status: string;
+        } & {
+            [key: string]: unknown;
+        };
         /** UploadAccepted */
         UploadAccepted: {
             /** Deduplicated */
@@ -1249,6 +1397,44 @@ export interface operations {
             };
         };
     };
+    events_schema_v1_chat_events_schema_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventSchemaOut"];
+                };
+            };
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
     list_sessions_v1_chat_sessions_get: {
         parameters: {
             query?: {
@@ -1302,7 +1488,9 @@ export interface operations {
     create_session_v1_chat_sessions_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "idempotency-key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -1493,16 +1681,16 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Retried client_message_id of a finished turn: the stored result */
+            /** @description Retried client_message_id of a finished turn: the stored result. With `Accept: text/event-stream` the response is an SSE stream of turn events (see `GET /v1/chat/events/schema`) */
             200: {
                 headers: {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PostMessageOut"];
+                    "text/event-stream": string;
                 };
             };
-            /** @description Successful Response */
+            /** @description Turn accepted (or finished): run and message ids */
             202: {
                 headers: {
                     [name: string]: unknown;
@@ -1520,7 +1708,7 @@ export interface operations {
                     "application/problem+json": components["schemas"]["ErrorResponse"];
                 };
             };
-            /** @description Not your session */
+            /** @description Not your session, or `reask_of` is not a message of it */
             404: {
                 headers: {
                     [name: string]: unknown;
@@ -2357,6 +2545,64 @@ export interface operations {
             };
             /** @description `scope=global` is admin only */
             403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Request validation failed */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Rate limited (see `RateLimit-*` headers) */
+            429: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+        };
+    };
+    get_run_v1_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunViewOut"];
+                };
+            };
+            /** @description Missing or invalid API key */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ErrorResponse"];
+                };
+            };
+            /** @description Not your run */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };
