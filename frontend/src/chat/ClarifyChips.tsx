@@ -11,10 +11,10 @@ interface Props {
 export function ClarifyChips({ options, disabled = false, onPick }: Props) {
   return (
     <>
-      <ul className="chips" aria-label="Which document do you mean?" data-testid="clarify-chips">
+      <ul className="qchips" aria-label="Which document do you mean?" data-testid="clarify-chips">
         {options.map((o, i) => (
           <li key={o.document_id}>
-            <button type="button" className="chip" disabled={disabled} onClick={() => onPick(i)}>
+            <button type="button" className="qchip" disabled={disabled} onClick={() => onPick(i)}>
               {o.label}
             </button>
           </li>

@@ -96,5 +96,5 @@ export function reasonInWords(status: VersionStatus, code: string | null): strin
   if (code && REASONS[code]) return REASONS[code];
   if (status === "needs_ocr") return REASONS["needs_ocr"]!;
   if (status === "unsupported") return REASONS["unsupported_type"]!;
-  return code ? `Processing failed (${code}). Remove it and try uploading again.` : "Processing failed. Remove it and try uploading again.";
+  return "That one did not process on my side. Remove it and try uploading it again.";
 }

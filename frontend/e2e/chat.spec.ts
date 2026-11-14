@@ -667,3 +667,53 @@ test("axe on a clarification", async ({ page }) => {
   await expect(page.getByTestId("clarify-chips")).toBeVisible();
   await axeClean(page, "clarify");
 });
+
+// S23.03b: the question follows "Wrong document?", and Jump-to-latest is laid out from the composer.
+test("Wrong document carries the question into the new chat's composer", async ({ page }) => {
+  await mock(page);
+  await ask(page, "How can the contract end?");
+  await page.getByTestId("feedback-down").click();
+  await page.getByTestId("reason-wrong").click();
+  await page.getByTestId("wrong-doc-nudge").getByRole("link").click();
+  await expect(page).toHaveURL(/pick=1/);
+  await expect(page.getByTestId("scope-picker")).toHaveAttribute("open", "");
+  await expect(page.getByLabel("Your question")).toHaveValue("How can the contract end?");
+});
+
+for (const size of [
+  { name: "desktop", width: 1440, height: 900 },
+  { name: "phone", width: 390, height: 844 },
+]) {
+  test(`jump to latest sits just above the composer and the page does not scroll sideways (${size.name})`, async ({ page }) => {
+    await page.setViewportSize({ width: size.width, height: size.height });
+    const history: unknown[] = [];
+    for (let i = 0; i < 10; i++) {
+      history.push({ ...histUser, id: `m-u${i}`, content: `Question ${i}` });
+      history.push(histAnswer({ id: `m-a${i}` }, [{ ordinal: 0, text: "Long answer. ".repeat(60), support: "none", evidence: [] }]));
+    }
+    await mock(page, { history });
+    await page.goto(`/app/chat?s=${SESSION}`);
+    await expect(page.getByTestId("user-message")).toHaveCount(10);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const jump = page.getByTestId("jump-latest");
+    await expect(jump).toBeVisible();
+    await page.emulateMedia({ reducedMotion: "reduce" }); // no entrance animation while measuring
+    const j = (await jump.boundingBox())!;
+    const c = (await page.locator("form.composer").boundingBox())!;
+    expect(j.y + j.height).toBeLessThanOrEqual(c.y + 0.5); // never covers the composer
+    expect(c.y - (j.y + j.height)).toBeLessThan(24); // and stays attached to it
+    expect(j.x).toBeGreaterThanOrEqual(0);
+    expect(j.x + j.width).toBeLessThanOrEqual(size.width);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await axeClean(page, `jump ${size.name}`);
+  });
+}
+
+test("phone: an answer with a conflict fits the width", async ({ page }) => {
+  await page.setViewportSize({ width: 390, height: 844 });
+  await mock(page, { history: [histUser, histAnswer({ conflicts: [conflict] })] });
+  await page.goto(`/app/chat?s=${SESSION}`);
+  await expect(page.getByTestId("conflict-side")).toHaveCount(2);
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+  await axeClean(page, "phone conflict");
+});

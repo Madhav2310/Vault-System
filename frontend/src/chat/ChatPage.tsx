@@ -36,6 +36,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
   const q = route.params.get("q");
   const docParam = route.params.get("doc");
   const pickScope = route.params.get("pick") === "1";
+  const draft = route.params.get("draft"); // a question carried over from "Wrong document?"
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [docs, setDocs] = useState<DocumentListItem[]>([]);
@@ -110,6 +111,11 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
   }, [sessionId, unauth]);
 
   useEffect(() => () => abort.current?.abort(), []);
+
+  // "Wrong document?" opens a fresh chat with the scope picker and the question waiting in the composer.
+  useEffect(() => {
+    if (!sessionId && draft) setInput(draft);
+  }, [sessionId, draft]);
 
   /** One turn: a typed question, a re-ask of an earlier message, or an option picked from a clarification
    * (`question` is only what the pair shows; the server resolves the scope from the option). */
@@ -356,16 +362,16 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
           </p>
         )}
         {!sessionId && messages.length === 0 && !busy && (
-          <div className="empty" data-testid="chat-empty">
+          <div className="chat-empty" data-testid="chat-empty">
             <p className="empty-lead">Ask anything about your documents. Every claim points back to the passage it came from.</p>
             {docsLoaded && docs.length === 0 ? (
               <p className="hint">Nothing here yet. Add a document in your library, then come back and ask.</p>
             ) : (
               docsLoaded && (
-                <ul className="chips" aria-label="Suggested questions" data-testid="suggestions">
+                <ul className="qchips" aria-label="Suggested questions" data-testid="suggestions">
                   {suggestionsFor(docs, scope).map((t) => (
                     <li key={t}>
-                      <button type="button" className="chip" onClick={() => void ask(t)}>
+                      <button type="button" className="qchip" onClick={() => void ask(t)}>
                         {t}
                       </button>
                     </li>
@@ -380,10 +386,12 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
             const last = i === messages.length - 1;
             const lastUserId = lastUser(messages)?.id;
             const idle = !busy && !!sessionId;
+            const question = m.role === "assistant" ? messages.slice(0, i).reverse().find((x) => x.role === "user")?.content : undefined;
             return (
               <MessageView
                 key={m.id}
                 msg={m}
+                {...(question ? { question } : {})}
                 docCount={scopeCount}
                 busy={busy}
                 isLast={last}
@@ -398,11 +406,6 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
             );
           })}
         </ol>
-        {showJump && (
-          <button type="button" className="btn jump" onClick={jump} data-testid="jump-latest">
-            Jump to latest
-          </button>
-        )}
         {failure && (
           <p className="notice notice-error" role="alert" data-testid="chat-error">
             {failure}
@@ -415,6 +418,11 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
             void ask(input);
           }}
         >
+          {showJump && (
+            <button type="button" className="btn jump" onClick={jump} data-testid="jump-latest">
+              Jump to latest
+            </button>
+          )}
           <label className="field">
             {editing ? "Edit your question" : "Your question"}
             <textarea
