@@ -110,6 +110,10 @@ class Settings(BaseSettings):
     # --- plan-first answers (S22.04): answer_rag@4 + coverage plan; off until the A/B decides ---
     chat_plan_first: bool = False
 
+    # --- support check (S22.06): 2 = support_check@2 (prunes unneeded citations, removes unsupported
+    # segments, one regeneration if every segment fails); 1 until the paired A/B accepts it ---
+    chat_support_version: Literal[1, 2] = 1
+
     # --- warm voice (S23.01): appends prompts/voice@1.md to the answer prompts; off until the A/B decides ---
     chat_voice: bool = False
 

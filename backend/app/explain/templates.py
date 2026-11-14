@@ -38,6 +38,10 @@ NOT_FOUND_ELEMENT = (
     "I did not find anything about {element} in these documents. Try a document that covers it."
 )
 CLARIFY_TEXT = "More than one of your documents could answer this. Which one should I look in?"
+UNSUPPORTED_ABSTAIN_TEXT = (
+    "I could not write an answer that your documents clearly back up. "
+    "Try asking in different words, or name the document or section you have in mind."
+)
 ERROR_TEXT = "That did not work on my side, and no answer was written. Please try again in a moment."
 QUOTA_REACHED = "You have reached today's usage limit. It resets in {retry} s (at midnight UTC), so you can ask again then."
 RATE_LIMITED = "That was a lot of requests at once. Please try again in {retry} s."
@@ -71,6 +75,9 @@ REASON_TEMPLATES: dict[str, str] = {
     "FULL_CONTEXT_TOO_LARGE": "The documents were too long to read whole, so the best passages were searched instead.",
     "SUPPORT_CHECK_FAILED": "The citations could not be double-checked this time.",
     "UNSUPPORTED_CLAIM": "A claim is not backed up by its cited source, so read it with care.",
+    "UNSUPPORTED_REMOVED": "One part of the draft was left out because your documents did not back it up.",
+    "ANSWER_REGENERATED": "The first draft was not backed up by your documents, so the answer was written again.",
+    "UNSUPPORTED_ABSTAINED": "No answer could be written that your documents back up, so none is shown.",
     "TURN_ABANDONED": "This turn stopped unexpectedly, so no answer was written. Try asking again.",
     "META_OP_REJECTED": "That question about your collection was answered from the document content instead.",
     "META_COUNT_DOCUMENTS": "Counted your documents from the document list.",
