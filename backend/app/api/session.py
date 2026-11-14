@@ -72,11 +72,11 @@ LOCAL_USER_EMAIL = "local@vault.local"
 
 @router.post(
     "/session/local",
-    summary="Sign in as the local demo user (local runs only)",
+    summary="Sign in as the local user (local runs only)",
     description=(
-        "For a laptop run: when `LOCAL_AUTOLOGIN` is on, the environment is not `prod` and the request host is "
-        "localhost, signs in as one fixed local user (created on first use; its key is never shown). 404 "
-        "everywhere else, so a deployed instance still needs a real API key."
+        "For a laptop run: when `LOCAL_AUTOLOGIN` is on, the environment is not `prod` and the request host "
+        "is localhost, signs in as one fixed local user (created on first use; its key is never shown). "
+        "404 everywhere else, so a deployed instance still needs a real API key."
     ),
     operation_id="login_local_session",
     status_code=204,

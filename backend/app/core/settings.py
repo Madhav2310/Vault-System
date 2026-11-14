@@ -30,7 +30,9 @@ class Settings(BaseSettings):
 
     # --- UI session cookie (S22.11) ---
     session_ttl_s: int = 28800  # lifetime of a /v1/session cookie
-    local_autologin: bool = True  # POST /v1/session/local: one-click sign-in on localhost only (never in prod)
+    local_autologin: bool = (
+        True  # POST /v1/session/local: one-click sign-in on localhost only (never in prod)
+    )
     session_secret: SecretStr | None = (
         None  # optional extra HMAC key; tokens are always bound to the user's key hash
     )
