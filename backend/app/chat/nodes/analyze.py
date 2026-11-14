@@ -7,6 +7,7 @@ and a clarification survives only when the caller allows it and its shape is sou
 (schema violation, refusal, truncation, timeout, budget) yields a deterministic fallback decision.
 """
 
+import json
 import uuid
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, replace
@@ -23,7 +24,30 @@ from app.llm.gateway import Budget, LlmGateway
 
 _log = get_logger("vault.chat.analyze")
 
-PROMPT: tuple[str, int] = ("analyze_query", 2)
+PROMPT: tuple[str, int] = ("analyze_query", 2)  # the default; `chat_analyze_version` selects @3 (S22.09)
+
+# Static first (S22.09): what rarely changes within a session comes first and the question last, so the
+# provider's prompt cache covers the system prompt plus the documents/summary/history prefix.
+INPUT_ORDER = (
+    "documents",
+    "resolved_entities",
+    "rolling_summary",
+    "history",
+    "clarification_allowed",
+    "question",
+)
+
+
+def prompt_for(gateway: LlmGateway) -> tuple[str, int]:
+    return ("analyze_query", gateway.settings.chat_analyze_version)
+
+
+def render_ordered(inputs: Mapping[str, Any]) -> str:
+    """The user turn: the `<inputs>` JSON the gateway would render, with keys in `INPUT_ORDER`."""
+    assert set(inputs) == set(INPUT_ORDER)
+    ordered = {k: inputs[k] for k in INPUT_ORDER}
+    return f"<inputs>{json.dumps(ordered, ensure_ascii=False, default=str)}</inputs>"
+
 
 CLARIFY_AMBIGUOUS_DOCUMENT = "CLARIFY_AMBIGUOUS_DOCUMENT"
 CLARIFY_AMBIGUOUS_QUERY = "CLARIFY_AMBIGUOUS_QUERY"
@@ -246,8 +270,8 @@ async def analyze_query(
         res = await gateway.call(
             purpose="analyze_query",
             lane="interactive",
-            prompt=PROMPT,
-            inputs=inputs,
+            prompt=prompt_for(gateway),
+            messages=[{"role": "user", "content": render_ordered(inputs)}],
             schema=AnalyzeQueryOut,
             owner_id=owner_id,
             run_id=run_id,
