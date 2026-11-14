@@ -9,6 +9,7 @@ result is used as is (`speculative: hit`); an unusable one is dropped (`miss`) a
 import uuid
 
 from app.chat.clarify import near_tie
+from app.chat.compare import floor_on, floor_per_doc
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.nodes.run_analyze import clarify_ok
 from app.chat.speculative import HIT, MISS, cancel
@@ -64,6 +65,8 @@ async def retrieve(state: TurnState, ctx: TurnCtx) -> TurnState:
         result = await deps.retriever.retrieve(
             deps.sm, ctx.owner_id, state.scope, query, embedding=emb, run_id=ctx.run_id
         )
+    if floor_on(deps.gateway.settings):
+        result = floor_per_doc(result, state.scope)
     async with deps.sm() as s:
         state.chunks = await load_evidence_chunks(s, ctx.owner_id, list(result.selected))
     state.retrieval = result
