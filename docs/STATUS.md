@@ -21,7 +21,7 @@ Re-judge of the same answers with the fixed judges (claims@2, support@2, version
 4. Review the chat UI at `/app` and `docs/voice.md`.
 
 ## 5. Spend
-About $6.2 of the $30 cap since 2026-11-01 (`python -m eval.replay --spend 2026-11-01T00:00:00+00:00`).
+Sum of the printed per-run spends this session: about $4.0 (train run $1.23, audit $1.88, re-judge $0.51, requeue $0.25, migration $0.04, table drafts $0.01) on top of $2.98 earlier, so about $7 of the $30 cap. The main checkout's ledger command (`python -m eval.replay --spend 2026-11-01T00:00:00+00:00`) prints $3.76: it does not see spend recorded by lane worktrees, so treat the sum as the better figure.
 
 ## 6. Open risks
 Gold unaudited; judges not human-calibrated; extraction/chunking stages not observable in attribution (shows 0: unmeasured); `table_lookup` is model-drafted gold (unaudited); `formatting` stratum has 0 of 5 items; ingestion of the eval corpus took about 25 min on this laptop.
