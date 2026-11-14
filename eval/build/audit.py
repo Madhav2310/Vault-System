@@ -529,6 +529,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--out", type=pathlib.Path, default=None, help=f"queue file (default {QUEUE_FILE.name})")
     ap.add_argument("--force", action="store_true", help="overwrite a queue file that already has decisions")
     ap.add_argument("--limit", type=int, default=None, help="audit only the first N live items")
+    ap.add_argument(
+        "--split", default="all", choices=["all", "train", "dev", "test"], help="audit one split only"
+    )
     ap.add_argument("--concurrency", type=int, default=4)
     ap.add_argument("--render", type=pathlib.Path, metavar="QUEUE_YAML", help="print the review markdown")
     ap.add_argument("--render-out", type=pathlib.Path, default=None, help="write the review markdown here")
@@ -560,6 +563,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     cap = a.max_usd
     guard = SpendGuard(ledger, cap if cap is not None else Decimal(1000))
     items = list(live_items(load_dataset_v2().items))
+    if a.split != "all":
+        from eval.splits_v2 import select_v2
+
+        items = select_v2(items, a.split)
     if a.limit is not None:
         items = items[: a.limit]
     res = asyncio.run(
