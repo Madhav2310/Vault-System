@@ -5,6 +5,7 @@ import dataclasses
 import uuid
 from typing import Annotated, Any, Literal, Self
 
+import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, ConfigDict, Field, model_validator
@@ -20,7 +21,8 @@ from app.chat import stream as stream_mod
 from app.chat.events import event_schema
 from app.core.auth import AuthUser, CurrentUser
 from app.core.error_codes import ErrorCode
-from app.core.quota import TurnReservation, enforce_chat_quota
+from app.core.quota import check_quota
+from app.core.ratelimit import get_ratelimit_redis
 
 router = APIRouter(prefix="/v1/chat", tags=["Chat"])
 _TASKS: set[asyncio.Future[None]] = set()  # strong refs: running turns must outlive the request
@@ -219,13 +221,16 @@ async def post_message(
     db: Annotated[AsyncSession, Depends(get_db)],
     response: Response,
     run_turn: Annotated[TurnRunner, Depends(get_turn_runner)],
-    reservation: Annotated[TurnReservation, Depends(enforce_chat_quota)],
+    redis: Annotated[aioredis.Redis, Depends(get_ratelimit_redis)],
 ) -> Any:
     """Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
     while running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion
     before the response and returns 200 with the assistant message; it keeps running and persists even if the
     client disconnects. With `Accept: text/event-stream` the turn streams events instead: the
     status codes above are decided before the stream starts and the stream itself answers 200."""
+    # Admission runs here, after FastAPI has validated the path and body: as a dependency it ran before
+    # validation, and a 422 left its reservation held until expiry.
+    reservation = await check_quota(db, user.id, admin=user.is_admin, redis=redis)
     try:
         return await _post_message(session_id, body, request, user, db, response, reservation.guard(run_turn))
     finally:

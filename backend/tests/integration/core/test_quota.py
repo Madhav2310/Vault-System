@@ -124,3 +124,22 @@ async def test_a_request_that_starts_no_turn_releases_its_reservation(
     )
     assert r.status_code == 404
     assert await _in_flight(o.id) == 0
+
+
+async def test_an_invalid_request_holds_no_reservation(
+    api: httpx.AsyncClient, make_owner: Callable[[], Any]
+) -> None:
+    """Admission runs after validation: a 422 (bad body or path) never reserves quota."""
+    o = await make_owner()
+    r = await api.post("/v1/chat/sessions", json={}, headers=o.auth)
+    sid = r.json()["id"]
+    bad_body = await api.post(
+        f"/v1/chat/sessions/{sid}/messages", json={"content": "x" * 100_000}, headers=o.auth
+    )
+    bad_path = await api.post(
+        "/v1/chat/sessions/not-a-uuid/messages",
+        json={"content": "hi", "client_message_id": "m"},
+        headers=o.auth,
+    )
+    assert bad_body.status_code == bad_path.status_code == 422
+    assert await _in_flight(o.id) == 0

@@ -19,19 +19,14 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
-from typing import Annotated
 
 import redis.asyncio as aioredis
-from fastapi import Depends
 from redis.exceptions import RedisError
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_db
 from app.api.errors import DomainError
-from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
-from app.core.ratelimit import get_ratelimit_redis
 from app.core.settings import get_settings
 from app.explain.templates import QUOTA_REACHED
 
@@ -160,12 +155,3 @@ async def over_quota(db: AsyncSession, owner_id: uuid.UUID) -> bool:
     if await is_admin(db, owner_id):
         return False
     return await spent_today(db, owner_id) >= Decimal(str(get_settings().user_daily_usd))
-
-
-async def enforce_chat_quota(
-    user: CurrentUser,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    redis: Annotated[aioredis.Redis, Depends(get_ratelimit_redis)],
-) -> TurnReservation:
-    """Route dependency for the chat POST (a turn costs money). Retries of a finished turn are blocked too."""
-    return await check_quota(db, user.id, admin=user.is_admin, redis=redis)
