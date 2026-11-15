@@ -40,7 +40,6 @@ async def test_all_nodes_timed(
         "analyze",
         "plan_context",
         "retrieve",
-        "gate",
         "generate",
         "verify",
     ]  # fmt: skip  (persist writes the steps, so its own step is not stored)

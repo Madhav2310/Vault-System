@@ -121,6 +121,5 @@ class LlmReranker:
         order = repair_ranking(res.output.ranking, len(sent), top_n)
         if not order:
             return fallback(FAIL_BAD_RESPONSE)
-        # Rank-only: no calibrated score exists, so the gate falls back to the vector signal (gate.top_score).
         items = [RerankedItem(sent[i].chunk_id, i, None) for i in order]
         return RerankResult(items, [None] * n, False, None, None, res.model)

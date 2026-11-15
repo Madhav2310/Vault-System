@@ -73,7 +73,6 @@ export type ChatStage =
   | "analyzing"
   | "retrieving"
   | "reading_documents"
-  | "checking_evidence"
   | "writing"
   | "verifying"
   | "saving";

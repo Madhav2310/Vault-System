@@ -1,5 +1,5 @@
 # Retrieval configuration. The file name is the config version: changing any value means a new
-# file; results and cache keys carry the version. retrieval@2 = retrieval@1 plus the evidence gate.
+# file; results and cache keys carry the version. retrieval@2 = fusion order, no reranker.
 version: retrieval@2
 k_vec: 40                # exact cosine search: candidates from the vector list
 k_lex: 40                # candidates from the lexical list
@@ -16,7 +16,3 @@ expansion:
   enabled: true
   max_evidence_tokens: 4000
 cache_ttl_s: 3600
-gate:
-  high: 0.0              # placeholder (the high-confidence skip is not implemented)
-  floor: 0.3803             # top_score below this abstains without generating; set by `python -m eval.calibrate_gate --write`
-  enabled: false        # off: on answers it refused 3 of 44 answerable train items; `--write` turns the gate on together with a calibrated floor

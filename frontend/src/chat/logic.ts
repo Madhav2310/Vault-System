@@ -167,8 +167,6 @@ export function statusLabel(stage: ChatStage | null, docCount: number | null = n
       return docCount && docCount > 0
         ? `Reading ${docCount} document${docCount === 1 ? "" : "s"}…`
         : "Reading your documents…";
-    case "checking_evidence":
-      return "Checking the evidence…";
     case "writing":
       return "Writing…";
     case "verifying":

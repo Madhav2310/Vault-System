@@ -26,14 +26,6 @@ NO_EVIDENCE_TEXT = (
     "I could not find this in your documents. "
     "Try asking in different words, or name the document or section you have in mind."
 )
-ABSTAIN_TEXT_ONE = (
-    "I could not find this in your 1 document. "
-    "Try asking in different words, or name the section you have in mind."
-)
-ABSTAIN_TEXT_MANY = (
-    "I could not find this in your {n} documents. "
-    "Try asking in different words, or name the document you have in mind."
-)
 CLARIFY_TEXT = "More than one of your documents could answer this. Which one should I look in?"
 ERROR_TEXT = "That did not work on my side, and no answer was written. Please try again in a moment."
 QUOTA_REACHED = "You have reached today's usage limit. It resets in {retry} s (at midnight UTC), so you can ask again then."
@@ -45,10 +37,6 @@ STALE_ANSWER = (
 # reason code -> user-facing line. Keys are the code strings recorded in `rag_runs.reason_codes`.
 REASON_TEMPLATES: dict[str, str] = {
     "NO_EVIDENCE": "Nothing in your documents matched closely enough. Try different words or name the document.",
-    "ABSTAIN_NO_EVIDENCE": (
-        "The closest passages were too weak to answer from, so none was written. "
-        "Try different words or name the document."
-    ),
     "SCOPE_EMPTY": "There are no ready documents in scope. Upload one, or wait for processing to finish.",
     "FULL_CONTEXT_UNAVAILABLE": (
         "Reading the whole document was not possible this time, so the best-matching passages were used."

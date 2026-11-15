@@ -30,13 +30,6 @@ class ExpansionCfg(BaseModel):
     max_evidence_tokens: int = Field(ge=100)
 
 
-class GateCfg(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    high: float
-    floor: float
-    enabled: bool = False  # the no-LLM evidence floor applies only when a config turns it on
-
-
 class RetrievalConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
     version: str = Field(pattern=r"^retrieval@[1-9][0-9]*(-[a-z0-9]+)?$")
@@ -48,7 +41,6 @@ class RetrievalConfig(BaseModel):
     rerank: RerankCfg
     expansion: ExpansionCfg
     cache_ttl_s: int = Field(ge=0)
-    gate: GateCfg
     single_doc_full_k: bool = False  # one-document scope: no per_doc_quota (it caps the list below k_vec)
 
     def model_post_init(self, _ctx: Any) -> None:

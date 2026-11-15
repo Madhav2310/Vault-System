@@ -1,13 +1,13 @@
 """Turn orchestrator: the explicit graph in `app.chat.graph` over the nodes in `app.chat.nodes`.
 
-load_context -> route_question -> analyze (embeds the question meanwhile) -> retrieve -> gate -> generate ->
-verify -> persist. The routers below, not the nodes, pick the next node. No DB connection is held across
+load_context -> route_question -> analyze (embeds the question meanwhile) -> retrieve -> generate -> verify ->
+persist. The routers below, not the nodes, pick the next node. No DB connection is held across
 an LLM call or a retrieval call: each phase opens its own short session. Whatever happens, the run is finished
 and the session lease released in one `persist_turn` transaction (a failed node becomes an `error` response,
 never a stuck run: the graph jumps to `persist`).
 
 `plan_context` picks RAG or the full-context route; the run records `mode=full_context` only when
-the whole scoped documents were sent. M0 scope: no evidence floor, no conflict detection (later slices).
+the whole scoped documents were sent.
 """
 
 import asyncio
@@ -26,7 +26,6 @@ from app.chat.ledger import CandidateRecord, PersistedTurn, TurnRecord, persist_
 from app.chat.nodes._common import ERROR_TEXT, NO_DOCUMENTS, NO_EVIDENCE, flush_segments, plain
 from app.chat.nodes.analyze import PROMPT as ANALYZE_PROMPT
 from app.chat.nodes.compare_retrieve import compare_retrieve
-from app.chat.nodes.gate import gate
 from app.chat.nodes.generate import answer_prompt
 from app.chat.nodes.load_context import load_context
 from app.chat.nodes.meta import meta
@@ -104,19 +103,14 @@ def after_analyze(s: TurnState) -> str:
 def after_plan_context(s: TurnState) -> str:
     if s.mode != "full_context":
         return "compare_retrieve" if s.compare else "retrieve"
-    return "generate" if s.chunks else "abstain_no_evidence"  # full context always generates (no gate)
+    return "generate" if s.chunks else "abstain_no_evidence"
 
 
-@router("abstain_no_evidence", "clarify", "gate")
+@router("abstain_no_evidence", "clarify", "generate")
 def after_retrieve(s: TurnState) -> str:
     if s.clarification is not None:
         return "clarify"
-    return "gate" if s.chunks else "abstain_no_evidence"
-
-
-@router("abstain_no_evidence", "generate")
-def after_gate(s: TurnState) -> str:
-    return "abstain_no_evidence" if s.gate_abstain else "generate"
+    return "generate" if s.chunks else "abstain_no_evidence"
 
 
 @router("verify", "persist")
@@ -201,7 +195,7 @@ def build_graph() -> Graph:
         nodes={
             "load_context": load_context, "route_question": route_question, "analyze": analyze,
             "plan_context": plan_context, "retrieve": retrieve, "compare_retrieve": compare_retrieve,
-            "gate": gate, "generate": generate,
+            "generate": generate,
             "verify": verify,
             "clarify": clarify, "meta": meta, "abstain_no_documents": abstain_no_documents,
             "abstain_no_evidence": abstain_no_evidence, "persist": persist,
@@ -210,7 +204,6 @@ def build_graph() -> Graph:
             "load_context": after_load_context, "route_question": after_route_question,
             "analyze": after_analyze, "plan_context": after_plan_context, "retrieve": after_retrieve,
             "compare_retrieve": after_retrieve,
-            "gate": after_gate,
             "generate": after_generate, "verify": "persist", "clarify": "persist", "meta": "persist",
             "abstain_no_documents": "persist", "abstain_no_evidence": "persist", "persist": END,
         },

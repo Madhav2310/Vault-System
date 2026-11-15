@@ -11,13 +11,13 @@ EMOJI = re.compile("[\U0001f300-\U0001faff☀-➿]")
 CONSTANTS = (
     "ANSWERED_ONE_DOC", "ANSWERED_MANY_DOCS", "FULL_CONTEXT_READ", "FULL_CONTEXT_READ_MANY",
     "UNSUPPORTED_ONE", "UNSUPPORTED_MANY", "NO_ANSWER", "NO_DOCUMENTS_TEXT", "NO_EVIDENCE_TEXT",
-    "ABSTAIN_TEXT_ONE", "ABSTAIN_TEXT_MANY", "ERROR_TEXT", "QUOTA_REACHED", "RATE_LIMITED",
+    "ERROR_TEXT", "QUOTA_REACHED", "RATE_LIMITED",
     "STALE_ANSWER",
 )  # fmt: skip
 MUST_HAVE_NEXT_STEP = (
-    "NO_DOCUMENTS_TEXT", "NO_EVIDENCE_TEXT", "ABSTAIN_TEXT_ONE", "ABSTAIN_TEXT_MANY", "ERROR_TEXT",
+    "NO_DOCUMENTS_TEXT", "NO_EVIDENCE_TEXT", "ERROR_TEXT",
     "QUOTA_REACHED", "RATE_LIMITED", "STALE_ANSWER", "NO_ANSWER", "reason:NO_EVIDENCE",
-    "reason:ABSTAIN_NO_EVIDENCE", "reason:SCOPE_EMPTY",
+    "reason:SCOPE_EMPTY",
     "reason:COMPARE_SIDE_MISSING", "reason:TURN_ERROR", "reason:TURN_ABANDONED", "reason:STOP_REFUSAL",
     "reason:GENERATION_INVALID", "reason:NODE_TIMEOUT",
 )  # fmt: skip
@@ -45,11 +45,7 @@ def test_templates_warm() -> None:
 
 
 def test_rendered_texts_are_warm() -> None:
-    from app.chat.gate import abstain_text
-
     rendered = [
-        abstain_text(1),
-        abstain_text(4),
         T.QUOTA_REACHED.format(retry=60),
         T.RATE_LIMITED.format(retry=3),
         T.unsupported(3) or "",

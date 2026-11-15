@@ -21,9 +21,7 @@ if TYPE_CHECKING:
     from app.chat.citations import ResolvedSegment
     from app.chat.evidence import EvidenceSet
 
-Stage = Literal[
-    "analyzing", "retrieving", "reading_documents", "checking_evidence", "writing", "verifying", "saving"
-]
+Stage = Literal["analyzing", "retrieving", "reading_documents", "writing", "verifying", "saving"]
 
 # node name -> stage shown to the user; `status` fires when the stage changes (unlisted nodes emit none)
 NODE_STAGE: dict[str, Stage] = {
@@ -32,7 +30,6 @@ NODE_STAGE: dict[str, Stage] = {
     "analyze": "analyzing",
     "retrieve": "retrieving",
     "compare_retrieve": "retrieving",
-    "gate": "checking_evidence",
     "generate": "writing",
     "clarify": "writing",
     "meta": "writing",
