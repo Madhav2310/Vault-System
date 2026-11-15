@@ -72,6 +72,13 @@ class Settings(BaseSettings):
     llm_retry_base_s: float = 0.5  # backoff base when no retry-after is given
     llm_retry_max_s: float = 8.0
     llm_retry_after_max_s: float = 60.0  # a longer retry-after is not slept in process: the call raises
+    # Model calls in flight per process and lane (app/llm/concurrency.py). Interactive: a turn overlaps at
+    # most two calls, so 32 serves 16+ turns at once per API process before anything queues. Background:
+    # twice the largest per-task fan-out (EMBED_CONCURRENCY 4, contextualize wave 4, BRIEF_CONCURRENCY 3).
+    llm_concurrency_interactive: int = 32
+    llm_concurrency_background: int = 8
+    llm_queue_max_wait_s: float = 120.0  # = LLM_TIMEOUT_S: longer means every slot is stuck; then capacity
+    llm_queue_deadline_margin_s: float = 1.0  # a waiter with a deadline gives up this long before it
     # Per-model price overrides, USD per MTok, merged over app/llm/pricing.py defaults. JSON, e.g.
     # {"gpt-6.1-terra": {"input": 1, "output": 5, "cache_read": 0.05, "cache_write": 1.25}}
     llm_prices: dict[str, dict[str, float]] = Field(default_factory=dict)

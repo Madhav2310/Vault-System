@@ -168,7 +168,7 @@ erDiagram
 | `retrieval_candidates` | per candidate: vector rank and distance, lexical rank and score, `id_match`, `rrf_score`, `rerank_score`, `selected`, `expanded_from` | Full ranking provenance, so `eval.replay` can re-rank offline for $0. |
 | `answer_segments` | per segment: text, `support` (cited or none), `verification`, `verification_reason` | Unique `(run_id, ordinal)`. |
 | `segment_evidence` | `(segment_id, chunk_id, sentence_start)` PK, `sentence_end`, `cited_text` | Half-open range check `sentence_start < sentence_end`. `cited_text` is copied from storage. |
-| `llm_calls` | one row **per attempt**: purpose, lane, provider, role, requested `model`, `resolved_model`, `prompt_id`, `prompt_version`, tokens (input, output, cache read, cache write), `cost_usd`, latency, TTFT, status, `error_type` | The cost ledger. Daily quotas sum it (`backend/app/core/quota.py`). |
+| `llm_calls` | one row **per attempt**: purpose, lane, provider, role, requested `model`, `resolved_model`, `prompt_id`, `prompt_version`, tokens (input, output, cache read, cache write), `cost_usd`, latency, TTFT, status (`ok`, `error`, or `estimated` for an aborted attempt whose tokens and cost are the gateway's estimate), `error_type` | The cost ledger. Daily quotas sum it (`backend/app/core/quota.py`). |
 | `feedback` | per run, optionally per segment or chunk: `kind`, note, `eval_status` | One rating per (answer, segment) per user (`backend/app/feedback/service.py`). |
 | `idempotency_keys` | `(owner_id, key)`, request hash, stored response | The same key with a different body gives 422 (`backend/app/api/idempotency.py`). |
 | `eval_runs`, `eval_results` | eval bookkeeping | Not used by the product path. |
@@ -388,7 +388,11 @@ Other models and services:
 
 **Fallback.** After retries on a retryable error, the gateway makes one attempt on the next role up (`FALLBACK_ROLE`: fast to balanced, balanced to deep) and records `DEGRADED_MODEL_FALLBACK`. There is no cross-vendor failover, and the Anthropic adapter is dormant.
 
-**Gateway contract** (`backend/app/llm/gateway.py`): resolve route, charge the turn budget, one OTel span per attempt (IDs and counters only), provider call with typed errors (`backend/app/llm/errors.py`), retry with jitter honouring `retry-after`, one `llm_calls` row per attempt in its own short session, stop-reason checks and schema validation, then the fallback. All calls use the OpenAI Responses API with strict JSON schema. RAG calls use explicit prompt caching with no breakpoint, because the default implicit mode billed every prompt as a 1.25× cache write (measured with a probe: 4,513 cache-write tokens became 0).
+**Gateway contract** (`backend/app/llm/gateway.py`): resolve route, charge the turn budget, take a call slot of the lane, one OTel span per attempt (IDs and counters only), provider call with typed errors (`backend/app/llm/errors.py`), retry with jitter honouring `retry-after`, one `llm_calls` row per attempt in its own short session, stop-reason checks and schema validation, then the fallback.
+
+**Call slots** (`backend/app/llm/concurrency.py`): each gateway caps the model calls (chat, streams and embeddings) in flight per lane, `interactive` (`LLM_CONCURRENCY_INTERACTIVE`, 32) and `background` (`LLM_CONCURRENCY_BACKGROUND`, 8), so ingestion and briefs never take chat's slots. There is one gateway per API process and one per Celery task, and a prefork child runs one task at a time, so the cap is per process. An attempt holds its slot until the response, or until the stream's final event, failure, close or cancellation. A retry gives the slot back during its backoff and queues again. A waiter gives up `LLM_QUEUE_DEADLINE_MARGIN_S` (1 s) before its turn deadline, or after `LLM_QUEUE_MAX_WAIT_S` (120 s) without one, with `CapacityError` (`capacity`, 503, retryable): no provider call and no ledger row. In a turn it ends the node like any model failure, with `capacity` as the step's error code. The wait is the span attribute `vault.llm.queue_wait_ms` and the histogram `vault.llm.queue_wait`; refusals count in `vault.llm.capacity_rejected`, both labelled by lane.
+
+**Aborted attempts.** An attempt that ends without provider usage after the request may have reached the provider (cancelled by a deadline or a closed stream, an unexpected error, or a provider error after the first streamed token) is written with `status='estimated'`: the gateway's input estimate (characters / 4) plus the `cl100k_base` tokens of the text streamed so far, at list price with no cache discount, so the daily quota counts it. OpenAI's documentation does not say how an aborted stream is billed, so the estimate assumes the input and the streamed output are billed. It cannot see reasoning tokens generated before the first delta. A provider error before the first token stays at $0. All calls use the OpenAI Responses API with strict JSON schema. RAG calls use explicit prompt caching with no breakpoint, because the default implicit mode billed every prompt as a 1.25× cache write (measured with a probe: 4,513 cache-write tokens became 0).
 
 ### 7.2 Prompts
 
@@ -437,6 +441,7 @@ Operational settings that are not behaviour experiments:
 | `BRIEF_ENABLED` (+ `BRIEF_MAX_USD`, `BRIEF_CONCURRENCY`, `BRIEF_MAX_EVIDENCE_TOKENS`) | `true` | The brief stage; evaluation uploads turn it off |
 | `LLM_PROVIDER` | `openai` | `fake` is a scripted model for UI tests and is refused in production |
 | `MODEL_ROUTES`, `MODEL_*`, `LLM_PRICES` | empty / role defaults | Routing and price overrides |
+| `LLM_CONCURRENCY_INTERACTIVE`, `LLM_CONCURRENCY_BACKGROUND` (+ `LLM_QUEUE_MAX_WAIT_S`, `LLM_QUEUE_DEADLINE_MARGIN_S`) | 32, 8 (120 s, 1 s) | Model calls in flight per process and lane ([section 7.1](#71-roles-and-routing)) |
 
 ---
 
@@ -559,6 +564,7 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 **Queues and concurrency.**
 - Celery queues: `ingest` (`worker-ingest -c 1`), `ai` and `maintenance` (`worker-ai -c ${AI_WORKER_CONCURRENCY:-4}`), and beat as a single instance (`docker-compose.yml`, `backend/app/worker/celery_app.py`).
 - Per document: 4 embed batches and 3 brief map calls in flight.
+- Per process: at most 32 interactive and 8 background model calls in flight; a call that finds no slot before its deadline fails with `capacity` (section 7.1).
 - Per user: 1 turn per session, chat 20 requests/min, and the daily cost quota.
 - The API never holds a DB connection across a model call. Each node opens a short session.
 

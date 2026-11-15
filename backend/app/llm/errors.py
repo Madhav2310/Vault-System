@@ -120,8 +120,11 @@ class UnknownModelPriceError(LlmError):
     error_type = "unknown_price"
 
 
-class CircuitOpenError(LlmError):
-    error_type = "circuit_open"
+class CapacityError(LlmError):
+    """No call slot of the lane came free within the caller's deadline or the max queue wait. Raised before
+    any provider call; `error_type` is the API's `capacity` code (503, retryable)."""
+
+    error_type = "capacity"
     retryable = True
 
 

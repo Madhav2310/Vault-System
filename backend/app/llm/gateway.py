@@ -1,15 +1,21 @@
 """LLM gateway: the only path to a model. Per call, in order:
 
 0. resolve node → role → model + effort through the router
-1. rate-limit tokens (lane-aware; stub until S5)
-2. charge the turn budget
-3. one OTel span per attempt (IDs/counters only)
+1. charge the turn budget
+2. take a lane slot (`concurrency.py`), waiting at most until the deadline; `CapacityError` otherwise
+3. one OTel span per attempt (IDs/counters only, plus the queue wait)
 4. provider call with typed errors
-5. retry with jitter, honoring retry-after (retryable errors only)
-6. update the circuit breaker (stub until S5)
-7. one `llm_calls` row per attempt (own short DB session)
-8. stop_reason checks, then schema validation
-9. after retries on a retryable error: one attempt on the role's fallback (`DEGRADED_MODEL_FALLBACK`)
+5. retry with jitter, honoring retry-after (retryable errors only); the slot is given back during the backoff
+6. one `llm_calls` row per attempt (own short DB session)
+7. stop_reason checks, then schema validation
+8. after retries on a retryable error: one attempt on the role's fallback (`DEGRADED_MODEL_FALLBACK`)
+
+An attempt holds its slot from the provider call until the response, or until the stream's last event,
+failure, close or cancellation. An attempt that ends with no usage from the provider after it may have started
+work (cancelled, unexpected error, or a provider error after the first streamed token) is recorded with
+`status='estimated'`: the input-token estimate plus the tokens of the text streamed so far, at list price, so
+the daily quota never counts such an attempt as free. A call refused for capacity, or cancelled while queued,
+made no provider call and writes no row.
 
 No DB connection is held across a provider call: each ledger row is written in its own short session after the
 attempt finishes. No prompt, input or completion text reaches spans, logs or exception messages.
@@ -20,7 +26,7 @@ import json
 import random
 import time
 import uuid
-from collections.abc import AsyncIterator, Awaitable, Callable, Mapping, Sequence
+from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Mapping, Sequence
 from contextlib import aclosing
 from dataclasses import dataclass, replace
 from decimal import Decimal
@@ -34,13 +40,12 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.ids import uuid7
 from app.core.settings import Settings, get_settings
 from app.db.models.ledger import LlmCall
+from app.llm.concurrency import ConcurrencyLimiter
 from app.llm.errors import (
-    CircuitOpenError,
     LlmError,
     ProviderConnectionError,
     ProviderError,
     ProviderTimeoutError,
-    RateLimitedError,
     RefusalError,
     RequestConflictError,
     SchemaValidationError,
@@ -73,7 +78,7 @@ TRUNCATING_STOPS = frozenset({"max_tokens", "model_context_window_exceeded"})
 _tracer = trace.get_tracer("app.llm.gateway")
 
 
-# --- collaborators: budget, rate limiter, circuit breaker (S5 fills the latter two) ------------------
+# --- collaborators: budget -------------------------------------------------------------------------
 
 
 class Budget(Protocol):
@@ -86,44 +91,6 @@ class Budget(Protocol):
         """Raise BudgetExceededError when no LLM call is left."""
 
     def record_usage(self, usage: Usage) -> None: ...
-
-
-class RateLimiter(Protocol):
-    async def acquire(self, *, model: str, lane: Lane, est_input_tokens: int) -> None: ...
-
-    def reconcile(self, *, model: str, usage: Usage) -> None: ...
-
-    def on_rate_limited(self, *, model: str, retry_after: float | None) -> None: ...
-
-
-class NoopRateLimiter:
-    async def acquire(self, *, model: str, lane: Lane, est_input_tokens: int) -> None:
-        return None
-
-    def reconcile(self, *, model: str, usage: Usage) -> None:
-        return None
-
-    def on_rate_limited(self, *, model: str, retry_after: float | None) -> None:
-        return None
-
-
-class CircuitBreaker(Protocol):
-    def allow(self, model: str) -> bool: ...
-
-    def record_success(self, model: str) -> None: ...
-
-    def record_failure(self, model: str, error_type: str) -> None: ...
-
-
-class NoopCircuitBreaker:
-    def allow(self, model: str) -> bool:
-        return True
-
-    def record_success(self, model: str) -> None:
-        return None
-
-    def record_failure(self, model: str, error_type: str) -> None:
-        return None
 
 
 # --- ledger -----------------------------------------------------------------------------------------
@@ -148,7 +115,7 @@ class LlmCallRecord:
     cost_usd: Decimal
     latency_ms: int
     ttft_ms: int | None
-    status: str  # ok | error
+    status: str  # ok | error | estimated (usage and cost are the gateway's estimate, see the module doc)
     error_type: str | None
 
 
@@ -246,7 +213,7 @@ class _Meta:
     job_id: uuid.UUID | None
     est_input_tokens: int
 
-    def span_attrs(self, attempt: int) -> dict[str, str | int]:
+    def span_attrs(self, attempt: int, queue_wait_s: float) -> dict[str, str | int]:
         attrs: dict[str, str | int] = {
             "gen_ai.provider.name": self.provider,
             "gen_ai.request.model": self.model,
@@ -254,6 +221,7 @@ class _Meta:
             "vault.llm.purpose": self.purpose,
             "vault.llm.lane": self.lane,
             "vault.llm.attempt": attempt,
+            "vault.llm.queue_wait_ms": int(queue_wait_s * 1000),
         }
         if self.prompt_id is not None and self.prompt_version is not None:
             attrs["vault.llm.prompt_id"] = self.prompt_id
@@ -297,16 +265,14 @@ class LlmGateway:
         settings: Settings,
         embeddings: EmbeddingProvider | None = None,
         router: ModelRouter | None = None,
-        rate_limiter: RateLimiter | None = None,
-        breaker: CircuitBreaker | None = None,
+        limiter: ConcurrencyLimiter | None = None,
         sleep: Callable[[float], Awaitable[None]] = asyncio.sleep,
         rng: Callable[[], float] = random.random,
     ):
         self.chat, self.embeddings, self.prompts, self.prices = chat, embeddings, prompts, prices
         self.ledger, self.settings = ledger, settings
         self.router = router or ModelRouter.from_settings(settings)
-        self.rate_limiter = rate_limiter or NoopRateLimiter()
-        self.breaker = breaker or NoopCircuitBreaker()
+        self.limiter = limiter or ConcurrencyLimiter.from_settings(settings)
         self._sleep, self._rng = sleep, rng
 
     # --- public API -----------------------------------------------------------------------------
@@ -390,7 +356,7 @@ class LlmGateway:
         degraded: tuple[str, ...] = ()
         try:
             r = await self._run(meta, budget, lambda: self.chat.complete(req), check, acct)
-        except (ProviderError, CircuitOpenError) as e:
+        except ProviderError as e:
             expired = (
                 budget is not None
                 and budget.deadline_at is not None
@@ -437,10 +403,12 @@ class LlmGateway:
         job_id: uuid.UUID | None = None,
         budget: Budget | None = None,
         system_suffix: str | None = None,
-    ) -> AsyncIterator[TextDelta | CitationDelta | Final]:
+    ) -> AsyncGenerator[TextDelta | CitationDelta | Final, None]:
         """Yields TextDelta | CitationDelta, then Final. With `schema`, the deltas are fragments of the strict
         JSON document and the consumer parses them incrementally. Retries only before the first event was
-        yielded; refusal / max_tokens raise typed errors after the row is written."""
+        yielded; refusal / max_tokens raise typed errors after the row is written. Each attempt holds a lane
+        slot until the provider's final event, a failure, or the consumer closing or cancelling the stream:
+        consume it inside `aclosing(...)` so an abandoned stream frees its slot at once."""
         p, req, res = self._prepare(
             prompt, purpose, model, route, mode, inputs, messages, schema, search_results, cache_mode,
             system_suffix,
@@ -452,12 +420,13 @@ class LlmGateway:
         attempt = 0
         while True:
             attempt += 1
-            await self._acquire(meta)
+            waited = await self.limiter.acquire(meta.lane, budget.deadline_at if budget else None)
+            held = True
             t0 = time.monotonic()
             ttft: int | None = None
             final: ProviderFinal | None = None
-            recorded = False
-            span = _tracer.start_span("llm.stream", attributes=meta.span_attrs(attempt))
+            streamed: list[str] = []  # text so far, only to count the output tokens of an aborted attempt
+            span = _tracer.start_span("llm.stream", attributes=meta.span_attrs(attempt, waited))
             try:
                 async with aclosing(self.chat.stream(req)) as events:
                     stream = events.__aiter__()
@@ -471,29 +440,40 @@ class LlmGateway:
                             continue
                         if ttft is None:
                             ttft = _ms(t0)
+                        if isinstance(ev, TextDelta):
+                            streamed.append(ev.text)
                         yield ev
                 if final is None:
                     raise ProviderConnectionError("stream ended without a final event")
             except ProviderError as e:
-                ids.append(
-                    await self._record(meta, attempt, Usage(), Decimal(0), _ms(t0), ttft, e.error_type, None)
-                )
-                recorded = True
-                self._on_failure(meta, e, span)
+                if ttft is None:  # an error status (or our first-token cut) before any output: $0
+                    ids.append(
+                        await self._record(
+                            meta, attempt, Usage(), Decimal(0), _ms(t0), ttft, e.error_type, None
+                        )
+                    )
+                else:  # output was being generated: billed, but the provider's usage never arrived
+                    ids.append(
+                        await self._record_estimate(meta, attempt, streamed, _ms(t0), ttft, e.error_type)
+                    )
+                self._on_failure(e, span)
                 delay = None if ttft is not None else self._retry_delay(e, attempt, budget)
                 if delay is None:
                     raise
             except BaseException as e:  # consumer closed / cancelled / unexpected: still one row
-                if not recorded:
-                    kind = (
-                        "cancelled" if isinstance(e, GeneratorExit | asyncio.CancelledError) else "unexpected"
-                    )
-                    await self._record(meta, attempt, Usage(), Decimal(0), _ms(t0), ttft, kind, None)
+                kind = "cancelled" if isinstance(e, GeneratorExit | asyncio.CancelledError) else "unexpected"
+                if final is not None:
+                    await self._record(
+                        meta, attempt, final.usage, self.prices.cost(meta.model, final.usage), _ms(t0), ttft,
+                        kind, final.resolved_model,
+                    )  # fmt: skip
+                else:
+                    await self._record_estimate(meta, attempt, streamed, _ms(t0), ttft, kind)
                 raise
             else:
                 cost = self.prices.cost(meta.model, final.usage)
                 total += cost
-                self._on_success(meta, final.usage, budget, span)
+                self._on_success(final.usage, budget, span)
                 err: LlmError | None = None
                 try:
                     _check_stop(final.stop_reason, final.refusal_category)
@@ -514,12 +494,16 @@ class LlmGateway:
                 if err is not None:
                     span.set_attribute("error.type", err.error_type)
                     raise err.with_accounting(final.usage, total, tuple(ids))
+                held = False
+                self.limiter.release(meta.lane)  # the provider is done: no slot held while the consumer reads
                 yield Final(
                     usage=final.usage, stop_reason=final.stop_reason, cost_usd=total, call_ids=tuple(ids)
                 )
                 return
             finally:
                 span.end()
+                if held:
+                    self.limiter.release(meta.lane)
             await self._sleep(delay)
 
     async def embed(
@@ -631,25 +615,15 @@ class LlmGateway:
         if budget is not None:
             budget.charge_call()
 
-    async def _acquire(self, meta: _Meta) -> None:
-        if not self.breaker.allow(meta.model):
-            raise CircuitOpenError(meta.model)
-        await self.rate_limiter.acquire(
-            model=meta.model, lane=meta.lane, est_input_tokens=meta.est_input_tokens
-        )
-
-    def _on_failure(self, meta: _Meta, e: ProviderError, span: trace.Span) -> None:
+    @staticmethod
+    def _on_failure(e: ProviderError, span: trace.Span) -> None:
         span.set_attribute("error.type", e.error_type)
         span.set_status(trace.StatusCode.ERROR)
-        self.breaker.record_failure(meta.model, e.error_type)
-        if isinstance(e, RateLimitedError):
-            self.rate_limiter.on_rate_limited(model=meta.model, retry_after=e.retry_after)
 
-    def _on_success(self, meta: _Meta, usage: Usage, budget: Budget | None, span: trace.Span) -> None:
+    @staticmethod
+    def _on_success(usage: Usage, budget: Budget | None, span: trace.Span) -> None:
         span.set_attribute("gen_ai.usage.input_tokens", usage.input_tokens)
         span.set_attribute("gen_ai.usage.output_tokens", usage.output_tokens)
-        self.breaker.record_success(meta.model)
-        self.rate_limiter.reconcile(model=meta.model, usage=usage)
         if budget is not None:
             budget.record_usage(usage)
 
@@ -699,6 +673,7 @@ class LlmGateway:
         ttft_ms: int | None,
         error_type: str | None,
         resolved_model: str | None,
+        status: str | None = None,
     ) -> uuid.UUID:
         rec = LlmCallRecord(
             id=uuid7(),
@@ -718,11 +693,32 @@ class LlmGateway:
             cost_usd=cost,
             latency_ms=latency_ms,
             ttft_ms=ttft_ms,
-            status="ok" if error_type is None else "error",
+            status=status or ("ok" if error_type is None else "error"),
             error_type=error_type,
         )
         await self.ledger.write(rec)
         return rec.id
+
+    async def _record_estimate(
+        self,
+        meta: _Meta,
+        attempt: int,
+        streamed: Sequence[str],
+        latency_ms: int,
+        ttft_ms: int | None,
+        error_type: str,
+    ) -> uuid.UUID:
+        """The row of an attempt that ended without provider usage: the input-token estimate plus the tokens
+        of the text received so far (the project tokenizer, `cl100k_base`), all input priced as uncached.
+        Reasoning tokens generated before the first delta are invisible here."""
+        from app.ingestion.chunk import count_tokens  # tiktoken, loaded only when an attempt is aborted
+
+        out = count_tokens("".join(streamed)) if streamed else 0
+        usage = Usage(input_tokens=meta.est_input_tokens, output_tokens=out)
+        cost = self.prices.cost(meta.model, usage)
+        return await self._record(
+            meta, attempt, usage, cost, latency_ms, ttft_ms, error_type, None, status="estimated"
+        )
 
     async def _run(
         self,
@@ -741,51 +737,58 @@ class LlmGateway:
         while True:
             attempt += 1
             acct.attempts += 1
-            await self._acquire(meta)
+            waited = await self.limiter.acquire(meta.lane, budget.deadline_at if budget else None)
             t0 = time.monotonic()
-            with _tracer.start_as_current_span("llm.call", attributes=meta.span_attrs(acct.attempts)) as span:
-                try:
-                    r = await op()
-                except ProviderError as e:
-                    acct.ids.append(
-                        await self._record(
-                            meta, attempt, Usage(), Decimal(0), _ms(t0), None, e.error_type, None
-                        )
-                    )
-                    self._on_failure(meta, e, span)
-                    delay = self._retry_delay(e, attempt, budget, retries)
-                    if delay is None:
-                        raise
-                except (Exception, asyncio.CancelledError) as e:
-                    kind = "cancelled" if isinstance(e, asyncio.CancelledError) else "unexpected"
-                    await self._record(meta, acct.attempts, Usage(), Decimal(0), _ms(t0), None, kind, None)
-                    raise
-                else:
-                    usage = _usage_of(r)
-                    cost = self.prices.cost(meta.model, usage)
-                    acct.total += cost
-                    self._on_success(meta, usage, budget, span)
-                    err: LlmError | None = None
+            try:
+                with _tracer.start_as_current_span(
+                    "llm.call", attributes=meta.span_attrs(acct.attempts, waited)
+                ) as span:
                     try:
-                        check(r)
-                    except LlmError as e:
-                        err = e
-                    acct.ids.append(
-                        await self._record(
-                            meta,
-                            acct.attempts,
-                            usage,
-                            cost,
-                            _ms(t0),
-                            None,
-                            err.error_type if err else None,
-                            getattr(r, "resolved_model", None),
+                        r = await op()
+                    except ProviderError as e:
+                        acct.ids.append(
+                            await self._record(
+                                meta, attempt, Usage(), Decimal(0), _ms(t0), None, e.error_type, None
+                            )
                         )
-                    )
-                    if err is not None:
-                        span.set_attribute("error.type", err.error_type)
-                        raise err.with_accounting(usage, acct.total, tuple(acct.ids))
-                    return r
+                        self._on_failure(e, span)
+                        delay = self._retry_delay(e, attempt, budget, retries)
+                        if delay is None:
+                            raise
+                    except (Exception, asyncio.CancelledError) as e:  # the request may have been sent
+                        kind = "cancelled" if isinstance(e, asyncio.CancelledError) else "unexpected"
+                        await self._record_estimate(meta, acct.attempts, (), _ms(t0), None, kind)
+                        raise
+                    else:
+                        usage = _usage_of(r)
+                        cost = self.prices.cost(meta.model, usage)
+                        acct.total += cost
+                        self._on_success(usage, budget, span)
+                        err: LlmError | None = None
+                        try:
+                            check(r)
+                        except LlmError as e:
+                            err = e
+                        acct.ids.append(
+                            await self._record(
+                                meta,
+                                acct.attempts,
+                                usage,
+                                cost,
+                                _ms(t0),
+                                None,
+                                err.error_type if err else None,
+                                getattr(r, "resolved_model", None),
+                            )
+                        )
+                        if err is not None:
+                            span.set_attribute("error.type", err.error_type)
+                            raise err.with_accounting(usage, acct.total, tuple(acct.ids))
+                        return r
+            finally:
+                self.limiter.release(
+                    meta.lane
+                )  # also before a retry's backoff: the next attempt queues again
             await self._sleep(delay)
 
 

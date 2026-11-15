@@ -3,6 +3,7 @@
 The only path to a model.
 
 - `gateway.py`: every call goes through it (routing, turn budget, retries with jitter, one `llm_calls` row per attempt, schema validation, fallback)
+- `concurrency.py`: the per-lane cap on model calls in flight; a call that finds no slot in time raises `CapacityError`
 - `routing.py`: model roles (`fast`/`balanced`/`deep`/`flagship`) and per-node routing; the only module besides settings that names models
 - `pricing.py`: per-model prices and the cost formula
 - `prompts.py`: registry of `backend/prompts/<id>@<version>.md` files

@@ -9,6 +9,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.core.error_codes import ErrorCode
 from app.core.logging import get_logger
+from app.llm.errors import CapacityError
 
 PROBLEM_JSON = "application/problem+json"
 _log = get_logger("vault.errors")
@@ -79,6 +80,10 @@ async def _validation(_: Request, exc: Exception) -> JSONResponse:
     return problem(ErrorCode.VALIDATION_ERROR, "Request validation failed", errors=errors)
 
 
+async def _capacity(_: Request, exc: Exception) -> JSONResponse:
+    return problem(ErrorCode.CAPACITY)
+
+
 async def _unhandled(_: Request, exc: Exception) -> JSONResponse:
     _log.exception("unhandled_error", error_type=type(exc).__name__)
     return problem(ErrorCode.INTERNAL_ERROR)
@@ -88,4 +93,5 @@ def install_error_handlers(app: FastAPI) -> None:
     app.add_exception_handler(DomainError, _domain)
     app.add_exception_handler(StarletteHTTPException, _http)
     app.add_exception_handler(RequestValidationError, _validation)
+    app.add_exception_handler(CapacityError, _capacity)  # no model call slot came free in time
     app.add_exception_handler(Exception, _unhandled)

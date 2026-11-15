@@ -91,6 +91,7 @@ Behaviour under load is **not measured**; these are the mechanisms.
 | Sweeper (beat) | Re-dispatches lost dispatches, expired leases and due retries. Eventual recovery, not an outbox. | `backend/app/ingestion/sweeper.py` |
 | Per-owner ingestion cap | Not implemented: a large upload shares the `ingest` queue with everyone (upload requests are rate limited at 30 a minute). | `backend/app/ingestion/jobs.py` has no such limit |
 | Per-user chat limits | One active turn per session (a second gets 409), chat 20 requests a minute, upload 30 a minute, a daily cost quota, then 429 with `Retry-After`. | `backend/app/core/ratelimit.py`, `quota.py` |
+| Model call slots per process | At most `LLM_CONCURRENCY_INTERACTIVE` (32) chat and `LLM_CONCURRENCY_BACKGROUND` (8) ingestion and brief calls in flight, in separate pools, so background work cannot starve chat. Sizing: a turn overlaps at most two calls, so 32 serves 16 or more turns per API process (two uvicorn workers, so 64 calls) before anything queues; 8 is twice the largest per-task fan-out (4 embed batches, 4 contextual headers, 3 brief maps), and a prefork child runs one task at a time, so `worker-ai -c 4` sends at most 32. A queued call gives up 1 s before its turn deadline, or after 120 s without one, with `capacity` (503) and no provider call. These are reasoned defaults, not measured ones; the provider's per-key rate limits are not modelled. | `backend/app/llm/concurrency.py` |
 | Query embedding cache | Redis, keyed by owner, embedding model and normalized query (one owner's query is never another's hit). A Redis failure or stall bypasses the cache (each cache command is cut at 0.25 s); an embedding failure degrades to lexical-only search. | `backend/app/retrieval/query_embed.py` |
 | Document embedding cache | By content hash and model. A re-upload pays nothing for unchanged chunks. | `backend/app/ingestion/embed_index.py` |
 | Paid ingestion LLM outputs | Cached by content hash, prompt version and model. | `llm_cache` table |
@@ -128,7 +129,7 @@ Chat cost is per question, not per document.
 | Full legacy retrieval evaluation, 122 items | about $0.70 | `make eval-retrieval` |
 | Planning estimate at 1,000 daily users (133 turns a minute at peak) | about $165 a day at $0.011 a turn; an estimate, not a measurement | arithmetic: 1,000 users x turns per day x cost per turn |
 
-The daily quota (`USER_DAILY_USD`, default $1.00; admins unlimited) sums `llm_calls.cost_usd` since UTC midnight. Ingestion is never blocked by it; the brief stage defers instead. The demo run is capped by `DEMO_MAX_USD` and prints its spend from the ledger.
+The daily quota (`USER_DAILY_USD`, default $1.00; admins unlimited) sums `llm_calls.cost_usd` since UTC midnight. That includes the estimated cost of aborted attempts (`status='estimated'`: cancelled by a deadline or a closed stream, or failed after output began), priced as the estimated input plus the output streamed so far, because the provider may bill it and OpenAI's documentation does not say it does not. Ingestion is never blocked by it; the brief stage defers instead. The demo run is capped by `DEMO_MAX_USD` and prints its spend from the ledger.
 
 ---
 

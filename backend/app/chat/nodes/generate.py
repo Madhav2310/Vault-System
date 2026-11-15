@@ -9,6 +9,7 @@ its citations are resolved by code (`citations.resolve`): the model never suppli
 import json
 import uuid
 from collections.abc import Awaitable, Callable
+from contextlib import aclosing
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
@@ -109,30 +110,32 @@ async def generate(
     final: Final | None = None
     reasons: list[str] = []
     reader, streamed = SegmentReader(), 0
+    events = gateway.stream(
+        purpose="generate",
+        lane="interactive",
+        prompt=prompt,
+        owner_id=owner_id,
+        schema=schema,
+        route=route,
+        mode=mode,
+        cache_mode=cache_mode_for(mode),
+        messages=[{"role": "user", "content": message}],
+        run_id=run_id,
+        budget=budget,
+        system_suffix=system_suffix,
+    )
     try:
-        async for ev in gateway.stream(
-            purpose="generate",
-            lane="interactive",
-            prompt=prompt,
-            owner_id=owner_id,
-            schema=schema,
-            route=route,
-            mode=mode,
-            cache_mode=cache_mode_for(mode),
-            messages=[{"role": "user", "content": message}],
-            run_id=run_id,
-            budget=budget,
-            system_suffix=system_suffix,
-        ):
-            if isinstance(ev, TextDelta):
-                chunks.append(ev.text)
-                if on_segment is not None:
-                    for done_seg in reader.feed(ev.text):
-                        if reader.status == "answer" and _well_formed(done_seg):
-                            await on_segment(resolve_segment(streamed, done_seg, evidence))
-                            streamed += 1
-            elif isinstance(ev, Final):
-                final = ev
+        async with aclosing(events):  # a deadline inside `on_segment` frees the call slot at once
+            async for ev in events:
+                if isinstance(ev, TextDelta):
+                    chunks.append(ev.text)
+                    if on_segment is not None:
+                        for done_seg in reader.feed(ev.text):
+                            if reader.status == "answer" and _well_formed(done_seg):
+                                await on_segment(resolve_segment(streamed, done_seg, evidence))
+                                streamed += 1
+                elif isinstance(ev, Final):
+                    final = ev
     except RefusalError as e:
         return _failed(STOP_REFUSAL, e)
     except TruncatedError as e:
