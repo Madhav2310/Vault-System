@@ -1,7 +1,7 @@
 # ruff: noqa: S608  (SQL is built only from constant fragments; every value is a bound parameter)
 """Chat and LLM-ledger metrics (design 12) from `rag_runs`, `chat_messages` and `llm_calls`.
 
-A turn is a chat run: not a matrix-cell run and not a replay. Outcomes and coverage come from assistant
+A turn is a chat run, not a replay. Outcomes and coverage come from assistant
 `chat_messages` (the run row stores neither). LLM figures cover every ledger row of the scope in the window,
 including non-chat purposes such as embeddings, so totals equal the sum of `llm_calls.cost_usd`.
 `llm_calls` records `lane`, not the routing role, so token groups are keyed by lane x model x purpose.
@@ -30,10 +30,7 @@ async def chat_metrics(db: AsyncSession, owner_id: uuid.UUID | None, window: str
     """`owner_id=None` is global scope. `window` is a key of WINDOWS_S (validated by the API)."""
     p = scope_params(owner_id, w=WINDOWS_S[window])
     since = "created_at >= now() - make_interval(secs => :w)"
-    runs = (
-        f"FROM rag_runs WHERE {since} AND matrix_cell_id IS NULL AND replay_of_run_id IS NULL "
-        f"{scope_sql(owner_id, 'owner_id')}"
-    )
+    runs = f"FROM rag_runs WHERE {since} AND replay_of_run_id IS NULL {scope_sql(owner_id, 'owner_id')}"
     msgs = f"FROM chat_messages WHERE {since} AND role = 'assistant' {scope_sql(owner_id, 'owner_id')}"
     calls = f"FROM llm_calls WHERE {since} {scope_sql(owner_id, 'owner_id')}"
 
@@ -62,7 +59,7 @@ async def chat_metrics(db: AsyncSession, owner_id: uuid.UUID | None, window: str
             + _pct("st.duration_ms", "p")
             + " FROM run_steps st JOIN rag_runs r ON r.id = st.run_id "
             "WHERE r.created_at >= now() - make_interval(secs => :w) "
-            "AND r.matrix_cell_id IS NULL AND r.replay_of_run_id IS NULL "
+            "AND r.replay_of_run_id IS NULL "
             f"{scope_sql(owner_id, 'r.owner_id')} "
             "AND st.duration_ms IS NOT NULL AND st.status <> 'skipped' GROUP BY st.node ORDER BY st.node"
         ),

@@ -17,12 +17,11 @@ from app.db.models.ledger import (
     RunVersion,
     SegmentEvidence,
 )
-from app.db.models.matrix import Matrix, MatrixCell, MatrixColumn
 from app.db.models.users import User
 
 __all__ = [
     "AnswerSegment", "Base", "Blob", "ChatMessage", "ChatSession", "Chunk", "Document", "DocumentInsight",
     "DocumentVersion", "EvalResult", "EvalRun", "Feedback", "IdempotencyKey", "JobEvent", "LlmCache",
-    "LlmCall", "Matrix", "MatrixCell", "MatrixColumn", "Page", "ProcessingJob", "RagRun",
+    "LlmCall", "Page", "ProcessingJob", "RagRun",
     "RetrievalCandidate", "RunStep", "RunVersion", "SegmentEvidence", "User",
 ]  # fmt: skip

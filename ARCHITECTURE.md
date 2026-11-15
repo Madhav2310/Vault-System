@@ -170,7 +170,6 @@ erDiagram
 | `feedback` | per run, optionally per segment or chunk: `kind`, note, `eval_status` | One rating per (answer, segment) per user (`backend/app/feedback/service.py`). |
 | `idempotency_keys` | `(owner_id, key)`, request hash, stored response | The same key with a different body gives 422 (`backend/app/api/idempotency.py`). |
 | `eval_runs`, `eval_results` | eval bookkeeping | Not used by the product path. |
-| `matrices`, `matrix_columns`, `matrix_cells` | schema for the Compare Matrix | **The tables exist, but no code uses them**; the comparison matrix is not built (see [section 12](#12-decisions-trade-offs-and-limits)). |
 
 Quotas are not a table. Spend today is `sum(llm_calls.cost_usd)` since UTC midnight, read from the ledger at each chat admission, against `USER_DAILY_USD` (default $1.00; admins are unlimited). A turn's cost reaches the ledger only while it runs, so each admitted turn also holds a $0.05 reservation in a Redis sorted set until it ends (or for at most 180 s): a turn is admitted while spend plus the reservations in flight stays under the quota, so concurrent turns cannot run past it. Ingestion is never blocked by the quota: the brief stage defers instead (`backend/app/core/quota.py`).
 
@@ -607,7 +606,7 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 - **Two quality targets are not met.** On the sealed test, answer_pass is 0.761 against a target of 0.80 and citation chunk precision 0.658 against 0.85; faithfulness (0.957) meets its 0.90 target. Multi-document strata (conflict, aggregation, compare) are the weakest (`docs/evaluation.md` section 3).
 - **Stage attribution cannot see extraction or chunking.**
 - **Unmeasured**: load and concurrency, documents per hour per worker, per-document embedding cost, exact search at 100k chunks, and live time to first token under the current configuration.
-- **Not built**: the comparison matrix (the tables exist, the code does not), the replay API and an operator run view, a tiered LLM evidence gate, memory compaction, OCR (scanned PDFs end as `needs_ocr`), the HNSW switch, Grafana dashboards, password login, per-passage sentiment (the brief records each document's tone), and a per-owner ingestion cap. PDFs over 600 pages end as `unsupported`.
+- **Not built**: a comparison matrix (questions across many documents as a table), the replay API and an operator run view, a tiered LLM evidence gate, memory compaction, OCR (scanned PDFs end as `needs_ocr`), the HNSW switch, Grafana dashboards, password login, per-passage sentiment (the brief records each document's tone), and a per-owner ingestion cap. PDFs over 600 pages end as `unsupported`.
 - **Memory** is the turn window only: nothing writes the rolling summary, and there is no cross-session memory.
 - **One known flaky test**: `backend/tests/integration/observability/test_trace_propagation.py::test_api_to_celery_same_trace` times out in full-suite runs and passes alone.
 

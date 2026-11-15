@@ -13,10 +13,10 @@ DESIGN_TABLES = {
     "users", "idempotency_keys", "blobs", "documents", "document_versions", "pages", "processing_jobs",
     "job_events", "chunks", "llm_cache", "document_insights", "chat_sessions", "chat_messages", "rag_runs",
     "run_versions", "run_steps", "retrieval_candidates", "answer_segments", "segment_evidence", "llm_calls",
-    "matrices", "matrix_columns", "matrix_cells", "feedback", "eval_runs", "eval_results",
+    "feedback", "eval_runs", "eval_results",
 }  # fmt: skip
 
-# (table, columns) for each UNIQUE named in §11 (PRIMARY KEYs that §11 marks as uniqueness are included).
+# (table, columns) for each uniqueness the schema promises (primary keys that serve as one are included).
 DESIGN_UNIQUES = [
     ("users", ("email",)),
     ("idempotency_keys", ("owner_id", "key")),
@@ -31,7 +31,6 @@ DESIGN_UNIQUES = [
     ("run_versions", ("run_id", "version_id")),
     ("retrieval_candidates", ("run_id", "attempt", "chunk_id")),
     ("segment_evidence", ("segment_id", "chunk_id", "sentence_start")),
-    ("matrix_cells", ("matrix_id", "column_id", "column_version", "version_id")),
     ("feedback", ("owner_id", "run_id", "segment_id", "chunk_id", "kind")),
     ("eval_results", ("eval_run_id", "question_id", "metric")),
 ]

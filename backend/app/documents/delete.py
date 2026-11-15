@@ -5,7 +5,7 @@ purge. The purge works per version and is idempotent: derived rows and objects a
 refcount is decremented exactly once, and the blob goes when its refcount reaches 0.
 
 Idempotency of the decrement: a purged version either has its row deleted, or, when the permanent ledger
-still references it (`run_versions`, `matrix_cells`), keeps its row with `purged_at` set and is skipped
+still references it (`run_versions`), keeps its row with `purged_at` set and is skipped
 from then on. The marker and the decrement commit in the same transaction.
 """
 
@@ -134,12 +134,11 @@ async def _purge_version(
             text("UPDATE document_versions SET purged_at = now() WHERE id = :v"),
             {"v": version_id},
         )
-        # The permanent ledger (runs, matrix cells) may still point at the version: then the row stays.
+        # The permanent ledger (runs) may still point at the version: then the row stays.
         await s.execute(
             text(
                 "DELETE FROM document_versions WHERE id = :v AND NOT EXISTS "
-                "(SELECT 1 FROM run_versions WHERE version_id = :v) AND NOT EXISTS "
-                "(SELECT 1 FROM matrix_cells WHERE version_id = :v)"
+                "(SELECT 1 FROM run_versions WHERE version_id = :v)"
             ),
             p,
         )

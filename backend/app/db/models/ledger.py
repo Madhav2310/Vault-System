@@ -18,7 +18,6 @@ class RagRun(CreatedAt, Base):
     session_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("chat_sessions.id"))
     user_message_id: Mapped[uuid.UUID | None]
     assistant_message_id: Mapped[uuid.UUID | None]
-    matrix_cell_id: Mapped[uuid.UUID | None]
     replay_of_run_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("rag_runs.id"))
     trace_id: Mapped[str | None]
     route: Mapped[str]

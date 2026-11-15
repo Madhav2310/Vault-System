@@ -2,7 +2,7 @@
 
 Living answers: assistant messages whose run used (`run_versions`) an earlier version of the document get
 `chat_messages.stale_since = now()`. The update is idempotent (`WHERE stale_since IS NULL`: a second call
-touches 0 rows) and owner-scoped. Brief, summary and matrix-cell staleness arrives with their own tasks.
+touches 0 rows) and owner-scoped. Briefs and summaries are per version, so they never go stale.
 """
 
 import uuid

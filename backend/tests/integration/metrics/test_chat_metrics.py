@@ -32,22 +32,20 @@ async def run(
     ttft: int | None,
     cost: str,
     degraded: list[str] | None = None,
-    matrix: bool = False,
     replay_of: uuid.UUID | None = None,
 ) -> uuid.UUID:
     rid = uuid.uuid4()
     async with sm() as s:
         await s.execute(
             text(
-                "INSERT INTO rag_runs (id, owner_id, session_id, matrix_cell_id, replay_of_run_id, route, "
+                "INSERT INTO rag_runs (id, owner_id, session_id, replay_of_run_id, route, "
                 "mode, original_query, status, degraded, cost_usd, latency_ms, ttft_ms, created_at) "
-                "VALUES (:id, :o, :s, :mx, :rp, 'qa', 'fast', 'q', 'done', :dg, :c, :l, :t, " + AT + ")"
+                "VALUES (:id, :o, :s, :rp, 'qa', 'fast', 'q', 'done', :dg, :c, :l, :t, " + AT + ")"
             ),
             {
                 "id": rid,
                 "o": owner_id,
                 "s": session_id,
-                "mx": uuid.uuid4() if matrix else None,
                 "rp": replay_of,
                 "dg": degraded or [],
                 "c": Decimal(cost),
@@ -132,7 +130,6 @@ async def seed_owner_a(sm: Any, o: uuid.UUID) -> None:
     await run(sm, o, sid, minutes_ago=30, latency=3000, ttft=None, cost="0.030")
     await run(sm, o, sid, minutes_ago=40, latency=4000, ttft=800, cost="0.040")
     await run(sm, o, sid, minutes_ago=2 * 1440, latency=100000, ttft=None, cost="9.000")  # 2 days ago
-    await run(sm, o, sid, minutes_ago=5, latency=777777, ttft=1, cost="0.500", matrix=True)  # not a turn
     await run(sm, o, sid, minutes_ago=5, latency=888888, ttft=1, cost="0.600", replay_of=r1)  # not a turn
 
     await message(sm, o, sid, minutes_ago=10, rtype="answer", coverage="supported")
@@ -192,7 +189,7 @@ async def test_values(api: httpx.AsyncClient, sm: Any, mk_owner: Callable[..., A
     assert r.status_code == 200
     m = r.json()
     assert m["window"] == "24h" and m["scope"] == "owner"
-    # Turns in 24h: runs 10, 20, 30, 40 min ago = 4 (2-day-old run, matrix run and replay run excluded).
+    # Turns in 24h: runs 10, 20, 30, 40 min ago = 4 (2-day-old run and replay run excluded).
     assert m["turns"] == 4
     # Assistant messages: answer x3 (supported, partial, supported), abstention x1, clarification x1.
     assert m["outcomes"] == {"answer": 3, "abstention": 1, "clarification": 1}
