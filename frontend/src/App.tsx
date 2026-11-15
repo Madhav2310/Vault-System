@@ -61,6 +61,8 @@ function KeyScreen({ onSaved }: { onSaved: () => void }) {
 
 export function App() {
   const [hasKey, setHasKey] = useState<boolean | null>(null);
+  // Only a key typed on this page makes "Change API key" the right words; a cookie or local sign-in signs out.
+  const [keyEntered, setKeyEntered] = useState(false);
   useEffect(() => {
     let live = true;
     // A valid cookie wins; otherwise a local run signs in on its own; only then is a key asked for.
@@ -115,15 +117,21 @@ export function App() {
               onClick={() => {
                 void api.logout().catch(() => undefined);
                 setHasKey(false);
+                setKeyEntered(false);
               }}
             >
-              Change API key
+              {keyEntered ? "Change API key" : "Sign out"}
             </button>
           )}
         </header>
         <main id="main">
           {hasKey === null ? null : !hasKey ? (
-            <KeyScreen onSaved={() => setHasKey(true)} />
+            <KeyScreen
+              onSaved={() => {
+                setKeyEntered(true);
+                setHasKey(true);
+              }}
+            />
           ) : route.name === "document" && route.id ? (
             <DocumentPage id={route.id} onUnauthenticated={onUnauth} />
           ) : route.name === "chat" ? (

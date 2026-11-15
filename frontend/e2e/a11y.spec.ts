@@ -165,7 +165,7 @@ test("keyboard flow", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Citation 1: open source" })).toBeFocused();
 });
 
-for (const width of [1280, 768]) {
+for (const width of [1280, 768, 320]) {
   test(`no horizontal overflow at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await signIn(page);

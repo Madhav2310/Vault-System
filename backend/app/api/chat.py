@@ -87,6 +87,7 @@ def _json(s: svc.SessionRow) -> dict[str, Any]:
         "document_ids": [str(d) for d in s.document_ids] if s.document_ids is not None else None,
         "created_at": s.created_at.isoformat(),
         "updated_at": s.updated_at.isoformat(),
+        "first_question": s.first_question,
     }
 
 

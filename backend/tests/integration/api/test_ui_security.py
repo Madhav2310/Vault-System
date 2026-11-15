@@ -41,6 +41,7 @@ async def test_csp_and_cookie(tmp_path: pathlib.Path, db_client: httpx.AsyncClie
             assert "script-src 'self'" in csp and "default-src 'self'" in csp, path
             assert "'unsafe-inline'" not in csp and "'unsafe-eval'" not in csp, path
             assert "frame-ancestors 'none'" in csp and "object-src 'none'" in csp
+            assert "font-src 'self'" in csp and "https:" not in csp, path  # no third-party origins
             assert r.headers["x-content-type-options"] == "nosniff"
             assert r.headers["referrer-policy"] == "no-referrer"
         assert "content-security-policy" not in (await c.get("/healthz")).headers

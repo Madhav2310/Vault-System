@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Citation } from "../source/types";
-import { chatPath, factValue, groupFacts, isVerified, numberCitations, parseRoute, type Fact } from "./logic";
+import { chatPath, factValue, groupFacts, isVerified, numberCitations, numberGuide, parseRoute, type Fact } from "./logic";
 
 const cite = (chunk: string, s: number, e: number): Citation => ({
   chunk_id: chunk,
@@ -37,6 +37,19 @@ describe("numberCitations", () => {
     const a = cite("c1", 0, 1);
     const b = cite("c2", 3, 4);
     expect(numberCitations([[a], [b, a], [cite("c1", 0, 2)]])).toEqual([[1], [2, 1], [3]]);
+  });
+});
+
+describe("numberGuide", () => {
+  it("numbers in reading order: tone first, then facts as grouped on screen", () => {
+    const fact = (field: string, ...evidence: Citation[]): Fact => ({ field, value: "v", status: "verified", evidence });
+    const [a, b, c, t] = [cite("a", 0, 1), cite("b", 0, 1), cite("c", 0, 1), cite("t", 0, 1)];
+    const parties1 = fact("parties", a);
+    const dates = fact("dates", b);
+    const parties2 = fact("parties", c, t);
+    const n = numberGuide(groupFacts([parties1, dates, parties2]), [t]);
+    expect(n.tone).toEqual([1]);
+    expect([n.of(parties1), n.of(parties2), n.of(dates)]).toEqual([[2], [3, 1], [4]]);
   });
 });
 

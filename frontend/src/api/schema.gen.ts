@@ -1237,6 +1237,11 @@ export interface components {
              */
             document_ids?: string[] | null;
             /**
+             * First Question
+             * @description The session's first question, cut to 120 characters; set in the list only
+             */
+            first_question?: string | null;
+            /**
              * Id
              * Format: uuid
              */

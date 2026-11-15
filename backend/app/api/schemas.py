@@ -418,6 +418,9 @@ class SessionOut(Model):
     document_ids: list[uuid.UUID] | None = Field(default=None, description="`null` = all documents")
     created_at: str
     updated_at: str
+    first_question: str | None = Field(
+        default=None, description="The session's first question, cut to 120 characters; set in the list only"
+    )
     model_config = ConfigDict(
         extra="allow",
         json_schema_extra={

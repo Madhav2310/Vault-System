@@ -133,6 +133,8 @@ export interface ChatSession {
   document_ids: string[] | null;
   created_at: string;
   updated_at: string;
+  /** list only: the first question, cut to 120 characters */
+  first_question?: string | null;
 }
 
 export interface ChatSessionList {

@@ -77,6 +77,17 @@ export function numberCitations(groups: Citation[][]): number[][] {
   );
 }
 
+/** Source-guide markers numbered in reading order: the tone line, then facts as grouped on screen. */
+export function numberGuide(
+  groups: { facts: Fact[] }[],
+  toneEvidence: Citation[],
+): { tone: number[]; of: (f: Fact) => number[] } {
+  const facts = groups.flatMap((g) => g.facts);
+  const [tone, ...rest] = numberCitations([toneEvidence, ...facts.map((f) => f.evidence)]);
+  const byFact = new Map(facts.map((f, i) => [f, rest[i]!]));
+  return { tone: tone!, of: (f) => byFact.get(f) ?? [] };
+}
+
 /** The chat route the question chips open (the chat screen reads `q` and `doc`). */
 export function chatPath(documentId: string, question: string): string {
   const qs = new URLSearchParams({ q: question, doc: documentId });

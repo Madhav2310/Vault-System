@@ -1,7 +1,7 @@
 /** Pure chat logic: SSE event decoding, the turn reducer, marker numbering, labels. No React, no fetch. */
 import type { Citation } from "../source";
 import type { SseFrame } from "../sse";
-import type { ChatEvent, ChatStage, ClarifyOption, ConflictView, EvidenceOut, FeedbackReason, HistoryMessage, Staleness } from "../api/types";
+import type { ChatEvent, ChatSession, ChatStage, ClarifyOption, ConflictView, EvidenceOut, FeedbackReason, HistoryMessage, Staleness } from "../api/types";
 
 export const EVENT_TYPES = ["run.started", "status", "segment", "verification", "followups", "clarify", "done", "error"] as const;
 
@@ -294,10 +294,22 @@ export function retryTime(s: number): string {
   return `${h} hour${h === 1 ? "" : "s"}`;
 }
 
-export function sessionLabel(title: string | null, updatedAt: string): string {
-  if (title && title.trim()) return title;
-  const d = new Date(updatedAt);
-  return Number.isNaN(d.getTime()) ? "Untitled chat" : `Chat from ${d.toLocaleDateString()}`;
+const LABEL_CHARS = 48;
+
+/** Title, else the first question (cut at a word), else when the chat was last used, to the minute. */
+export function sessionLabel(s: Pick<ChatSession, "title" | "first_question" | "updated_at">): string {
+  if (s.title && s.title.trim()) return s.title;
+  const q = (s.first_question ?? "").replace(/\s+/g, " ").trim();
+  if (q) {
+    if (q.length <= LABEL_CHARS) return q;
+    const cut = q.slice(0, LABEL_CHARS);
+    const space = cut.lastIndexOf(" ");
+    return `${(space > LABEL_CHARS / 2 ? cut.slice(0, space) : cut).trimEnd()}…`;
+  }
+  const d = new Date(s.updated_at);
+  return Number.isNaN(d.getTime())
+    ? "Untitled chat"
+    : `Chat from ${d.toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" })}`;
 }
 
 /** `/chat?s=SESSION` path used once a session exists. */

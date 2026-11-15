@@ -41,10 +41,21 @@ class SessionRow:
     document_ids: list[uuid.UUID] | None
     created_at: dt.datetime
     updated_at: dt.datetime
+    first_question: str | None = None  # the list only: labels an untitled session
 
 
 def _row(r: Any) -> SessionRow:
-    return SessionRow(r["id"], r["title"], r["scope_document_ids"], r["created_at"], r["updated_at"])
+    return SessionRow(
+        r["id"],
+        r["title"],
+        r["scope_document_ids"],
+        r["created_at"],
+        r["updated_at"],
+        r.get("first_question"),
+    )
+
+
+FIRST_QUESTION_CHARS = 120
 
 
 async def create_session(
@@ -125,18 +136,29 @@ def decode_cursor(cursor: str) -> tuple[dt.datetime, uuid.UUID]:
 async def list_sessions(
     db: AsyncSession, owner_id: uuid.UUID, limit: int = DEFAULT_LIMIT, cursor: str | None = None
 ) -> tuple[list[SessionRow], str | None]:
-    """Newest first, keyset on (created_at, id)."""
-    params: dict[str, Any] = {"o": owner_id, "n": limit + 1, "c_at": None, "c_id": None}
+    """Newest first, keyset on (created_at, id). Each row carries its first question (one index probe per
+    row on (session_id, created_at), inside the same query) so the UI can label untitled sessions."""
+    params: dict[str, Any] = {
+        "o": owner_id,
+        "n": limit + 1,
+        "c_at": None,
+        "c_id": None,
+        "qn": FIRST_QUESTION_CHARS,
+    }
     if cursor:
         params["c_at"], params["c_id"] = decode_cursor(cursor)
     rows = (
         (
             await db.execute(
                 text(
-                    "SELECT id, title, scope_document_ids, created_at, updated_at FROM chat_sessions "
-                    "WHERE owner_id = :o AND (CAST(:c_at AS timestamptz) IS NULL "
-                    "OR (created_at, id) < (CAST(:c_at AS timestamptz), CAST(:c_id AS uuid))) "
-                    "ORDER BY created_at DESC, id DESC LIMIT :n"
+                    "SELECT s.id, s.title, s.scope_document_ids, s.created_at, s.updated_at, "
+                    "q.first_question FROM chat_sessions s LEFT JOIN LATERAL ("
+                    "SELECT left(m.content, :qn) AS first_question FROM chat_messages m "
+                    "WHERE m.session_id = s.id AND m.owner_id = :o AND m.role = 'user' "
+                    "ORDER BY m.created_at, m.id LIMIT 1) q ON true "
+                    "WHERE s.owner_id = :o AND (CAST(:c_at AS timestamptz) IS NULL "
+                    "OR (s.created_at, s.id) < (CAST(:c_at AS timestamptz), CAST(:c_id AS uuid))) "
+                    "ORDER BY s.created_at DESC, s.id DESC LIMIT :n"
                 ),
                 params,
             )

@@ -181,15 +181,22 @@
   .chat-sessions .btn {
     flex: none;
   }
+  /* The strip shows that it scrolls: a thin scrollbar, and the right edge fades over trailing padding,
+     so a cut-off chat reads as "more this way" while the last one is clear once scrolled to. */
   .chat-sessions ul {
     margin: 0;
+    padding: 0 var(--s5) var(--s1) 0;
     display: flex;
     gap: var(--s1);
     overflow-x: auto;
-    scrollbar-width: none;
+    scrollbar-width: thin;
+    mask-image: linear-gradient(to right, #000 calc(100% - var(--s5)), transparent);
   }
   .chat-sessions a:not(.btn) {
     white-space: nowrap;
+    max-width: 16em;
+    overflow: hidden;
+    text-overflow: ellipsis;
     padding: var(--s2) var(--s3);
     border-left: 0;
     border-bottom: 2px solid transparent;

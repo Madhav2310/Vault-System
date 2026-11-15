@@ -354,6 +354,17 @@ dialog .actions {
     font-size: 13px;
   }
 }
+/* Too narrow for one row: brand and button stay on top, the page links take a row of their own. */
+@media (max-width: 420px) {
+  .topbar {
+    flex-wrap: wrap;
+    row-gap: var(--s2);
+  }
+  .topnav {
+    order: 1;
+    flex-basis: 100%;
+  }
+}
 @media (prefers-reduced-motion: no-preference) {
   .btn {
     transition: background-color 120ms ease-out, color 120ms ease-out, transform 120ms ease-out;

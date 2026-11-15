@@ -1,6 +1,6 @@
 import { CitationMarker } from "../source/CitationMarker";
 import type { Citation } from "../source/types";
-import { chatPath, fieldLabel, factValue, groupFacts, isVerified, numberCitations, type Brief } from "./logic";
+import { chatPath, fieldLabel, factValue, groupFacts, isVerified, numberGuide, type Brief } from "./logic";
 import { hrefFor, linkClick } from "./nav";
 
 interface Props {
@@ -14,8 +14,7 @@ interface Props {
 export function SourceGuide({ documentId, title, brief, onOpen }: Props) {
   const groups = groupFacts(brief.facts);
   const tone = brief.tone ?? null;
-  const numbers = numberCitations([...brief.facts.map((f) => f.evidence), tone?.evidence ?? []]);
-  const numberOf = new Map<unknown, number[]>(brief.facts.map((f, i) => [f, numbers[i]!]));
+  const numbers = numberGuide(groups, tone?.evidence ?? []);
 
   return (
     <section className="guide" aria-labelledby="guide-h" data-testid="source-guide">
@@ -44,7 +43,7 @@ export function SourceGuide({ documentId, title, brief, onOpen }: Props) {
             </>
           )}
           {tone.evidence.map((c, j) => (
-            <CitationMarker key={j} index={numbers[brief.facts.length]![j]!} citation={c} docTitle={title} onOpen={onOpen} />
+            <CitationMarker key={j} index={numbers.tone[j]!} citation={c} docTitle={title} onOpen={onOpen} />
           ))}
         </p>
       )}
@@ -67,7 +66,7 @@ export function SourceGuide({ documentId, title, brief, onOpen }: Props) {
                     {f.evidence.map((c, j) => (
                       <CitationMarker
                         key={j}
-                        index={numberOf.get(f)![j]!}
+                        index={numbers.of(f)[j]!}
                         citation={c}
                         docTitle={title}
                         onOpen={onOpen}

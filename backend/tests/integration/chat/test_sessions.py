@@ -110,3 +110,26 @@ async def test_list_cursor(api: httpx.AsyncClient, owners: Callable[[], Any]) ->
 
 async def test_requires_auth(api: httpx.AsyncClient) -> None:
     assert (await api.get("/v1/chat/sessions")).status_code == 401
+
+
+async def test_list_labels_untitled_sessions_with_first_question(
+    api: httpx.AsyncClient, owners: Callable[[], Any], sm: async_sessionmaker[AsyncSession]
+) -> None:
+    o = await owners()
+    asked = (await _create(api, o)).json()["id"]
+    empty = (await _create(api, o)).json()["id"]
+    first = "What is the notice period? " + "x" * 200
+    turns = [("user", first), ("assistant", "Thirty days."), ("user", "And fees?")]
+    async with sm() as s:
+        for i, (role, content) in enumerate(turns):
+            await s.execute(
+                text(
+                    "INSERT INTO chat_messages (id, owner_id, session_id, role, content, created_at) "
+                    "VALUES (:id, :o, :s, :r, :c, now() + make_interval(secs => :i))"
+                ),
+                {"id": uuid.uuid4(), "o": o.id, "s": asked, "r": role, "c": content, "i": i},
+            )
+        await s.commit()
+    items = {i["id"]: i for i in (await api.get("/v1/chat/sessions", headers=o.auth)).json()["items"]}
+    assert items[asked]["first_question"] == first[:120]
+    assert items[empty]["first_question"] is None

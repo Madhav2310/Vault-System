@@ -16,6 +16,7 @@ import {
   numberMessage,
   pendingAssistant,
   reduceTurn,
+  sessionLabel,
   staleInfo,
   statusLabel,
   trustOf,
@@ -154,6 +155,23 @@ describe("trust, labels, failures", () => {
     expect(statusLabel("reading_documents", 2)).toBe("Reading 2 documents…");
     expect(statusLabel("writing")).toBe("Writing…");
     expect(statusLabel("verifying")).toBe("Checking citations…");
+  });
+
+  it("session label: title, else first question cut at a word, else date and time", () => {
+    const at = "2026-11-15T09:05:00Z";
+    expect(sessionLabel({ title: "Termination terms", first_question: "What?", updated_at: at })).toBe("Termination terms");
+    expect(sessionLabel({ title: " ", first_question: "  What is the\n notice period? ", updated_at: at })).toBe(
+      "What is the notice period?",
+    );
+    const long = "What does the services agreement say about termination for convenience and notice?";
+    const cut = sessionLabel({ title: null, first_question: long, updated_at: at });
+    expect(cut).toBe("What does the services agreement say about…");
+    expect(cut.length).toBeLessThanOrEqual(49);
+    const morning = sessionLabel({ title: null, first_question: null, updated_at: at });
+    const later = sessionLabel({ title: null, updated_at: "2026-11-15T15:40:00Z" });
+    expect(morning).not.toBe(later); // same day, told apart by the time
+    expect(morning).toContain(new Date(at).toLocaleTimeString(undefined, { timeStyle: "short" }));
+    expect(sessionLabel({ title: null, updated_at: "nope" })).toBe("Untitled chat");
   });
 
   it("429 names the retry time and 409/503/network are friendly", () => {

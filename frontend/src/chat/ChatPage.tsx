@@ -316,7 +316,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
                 onClick={linkClick(sessionPath(s.id))}
                 aria-current={s.id === sessionId ? "page" : undefined}
               >
-                {sessionLabel(s.title, s.updated_at)}
+                {sessionLabel(s)}
               </a>
             </li>
           ))}

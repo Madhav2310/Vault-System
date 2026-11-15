@@ -24,11 +24,11 @@ _UI_CANDIDATES = (
 )
 
 
-# Strict policy for the Vite build: no inline script/eval, same-origin API, Google Fonts only (index.html).
+# Strict policy for the Vite build: no inline script/eval, same-origin API and fonts (self-hosted).
 _UI_HEADERS = {
     "Content-Security-Policy": (
-        "default-src 'self'; script-src 'self'; style-src 'self' https://fonts.googleapis.com; "
-        "font-src https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'; object-src 'none'; "
+        "default-src 'self'; script-src 'self'; style-src 'self'; "
+        "font-src 'self'; img-src 'self' data:; connect-src 'self'; object-src 'none'; "
         "base-uri 'none'; form-action 'self'; frame-ancestors 'none'"
     ),
     "X-Content-Type-Options": "nosniff",
