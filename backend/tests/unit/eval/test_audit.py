@@ -10,7 +10,7 @@ import yaml
 from eval.build import apply_audit as ap
 from eval.build import audit as au
 from eval.judge import SpendGuard
-from eval.schema import GoldItemV2
+from eval.schema import GoldItem
 
 from app.llm.gateway import MemoryLedger
 
@@ -21,7 +21,7 @@ def units_of(doc: str) -> list[str] | None:
     return UNITS.get(doc)
 
 
-def _item(iid: str, claims: list[str], start: int = 0, end: int = 1, **kw: Any) -> GoldItemV2:
+def _item(iid: str, claims: list[str], start: int = 0, end: int = 1, **kw: Any) -> GoldItem:
     base: dict[str, Any] = {
         "id": iid,
         "stratum": "single_span",
@@ -32,11 +32,11 @@ def _item(iid: str, claims: list[str], start: int = 0, end: int = 1, **kw: Any) 
         "gold_evidence": [{"doc": "d", "sentence_start": start, "sentence_end": end}],
     }
     base.update(kw)
-    return GoldItemV2.model_validate(base)
+    return GoldItem.model_validate(base)
 
 
 def _run(
-    items: list[GoldItemV2], vault: dict[str, str], cap: str = "1000"
+    items: list[GoldItem], vault: dict[str, str], cap: str = "1000"
 ) -> tuple[au.AuditResult, SpendGuard]:
     ledger = MemoryLedger()
     gw = au._dry_gateway(ledger)
@@ -72,7 +72,7 @@ def test_queue_shape() -> None:
 def test_missing_vault_answer_and_units_skip() -> None:
     items = [
         _item("a", ["Alpha is 5."]),
-        GoldItemV2.model_validate(
+        GoldItem.model_validate(
             {
                 "id": "nodoc",
                 "stratum": "single_span",
@@ -92,7 +92,7 @@ def test_missing_vault_answer_and_units_skip() -> None:
 
 
 def test_abstain_item() -> None:
-    item = GoldItemV2.model_validate(
+    item = GoldItem.model_validate(
         {
             "id": "ab",
             "stratum": "unanswerable",

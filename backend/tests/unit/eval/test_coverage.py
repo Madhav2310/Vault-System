@@ -14,11 +14,11 @@ from eval.build.check_coverage import (
     longest_shared_run,
     variant_of,
 )
-from eval.loader import DATASET_V2_DIR, load_dataset_v2, validate_items_v2
-from eval.schema import GoldItemV2
+from eval.loader import DATASET_DIR, load_dataset, validate_items
+from eval.schema import GoldItem
 
-AUTHORED = DATASET_V2_DIR / "authored"
-DOCS = DATASET_V2_DIR / "docs"
+AUTHORED = DATASET_DIR / "authored"
+DOCS = DATASET_DIR / "docs"
 AUTHORED_STRATA = (
     "compare_docs",
     "conflict",
@@ -38,8 +38,8 @@ def _raw() -> list[dict[str, Any]]:
     return out
 
 
-def _items() -> list[GoldItemV2]:
-    return list(validate_items_v2(_raw()).items)
+def _items() -> list[GoldItem]:
+    return list(validate_items(_raw()).items)
 
 
 def _fixture(key: str) -> pathlib.Path | None:
@@ -47,7 +47,7 @@ def _fixture(key: str) -> pathlib.Path | None:
     return hits[0] if hits else None
 
 
-def _item(**over: Any) -> GoldItemV2:
+def _item(**over: Any) -> GoldItem:
     d: dict[str, Any] = {
         "id": "x",
         "stratum": "single_span",
@@ -57,13 +57,13 @@ def _item(**over: Any) -> GoldItemV2:
         "required_claims": ["c"],
     }
     d.update(over)
-    return GoldItemV2.model_validate(d)
+    return GoldItem.model_validate(d)
 
 
 def test_authored_items_load() -> None:
     items = _items()
     assert items, "no authored items"
-    assert len(load_dataset_v2().items) >= len(items)
+    assert len(load_dataset().items) >= len(items)
     for item in items:
         assert item.stratum in AUTHORED_STRATA
 

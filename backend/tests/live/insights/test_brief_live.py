@@ -33,7 +33,7 @@ from app.llm.providers.openai_chat import OpenAIResponsesProvider
 pytestmark = pytest.mark.live
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
-DATASET = ROOT / "eval/datasets/vault_eval_v1"
+DATASET = ROOT / "eval/datasets/vault_eval"
 CAP = Decimal("0.10")
 PER_DOC = Decimal("0.04")
 MIN_VERIFIED = 0.80

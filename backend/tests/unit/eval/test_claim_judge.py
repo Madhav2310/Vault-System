@@ -9,7 +9,7 @@ import pytest
 import yaml
 from eval import judge as J
 from eval.labels.schema import LabelFile
-from eval.schema import GoldItemV2
+from eval.schema import GoldItem
 
 from app.core.settings import Settings
 from app.llm.gateway import LlmGateway, MemoryLedger
@@ -54,7 +54,7 @@ def gateway(fn: Responder) -> tuple[LlmGateway, ContentProvider]:
     return gw, fake
 
 
-def v2(**over: Any) -> GoldItemV2:
+def gold(**over: Any) -> GoldItem:
     d: dict[str, Any] = {
         "id": "q1",
         "stratum": "single_span",
@@ -66,7 +66,7 @@ def v2(**over: Any) -> GoldItemV2:
         "gold_evidence": [{"doc": "doc_a", "sentence_start": 0, "sentence_end": 1}],
     }
     d.update(over)
-    return GoldItemV2.model_validate(d)
+    return GoldItem.model_validate(d)
 
 
 def literal_claim_judge(inputs: dict[str, Any]) -> dict[str, Any]:
@@ -82,7 +82,7 @@ def literal_claim_judge(inputs: dict[str, Any]) -> dict[str, Any]:
 
 async def test_decisions() -> None:
     gw, fake = gateway(literal_claim_judge)
-    item = v2()
+    item = gold()
     # a correct paraphrase with a different number format passes
     p = await J.judge_claims(gw, item, "The fee is USD 1000.00, payable within thirty (30) days.")
     assert p.entailed == (True, True) and p.answer_pass and p.completeness == 1.0
@@ -111,14 +111,14 @@ async def test_claim_quote_not_in_answer_is_overruled() -> None:
         }
 
     gw, _ = gateway(liar)
-    j = await J.judge_claims(gw, v2(), "Nothing relevant.")
+    j = await J.judge_claims(gw, gold(), "Nothing relevant.")
     assert j.entailed == (False, False)
 
 
 async def test_incomplete_decisions_raise() -> None:
     gw, _ = gateway(lambda i: {"decisions": [{"claim_index": 0, "entailed": True, "quote": "x"}]})
     with pytest.raises(J.JudgeOutputError):
-        await J.judge_claims(gw, v2(), "x")
+        await J.judge_claims(gw, gold(), "x")
 
 
 async def test_support_judge() -> None:
@@ -154,7 +154,7 @@ async def test_abstention_judge() -> None:
         return {"reason": "r", "behaviour": "declined" if declined else "answered_as_asked", "correct": True}
 
     gw, fake = gateway(fn)
-    it = v2(
+    it = gold(
         id="u1",
         stratum="unanswerable",
         answer_type="abstain",
@@ -162,7 +162,7 @@ async def test_abstention_judge() -> None:
         alternates={},
         gold_evidence=[],
     )
-    assert J.abstain_applicable(it) and not J.abstain_applicable(v2())
+    assert J.abstain_applicable(it) and not J.abstain_applicable(gold())
     ok = await J.judge_abstention(gw, it, "The documents do not state a late fee.")
     bad = await J.judge_abstention(
         gw, it, "The late fee is 2%."
@@ -173,14 +173,14 @@ async def test_abstention_judge() -> None:
     )
     assert sent["case"] == "unanswerable" and "expected_behaviour" in sent
     with pytest.raises(ValueError):
-        await J.judge_abstention(gw, v2(), "x")
+        await J.judge_abstention(gw, gold(), "x")
 
 
 async def test_batched_concurrently_in_order() -> None:
     gw, _ = gateway(literal_claim_judge)
     answers = [f"The fee is $1,000 due in {n} days" for n in range(20)]
     rs: list[J.ClaimJudgement] = await J.gather_bounded(
-        [J.judge_claims(gw, v2(), a) for a in answers], limit=4
+        [J.judge_claims(gw, gold(), a) for a in answers], limit=4
     )
     assert [r.entailed[1] for r in rs] == [("30" in a) for a in answers]
 
@@ -209,11 +209,11 @@ def test_calibration_metrics() -> None:
     assert (J.Confusion(1, 1) + J.Confusion(1, 0, 2, 3)).n == 8
 
 
-def _answers() -> tuple[dict[str, GoldItemV2], list[J.AnswerRecord]]:
-    items: dict[str, GoldItemV2] = {}
+def _answers() -> tuple[dict[str, GoldItem], list[J.AnswerRecord]]:
+    items: dict[str, GoldItem] = {}
     recs: list[J.AnswerRecord] = []
     for i in range(60):
-        it = v2(id=f"q{i}", source_doc=f"doc{i % 20}")
+        it = gold(id=f"q{i}", source_doc=f"doc{i % 20}")
         items[it.id] = it
         recs.append(
             J.AnswerRecord(it.id, f"answer {i}", (J.SegmentView(f"s{i}", (f"p{i}",)),), failed=i % 5 == 0)
@@ -246,7 +246,7 @@ def test_export_labels_oversamples_failures_and_splits_by_doc() -> None:
 
 async def test_calibrate_runs_judges_against_labels() -> None:
     gw, _ = gateway(literal_claim_judge)
-    items = {"q1": v2()}
+    items = {"q1": gold()}
     lf = LabelFile.model_validate(
         {
             "pairs": [
@@ -295,12 +295,12 @@ async def test_calibrate_runs_judges_against_labels() -> None:
 async def test_versioned_correct_answer_is_not_vetoed() -> None:
     """RCA: `answered_as_asked` is right for a versioned item answered from the current version."""
     gw, _ = gateway(lambda i: {"reason": "r", "behaviour": "answered_as_asked", "correct": True})
-    ver = v2(
-        id="v1", stratum="versioned", answer_type="answer", required_claims=["USD 19,400"], alternates={}
+    ver = gold(
+        id="ver1", stratum="versioned", answer_type="answer", required_claims=["USD 19,400"], alternates={}
     )
     r = await J.judge_abstention(gw, ver, "The current fee is USD 19,400.")
     assert r.correct and r.behaviour == "answered_as_asked"
-    wrong = v2(id="v2", stratum="versioned", answer_type="answer", required_claims=["x"], alternates={})
+    wrong = gold(id="ver2", stratum="versioned", answer_type="answer", required_claims=["x"], alternates={})
     gw2, _ = gateway(lambda i: {"reason": "r", "behaviour": "answered_as_asked", "correct": False})
     assert not (await J.judge_abstention(gw2, wrong, "The fee is USD 18,500.")).correct
 
@@ -308,14 +308,14 @@ async def test_versioned_correct_answer_is_not_vetoed() -> None:
 async def test_abstain_strata_keep_the_contradiction_veto() -> None:
     gw, _ = gateway(lambda i: {"reason": "r", "behaviour": "answered_as_asked", "correct": True})
     for st in ("unanswerable", "false_premise"):
-        it = v2(
+        it = gold(
             id="u", stratum=st, answer_type="abstain", required_claims=[], alternates={}, gold_evidence=[]
         )
         assert not (await J.judge_abstention(gw, it, "It is 2%.")).correct
 
 
 def names_every_item(inputs: dict[str, Any]) -> dict[str, Any]:
-    """Scripted 'model' for the v2 rule: a claim that names items is entailed if the answer names them."""
+    """Scripted 'model': a claim that names items is entailed if the answer names them all."""
     ans = inputs["answer"]
     return {
         "decisions": [
@@ -324,13 +324,13 @@ def names_every_item(inputs: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-async def test_claim_judge_v2_prompt_and_names_every_item_case() -> None:
-    assert J.PROMPTS_V2["claims"] == ("eval_judge_claims", 4) and J.PROMPTS_V2["support"] == (
+async def test_claim_judge_names_every_item_case() -> None:
+    assert J.PROMPTS["claims"] == ("eval_judge_claims", 4) and J.PROMPTS["support"] == (
         "eval_judge_support",
         3,
     )
     gw, _ = gateway(names_every_item)
-    it = v2(required_claims=["CPUs, GPUs and DPUs"], alternates={})
+    it = gold(required_claims=["CPUs, GPUs and DPUs"], alternates={})
     r = await J.judge_claims(gw, it, "It makes CPUs, GPUs, DPUs and FPGAs.")
     assert r.answer_pass and r.completeness == 1.0
 
@@ -345,7 +345,7 @@ async def test_per_claim_details_and_overrule_are_recorded() -> None:
         }
 
     gw, _ = gateway(fn)
-    r = await J.judge_claims(gw, v2(), "The fee is USD 1,000.00 and due in 30 days.")
+    r = await J.judge_claims(gw, gold(), "The fee is USD 1,000.00 and due in 30 days.")
     assert r.entailed == (True, False)
     d0, d1 = r.details
     assert (d0.raw, d0.decision, d0.quote_verified, d0.overruled) == (True, True, True, False)
@@ -360,7 +360,7 @@ async def test_quote_check_folds_curly_quotes_and_dashes() -> None:
             "decisions": [{"claim_index": 0, "entailed": True, "quote": "the lessee's right - in full"}]
         }
     )
-    it = v2(required_claims=["x"], alternates={})
+    it = gold(required_claims=["x"], alternates={})
     r = await J.judge_claims(gw, it, "It is the lessee\u2019s right \u2014 in full.")
     assert r.answer_pass and J.overrules(r) == 0
 

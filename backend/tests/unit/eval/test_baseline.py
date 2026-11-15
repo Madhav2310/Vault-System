@@ -86,9 +86,9 @@ def test_regression_edge_cases(tmp_path: pathlib.Path) -> None:
 
 def test_freeze_roundtrip(tmp_path: pathlib.Path) -> None:
     run = _run({"recall@8": [1.0, 0.0]})
-    path = bl.freeze(run, "smoke_v1", tmp_path)
-    assert path == tmp_path / "smoke_v1.json"
+    path = bl.freeze(run, "base", tmp_path)
+    assert path == tmp_path / "base.json"
     data = bl.load_baseline(path)
-    assert data["metrics"] == {"recall@8": {"mean": 0.5, "n": 2}}
+    assert {k: data["metrics"]["recall@8"][k] for k in ("mean", "n")} == {"mean": 0.5, "n": 2}
     assert data["per_item"] == {"i0": {"recall@8": 1.0}, "i1": {"recall@8": 0.0}}
     assert bl.compare_to_baseline(run, path).ok  # path form is accepted

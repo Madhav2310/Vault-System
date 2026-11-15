@@ -16,7 +16,7 @@ from eval.schema import (  # noqa: E402
     AnswerSegment,
     CitedRange,
     EvalContext,
-    GoldenItem,
+    GoldItem,
     ItemOutput,
     Query,
 )
@@ -35,29 +35,20 @@ def chunk(cid: str, doc: str, text: str, page: int = 1, ordinal: int = 0, kind: 
     return ChunkInfo(cid, doc, ordinal, text, tuple(spans), page, page, kind)
 
 
-def item(**kw: Any) -> GoldenItem:
-    """A valid answerable lookup item over document d1; override any field."""
+def item(**kw: Any) -> GoldItem:
+    """An answerable single_span item over document d1 (gold: its first sentence); override any field."""
     base: dict[str, Any] = {
         "id": "toy:lookup",
-        "source": "authored",
-        "category": "lookup",
-        "doc_ids": ["d1"],
+        "stratum": "single_span",
         "question": "Which law governs?",
-        "expected_answer": "Virginia",
-        "expected_coverage": "supported",
-        "grading": "judge",
-        "status": "draft",
-        "gold": [
-            {
-                "quote": "The Agreement is governed by the laws of Virginia.",
-                "page": 1,
-                "match": "exact",
-                "score": 100,
-            }
-        ],
+        "source_doc": "d1",
+        "answer_type": "answer",
+        "required_claims": ["The governing law is Virginia."],
+        "gold_evidence": [{"doc": "d1", "sentence_start": 0, "sentence_end": 1}],
+        "doc_ids": ["d1"],
     }
     base.update(kw)
-    return GoldenItem.model_validate(base)
+    return GoldItem.model_validate(base)
 
 
 def out(

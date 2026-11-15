@@ -1,4 +1,4 @@
-"""A v2 run writes `<run_id>.answers.jsonl` that `eval.build.audit` and `eval.judge --export-labels`
+"""An answers run writes `<run_id>.answers.jsonl` that `eval.build.audit` and `eval.judge --export-labels`
 load as-is. FakeProvider judges, scripted pipeline, $0."""
 
 import json
@@ -8,9 +8,8 @@ from typing import Any
 import pytest
 from eval.build.audit import load_vault_answers
 from eval.judge import export_labels, load_answers
-from eval.run import Harness
-from eval.run_v2 import ItemOutputV2, run_suite_v2
-from eval.schema import AnswerSegment, CitedRange, EvalContext, GoldItemV2
+from eval.run import Harness, run_suite
+from eval.schema import AnswerSegment, CitedRange, EvalContext, GoldItem, ItemOutput
 
 from app.core.settings import Settings
 from app.llm.gateway import LlmGateway, MemoryLedger
@@ -50,7 +49,7 @@ class Judges(FakeProvider):
         return ChatResponse((TextPart(json.dumps(body)),), "end_turn", Usage(10, 5), None, req.model)
 
 
-def v2(**over: Any) -> GoldItemV2:
+def gold(**over: Any) -> GoldItem:
     d: dict[str, Any] = {
         "id": "a1",
         "stratum": "single_span",
@@ -62,7 +61,7 @@ def v2(**over: Any) -> GoldItemV2:
         "doc_ids": ["d1"],
     }
     d.update(over)
-    return GoldItemV2.model_validate(d)
+    return GoldItem.model_validate(d)
 
 
 async def test_run_writes_answers_file(tmp_path: pathlib.Path) -> None:
@@ -79,20 +78,20 @@ async def test_run_writes_answers_file(tmp_path: pathlib.Path) -> None:
         rng=lambda: 0.5,
     )
     items = [
-        v2(),
-        v2(
+        gold(),
+        gold(
             id="a2",
             question="When is payment due?",
             required_claims=["Payment is due in 30 days."],
             gold_evidence=[{"doc": "d1", "sentence_start": 1, "sentence_end": 2}],
         ),
-        v2(id="x1", audit_status="dropped", audit_note="ambiguous"),
+        gold(id="x1", audit_status="dropped", audit_note="ambiguous"),
     ]
     outs: Any = {
-        "a1": ItemOutputV2(
+        "a1": ItemOutput(
             retrieved=["c1"], segments=[AnswerSegment("Virginia law governs.", (CitedRange("c1", 0, 1),))]
         ),
-        "a2": ItemOutputV2(retrieved=["c1"], segments=[AnswerSegment("It is not stated.")]),
+        "a2": ItemOutput(retrieved=["c1"], segments=[AnswerSegment("It is not stated.")]),
     }
     h = Harness(
         ScriptedPipeline(outs),
@@ -101,7 +100,7 @@ async def test_run_writes_answers_file(tmp_path: pathlib.Path) -> None:
         judge_gw=gw,
         gold_units=lambda d: UNITS,
     )
-    run, _ = await run_suite_v2(
+    run, _ = await run_suite(
         items, h, name="toy", suite="full", split="all", report_dir=tmp_path, git_sha="abc1234"
     )
     path = tmp_path / f"{run.run_id}.answers.jsonl"
@@ -134,12 +133,12 @@ def _answers_files(d: pathlib.Path) -> list[pathlib.Path]:
 
 async def test_retrieval_suite_writes_no_answers(tmp_path: pathlib.Path) -> None:
     h = Harness(
-        ScriptedPipeline({"a1": ItemOutputV2(retrieved=["c1"])}),
+        ScriptedPipeline({"a1": ItemOutput(retrieved=["c1"])}),
         {"d1": [C1]},
         EvalContext(),
         gold_units=lambda d: UNITS,
     )
-    await run_suite_v2([v2()], h, name="toy", suite="retrieval", split="all", report_dir=tmp_path)
+    await run_suite([gold()], h, name="toy", suite="retrieval", split="all", report_dir=tmp_path)
     assert not _answers_files(tmp_path)
 
 

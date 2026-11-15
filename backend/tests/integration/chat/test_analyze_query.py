@@ -16,23 +16,23 @@ from app.llm.prompts import default_registry
 from app.llm.providers.fake import FakeProvider, structured
 from tests.support.llm import SleepRecorder
 
-GOLDEN = pathlib.Path(__file__).resolve().parents[4] / "eval/datasets/vault_eval_v1/golden.yaml"
+DATASET = pathlib.Path(__file__).resolve().parents[4] / "eval/datasets/vault_eval"
 
 
 def golden_questions() -> list[tuple[str, list[str]]]:
-    items: list[dict[str, Any]] = yaml.safe_load(GOLDEN.read_text())["items"]
+    """Every user turn of every golden item: the earlier turns of multi-turn items, then the question."""
     out: list[tuple[str, list[str]]] = []
-    for it in items:
-        if "question" in it:
-            out.append((it["question"], list(it.get("doc_ids") or [])))
-        for t in it.get("turns") or []:
-            out.append((t["question"], list(it.get("doc_ids") or [])))
+    for f in [*sorted((DATASET / "parts").glob("*.yaml")), *sorted((DATASET / "authored").glob("*.yaml"))]:
+        items: list[dict[str, Any]] = yaml.safe_load(f.read_text())["items"]
+        for it in items:
+            scope = list(it.get("doc_ids") or [])
+            out += [(t, scope) for t in [*(it.get("prior_turns") or []), it["question"]]]
     return out
 
 
 async def test_schema_valid() -> None:
     qs = golden_questions()
-    assert len(qs) >= 120  # 116 single-question items plus the multi-turn turns
+    assert len(qs) >= 311  # every live item's question, plus the dropped items and the earlier turns
     docs = [ScopeDoc(uuid.uuid4(), f"Document {i}") for i in range(3)]
     fake = FakeProvider()
     settings = Settings(_env_file=None, database_url="postgresql+asyncpg://x/y", redis_url="redis://x")  # type: ignore[call-arg]

@@ -1,5 +1,6 @@
-"""C1 checkpoint: every Vault-Eval document (and the failure fixtures) goes through upload → real extract,
-quality, chunk, embed (FakeProvider vectors: no API cost) and index stages and ends in the right state.
+"""C1 checkpoint: the golden set's named documents (the third-party ones of `sources.yaml` and their three
+authored companions) and the failure fixtures go through upload → real extract, quality, chunk, embed
+(FakeProvider vectors: no API cost) and index stages and end in the right state.
 
 Opt-in because it parses the full 10-K/10-Q filings (~2 min): `make c1-check` (sets VAULT_CORPUS=1).
 """
@@ -21,7 +22,18 @@ from tests.support.pipeline import upload
 from tests.support.uploads import FIXTURES
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
-DOCS = yaml.safe_load((ROOT / "eval/datasets/vault_eval_v1/documents.yaml").read_text())["documents"]
+DATASET = ROOT / "eval/datasets/vault_eval"
+NAMED = {
+    *yaml.safe_load((DATASET / "sources.yaml").read_text())["documents"],
+    "auth_amendment",
+    "auth_side_letter",
+    "auth_travel_policy",
+}
+DOCS = {
+    k: v
+    for k, v in yaml.safe_load((DATASET / "documents.yaml").read_text())["documents"].items()
+    if k in NAMED
+}
 pytestmark = pytest.mark.skipif(not os.environ.get("VAULT_CORPUS"), reason="opt-in: make c1-check")
 
 

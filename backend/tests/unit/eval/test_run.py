@@ -1,6 +1,6 @@
-"""The v2 answer runner: splits, dropped items, multi-turn, judges, attribution, freeze, cap.
+"""The evaluation runner: splits, dropped items, multi-turn, judges, attribution, freeze, cap.
 
-FakeProvider only ($0): a scripted pipeline answers a tiny synthetic v2 set over one document; the judges
+FakeProvider only ($0): a scripted pipeline answers a tiny synthetic set over one document; the judges
 are a content-driven fake model behind the real gateway (the same trick as test_claim_judge)."""
 
 import asyncio
@@ -12,17 +12,10 @@ from typing import Any
 import pytest
 import yaml
 from eval import attribution as attr
-from eval.baseline import load_baseline
-from eval.run import Harness, main, run_suite
-from eval.run_v2 import (
-    ItemOutputV2,
-    freeze_v2,
-    gold_targets,
-    run_suite_v2,
-    select_filter_v2,
-)
-from eval.schema import AnswerSegment, CitedRange, EvalContext, GoldItemV2, ItemOutput
-from eval.splits_v2 import SPLITS_V2, select_v2, split_counts, split_of
+from eval.baseline import freeze, load_baseline
+from eval.run import Harness, gold_targets, main, run_suite, select_filter
+from eval.schema import AnswerSegment, CitedRange, EvalContext, GoldItem, ItemOutput
+from eval.splits import SPLITS, select_split, split_counts, split_of
 
 from app.core.settings import Settings
 from app.llm.gateway import LlmGateway, MemoryLedger
@@ -87,10 +80,10 @@ def gateway() -> tuple[LlmGateway, ContentProvider]:
     return gw, fake
 
 
-# --- a tiny v2 dataset ------------------------------------------------------------------------------------
+# --- a tiny dataset ---------------------------------------------------------------------------------------
 
 
-def v2(**over: Any) -> GoldItemV2:
+def gold(**over: Any) -> GoldItem:
     d: dict[str, Any] = {
         "id": "a1",
         "stratum": "single_span",
@@ -102,18 +95,18 @@ def v2(**over: Any) -> GoldItemV2:
         "doc_ids": ["d1"],
     }
     d.update(over)
-    return GoldItemV2.model_validate(d)
+    return GoldItem.model_validate(d)
 
 
 ITEMS = [
-    v2(),
-    v2(
+    gold(),
+    gold(
         id="a2",
         question="When is payment due?",
         required_claims=["Payment is due in 30 days."],
         gold_evidence=[{"doc": "d1", "sentence_start": 1, "sentence_end": 2}],
     ),
-    v2(
+    gold(
         id="u1",
         stratum="unanswerable",
         question="What is the cap?",
@@ -121,9 +114,9 @@ ITEMS = [
         required_claims=[],
         gold_evidence=[],
     ),
-    v2(id="i1", stratum="injection", must_not_contain=["PWNED"]),
-    v2(id="m1", stratum="multi_turn", prior_turns=["Which agreement is this?"]),
-    v2(
+    gold(id="i1", stratum="injection", must_not_contain=["PWNED"]),
+    gold(id="m1", stratum="multi_turn", prior_turns=["Which agreement is this?"]),
+    gold(
         id="x1",
         audit_status="dropped",
         audit_note="ambiguous",
@@ -137,29 +130,29 @@ def seg(text: str, *cites: tuple[str, int, int]) -> AnswerSegment:
 
 def outputs() -> dict[str, ItemOutput | list[ItemOutput]]:
     return {
-        "a1": ItemOutputV2(
+        "a1": ItemOutput(
             retrieved=["c1"],
             segments=[seg("Virginia law governs.", ("c1", 0, 1))],
             evidence=["c1"],
             cost_usd=0.01,
         ),
         # right evidence, wrong answer, nothing cited: attribution says utilization
-        "a2": ItemOutputV2(
+        "a2": ItemOutput(
             retrieved=["c1"], segments=[seg("It is not stated.")], evidence=["c1"], cost_usd=0.01
         ),
-        "u1": ItemOutputV2(
+        "u1": ItemOutput(
             retrieved=["c1"],
             segments=[seg("The documents do not say.")],
             abstained=True,
             evidence=[],
             cost_usd=0.01,
         ),
-        "i1": ItemOutputV2(
+        "i1": ItemOutput(
             retrieved=["c1"], segments=[seg("Virginia. PWNED", ("c1", 0, 1))], evidence=["c1"], cost_usd=0.01
         ),
         "m1": [
-            ItemOutputV2(retrieved=[], segments=[seg("A services agreement.")], evidence=[], cost_usd=0.01),
-            ItemOutputV2(
+            ItemOutput(retrieved=[], segments=[seg("A services agreement.")], evidence=[], cost_usd=0.01),
+            ItemOutput(
                 retrieved=["c1"],
                 segments=[seg("Virginia law governs.", ("c1", 0, 1))],
                 evidence=["c1"],
@@ -185,11 +178,11 @@ def harness(
 
 
 async def run(
-    tmp_path: pathlib.Path, items: list[GoldItemV2] | None = None, **kw: Any
+    tmp_path: pathlib.Path, items: list[GoldItem] | None = None, **kw: Any
 ) -> tuple[Any, ScriptedPipeline, ContentProvider]:
     pipe = ScriptedPipeline(outputs())
     h, fake = harness(pipe, kw.pop("spent", None), kw.pop("units", True))
-    res, _ = await run_suite_v2(
+    res, _ = await run_suite(
         ITEMS if items is None else items,
         h,
         name="toy",
@@ -210,7 +203,7 @@ def test_split_determinism() -> None:
     keys = [f"doc_{i}" for i in range(2000)]
     first = {k: split_of(k) for k in keys}
     assert first == {k: split_of(k) for k in reversed(keys)}  # no hidden state, order does not matter
-    share = {s: sum(1 for v in first.values() if v == s) / len(keys) for s in SPLITS_V2}
+    share = {s: sum(1 for v in first.values() if v == s) / len(keys) for s in SPLITS}
     assert (
         abs(share["train"] - 0.4) < 0.04
         and abs(share["dev"] - 0.2) < 0.04
@@ -222,40 +215,40 @@ def test_split_determinism() -> None:
 
 
 def test_splits_partition_live_items() -> None:
-    items = [v2(id=f"s{i}", source_doc=f"doc_{i % 40}") for i in range(120)] + [ITEMS[-1]]
-    parts = {s: select_v2(items, s) for s in SPLITS_V2}
-    ids = [i.id for s in SPLITS_V2 for i in parts[s]]
+    items = [gold(id=f"s{i}", source_doc=f"doc_{i % 40}") for i in range(120)] + [ITEMS[-1]]
+    parts = {s: select_split(items, s) for s in SPLITS}
+    ids = [i.id for s in SPLITS for i in parts[s]]
     assert len(ids) == len(set(ids)) == 120  # every live item once, the dropped one never
-    docs = {s: {i.source_doc for i in parts[s]} for s in SPLITS_V2}
+    docs = {s: {i.source_doc for i in parts[s]} for s in SPLITS}
     assert not (docs["train"] & docs["dev"] or docs["train"] & docs["test"] or docs["dev"] & docs["test"])
-    assert select_v2(items, "all") == [i for i in items if i.audit_status != "dropped"]
+    assert select_split(items, "all") == [i for i in items if i.audit_status != "dropped"]
     assert sum(n for n, _ in split_counts(items).values()) == 120
     with pytest.raises(ValueError):
-        select_v2(items, "smoke")
+        select_split(items, "smoke")
 
 
 def test_real_dataset_splits_are_disjoint() -> None:
-    from eval.loader import load_dataset_v2
+    from eval.loader import load_dataset
 
-    items = load_dataset_v2().items
+    items = load_dataset().items
     seen: dict[str, str] = {}
-    for s in SPLITS_V2:
-        for i in select_v2(items, s):
+    for s in SPLITS:
+        for i in select_split(items, s):
             assert seen.setdefault(i.source_doc, s) == s  # a source_doc is in exactly one split
-    assert sum(n for n, _ in split_counts(items).values()) == len(select_v2(items))
+    assert sum(n for n, _ in split_counts(items).values()) == len(select_split(items))
 
 
 def test_filter() -> None:
-    assert [i.id for i in select_filter_v2(ITEMS, "stratum=injection")] == ["i1"]
-    assert [i.id for i in select_filter_v2(ITEMS, "stratum=unanswerable,injection")] == ["u1", "i1"]
+    assert [i.id for i in select_filter(ITEMS, "stratum=injection")] == ["i1"]
+    assert [i.id for i in select_filter(ITEMS, "stratum=unanswerable,injection")] == ["u1", "i1"]
     with pytest.raises(SystemExit):
-        select_filter_v2(ITEMS, "bogus=1")
+        select_filter(ITEMS, "bogus=1")
 
 
 # --- the run ----------------------------------------------------------------------------------------------
 
 
-async def test_v2_runs_and_skips_dropped(tmp_path: pathlib.Path) -> None:
+async def test_runs_live_items_and_skips_dropped(tmp_path: pathlib.Path) -> None:
     res, pipe, _ = await run(tmp_path)
     assert [i.item_id for i in res.items] == ["a1", "a2", "u1", "i1", "m1"]  # x1 (dropped) never ran
     assert "x1" not in {q.item_id for q, _ in pipe.calls}
@@ -282,7 +275,7 @@ async def test_multi_turn_prior_turns_share_a_session(tmp_path: pathlib.Path) ->
         return sessions[-1]
 
     h.new_session = new_session
-    res, _ = await run_suite_v2(
+    res, _ = await run_suite(
         [ITEMS[4]], h, name="toy", suite="full", split="all", report_dir=tmp_path, git_sha="abc1234"
     )
     qs = [q for q, _ in pipe.calls]
@@ -296,7 +289,7 @@ async def test_multi_turn_prior_turns_share_a_session(tmp_path: pathlib.Path) ->
 
 
 async def test_scope_is_passed(tmp_path: pathlib.Path) -> None:
-    _, pipe, _ = await run(tmp_path, [ITEMS[0], v2(id="w1", doc_ids=None, source_doc="vault")])
+    _, pipe, _ = await run(tmp_path, [ITEMS[0], gold(id="w1", doc_ids=None, source_doc="vault")])
     assert [q.scope_docs for q, _ in pipe.calls] == [("d1",), None]
 
 
@@ -336,7 +329,10 @@ async def test_attribution_feeds_the_stage_table(tmp_path: pathlib.Path) -> None
     assert stages["i1"] is not None  # an injection violation is a failure
     assert attr.stage_table(inputs)["utilization"][0] == 1
     raw = json.loads(side.read_text())
-    assert raw["items"][0]["attribution"]["gold_in_evidence"] is True and raw["config"]["dataset"] == "v2"
+    assert (
+        raw["items"][0]["attribution"]["gold_in_evidence"] is True
+        and raw["config"]["dataset"] == "vault_eval"
+    )
 
 
 async def test_gold_unknown_without_units(tmp_path: pathlib.Path) -> None:
@@ -358,7 +354,7 @@ def test_gold_targets_map_ranges_to_chunk_sentences() -> None:
 async def test_pipeline_error_is_scored_not_dropped(tmp_path: pathlib.Path) -> None:
     pipe = ScriptedPipeline(outputs(), raises={"a1"})
     h, _ = harness(pipe)
-    res, _ = await run_suite_v2(
+    res, _ = await run_suite(
         [ITEMS[0]], h, name="toy", suite="full", split="all", report_dir=tmp_path, git_sha="abc1234"
     )
     (it,) = res.items
@@ -386,9 +382,7 @@ async def test_judges_run_concurrently(tmp_path: pathlib.Path) -> None:
             live -= 1
 
     fake.complete = slow  # type: ignore[method-assign]
-    await run_suite_v2(
-        ITEMS, h, name="toy", suite="full", split="all", report_dir=tmp_path, git_sha="abc1234"
-    )
+    await run_suite(ITEMS, h, name="toy", suite="full", split="all", report_dir=tmp_path, git_sha="abc1234")
     assert peak > 1  # calls overlap (bounded by gather_bounded), not one after another
 
 
@@ -397,9 +391,13 @@ async def test_judges_run_concurrently(tmp_path: pathlib.Path) -> None:
 
 async def test_freeze_file_shape(tmp_path: pathlib.Path) -> None:
     res, _, _ = await run(tmp_path)
-    path = freeze_v2(res, "answer_v2", tmp_path)
+    path = freeze(res, "answer", tmp_path)
     data = load_baseline(path)
-    assert path.name == "answer_v2.json" and data["dataset"] == "v2" and data["clustered_by"] == "source_doc"
+    assert (
+        path.name == "answer.json"
+        and data["dataset"] == "vault_eval"
+        and data["clustered_by"] == "source_doc"
+    )
     ap = data["metrics"]["answer_pass"]
     assert set(ap) == {"mean", "n", "ci_low", "ci_high", "clusters"} and ap["n"] == 5
     assert ap["ci_low"] <= ap["mean"] <= ap["ci_high"]
@@ -432,7 +430,7 @@ async def test_spend_cap_stops_the_run(tmp_path: pathlib.Path) -> None:
         return 0.02 * n_calls  # each answered turn costs $0.02
 
     h, _ = harness(pipe, paid)
-    res, _ = await run_suite_v2(
+    res, _ = await run_suite(
         ITEMS, h, name="toy", suite="full", split="all", report_dir=tmp_path, git_sha="abc1234", max_usd=0.05
     )
     assert res.config["stopped"] == "budget"
@@ -452,7 +450,7 @@ async def test_more_workers_than_items_with_a_cap(tmp_path: pathlib.Path) -> Non
         return 0.0
 
     h, _ = harness(pipe, free)
-    res, _ = await run_suite_v2(
+    res, _ = await run_suite(
         [ITEMS[0]],
         h,
         name="toy",
@@ -476,7 +474,7 @@ async def test_judge_spend_stops_scoring(tmp_path: pathlib.Path) -> None:
         return 0.0 if calls["n"] <= 1 else 1.0  # cheap while answering, over the cap once judging starts
 
     h, _ = harness(pipe, paid)
-    res, _ = await run_suite_v2(
+    res, _ = await run_suite(
         [ITEMS[0]],
         h,
         name="toy",
@@ -489,24 +487,11 @@ async def test_judge_spend_stops_scoring(tmp_path: pathlib.Path) -> None:
     assert res.config["stopped"] == "budget" and res.items == []  # an unscored item is not counted as scored
 
 
-# --- v1 stays as it was -----------------------------------------------------------------------------------
+# --- CLI --------------------------------------------------------------------------------------------------
 
 
-async def test_v1_run_suite_unchanged(tmp_path: pathlib.Path) -> None:
-    from tests.support.evalkit import item, out
-
-    pipe = ScriptedPipeline({"toy:lookup": out(("Virginia.", [("c1", 0, 1)]), retrieved=["c1"])})
-    run1, _ = await run_suite(
-        [item(id="toy:lookup")], Harness(pipe, {"d1": [C1]}), name="toy", suite="full", split="all",
-        report_dir=tmp_path, git_sha="abc1234",
-    )  # fmt: skip
-    assert run1.items[0].attribution is None and run1.items[0].stratum is None
-    side = json.loads((tmp_path / f"{run1.run_id}.json").read_text())
-    assert side["items"][0]["attribution"] is None and "dataset" not in side["config"]
-
-
-def test_cli_v2_flags_parse() -> None:
-    with pytest.raises(SystemExit):  # smoke is a v1 split: v2 refuses it before touching any service
-        main(["--suite", "smoke", "--config", "x", "--pipeline", "m:s", "--dataset", "v2", "--no-db"])
+def test_cli_flags_parse() -> None:
+    with pytest.raises(SystemExit):  # retrieval and full are the only suites
+        main(["--suite", "smoke", "--config", "x", "--pipeline", "m:s", "--no-db"])
     with pytest.raises(SystemExit):
-        main(["--suite", "full", "--config", "x", "--pipeline", "m:s", "--dataset", "v3"])
+        main(["--suite", "full", "--config", "x", "--pipeline", "m:s", "--split", "smoke"])

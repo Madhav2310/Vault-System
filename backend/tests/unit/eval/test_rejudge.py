@@ -6,13 +6,13 @@ from typing import Any, cast
 
 from eval import rejudge as R
 from eval.judge import SpendGuard
-from eval.schema import GoldItemV2
+from eval.schema import GoldItem
 
 from app.llm.gateway import MemoryLedger
 from tests.unit.eval.test_claim_judge import gateway
 
 
-def item(**over: Any) -> GoldItemV2:
+def item(**over: Any) -> GoldItem:
     d: dict[str, Any] = {
         "id": "q1",
         "stratum": "single_span",
@@ -24,7 +24,7 @@ def item(**over: Any) -> GoldItemV2:
         "gold_evidence": [{"doc": "doc_a", "sentence_start": 0, "sentence_end": 1}],
     }
     d.update(over)
-    return GoldItemV2.model_validate(d)
+    return GoldItem.model_validate(d)
 
 
 def scripted(inputs: dict[str, Any]) -> dict[str, Any]:
@@ -44,7 +44,7 @@ async def test_rejudge_versions_old_vs_new_and_diff() -> None:
     gw, fake = gateway(scripted)
     items = {
         "q1": item(),
-        "v1": item(id="v1", stratum="versioned", required_claims=["USD 19,400"]),
+        "ver1": item(id="ver1", stratum="versioned", required_claims=["USD 19,400"]),
         "u1": item(
             id="u1", stratum="unanswerable", answer_type="abstain", required_claims=[], gold_evidence=[]
         ),
@@ -56,13 +56,13 @@ async def test_rejudge_versions_old_vs_new_and_diff() -> None:
             "abstained": False,
             "segments": [{"text": "The fee is $1,000.", "passages": ["Fee: $1,000."]}],
         },
-        {"item_id": "v1", "answer": "USD 19,400 now.", "abstained": False, "segments": []},
+        {"item_id": "ver1", "answer": "USD 19,400 now.", "abstained": False, "segments": []},
         {"item_id": "u1", "answer": "", "abstained": True, "segments": []},
         {"item_id": "not-in-dataset", "answer": "x", "segments": []},
     ]
     old = {
         "q1": {"answer_pass": 0.0, "claim_completeness": 0.0, "support_rate": 0.0},
-        "v1": {"answer_pass": 1.0, "abstention_correct": 0.0},
+        "ver1": {"answer_pass": 1.0, "abstention_correct": 0.0},
         "u1": {"answer_pass": 1.0, "abstention_correct": 1.0},
     }
     guard = SpendGuard(cast(MemoryLedger, gw.ledger), Decimal("5"))
@@ -70,15 +70,15 @@ async def test_rejudge_versions_old_vs_new_and_diff() -> None:
     assert res["n_judged"] == 3 and res["n_skipped_unknown_item"] == 1 and res["stopped"] is None
     new = {i: x["new"] for i, x in res["items"].items()}
     assert new["q1"]["answer_pass"] == 1.0 and new["q1"]["support_rate"] == 1.0
-    assert new["v1"]["abstention_correct"] == 1.0  # versioned, answered: no veto
+    assert new["ver1"]["abstention_correct"] == 1.0  # versioned, answered: no veto
     assert new["u1"] == {"abstention_correct": 1.0, "answer_pass": 1.0}  # empty answer: no model call
     changed = {d["item_id"]: d["changes"] for d in res["diff"]}
-    assert set(changed) == {"q1", "v1"}  # u1 unchanged
-    assert changed["v1"]["abstention_correct"] == {"old": 0.0, "new": 1.0}
+    assert set(changed) == {"q1", "ver1"}  # u1 unchanged
+    assert changed["ver1"]["abstention_correct"] == {"old": 0.0, "new": 1.0}
     assert res["items"]["q1"]["judge"]["claims"][0]["quote_verified"] is True
-    assert len(fake.requests) == 4  # q1: claims + support; v1: claims + abstain; u1: none
+    assert len(fake.requests) == 4  # q1: claims + support; ver1: claims + abstain; u1: none
     json.dumps(res)  # serialisable
-    assert "| v1 | abstention_correct | 0.00 | 1.00 |" in R.format_diff(
+    assert "| ver1 | abstention_correct | 0.00 | 1.00 |" in R.format_diff(
         res["diff"],
         {k: (v["mean"], v["n"]) for k, v in res["means_new"].items()},
         {k: (v["mean"], v["n"]) for k, v in res["means_old"].items()},

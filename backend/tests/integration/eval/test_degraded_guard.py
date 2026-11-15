@@ -5,13 +5,13 @@ import pathlib
 from typing import Any
 
 from eval import baseline as bl
+from eval.loader import Dataset
 from eval.report import RunResult
 from eval.run import Harness, degraded_abort, run_suite
 from eval.schema import ItemOutput
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
-from tests.integration.eval.test_runner import C1, ITEMS
+from tests.integration.eval.test_runner import C1, ITEMS, UNITS
 from tests.support.evalkit import Tracker
 
 SM = async_sessionmaker[AsyncSession]
@@ -22,12 +22,16 @@ class _Pipe:
         self.degraded = degraded
 
     async def __call__(self, q: Any, ctx: Any) -> ItemOutput:
-        return ItemOutput(retrieved=["c1"], abstained=q.category == "unanswerable", degraded=self.degraded)
+        return ItemOutput(retrieved=["c1"], degraded=self.degraded)
+
+
+def _harness(degraded: tuple[str, ...]) -> Harness:
+    return Harness(_Pipe(degraded), {"d1": [C1]}, gold_units=UNITS.get)
 
 
 async def _run(sm: SM, tracker: Tracker, tmp_path: pathlib.Path, degraded: tuple[str, ...]) -> RunResult:
     run, _ = await run_suite(
-        ITEMS, Harness(_Pipe(degraded), {"d1": [C1]}), name="toy", suite="retrieval", split="all",
+        ITEMS, _harness(degraded), name="toy", suite="retrieval", split="all",
         sm=sm, report_dir=tmp_path, git_sha="abc1234",
     )  # fmt: skip
     tracker.run_ids.append(run.run_id)
@@ -35,8 +39,8 @@ async def _run(sm: SM, tracker: Tracker, tmp_path: pathlib.Path, degraded: tuple
 
 
 async def test_abort_on_degraded(sm: SM, tracker: Tracker, tmp_path: pathlib.Path, monkeypatch: Any) -> None:
-    run = await _run(sm, tracker, tmp_path, ("no_rerank",))
-    assert run.degraded_rate() == 1.0 and run.degraded_by_kind() == {"no_rerank": 3}
+    run = await _run(sm, tracker, tmp_path, ("lexical_only",))
+    assert run.degraded_rate() == 1.0 and run.degraded_by_kind() == {"lexical_only": 3}
     line = degraded_abort(run, 0.05)
     assert line is not None and line.startswith("ABORT: degraded_rate 1.000 > 0.050")
     # `_main` returns 3 and never reaches the baseline freeze
@@ -44,25 +48,19 @@ async def test_abort_on_degraded(sm: SM, tracker: Tracker, tmp_path: pathlib.Pat
     monkeypatch.setattr(bl, "freeze", lambda r, n: froze.append(n))
     import eval.run as er
 
-    async def setup(_cfg: str) -> Harness:
-        return Harness(_Pipe(("no_rerank",)), {"d1": [C1]})
+    async def setup(_cfg: str, *, doc_keys: Any) -> Harness:
+        return _harness(("lexical_only",))
 
-    monkeypatch.setattr(er, "_load_setup", lambda _spec: setup)
+    monkeypatch.setattr(er, "_load_setup", lambda _spec, stream=False: setup)
     monkeypatch.setattr(er, "REPORTS_DIR", tmp_path)
+    monkeypatch.setattr("eval.loader.load_dataset", lambda: Dataset(tuple(ITEMS)))
+    monkeypatch.setattr("eval.build.build_docs.load_documents", lambda: {"d1": {"kind": "authored"}})
     args = argparse.Namespace(
         suite="retrieval", split="all", config="x", pipeline="m:s", no_db=True, freeze="retrieval",
-        compare=None, tolerance=0.02, max_degraded_rate=0.05, max_usd=None, filter=None,
+        compare=None, tolerance=0.02, max_degraded_rate=0.05, max_usd=None, filter=None, stream=False,
+        only_dropped=False, answer_concurrency=1,
     )  # fmt: skip
-    monkeypatch.setattr("eval.loader.load_dataset", lambda: _FakeDs())
     assert await er._main(args) == 3 and froze == []
-
-
-class _FakeDs:
-    def select(self, _split: str) -> list[Any]:
-        return ITEMS
-
-    def split_of(self, _id: str) -> str:
-        return "-"
 
 
 async def test_healthy_run(sm: SM, tracker: Tracker, tmp_path: pathlib.Path) -> None:

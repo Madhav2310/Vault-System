@@ -1,9 +1,9 @@
-"""Gold-quote mapping on hand-made chunks: normalization variants, fuzzy fallback, word bounds, pages, tables,
+"""Gold mapping on hand-made chunks: normalization variants, fuzzy fallback, word bounds, pages, tables,
 sentence ranges, long quotes."""
 
-from eval.mapping import map_item, map_quote
+from eval.mapping import map_quote
 
-from tests.support.evalkit import chunk, item
+from tests.support.evalkit import chunk
 
 A = chunk(
     "a",
@@ -74,17 +74,3 @@ def test_long_quote_uses_head_and_tail() -> None:
     assert len(quote) > 400
     t = map_quote(quote, 1, [big])
     assert t.hits[0].sentence_start == 0 and t.hits[0].sentence_end == 8 and t.hits[0].match == "exact"
-
-
-def test_map_item_reports_unmapped_reasons() -> None:
-    it = item(
-        gold=[
-            {"quote": "Payment is due in 30 days.", "page": 2, "match": "exact"},
-            {"quote": "Never in the doc anywhere at all.", "page": 2, "match": "not_found"},
-        ]
-    )
-    ok, nf = map_item(it, {"d1": [chunk("z", "d1", "Payment is due in 30 days.", 2)]})
-    assert ok.mapped and ok.chunk_ids == {"z"}
-    assert not nf.mapped and nf.reason == "gold not located at build time"
-    (missing,) = map_item(item(gold=[it.gold[0].model_dump()]), {})
-    assert missing.reason == "document has no ingested chunks"

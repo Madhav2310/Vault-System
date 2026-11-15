@@ -13,7 +13,6 @@ import re
 import uuid
 from decimal import Decimal
 from functools import lru_cache
-from typing import Any
 
 import pytest
 import yaml
@@ -32,9 +31,19 @@ from app.llm.providers.openai_chat import OpenAIResponsesProvider
 pytestmark = pytest.mark.live
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
-DATASET = ROOT / "eval/datasets/vault_eval_v1"
+DOCUMENTS = ROOT / "eval/datasets/vault_eval/documents.yaml"
 CAP = Decimal("0.05")
-ITEMS = ("cuad_consulting:parties", "cuad_consulting:agreement_date", "cuad_consulting:governing_law")
+# (label, question, a verbatim quote of the CUAD consulting agreement that answers it)
+ITEMS = (
+    ("parties", "Who are the parties to this agreement?", "Medalist Diversified REIT, Inc."),
+    ("agreement_date", "What is the date of this agreement?", "1st day of March 2020"),
+    (
+        "governing_law",
+        "Which jurisdiction's law governs this agreement?",
+        "This Agreement shall be interpreted, construed, governed, and enforced according to the laws of the "
+        "Commonwealth of Virginia, without giving effect to its conflict of laws principles.",
+    ),
+)
 spent = Decimal(0)
 
 
@@ -68,8 +77,8 @@ def _norm(t: str) -> str:
 
 
 @lru_cache(maxsize=1)
-def _consulting() -> tuple[list[EvidenceChunk], dict[str, Any]]:
-    docs = yaml.safe_load((DATASET / "documents.yaml").read_text())["documents"]
+def _consulting() -> list[EvidenceChunk]:
+    docs = yaml.safe_load(DOCUMENTS.read_text())["documents"]
     rel = docs["cuad_consulting"]["file"]
     for root in _source_roots():
         path = root / rel
@@ -94,8 +103,7 @@ def _consulting() -> tuple[list[EvidenceChunk], dict[str, Any]]:
         for d in drafts
         if d.kind == "text"
     ]
-    golden = {it["id"]: it for it in yaml.safe_load((DATASET / "golden.yaml").read_text())["items"]}
-    return chunks, golden
+    return chunks
 
 
 def _select(chunks: list[EvidenceChunk], quote: str) -> list[EvidenceChunk]:
@@ -118,17 +126,15 @@ def _show(r: GenerateResult, label: str) -> None:
 
 async def test_live_citations() -> None:
     global spent
-    chunks, golden = _consulting()
+    chunks = _consulting()
     gw = _gateway(MemoryLedger())
-    for item_id in ITEMS:
-        item = golden[item_id]
-        quote = item["gold"][0]["quote"]
+    for item_id, question, quote in ITEMS:
         ev: EvidenceSet = build_evidence(_select(chunks, quote))
         r = await generate(
-            gw, owner_id=uuid.uuid4(), evidence=ev, question=item["question"], route="lookup", mode="rag"
+            gw, owner_id=uuid.uuid4(), evidence=ev, question=question, route="lookup", mode="rag"
         )
         spent += r.cost_usd
-        print(f"\n{item_id}\n  Q: {item['question']}\n  A: {r.text!r}")
+        print(f"\n{item_id}\n  Q: {question}\n  A: {r.text!r}")
         for seg in r.resolution.segments:
             for ref in seg.references:
                 hit = _norm(quote) in _norm(ref.cited_text) or _norm(ref.cited_text) in _norm(quote)
@@ -148,7 +154,7 @@ async def test_live_citations() -> None:
 
 async def test_prompt_cache_hit() -> None:
     global spent
-    chunks, _ = _consulting()
+    chunks = _consulting()
     ev = build_evidence(chunks)  # the whole document: FULL_CONTEXT style, well over 1,024 tokens
     gw = _gateway(MemoryLedger())
     runs: list[GenerateResult] = []

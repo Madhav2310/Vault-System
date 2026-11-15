@@ -18,7 +18,7 @@ def make(metrics: dict[str, list[float]], name: str = "run", errors: int = 0, do
         run_id=name, name=name, suite="full", split="dev", git_sha="abc1234", config={},
         items=[
             SidecarItem(
-                item_id=f"i{k:03d}", category="v2", split="dev",
+                item_id=f"i{k:03d}", category="single_span", split="dev",
                 metrics={m: v[k] for m, v in metrics.items()},
                 source_doc=f"doc{k % docs}", error="boom" if k < errors else None,
             )
@@ -140,7 +140,7 @@ def test_coverage_and_errors() -> None:
 
 
 def test_load_frozen_baseline_form(tmp_path: pathlib.Path) -> None:
-    data: dict[str, Any] = {"name": "answer_v2", "n_errors": 1, "per_item": {"a": {"answer_pass": 1.0}}}
+    data: dict[str, Any] = {"name": "answer", "n_errors": 1, "per_item": {"a": {"answer_pass": 1.0}}}
     p = tmp_path / "b.json"
     p.write_text(json.dumps(data))
     sc, errs = gate.load_any(p)

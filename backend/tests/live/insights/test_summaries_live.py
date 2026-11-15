@@ -53,7 +53,7 @@ def _source_roots() -> list[pathlib.Path]:
 
 def _chunks(key: str) -> list[EvidenceChunk]:
     """The document's chunks as ingestion stores them (production extractor and chunker)."""
-    meta = yaml.safe_load((ROOT / "eval/datasets/vault_eval_v1/documents.yaml").read_text())["documents"][key]
+    meta = yaml.safe_load((ROOT / "eval/datasets/vault_eval/documents.yaml").read_text())["documents"][key]
     rel = meta["file"]
     path = next((r / rel for r in _source_roots() if (r / rel).is_file()), None)
     if path is None:

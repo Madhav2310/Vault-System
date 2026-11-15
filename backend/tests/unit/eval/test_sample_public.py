@@ -12,9 +12,9 @@ import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
 _ROOT = pathlib.Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(_ROOT / "eval" / "build"))
 import sample_public as sp  # noqa: E402
-from eval.loader import validate_items_v2  # noqa: E402
+from eval.loader import validate_items  # noqa: E402
 
-PUBLIC = _ROOT / "eval" / "datasets" / "vault_eval_v2" / "parts" / "public.yaml"
+PUBLIC = _ROOT / "eval" / "datasets" / "vault_eval" / "parts" / "public.yaml"
 HAVE_SOURCES = (sp.DEFAULT_SOURCES / "fb_questions.jsonl").exists()
 
 
@@ -159,7 +159,7 @@ def test_locate_and_stream() -> None:
 @pytest.mark.skipif(not PUBLIC.exists(), reason="parts/public.yaml not generated (needs eval/sources)")
 def test_output_validates_and_caps() -> None:
     items = yaml.safe_load(PUBLIC.read_text())["items"]
-    validate_items_v2(items)  # includes the 3-per-document cap
+    validate_items(items)  # includes the 3-per-document cap
     assert all(i["gold_evidence"] for i in items)
     assert max(collections.Counter(i["source_doc"] for i in items).values()) <= sp.MAX_PER_DOC
 

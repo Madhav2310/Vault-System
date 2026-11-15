@@ -17,7 +17,7 @@ N = 100
 def sidecar(name: str, ap: list[float], inj: list[float]) -> dict[str, object]:
     items = [
         {
-            "item_id": f"i{k:03d}", "category": "v2", "split": "dev", "source_doc": f"doc{k % 25}",
+            "item_id": f"i{k:03d}", "category": "single_span", "split": "dev", "source_doc": f"doc{k % 25}",
             "stratum": "injection" if k >= 90 else "single_span",
             "metrics": {
                 "answer_pass": ap[k], "support_rate": 0.9, "abstention_correct": 1.0,

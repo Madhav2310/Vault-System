@@ -1,75 +1,74 @@
-"""The golden-item validator rejects an item missing a required field."""
+"""Golden item schema (atomic claims) and dataset-level validation; the committed set loads."""
 
+import copy
 from typing import Any
 
 import pytest
-from pydantic import ValidationError
+from eval.loader import DatasetError, load_dataset, validate_items
+from eval.schema import GoldItem
 
-from tests.support.evalkit import item
-
-REQUIRED = [
-    "id",
-    "source",
-    "category",
-    "doc_ids",
-    "expected_coverage",
-    "grading",
-    "status",
-    "question",
-    "expected_answer",
-]
+GOOD: dict[str, Any] = {
+    "id": "q1",
+    "stratum": "single_span",
+    "question": "Which law governs the agreement?",
+    "source_doc": "cuad_a",
+    "answer_type": "answer",
+    "required_claims": ["The governing law is Delaware."],
+    "alternates": {"The governing law is Delaware.": ["Delaware law governs"]},
+    "gold_evidence": [{"doc": "cuad_a", "sentence_start": 4, "sentence_end": 5}],
+}
 
 
-@pytest.mark.parametrize("field", REQUIRED)
-def test_required_fields(field: str) -> None:
-    from eval.schema import GoldenItem
-
-    raw = item().model_dump()
-    raw["doc_ids"] = ["d1"]
-    GoldenItem.model_validate(raw)  # the intact item is valid
-    del raw[field]
-    with pytest.raises(ValidationError):
-        GoldenItem.model_validate(raw)
+def _item(**over: Any) -> dict[str, Any]:
+    d = copy.deepcopy(GOOD)
+    d.update(over)
+    return d
 
 
-def test_required_fields_per_category_and_grading() -> None:
-    gold = {"quote": "q", "page": None, "match": "exact"}
-    bad: list[dict[str, Any]] = [
-        {"gold": []},  # answerable judged item without gold
-        {"gold": [{"quote": "q", "match": "exact"}]},  # gold without its page key
-        {"gold": [{"quote": "", "page": 1, "match": "exact"}]},
-        {"gold": [{"quote": "q", "page": 0, "match": "exact"}]},
-        {"gold": [{"quote": "q", "page": 1, "match": "maybe"}]},
-        {"gold": [gold], "doc_ids": ["a", "b"]},  # gold with no doc_id in a multi-document scope
-        {"grading": "judge+must_not_contain"},  # names the grader but no list
-        {"must_not_contain": ["X"]},  # list but grading does not apply it
-        {"grading": "rubric"},  # rubric grading without a rubric
-        {"category": "conflict"},  # conflict without expected_conflict
-        {"expected_conflict": True},  # expected_conflict on a non-conflict item
-        {"category": "multi_turn", "grading": "judge_per_turn"},  # no turns
-        {"turns": [{"question": "q", "expected_answer": "a", "gold": []}] * 2},  # turns on a lookup
-        {"category": "unanswerable"},  # unanswerable but coverage/grading disagree
-        {"must_not_contian": ["X"]},  # misspelled key must not be silently ignored
-        {"question": None},
-    ]
-    for kw in bad:
-        with pytest.raises(ValidationError):
-            item(**kw)
-    item(category="conflict", expected_conflict=False)
-    item(grading="judge+must_not_contain", must_not_contain=["PWNED"])
-    item(
-        category="multi_turn",
-        grading="judge_per_turn",
-        doc_ids=None,
-        question=None,
-        gold=[],
-        expected_answer=None,
-        turns=[
-            {
-                "question": "q1",
-                "expected_answer": "a",
-                "gold": [{"quote": "q", "page": 1, "match": "exact", "doc_id": "d1"}],
-            },
-            {"question": "q2", "expected_answer": "a", "gold": []},
-        ],
+def _problems(raw: list[Any]) -> str:
+    with pytest.raises(DatasetError) as ei:
+        validate_items(raw)
+    return str(ei.value)
+
+
+def test_validation() -> None:
+    ds = validate_items([GOOD])
+    assert ds.items[0].audit_status == "draft" and ds.items[0].required_claims == GOOD["required_claims"]
+
+    assert "extra" in _problems([_item(requird_claims=["x"])]).lower()
+    assert "1 to 6 required_claims, found 0" in _problems([_item(required_claims=[], alternates={})])
+    assert "1 to 6 required_claims, found 7" in _problems(
+        [_item(required_claims=[f"c{n}" for n in range(7)], alternates={})]
     )
+    assert "abstain items must have no required_claims" in _problems([_item(answer_type="abstain")])
+    assert "injection items require must_not_contain" in _problems([_item(stratum="injection")])
+    assert "not one of the item's claims" in _problems([_item(alternates={"typo": ["a"]})])
+    assert "sentence_end must be greater" in _problems(
+        [_item(gold_evidence=[{"doc": "d", "sentence_start": 3, "sentence_end": 3}])]
+    )
+    assert "dropped items require an audit_note" in _problems([_item(audit_status="dropped")])
+    assert "multi_turn items require prior_turns" in _problems([_item(stratum="multi_turn")])
+
+    abstain = _item(
+        id="a",
+        stratum="unanswerable",
+        answer_type="abstain",
+        required_claims=[],
+        alternates={},
+        gold_evidence=[],
+    )
+    assert GoldItem.model_validate(abstain).answer_type == "abstain"
+
+    four = [_item(id=f"q{n}") for n in range(4)]
+    msg = _problems(four)
+    assert "source_doc cuad_a has 4 items (max 3)" in msg and "q3" in msg
+    validate_items(four[:3])
+    # a dropped item does not count against the cap; every bad item is reported in one run
+    validate_items([*four[:3], _item(id="q9", audit_status="dropped", audit_note="over cap")])
+    both = _problems([_item(id="b1", required_claims=[], alternates={}), _item(id="b2", bogus=1)])
+    assert "b1" in both and "b2" in both
+
+
+def test_committed_dataset_loads() -> None:
+    items = load_dataset().items
+    assert sum(i.audit_status != "dropped" for i in items) == 311
