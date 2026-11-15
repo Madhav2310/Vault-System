@@ -331,3 +331,27 @@ async def test_pipeline_continues_from_index_to_brief(  # type: ignore[no-untype
     second = await run_job(sm, ref.job_id, "w", stages, enqueued, order=order, services=services)
     assert second == "finished" and len(prov.requests) == 1
     assert (await version_status(sm, ref.version_id))[0] == "enriched"
+
+
+async def test_redelivery_does_not_spend_the_cap_again(sm, make_owner, enqueued) -> None:  # type: ignore[no-untyped-def]
+    """A delivery that died after its model calls (lease takeover, redelivery) already spent the per-document
+    cap: the next delivery of the same job counts that spend and makes no further call."""
+    o, seeded = await _three_groups(sm, make_owner)
+    async with sm() as s:
+        await s.execute(
+            text(
+                "INSERT INTO llm_calls (id, owner_id, job_id, purpose, lane, provider, model, attempt, "
+                "cost_usd, status) VALUES (gen_random_uuid(), :o, :j, 'brief_extract', 'background', 'fake', "
+                "'m', 1, 0.05, 'ok')"
+            ),
+            {"o": o.id, "j": seeded.ref.job_id},
+        )
+        await s.commit()
+    gw, prov, _ = brief_gateway([*_group_replies(), merge_reply()])
+    out = await run_brief(
+        sm, seeded.ref.job_id, gw, enqueued, brief_max_evidence_tokens=100, brief_max_usd=0.05
+    )
+    assert out == "finished"
+    assert prov.requests == []
+    (row,) = await insight_rows(sm, seeded.ref.version_id)
+    assert (row["status"], row["content"]) == ("failed", {"error_code": "budget_exhausted"})

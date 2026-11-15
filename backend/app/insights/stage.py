@@ -129,6 +129,10 @@ class NoChunksError(Exception):
     pass
 
 
+class BudgetSpentError(Exception):
+    """Earlier deliveries of this job already spent the per-document cap: no call is made."""
+
+
 @dataclass(frozen=True)
 class Part:
     fields: Normalized
@@ -257,12 +261,13 @@ async def generate_brief(
     groups: Sequence[Sequence[uuid.UUID]],
     max_usd: Decimal,
     concurrency: int = 1,
+    already_spent: Decimal = Decimal(0),
 ) -> Generated:
     """Extract per group (sequential, so the cost cap is exact), then merge. `load` returns a group's chunks
     (the stage reads them in a short session). Raises `LlmError` (or the underlying error) when an extract
     call fails; the stage turns that into a failed row."""
     reasons: list[str] = []
-    spent = Decimal(0)
+    spent = already_spent  # earlier deliveries of the same job count against the cap
     reserved = Decimal(0)  # estimated cost of calls in flight
     calls = 0
     model = ""
@@ -305,10 +310,12 @@ async def generate_brief(
             next_group += 1  # claim the group before any await: two workers must never take the same one
             if i > 0:
                 await first_done.wait()  # the first call sets the cost estimate used for reservations
-                if spent + reserved >= max_usd:  # in-flight calls count at the largest cost seen
-                    partial = True
-                    next_group = len(groups)  # nobody starts later groups either
-                    return
+            if spent + reserved >= max_usd:  # in-flight calls count at the largest cost seen
+                partial = True
+                next_group = len(groups)  # nobody starts later groups either
+                if i == 0:
+                    first_done.set()
+                return
             reserve = estimate
             reserved += reserve
             try:
@@ -332,13 +339,15 @@ async def generate_brief(
             parts.append(slot[0])
             reasons += slot[1]
     if not parts:
+        if partial:
+            raise BudgetSpentError("the brief budget is already spent")
         raise NoChunksError("the version has no chunks to brief")
     all_facts = [f for p in parts for f in p.facts]
     if len(parts) == 1:
         return Generated(
             _finalize(parts[0].fields, all_facts, version_id, reasons, partial, parts[0].tone_evidence),
             model,
-            spent,
+            spent - already_spent,
             calls,
         )
     try:
@@ -360,7 +369,10 @@ async def generate_brief(
         fields = _fallback_fields(parts)
     tone_refs = _merged_tone_evidence(parts, fields.tone)
     return Generated(
-        _finalize(fields, all_facts, version_id, reasons, partial, tone_refs), model, spent, calls
+        _finalize(fields, all_facts, version_id, reasons, partial, tone_refs),
+        model,
+        spent - already_spent,
+        calls,
     )
 
 
@@ -405,6 +417,8 @@ async def _upsert(
 def _error_code(e: BaseException) -> str:
     if isinstance(e, LlmError):
         return e.error_type
+    if isinstance(e, BudgetSpentError):
+        return "budget_exhausted"
     return "no_chunks" if isinstance(e, NoChunksError) else "internal"
 
 
@@ -437,6 +451,15 @@ class BriefStage:
                     },
                 )
             ).scalar_one_or_none()
+            spent = (  # what earlier deliveries of this job paid (a takeover or redelivery)
+                await s.execute(
+                    text(
+                        "SELECT COALESCE(sum(cost_usd), 0) FROM llm_calls "
+                        "WHERE job_id = :j AND owner_id = :o AND purpose IN ('brief_extract', 'brief_merge')"
+                    ),
+                    {"j": job.id, "o": job.owner_id},
+                )
+            ).scalar_one()
             rows = (
                 await s.execute(
                     text(
@@ -470,6 +493,7 @@ class BriefStage:
                 groups=groups,
                 max_usd=Decimal(str(settings.brief_max_usd)),
                 concurrency=settings.brief_concurrency,
+                already_spent=Decimal(spent),
             )
         except asyncio.CancelledError:
             raise

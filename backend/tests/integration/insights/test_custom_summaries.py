@@ -269,6 +269,45 @@ async def test_redelivery_is_idempotent(sm, make_owner, api, summary_queue) -> N
     assert await work(sm, gw, uuid.uuid4()) == "missing"
 
 
+async def test_stale_run_cannot_overwrite_the_reclaimers_result(sm, make_owner, api, summary_queue) -> None:  # type: ignore[no-untyped-def]
+    """A run that outlives its lease is taken over; when it finally fails, its result must not land on the
+    row the reclaimer now owns, and the reclaimer's `done` must persist."""
+    o = await make_owner()
+    doc = await seed_doc(sm, o.id)
+    sid = uuid.UUID((await post(api, o, doc, length="short")).json()["id"])
+    gw, prov, _ = brief_gateway([summary_reply(FEE)])
+    a_in, a_go, b_in, b_go = (asyncio.Event() for _ in range(4))
+
+    class Stalled:  # the stale run: its model call hangs past the lease, then fails
+        async def call(self, **_: Any) -> Any:
+            a_in.set()
+            await a_go.wait()
+            raise RuntimeError("provider hung, then failed")
+
+    class Gated:  # the reclaimer: its model call is still in flight when the stale run finishes
+        async def call(self, **kw: Any) -> Any:
+            b_in.set()
+            await b_go.wait()
+            return await gw.call(**kw)
+
+    stale = asyncio.ensure_future(work(sm, Stalled(), sid))  # type: ignore[arg-type]
+    await a_in.wait()
+    async with sm() as s:  # the stale run's lease is over
+        await s.execute(
+            text("UPDATE document_insights SET created_at = now() - interval '1 hour' WHERE id = :i"),
+            {"i": sid},
+        )
+        await s.commit()
+    reclaim = asyncio.ensure_future(work(sm, Gated(), sid))  # type: ignore[arg-type]
+    await b_in.wait()
+    a_go.set()
+    await stale
+    b_go.set()
+    assert await reclaim == "done" and len(prov.requests) == 1
+    (row,) = await rows(sm, doc.ref.version_id)
+    assert row["status"] == "done"
+
+
 async def test_abandoned_claim_is_taken_over(sm, make_owner, api, summary_queue) -> None:  # type: ignore[no-untyped-def]
     o = await make_owner()
     doc = await seed_doc(sm, o.id)

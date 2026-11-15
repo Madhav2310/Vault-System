@@ -20,6 +20,7 @@
 """
 
 import asyncio
+import datetime as dt
 import json
 import re
 import uuid
@@ -537,16 +538,19 @@ async def _finish(
     sm: SessionFactory,
     owner_id: uuid.UUID,
     summary_id: uuid.UUID,
+    claimed_at: dt.datetime,
     status: str,
     content: Mapping[str, Any],
     model: str | None = None,
 ) -> bool:
-    """`running` -> `done` | `failed`. False when the claim was lost (a done row is never overwritten)."""
+    """`running` -> `done` | `failed`. False when the claim was lost (a done row is never overwritten). The
+    claim's `created_at` is its fencing token: a run that outlived its lease and was taken over writes
+    nothing."""
     rows = await _exec(
         sm,
         "UPDATE document_insights SET status = :st, content = CAST(:c AS jsonb), model = COALESCE(:m, model) "
-        "WHERE id = :i AND owner_id = :o AND status = 'running' RETURNING id",
-        {"i": summary_id, "o": owner_id, "st": status, "c": json.dumps(content), "m": model},
+        "WHERE id = :i AND owner_id = :o AND status = 'running' AND created_at = :t RETURNING id",
+        {"i": summary_id, "o": owner_id, "t": claimed_at, "st": status, "c": json.dumps(content), "m": model},
     )
     return bool(rows)
 
@@ -565,7 +569,7 @@ async def run_summary(
         sm,
         "UPDATE document_insights SET status = 'running', created_at = now() WHERE id = :i AND kind = :k "
         "AND (status = 'pending' OR (status = 'running' AND created_at < now() - make_interval(secs => :s))) "
-        "RETURNING owner_id, version_id, params",
+        "RETURNING owner_id, version_id, params, created_at",
         {"i": summary_id, "k": KIND, "s": LEASE_S},
     )
     claimed = rows_claimed[0] if rows_claimed else None
@@ -631,9 +635,13 @@ async def run_summary(
         _log.warning(
             "summary_failed", summary_id=str(summary_id), error_type=type(e).__name__, error_code=code
         )
-        await _finish(sm, owner_id, summary_id, status="failed", content={"error_code": code})
+        await _finish(
+            sm, owner_id, summary_id, claimed.created_at, status="failed", content={"error_code": code}
+        )
         return "failed"
-    await _finish(sm, owner_id, summary_id, status="done", content=content_of(gen), model=gen.model)
+    await _finish(
+        sm, owner_id, summary_id, claimed.created_at, status="done", content=content_of(gen), model=gen.model
+    )
     _log.info(
         "summary_done", summary_id=str(summary_id), chunks=gen.evidence_chunks, cost_usd=str(gen.cost_usd)
     )
