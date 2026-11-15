@@ -287,7 +287,6 @@ flowchart TD
     retrieve["retrieve"]
     compare_retrieve["compare_retrieve"]
     gate["gate"]
-    locate["locate"]
     generate["generate"]
     verify["verify"]
     clarify["clarify"]
@@ -320,10 +319,6 @@ flowchart TD
     gate --> gate__r{after_gate}
     gate__r --> abstain_no_evidence
     gate__r --> generate
-    gate__r --> locate
-    locate --> locate__r{after_locate}
-    locate__r --> abstain_no_evidence
-    locate__r --> generate
     generate --> generate__r{after_generate}
     generate__r --> verify
     generate__r --> persist

@@ -125,12 +125,6 @@ class Settings(BaseSettings):
     chat_fast_path: bool = True
     chat_speculative_retrieval: bool = True  # retrieve on the raw question while `analyze` runs
 
-    # --- routed locate loop for long filings: bounded search/find/open steps when the first pass
-    # over one long document is low-confidence; off until the paired A/B decides ---
-    chat_locate: bool = False
-    chat_locate_min_chunks: int = 150  # "long" = at least this many chunks ...
-    chat_locate_min_pages: int = 60  # ... or at least this many pages
-
     # --- clarify when ambiguous: code-checked ambiguity gives option chips; off until reviewed ---
     chat_clarify: bool = False
 

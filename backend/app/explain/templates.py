@@ -81,14 +81,6 @@ REASON_TEMPLATES: dict[str, str] = {
         "One document had nothing on this comparison, and the answer says so. "
         "Try adding a document that covers it."
     ),
-    "LOCATE_USED": (
-        "The first search was a weak match for this long document, so I looked further inside it "
-        "and the answer draws on what I found."
-    ),
-    "LOCATE_STOPPED": (
-        "I stopped looking further in the document early, so the answer may miss something. "
-        "Try naming the section or page for a fuller answer."
-    ),
     "FAST_PATH": "",
     "LOOP_GUARD": "",
     "BAD_ROUTE": "",
