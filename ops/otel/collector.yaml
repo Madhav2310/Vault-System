@@ -1,7 +1,7 @@
 # Vault collector config (dev): mounted over /otel-lgtm/otelcol-config.yaml in the grafana/otel-lgtm image.
 # Exporters target the image's bundled backends (Prometheus, Tempo, Loki, Pyroscope) on localhost.
-# Design §17: memory_limiter → redaction backstop → batch. Tail sampling is defined, enabled only in prod
-# (ops/otel/collector.prod.yaml, S7.11).
+# Traces and logs: memory_limiter → redaction backstop → batch. Tail sampling is defined but no pipeline
+# uses it, so the collector keeps every trace it receives.
 receivers:
   otlp:
     protocols:

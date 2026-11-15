@@ -18,10 +18,8 @@ htmlcov/
 .env.*
 !.env.example
 
-# Local data
-data/
+# Logs
 *.log
-
 
 # Third-party eval sources (fetched by eval/build/fetch_sources.sh)
 eval/sources/

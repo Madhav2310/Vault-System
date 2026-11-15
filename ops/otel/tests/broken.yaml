@@ -1,4 +1,4 @@
-# Deliberately invalid: pipeline references an undefined processor (S0.22 AC2).
+# Deliberately invalid: pipeline references an undefined processor (the negative case for `make otel-validate`).
 receivers:
   otlp:
     protocols:
