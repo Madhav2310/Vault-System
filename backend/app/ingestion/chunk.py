@@ -12,9 +12,9 @@ piece back to (page, page_start, page_end), so the text never needs re-normalizi
 
 import hashlib
 from collections.abc import Iterator, Sequence
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from functools import lru_cache
-from typing import Any, Literal
+from typing import Literal
 
 import tiktoken
 
@@ -71,7 +71,6 @@ class ChunkDraft:
     token_count: int
     embedding_text: str = ""
     content_hash: str = ""
-    extras: dict[str, Any] = field(default_factory=dict)
 
 
 def _units(
@@ -250,16 +249,7 @@ def _header_unit(
     return None
 
 
-def chunk_document(doc: ExtractedDocument, title: str, version: str = CHUNKER_VERSION) -> list[ChunkDraft]:
-    """Chunk with `version` (default `chunker@1`); `chunker@2` arms live in `chunk_rules`."""
-    if version != CHUNKER_VERSION:
-        from app.ingestion.chunk_rules import chunk_document_v2
-
-        return chunk_document_v2(doc, title, version)
-    return _chunk_document_v1(doc, title)
-
-
-def _chunk_document_v1(doc: ExtractedDocument, title: str) -> list[ChunkDraft]:
+def chunk_document(doc: ExtractedDocument, title: str) -> list[ChunkDraft]:
     drafts: list[tuple[Literal["text", "table"], list[str], list[Unit]]] = []
     group: list[Unit] = []
     group_path: list[str] | None = None
