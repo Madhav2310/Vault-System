@@ -418,6 +418,8 @@ async def _answer_all(
             if max_usd is not None and h.spent is not None and await h.spent() >= max_usd:
                 stopped = True
                 return
+            if nxt >= len(items):  # another worker took the last item while this one awaited the ledger
+                return
             i = nxt
             nxt += 1
             results[i] = await _answer(items[i], h)

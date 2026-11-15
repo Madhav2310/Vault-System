@@ -210,7 +210,7 @@ The shipped configuration: retrieval `retrieval@5` (an LLM listwise rerank of 50
 | Measure | Baseline | Final | Command |
 |---|---|---|---|
 | Answer pass, train, audited gold, 118 items (run `01a1db3b`) | 0.763 (90) | 0.873 (103) | `make eval-answers-v2 SPLIT=train MAX_USD=3` |
-| Answer pass, dev, audited gold, 59 items (run `01a1db44`) | 0.746 (44) | 0.847 (50) | `make eval-answers-v2 SPLIT=dev MAX_USD=3` |
+| Answer pass, dev, current gold (disputed items reviewed), 59 items (run `01a1db44`) | 0.746 (44) | 0.847 (50) | `make eval-answers-v2 SPLIT=dev MAX_USD=3` |
 | Locked benchmark: answer pass, train, original pre-audit gold, 123 items | 0.699 (86) | 0.772 (95) | `cd backend && PYTHONPATH=.. uv run python -m eval.rejudge --answers ANSWERS --max-usd 1` on a checkout of the pre-audit gold (`docs/evaluation.md` section 2) |
 | Faithfulness, train / dev | 0.853 / 0.888 | 0.899 / 0.906 | `make eval-answers-v2 SPLIT=dev MAX_USD=3` |
 | Citation integrity (no invented citation reaches the user) | 1.00 | 1.00 | `make eval-gate-t0` |

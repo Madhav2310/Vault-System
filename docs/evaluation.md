@@ -235,7 +235,7 @@ No freeze. Compare a candidate with the baseline using `python -m eval.paired ..
 make eval-answers-v2 SPLIT=test MAX_USD=4
 ```
 
-Run it once, on a configuration frozen beforehand, and report the result as it comes. `EVAL_ARGS="--freeze answer_v2"` also writes `eval/baselines/answer_v2.json` (per-stratum table, clustered CIs, MDE inputs and attribution) for later gates. A cheaper injection-only check: `make eval-answers-v2 SPLIT=test FILTER=stratum=injection MAX_USD=0.5`.
+Run it once, on a configuration frozen beforehand, and report the result as it comes. The final runs behind every number above (train `01a1db3b`, dev `01a1db44`, the five recovered train items `01a1db48`, test `01a1db51`) are kept in `eval/baselines/v2_final/` (report, table and answers per run), and `eval/baselines/answer_v2.json` is the dev run, the default `BASE` of `make eval-gate`. `EVAL_ARGS="--freeze answer_v2"` also writes `eval/baselines/answer_v2.json` (per-stratum table, clustered CIs, MDE inputs and attribution) for later gates. A cheaper injection-only check: `make eval-answers-v2 SPLIT=test FILTER=stratum=injection MAX_USD=0.5`.
 
 **7. Label export for judge calibration ($0).**
 
@@ -258,7 +258,6 @@ Nothing below is measured today. Each item names what closes it.
 - **Test gold audit.** The test gold is an unaudited draft; an audit after the sealed run (runbook steps 2 to 4 on the test answers) would turn the 0.761 into an audited-gold score. It must not feed back into tuning.
 - **Dev gold audit** of the 52 dev items that were not disputed and so never reviewed.
 - **Judge calibration** of the current judge versions against the 200 human labels (runbook step 7), with kappa and true-negative-rate checks on the claim, support and abstention judges.
-- **A frozen answer baseline** (`eval/baselines/answer_v2.json` does not exist yet), so that `make eval-gate` has a default `BASE`.
 - **Paired dev-split evaluations of the switches that are off** (see Behaviour switches in `ARCHITECTURE.md`): scored abstention, the locate loop, the second chunker and contextual index text. The retrieval-only arms (chunker, index headers) cost cents after a re-ingest.
 - **Stage attribution for extraction and chunking**, which reads 0 for lack of a signal.
 - **The `formatting` stratum** has 0 of 5 items (multi-column, scanned page, tracked changes).

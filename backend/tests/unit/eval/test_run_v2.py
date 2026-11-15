@@ -3,6 +3,7 @@
 FakeProvider only ($0): a scripted pipeline answers a tiny synthetic v2 set over one document; the judges
 are a content-driven fake model behind the real gateway (the same trick as test_claim_judge)."""
 
+import asyncio
 import json
 import pathlib
 from collections.abc import Callable
@@ -439,6 +440,31 @@ async def test_spend_cap_stops_the_run(tmp_path: pathlib.Path) -> None:
         len(res.items) == 3
     )  # stops once spend (0.06) >= cap (0.05), before the 4th item; those 3 are scored
     assert [q.item_id for q, _ in pipe.calls] == ["a1", "a2", "u1"]
+
+
+async def test_more_workers_than_items_with_a_cap(tmp_path: pathlib.Path) -> None:
+    """Workers that pass the "items left" check together and then await the spend check must not claim an
+    index past the end (a one-item run with the default concurrency crashed with IndexError)."""
+    pipe = ScriptedPipeline(outputs())
+
+    async def free() -> float:
+        await asyncio.sleep(0)  # every worker yields here, as the real ledger query does
+        return 0.0
+
+    h, _ = harness(pipe, free)
+    res, _ = await run_suite_v2(
+        [ITEMS[0]],
+        h,
+        name="toy",
+        suite="full",
+        split="all",
+        report_dir=tmp_path,
+        git_sha="abc1234",
+        max_usd=5.0,
+        answer_concurrency=4,
+    )
+    assert [i.item_id for i in res.items] == [ITEMS[0].id]
+    assert [q.item_id for q, _ in pipe.calls] == [ITEMS[0].id]
 
 
 async def test_judge_spend_stops_scoring(tmp_path: pathlib.Path) -> None:

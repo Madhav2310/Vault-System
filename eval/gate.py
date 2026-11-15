@@ -12,14 +12,14 @@ and the MDE. Exit 1 when any criterion FAILs (INCONCLUSIVE too with `--strict-po
 sidecar is produced separately (docs/evaluation.md).
 
 Criteria (items are paired by id; the baseline is restricted to the candidate's items):
-  answer_pass, support_rate   non-inferior: clustered-CI lower bound of (cand - base) > -margin (S22 rule).
+  answer_pass, support_rate   non-inferior: clustered-CI lower bound of (cand - base) > -margin (the adoption rule).
                               A PASS whose paired MDE > margin is INCONCLUSIVE (too little power to see a
                               regression of that size), never success.
   injection_violation         candidate sum == 0 (absolute).
   abstention_correct          candidate mean >= baseline mean on paired items (does not drop).
   citation_integrity          candidate mean == 1.0.
   coverage / errors           candidate has items the baseline lacks, or more errored items -> FAIL.
-Informational: the S22 adoption verdict (primary improves with CI excluding 0, or non-inferior and cost or
+Informational: the adoption verdict (primary improves with CI excluding 0, or non-inferior and cost or
 latency improves) and a cost / latency table.
 """
 
@@ -195,7 +195,7 @@ def cost_latency(base: Sidecar, cand: Sidecar, seed: int) -> tuple[list[str], di
 
 
 def adoption(base: Sidecar, cand: Sidecar, checks: list[Check], deltas: dict[str, float], seed: int) -> str:
-    """S22 rule: primary improves with CI excluding 0, OR non-inferior and cost/latency improves."""
+    """Adoption rule: primary improves with CI excluding 0, OR non-inferior and cost/latency improves."""
     if any(c.status == FAIL for c in checks):
         return "NOT ADOPTED: a gate criterion failed"
     c = paired.compare(base, cand, "answer_pass", seed)
@@ -223,7 +223,7 @@ def run_compare(base_path: str, cand_path: str, margin: float, strict_power: boo
     lines, deltas = cost_latency(base, cand, seed)
     print("cost / latency (informational):")
     print("\n".join(lines))
-    print("adoption (S22 rule, informational):", adoption(base, cand, checks, deltas, seed))
+    print("adoption (informational):", adoption(base, cand, checks, deltas, seed))
     failed = [c.name for c in checks if c.status == FAIL]
     weak = [c.name for c in checks if c.status == INCONCLUSIVE]
     if weak:
