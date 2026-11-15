@@ -13,20 +13,29 @@ from app.worker.celery_app import celery_app
 from app.worker.tasks.ping import ping
 
 
+def _drop_cached_transport() -> None:
+    """Celery caches the broker connection pool, the producer pool (`amqp`) and the result backend on first
+    use. They must be dropped on both sides of a broker swap: an earlier test that published to the real
+    Redis (the ingestion and purge enqueuers) leaves a pool that would send this test's task to Redis while
+    the in-memory worker waits for it."""
+    celery_app.close()
+    celery_app.__dict__.pop("amqp", None)
+    if hasattr(celery_app._local, "backend"):  # cached per thread
+        del celery_app._local.backend
+
+
 @pytest.fixture
 def memory_broker() -> Iterator[None]:
     """In-memory Celery broker for one test, then restore (e2e tests share the process)."""
     keys = ("broker_url", "result_backend", "broker_transport_options")
     saved = {k: celery_app.conf[k] for k in keys}
+    _drop_cached_transport()
     celery_app.conf.update(
         broker_url="memory://", result_backend="cache+memory://", broker_transport_options={}
     )
     yield
     celery_app.conf.update(saved)
-    celery_app.close()  # drop pooled connections to the memory broker
-    celery_app.__dict__.pop("amqp", None)  # cached with the memory broker's routing/producer state
-    if hasattr(celery_app._local, "backend"):  # result backend is cached per thread
-        del celery_app._local.backend
+    _drop_cached_transport()
 
 
 async def test_api_to_celery_same_trace(memory_broker: None) -> None:
