@@ -41,10 +41,6 @@ class Settings(BaseSettings):
     object_store_backend: Literal["local", "s3"] = "local"
     object_store_root: str = "/data/blobs"
 
-    # --- reranker service ---
-    reranker_url: str = "http://reranker:8080"
-    reranker_timeout_ms: int = 800
-
     # --- providers (optional at boot; /readyz reports what's missing) ---
     anthropic_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None

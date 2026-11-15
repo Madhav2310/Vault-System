@@ -1,8 +1,7 @@
 """Health endpoints.
 
 `/healthz`: process liveness, touches nothing. `/readyz`: every dependency, checked concurrently with a
-per-check timeout. A failed *required* check (database, Redis, object store, provider key) gives 503. The
-reranker is optional: retrieval degrades to fusion order without it, so its failure reports `degraded` (200).
+per-check timeout. A failed check (database, Redis, object store, provider key) gives 503.
 """
 
 import asyncio
@@ -11,7 +10,6 @@ from collections.abc import Awaitable, Callable
 from typing import Annotated, Literal
 
 import asyncpg
-import httpx
 import redis.asyncio as aioredis
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
@@ -28,27 +26,21 @@ CHECK_TIMEOUT_S = 2.0
 
 class Check(BaseModel):
     status: Literal["ok", "fail"]
-    required: bool = True
     duration_ms: float
     error: str | None = None  # exception class name only; never connection strings
 
 
 class Readiness(BaseModel):
-    status: Literal["ok", "degraded", "fail"]
+    status: Literal["ok", "fail"]
     checks: dict[str, Check]
     model_config = ConfigDict(
         json_schema_extra={
             "examples": [
                 {
-                    "status": "degraded",
+                    "status": "fail",
                     "checks": {
-                        "database": {"status": "ok", "required": True, "duration_ms": 3.1, "error": None},
-                        "reranker": {
-                            "status": "fail",
-                            "required": False,
-                            "duration_ms": 2000.0,
-                            "error": "TimeoutError",
-                        },
+                        "database": {"status": "ok", "duration_ms": 3.1, "error": None},
+                        "redis": {"status": "fail", "duration_ms": 2000.0, "error": "TimeoutError"},
                     },
                 }
             ]
@@ -80,11 +72,6 @@ async def _object_store(s: Settings) -> None:
         raise RuntimeError("object store probe mismatch")
 
 
-async def _reranker(s: Settings) -> None:
-    async with httpx.AsyncClient(timeout=CHECK_TIMEOUT_S) as client:
-        (await client.get(f"{s.reranker_url}/healthz")).raise_for_status()
-
-
 async def _providers(s: Settings) -> None:
     # The runtime is OpenAI-only (chat + embeddings); the Anthropic adapter is dormant and its key optional.
     missing = [n for n in ("openai_api_key",) if getattr(s, n) is None]
@@ -96,13 +83,11 @@ CHECKS: dict[str, Callable[[Settings], Awaitable[None]]] = {
     "database": _database,
     "redis": _redis,
     "object_store": _object_store,
-    "reranker": _reranker,
     "providers": _providers,
 }
-OPTIONAL = frozenset({"reranker"})
 
 
-async def _run(name: str, fn: Callable[[Settings], Awaitable[None]], s: Settings) -> Check:
+async def _run(fn: Callable[[Settings], Awaitable[None]], s: Settings) -> Check:
     started = time.perf_counter()
     try:
         await asyncio.wait_for(fn(s), CHECK_TIMEOUT_S)
@@ -110,7 +95,7 @@ async def _run(name: str, fn: Callable[[Settings], Awaitable[None]], s: Settings
     except Exception as exc:  # report, never raise: readiness must always answer
         error = str(exc) if isinstance(exc, LookupError) else type(exc).__name__
     ms = round((time.perf_counter() - started) * 1000, 1)
-    return Check(status="fail" if error else "ok", required=name not in OPTIONAL, duration_ms=ms, error=error)
+    return Check(status="fail" if error else "ok", duration_ms=ms, error=error)
 
 
 @router.get("/healthz", tags=["Health"], summary="Liveness", response_model=Liveness)
@@ -123,16 +108,13 @@ async def healthz() -> dict[str, str]:
     "/readyz",
     tags=["Health"],
     summary="Readiness",
-    description="Database, Redis, object store, reranker (optional) and provider configuration. 503 when a "
-    "required check fails (the body is the same `Readiness` object).",
+    description="Database, Redis, object store and provider configuration. 503 when a check fails (the "
+    "body is the same `Readiness` object).",
     response_model=Readiness,
 )
 async def readyz(settings: Annotated[Settings, Depends(get_settings)]) -> JSONResponse:
-    results = await asyncio.gather(*(_run(n, fn, settings) for n, fn in CHECKS.items()))
+    results = await asyncio.gather(*(_run(fn, settings) for fn in CHECKS.values()))
     checks = dict(zip(CHECKS, results, strict=True))
-    failed = [c for c in checks.values() if c.status == "fail"]
-    status: Literal["ok", "degraded", "fail"] = (
-        "fail" if any(c.required for c in failed) else "degraded" if failed else "ok"
-    )
+    status: Literal["ok", "fail"] = "fail" if any(c.status == "fail" for c in checks.values()) else "ok"
     body = Readiness(status=status, checks=checks)
     return JSONResponse(body.model_dump(), status_code=503 if status == "fail" else 200)

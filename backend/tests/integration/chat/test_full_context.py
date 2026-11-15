@@ -16,7 +16,6 @@ from app.ingestion.sentences import split_sentences
 from app.llm.gateway import DbLedgerWriter
 from app.llm.providers.fake import FakeProvider, structured
 from app.retrieval.query_embed import QueryEmbedder
-from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import Retriever
 from tests.integration.chat.test_turn_e2e import EMBED_SLOT, _analysis
 from tests.support.chat_gen import fake_gateway
@@ -24,14 +23,6 @@ from tests.support.docs import seed_document
 from tests.support.ledger_env import ledger_owners
 
 __all__ = ["ledger_owners"]  # fixture import
-
-
-def _rerank() -> RerankClient:
-    def handler(request: httpx.Request) -> httpx.Response:
-        n = len(json.loads(request.content)["passages"])
-        return httpx.Response(200, json={"scores": [1.0 - i / 100 for i in range(n)], "model": "m"})
-
-    return RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
 
 
 async def _seed(
@@ -73,7 +64,7 @@ async def _ask(
     gw, prov = fake_gateway(script, ledger=DbLedgerWriter(sm))
     if max_tokens is not None:
         gw.settings.full_context_max_tokens = max_tokens
-    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), _rerank(), None))
+    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), None))
 
     async def runner(*a: Any) -> None:
         await run_turn(deps, *a)

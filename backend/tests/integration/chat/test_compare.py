@@ -26,7 +26,6 @@ from tests.support.turn_env import (
     install_runner,
     new_session,
     post,
-    rerank_client,
     seed_chunk,
 )
 
@@ -66,7 +65,7 @@ async def test_per_doc_candidates(
         )
     small = await seed_chunk(sm, o.id, "Small", "The small agreement notice period is thirty days.")
     gw, _ = fake_gateway([EMBED_SLOT])
-    retriever = Retriever(QueryEmbedder(gw, None), rerank_client(), None)
+    retriever = Retriever(QueryEmbedder(gw, None), None)
     async with sm() as s:
         scope = await compute_scope(s, o.id)
     res = await retrieve_per_doc(retriever, sm, o.id, scope, Q)

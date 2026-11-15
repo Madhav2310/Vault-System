@@ -1,5 +1,5 @@
 """LLM listwise rerank: one `fast` strict-schema call orders the top fused
-passages. Same result type as `RerankClient`, and it never raises.
+passages. It returns a `RerankResult` and never raises.
 
 The model sees the question and up to `MAX_PASSAGES` numbered focus windows (each capped at
 `MAX_PASSAGE_CHARS`), and returns passage numbers only. Code repairs the list: out-of-range and duplicate
@@ -23,7 +23,6 @@ from app.retrieval.rerank import (
     FAIL_BAD_RESPONSE,
     FAIL_HTTP,
     FAIL_TIMEOUT,
-    MAX_QUERY_CHARS,
     RerankedItem,
     RerankPassage,
     RerankResult,
@@ -35,6 +34,7 @@ PROMPT: tuple[str, int] = ("rerank_listwise", 1)
 PURPOSE = "rerank"
 MAX_PASSAGES = 30  # bounds the prompt and the cost; later passages are neither ranked nor selectable
 MAX_PASSAGE_CHARS = 1200
+MAX_QUERY_CHARS = 2000
 TIMEOUT_S = 6.0
 _TAGS = re.compile(r"</?\s*(passages|query|inputs)\s*>", re.IGNORECASE)
 

@@ -16,8 +16,7 @@ ID_BOOST = 2.0  # the identifier weight hard-coded in fusion.py (see its docstri
 
 class RerankCfg(BaseModel):
     model_config = ConfigDict(extra="forbid")
-    kind: Literal["none", "cross_encoder", "llm"] = "cross_encoder"
-    model: str
+    kind: Literal["none", "llm"]
     candidates: int = Field(ge=1, le=100)
     top_n: int = Field(ge=1, le=100)
     window_words: int = Field(default=180, ge=50, le=400)

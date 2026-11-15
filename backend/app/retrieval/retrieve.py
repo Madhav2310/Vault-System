@@ -29,7 +29,7 @@ from app.retrieval.fusion import FusedCandidate, Ranked, fuse
 from app.retrieval.lexical import LexicalHit, lexical_search
 from app.retrieval.listwise import MAX_PASSAGES, LlmReranker
 from app.retrieval.query_embed import QueryEmbedder, QueryEmbedding, normalize_query
-from app.retrieval.rerank import RerankClient, RerankedItem, RerankPassage, RerankResult
+from app.retrieval.rerank import RerankedItem, RerankPassage, RerankResult
 from app.retrieval.scope import Scope
 from app.retrieval.vector import VectorHit, vector_search
 from app.retrieval.windows import focus_window
@@ -149,13 +149,11 @@ class Retriever:
     def __init__(
         self,
         embedder: QueryEmbedder,
-        reranker: RerankClient,
         redis: aioredis.Redis | None,
         cfg: RetrievalConfig | None = None,
         llm_reranker: LlmReranker | None = None,
     ) -> None:
         self._embedder = embedder
-        self._reranker = reranker
         self._redis = redis
         self._cfg = cfg or get_config()
         self._llm_reranker = llm_reranker or (
@@ -163,10 +161,6 @@ class Retriever:
             if self._cfg.rerank.kind == "llm"
             else None
         )
-
-    async def warm_up(self) -> None:
-        """One tiny rerank request (never raises): the service loads/initializes lazily on first use."""
-        await self._reranker.rerank("warm up", [RerankPassage(uuid.UUID(int=0), "warm up")])
 
     @property
     def config(self) -> RetrievalConfig:
@@ -250,17 +244,14 @@ class Retriever:
                 [RerankedItem(c.chunk_id, i, None) for i, c in enumerate(pool[: cfg.rerank.top_n])],
                 [], False, None, None, None,
             )  # fmt: skip
-        elif cfg.rerank.kind == "llm" and self._llm_reranker is not None:
+        else:
+            assert self._llm_reranker is not None  # built for every `kind: llm` config
             rr = await self._llm_reranker.rerank(
                 query,
                 [RerankPassage(c.chunk_id, texts[c.chunk_id]) for c in pool],
                 cfg.rerank.top_n,
                 owner_id=owner_id,
                 run_id=run_id,
-            )
-        else:
-            rr = await self._reranker.rerank(
-                query, [RerankPassage(c.chunk_id, texts[c.chunk_id]) for c in pool], cfg.rerank.top_n
             )
         timings["rerank_ms"] = _ms(t)
         if rr.degraded and rr.degraded_reason:

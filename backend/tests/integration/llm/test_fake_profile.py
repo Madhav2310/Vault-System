@@ -18,7 +18,6 @@ from app.core.settings import Settings
 from app.ingestion.sentences import split_sentences
 from app.llm.gateway import build_gateway
 from app.retrieval.query_embed import QueryEmbedder
-from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import Retriever
 from tests.integration.chat.conftest import owners
 from tests.support.docs import seed_document
@@ -31,14 +30,6 @@ BODY = (
     "The Consultant shall provide the Services for twelve months. "
     "Either party may terminate this Agreement on 30 days written notice."
 )
-
-
-def _rerank() -> RerankClient:
-    def handler(request: httpx.Request) -> httpx.Response:
-        n = len(json.loads(request.content)["passages"])
-        return httpx.Response(200, json={"scores": [1.0 - i / 100 for i in range(n)], "model": "m"})
-
-    return RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
 
 
 async def _seed_chunk(sm: async_sessionmaker[AsyncSession], owner_id: uuid.UUID) -> uuid.UUID:
@@ -77,7 +68,7 @@ async def test_answers_without_key(
     o = await ledger_owners()
     await _seed_chunk(sm, o.id)
     gw = build_gateway(sm, settings)
-    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), _rerank(), None))
+    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), None))
 
     async def runner(*a: Any) -> None:
         await run_turn(deps, *a)

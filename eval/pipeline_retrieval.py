@@ -38,7 +38,6 @@ from app.db.session import get_sessionmaker
 from app.llm.gateway import get_gateway
 from app.retrieval.config import CONFIG_DIR, RetrievalConfig, get_config
 from app.retrieval.query_embed import QueryEmbedder
-from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import Retriever
 from app.retrieval.scope import compute_scope
 from eval.loader import load_dataset
@@ -214,8 +213,7 @@ async def setup(config: str) -> Harness:
     chunks = await _chunks(sm, uid, doc_ids)
     gw = get_gateway()
     rds = aioredis.from_url(settings.redis_url)
-    retriever = Retriever(QueryEmbedder(gw, rds), RerankClient.from_settings(settings), None, cfg)
-    await retriever.warm_up()  # model load must not count against the first item
+    retriever = Retriever(QueryEmbedder(gw, rds), None, cfg)
     return Harness(
         make_pipeline(sm, retriever, uid, doc_ids),
         chunks,

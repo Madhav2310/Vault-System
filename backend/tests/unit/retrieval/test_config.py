@@ -10,10 +10,10 @@ from app.retrieval.config import CONFIG_DIR, get_config, load_config
 
 
 def _raw() -> dict:  # type: ignore[type-arg]
-    return yaml.safe_load((CONFIG_DIR / "retrieval@1.yaml").read_text())
+    return yaml.safe_load((CONFIG_DIR / "retrieval@2.yaml").read_text())
 
 
-def _write(tmp: pathlib.Path, raw: dict, name: str = "retrieval@1.yaml") -> pathlib.Path:  # type: ignore[type-arg]
+def _write(tmp: pathlib.Path, raw: dict, name: str = "retrieval@2.yaml") -> pathlib.Path:  # type: ignore[type-arg]
     p = tmp / name
     p.write_text(yaml.safe_dump(raw))
     return p
@@ -31,4 +31,4 @@ def test_schema_strict(tmp_path: pathlib.Path) -> None:
     with pytest.raises(ValidationError):
         load_config(_write(tmp_path, {k: v for k, v in _raw().items() if k != "k_vec"}))  # missing key
     with pytest.raises(ValueError):
-        load_config(_write(tmp_path, _raw(), "retrieval@2.yaml"))  # file name must match version
+        load_config(_write(tmp_path, _raw(), "retrieval@3.yaml"))  # file name must match version

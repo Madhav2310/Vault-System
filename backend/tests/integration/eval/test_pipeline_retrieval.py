@@ -1,6 +1,5 @@
 """The retrieval-only pipeline makes no chat calls, reuses ingested documents, is deterministic."""
 
-import json
 import pathlib
 import random
 import uuid
@@ -17,7 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
 from app.retrieval.config import get_config
 from app.retrieval.query_embed import QueryEmbedder
-from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import Retriever
 from tests.support.docs import seed_document
 from tests.support.llm import make_gateway
@@ -25,14 +23,6 @@ from tests.support.retrieval import seed_text_chunk
 from tests.support.vectors import seed_vectors, unit_vector
 
 SM = async_sessionmaker[AsyncSession]
-
-
-def _reranker() -> RerankClient:
-    def handler(request: httpx.Request) -> httpx.Response:
-        n = len(json.loads(request.content)["passages"])
-        return httpx.Response(200, json={"scores": [1.0 - i / 100 for i in range(n)], "model": "m"})
-
-    return RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
 
 
 async def _world(sm: SM, make_owner: Callable[[], Any], tmp_path: pathlib.Path) -> tuple[Any, Any, Any]:
@@ -52,7 +42,7 @@ async def _run_twice(tmp_path: pathlib.Path, sm: SM, make_owner: Callable[[], An
     gw, _p, _l, _s = make_gateway(tmp_path, ledger=DbLedgerWriter(sm))
     pipe = make_pipeline(
         sm,
-        Retriever(QueryEmbedder(gw, None), _reranker(), None, get_config()),
+        Retriever(QueryEmbedder(gw, None), None, get_config()),
         o.id,
         {"d": str(doc.document_id)},
     )

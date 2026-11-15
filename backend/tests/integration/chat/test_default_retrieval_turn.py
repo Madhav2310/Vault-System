@@ -16,7 +16,7 @@ from app.llm.providers.fake import structured
 from app.retrieval.config import get_config
 from app.retrieval.query_embed import QueryEmbedder
 from app.retrieval.retrieve import Retriever
-from tests.integration.chat.test_turn_e2e import EMBED_SLOT, _post, _rerank, _seed_chunk
+from tests.integration.chat.test_turn_e2e import EMBED_SLOT, _post, _seed_chunk
 from tests.support.chat_gen import fake_gateway
 from tests.support.ledger_env import ledger_owners
 
@@ -46,7 +46,7 @@ async def test_turn_with_llm_rerank_answers_and_records_the_rerank_call(
         fast_path=True,
     )
     cfg = get_config(Settings.model_fields["retrieval_config"].default)
-    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), _rerank(), None, cfg))
+    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), None, cfg))
 
     async def runner(*a: Any) -> None:
         await run_turn(deps, *a)

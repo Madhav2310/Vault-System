@@ -18,7 +18,6 @@ from app.llm.gateway import DbLedgerWriter
 from app.llm.providers.fake import FakeProvider, Step, structured
 from app.retrieval.config import RetrievalConfig
 from app.retrieval.query_embed import QueryEmbedder
-from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import Retriever
 from tests.support.chat_gen import fake_gateway
 from tests.support.docs import seed_document
@@ -48,14 +47,6 @@ def answer(*segments: tuple[str, list[str]], **extra: Any) -> Any:
     return structured(
         {"status": "answer", "segments": [{"text": t, "evidence": e} for t, e in segments], **extra}
     )
-
-
-def rerank_client() -> RerankClient:
-    def handler(request: httpx.Request) -> httpx.Response:
-        n = len(json.loads(request.content)["passages"])
-        return httpx.Response(200, json={"scores": [1.0 - i / 100 for i in range(n)], "model": "m"})
-
-    return RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
 
 
 async def seed_chunk(
@@ -90,7 +81,7 @@ def install_runner(
 ) -> FakeProvider:
     """Override the turn runner with a real `run_turn` over a scripted fake provider (`before` runs first)."""
     gw, prov = fake_gateway(script, ledger=DbLedgerWriter(sm), fast_path=fast_path, **settings)
-    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), rerank_client(), None, cfg))
+    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), None, cfg))
 
     async def runner(*a: Any) -> None:
         if before is not None:

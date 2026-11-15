@@ -10,8 +10,6 @@ import uuid
 from collections.abc import AsyncGenerator, Callable, Sequence
 from typing import Any
 
-import httpx
-import pytest
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
@@ -26,28 +24,19 @@ from app.llm.pricing import DEFAULT_PRICES, PriceTable
 from app.llm.prompts import default_registry
 from app.llm.providers.fake import FakeProvider, Step, structured
 from app.llm.types import ChatRequest, ChatResponse, EmbeddingResponse, StreamEvent
+from app.retrieval.config import RetrievalConfig, get_config
 from app.retrieval.lexical import lexical_search
 from app.retrieval.query_embed import QueryEmbedder
-from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import RetrievalResult, Retriever
 from app.retrieval.scope import Scope, compute_scope
 from app.retrieval.vector import vector_search
 from tests.support.docs import seed_document
 from tests.support.ledger_env import ledger_owners
 from tests.support.llm import SleepRecorder, make_gateway
-from tests.support.retrieval import seed_text_chunk
+from tests.support.retrieval import StubReranker, seed_text_chunk
 from tests.support.vectors import seed_vectors, unit_vector
 
 __all__ = ["ledger_owners"]  # fixture import
-
-
-@pytest.fixture(autouse=True)
-def _rerank_config(monkeypatch: pytest.MonkeyPatch) -> None:
-    """These tests exercise the cross-encoder: the integration fixture pins `retrieval@2` (`kind: none`)."""
-    import app.retrieval.retrieve as rmod
-    from app.retrieval.config import get_config as real
-
-    monkeypatch.setattr(rmod, "get_config", lambda v=None: real(v or "retrieval@2-rerank"))
 
 
 SM = async_sessionmaker[AsyncSession]
@@ -127,16 +116,6 @@ def _gateway(prov: FakeProvider, sm: SM) -> LlmGateway:
     )
 
 
-def _rerank(on_call: Callable[[], None] | None = None) -> RerankClient:
-    def handler(request: httpx.Request) -> httpx.Response:
-        if on_call:
-            on_call()
-        n = len(json.loads(request.content)["passages"])
-        return httpx.Response(200, json={"scores": [1.0 - i / 100 for i in range(n)], "model": "m"})
-
-    return RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
-
-
 class TimedRetriever(Retriever):
     started_at: float | None = None
 
@@ -175,7 +154,13 @@ async def _start(sm: SM, owner_id: uuid.UUID, q: str) -> Any:
         return await svc.start_turn(s, owner_id, sid, q, "m1"), sid
 
 
-async def _run(sm: SM, engine: AsyncEngine, ledger_owners: Callable[[], Any], **lat: float) -> Any:
+async def _run(
+    sm: SM,
+    engine: AsyncEngine,
+    ledger_owners: Callable[[], Any],
+    cfg: RetrievalConfig | None = None,
+    **lat: float,
+) -> Any:
     o = await ledger_owners()
     await _seed_chunk(sm, o.id)
     q = "Services twelve months"
@@ -187,11 +172,8 @@ async def _run(sm: SM, engine: AsyncEngine, ledger_owners: Callable[[], Any], **
     prov = ProbeProvider(script, engine, lat.get("analyze_s", 0), lat.get("embed_s", 0), lat.get("gen_s", 0))
     gw = _gateway(prov, sm)
     pooled: list[int] = []
-    retriever = TimedRetriever(
-        QueryEmbedder(gw, None),
-        _rerank(lambda: pooled.append(_out(engine))),
-        None,
-    )
+    rerank = StubReranker(on_call=lambda: pooled.append(_out(engine)))  # used by a `kind: llm` config
+    retriever = TimedRetriever(QueryEmbedder(gw, None), None, cfg, llm_reranker=rerank)  # type: ignore[arg-type]
     deps = TurnDeps(sm, gw, retriever)
     t, sid = await _start(sm, o.id, q)
     t0 = time.monotonic()
@@ -237,7 +219,9 @@ async def test_analyze_and_embed_overlap(
 async def test_no_connection_across_llm(
     sm: SM, engine: AsyncEngine, ledger_owners: Callable[[], Any]
 ) -> None:
-    _, _, prov, pooled, _, _ = await _run(sm, engine, ledger_owners, analyze_s=0.1, embed_s=0.1, gen_s=0.1)
+    _, _, prov, pooled, _, _ = await _run(
+        sm, engine, ledger_owners, get_config("retrieval@5"), analyze_s=0.1, embed_s=0.1, gen_s=0.1
+    )
     kinds = {k for k, _ in prov.checked_out}
     assert {"analyze", "embed", "generate"} <= kinds
     assert all(n == 0 for _, n in prov.checked_out), prov.checked_out
@@ -253,7 +237,7 @@ async def test_vector_lexical_concurrent_same_results(
     await seed_vectors(sm, o.id, doc, [unit_vector(rng) for _ in range(14)])
     await seed_text_chunk(sm, o.id, doc, "The indemnification clause survives termination.", ordinal=50)
     gw, _prov, _, _ = make_gateway(tmp_path)
-    r = Retriever(QueryEmbedder(gw, None), _rerank(), None)
+    r = Retriever(QueryEmbedder(gw, None), None)
 
     spans: list[tuple[str, int, float, float]] = []
     real_vec, real_lex = vector_search, lexical_search

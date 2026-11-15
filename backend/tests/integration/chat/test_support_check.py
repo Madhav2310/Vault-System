@@ -16,7 +16,6 @@ from app.ingestion.sentences import split_sentences
 from app.llm.gateway import DbLedgerWriter
 from app.llm.providers.fake import Step, refusal, structured
 from app.retrieval.query_embed import QueryEmbedder
-from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import Retriever
 from tests.support.chat_gen import fake_gateway
 from tests.support.docs import seed_document
@@ -53,14 +52,6 @@ def _verdicts(*items: tuple[int, str]) -> Any:
     return structured({"verdicts": [{"index": i, "verdict": v, "reason": f"{v} reason"} for i, v in items]})
 
 
-def _rerank() -> RerankClient:
-    def handler(request: httpx.Request) -> httpx.Response:
-        n = len(json.loads(request.content)["passages"])
-        return httpx.Response(200, json={"scores": [1.0 - i / 100 for i in range(n)], "model": "m"})
-
-    return RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
-
-
 async def _seed_chunk(sm: async_sessionmaker[AsyncSession], owner_id: uuid.UUID) -> uuid.UUID:
     doc = await seed_document(sm, owner_id, title="Services Agreement")
     cid = uuid7()
@@ -87,7 +78,7 @@ async def _turn(
     o = await owners()
     await _seed_chunk(sm, o.id)
     gw, prov = fake_gateway([_analysis(), EMBED_SLOT, *script], ledger=DbLedgerWriter(sm))
-    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), _rerank(), None))
+    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), None))
 
     async def runner(*a: Any) -> None:
         await run_turn(deps, *a)

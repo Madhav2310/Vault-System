@@ -9,7 +9,6 @@ id_boost: 2              # weight of identifier matches (must equal fusion.ID_BO
 rerank:
   kind: none
   window_words: 180
-  model: Xenova/ms-marco-MiniLM-L-6-v2
   candidates: 20         # fused candidates sent to the reranker
   top_n: 8               # chunks kept after reranking
 expansion:

@@ -13,7 +13,6 @@ x-app: &app
   environment: &app-env
     DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-vault}:${POSTGRES_PASSWORD:-vault}@postgres:5432/${POSTGRES_DB:-vault}
     REDIS_URL: redis://redis:6379/0
-    RERANKER_URL: http://reranker:8080  # optional cross-encoder (profile `rerank`); the default reranker is the LLM
     OBJECT_STORE_ROOT: /data/blobs
     OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
     OTEL_RESOURCE_ATTRIBUTES: deployment.environment=dev,service.version=${GIT_SHA:-dev}
@@ -45,23 +44,6 @@ services:
       timeout: 5s
       retries: 6
       start_period: 15s
-
-  reranker:
-    profiles: ["rerank", "full"]
-    mem_limit: 768m
-    cpus: 3
-    build: ./reranker
-    image: vault-reranker:0.1.0
-    environment:
-      RERANKER_THREADS: "3"  # = cpus (os.cpu_count() inside a container reports the VM)
-    ports: ["127.0.0.1:${RERANKER_PORT:-8180}:8080"]
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8080/healthz', timeout=3)"]
-      interval: 10s
-      timeout: 5s
-      retries: 6
-      start_period: 10s
-    restart: unless-stopped
 
   worker-ingest:
     mem_limit: 1536m

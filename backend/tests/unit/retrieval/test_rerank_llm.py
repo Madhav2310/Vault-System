@@ -105,7 +105,7 @@ def test_deep_pool_config_sends_every_candidate_to_the_reranker() -> None:
     cfg = get_config("retrieval@5")
     assert cfg.rerank.kind == "llm" and cfg.rerank.candidates == 50 and cfg.rerank.top_n == 8
     gw, _ = fake_gateway([])
-    r = Retriever(SimpleNamespace(gateway=gw), object(), None, cfg=cfg)  # type: ignore[arg-type]
+    r = Retriever(SimpleNamespace(gateway=gw), None, cfg=cfg)  # type: ignore[arg-type]
     assert r._llm_reranker is not None and r._llm_reranker._max == 50
 
 

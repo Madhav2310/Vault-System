@@ -12,7 +12,7 @@ from app.llm.gateway import DbLedgerWriter
 from app.llm.providers.fake import refusal
 from app.retrieval.query_embed import QueryEmbedder
 from app.retrieval.retrieve import Retriever
-from tests.integration.chat.test_turn_e2e import EMBED_SLOT, _analysis, _rerank, _seed_chunk
+from tests.integration.chat.test_turn_e2e import EMBED_SLOT, _analysis, _seed_chunk
 from tests.support.chat_gen import fake_gateway
 from tests.support.ledger_env import ledger_owners
 
@@ -25,7 +25,7 @@ async def test_totals_after_refusal(
     o = await ledger_owners()
     await _seed_chunk(sm, o.id, "Doc")
     gw, _ = fake_gateway([_analysis("terminate notice"), EMBED_SLOT, refusal()], ledger=DbLedgerWriter(sm))
-    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), _rerank(), None))
+    deps = TurnDeps(sm, gw, Retriever(QueryEmbedder(gw, None), None))
     async with sm() as s:
         sid = (await svc.create_session(s, o.id, None, None)).id
     async with sm() as s:

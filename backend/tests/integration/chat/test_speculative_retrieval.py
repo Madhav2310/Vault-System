@@ -153,43 +153,6 @@ async def ttft(sm: async_sessionmaker[AsyncSession], owner: uuid.UUID) -> int:
         return int(rows.scalar_one())
 
 
-async def test_cross_encoder_rerank_hidden_in_analysis(
-    sm: async_sessionmaker[AsyncSession],
-    ledger_owners: Callable[[], Any],
-    api: httpx.AsyncClient,
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    """With kind=cross_encoder the speculative run includes the rerank, so its time is hidden by the analysis
-    and the first segment arrives sooner (TTFT)."""
-    from app.retrieval.config import get_config
-    from app.retrieval.rerank import RerankClient
-
-    o = await ledger_owners()
-    await seed_chunk(sm, o.id)
-    orig_rerank = RerankClient.rerank
-
-    async def slow_rerank(self: RerankClient, *a: Any, **k: Any) -> Any:
-        await asyncio.sleep(0.4)
-        return await orig_rerank(self, *a, **k)
-
-    monkeypatch.setattr(RerankClient, "rerank", slow_rerank)
-    quick_embed(monkeypatch)
-    ce = get_config("retrieval@2").model_copy(
-        update={"rerank": get_config("retrieval@2").rerank.model_copy(update={"kind": "cross_encoder"})}
-    )
-    out: dict[bool, tuple[float, int]] = {}
-    for spec in (False, True):
-        prov = install_runner(api, sm, answer_script(Q, *ONE), cfg=ce, chat_speculative_retrieval=spec)
-        prov.latency_s = CHAT_S
-        sid = await new_session(api, o)
-        t0 = time.monotonic()
-        r = await post(api, o, sid, Q, uuid.uuid4().hex)
-        assert r.json()["message"]["response_type"] == "answer"
-        out[spec] = (time.monotonic() - t0, await ttft(sm, o.id))
-    print(f"\nrerank 0.4s, chat 0.5s: TTFT sequential {out[False][1]} ms, speculative {out[True][1]} ms")
-    assert out[False][1] - out[True][1] > 300  # the 0.4 s rerank (and the search) no longer precedes generate
-
-
 async def test_cancel_all_stops_leftover_tasks() -> None:
     """`persist` calls this: a turn that never retrieved (meta, failure) leaves no running task."""
     from app.chat.graph import TurnState

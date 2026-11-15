@@ -1,14 +1,9 @@
 """Evals never silently measure a degraded configuration."""
 
 import argparse
-import json
 import pathlib
-import random
-import uuid
-from collections.abc import Callable
 from typing import Any
 
-import httpx
 from eval import baseline as bl
 from eval.report import RunResult
 from eval.run import Harness, degraded_abort, run_suite
@@ -16,15 +11,8 @@ from eval.schema import ItemOutput
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
-from app.retrieval.config import get_config
-from app.retrieval.query_embed import QueryEmbedder
-from app.retrieval.rerank import RerankClient
-from app.retrieval.retrieve import Retriever
 from tests.integration.eval.test_runner import C1, ITEMS
-from tests.support.docs import seed_document
 from tests.support.evalkit import Tracker
-from tests.support.llm import make_gateway
-from tests.support.vectors import seed_vectors, unit_vector
 
 SM = async_sessionmaker[AsyncSession]
 
@@ -80,29 +68,3 @@ class _FakeDs:
 async def test_healthy_run(sm: SM, tracker: Tracker, tmp_path: pathlib.Path) -> None:
     run = await _run(sm, tracker, tmp_path, ())
     assert run.degraded_rate() == 0.0 and degraded_abort(run, 0.05) is None
-
-
-async def test_warmup_once(sm: SM, make_owner: Callable[[], Any], tmp_path: pathlib.Path) -> None:
-    o = await make_owner()
-    doc = await seed_document(sm, o.id)
-    await seed_vectors(sm, o.id, doc, [unit_vector(random.Random(i)) for i in range(5)])
-    calls: list[int] = []
-
-    def handler(request: httpx.Request) -> httpx.Response:
-        n = len(json.loads(request.content)["passages"])
-        calls.append(n)
-        return httpx.Response(200, json={"scores": [1.0] * n, "model": "m"})
-
-    gw, _p, _l, _s = make_gateway(tmp_path)
-    rr = RerankClient("http://reranker.test", 800, transport=httpx.MockTransport(handler))
-    r = Retriever(QueryEmbedder(gw, None), rr, None, get_config("retrieval@2-rerank"))
-    await r.warm_up()
-    assert calls == [1]  # exactly one tiny request, before any item
-    from app.retrieval.scope import compute_scope
-
-    async with sm() as s:
-        scope = await compute_scope(s, o.id, None)
-        for q in ("alpha", "beta", "gamma"):
-            await r.retrieve(s, o.id, scope, q)
-    assert len(calls) == 1 + 3  # n_items + 1
-    assert uuid.UUID(int=0)  # (the warm-up passage id is a placeholder, never a chunk)

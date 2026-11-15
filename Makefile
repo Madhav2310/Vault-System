@@ -5,16 +5,15 @@ COMPOSE := docker compose
 # Host-side tests reach compose services on their published ports (docker-compose.yml defaults).
 HOST_ENV := TIKTOKEN_CACHE_DIR=$(HOME)/.cache/tiktoken DATABASE_URL=postgresql+asyncpg://vault:vault@localhost:$${POSTGRES_PORT:-5442}/vault \
             REDIS_URL=redis://localhost:$${REDIS_PORT:-6389}/0 \
-            RERANKER_URL=http://localhost:$${RERANKER_PORT:-8180} \
             API_BASE_URL=http://localhost:$${API_PORT:-8100}
 UV := cd backend && $(HOST_ENV) UV_PYTHON_PREFERENCE=only-managed uv run --frozen
 EVAL_PY := $(UV) --group eval python
 CONFIG ?= ops/otel/collector.yaml
 UI_OPENAPI := $(CURDIR)/frontend/.openapi.json
 UI_E2E_ENV := COMPOSE_PROJECT_NAME=vault-uitest COMPOSE_FILE=docker-compose.yml:docker-compose.ui-test.yml \
-              API_PORT=8190 POSTGRES_PORT=5542 REDIS_PORT=6489 RERANKER_PORT=8280
+              API_PORT=8190 POSTGRES_PORT=5542 REDIS_PORT=6489
 
-.PHONY: help up up-test up-rerank up-full down logs migrate seed seed-users \
+.PHONY: help up up-test up-full down logs migrate seed seed-users \
         ci lint fmt typecheck test test-unit test-integration test-e2e smoke-providers \
         ui ui-types ui-types-check ui-check ui-e2e demo-record diagrams otel-validate \
         eval-retrieval eval-retrieval-fast eval-answers eval-answers-v2 eval-smoke eval-diagnose eval-gate \
@@ -30,10 +29,7 @@ up:  ## build and start the default stack, wait until healthy
 up-test:  ## Postgres and Redis only (integration tests need nothing else)
 	$(COMPOSE) up -d postgres redis
 	scripts/wait_healthy.sh 120 postgres redis
-up-rerank:  ## default stack plus the cross-encoder reranker service
-	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) --profile rerank up -d --build
-	COMPOSE_PROFILES=rerank scripts/wait_healthy.sh 240
-up-full:  ## default stack plus reranker and observability (heavy)
+up-full:  ## default stack plus observability (heavy)
 	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) --profile full up -d --build
 	COMPOSE_PROFILES=full scripts/wait_healthy.sh 240
 down:  ## stop every service of every profile
@@ -118,7 +114,7 @@ otel-validate:  ## validate the OpenTelemetry collector config
 eval-retrieval:  ## retrieval suite through the API
 	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config retrieval --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 eval-retrieval-fast:  ## retrieval-only suite in process: [RETR_CONFIG=retrieval@N] [SPLIT=dev]
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config $(or $(RETR_CONFIG),retrieval@1) --split $(or $(SPLIT),all) --pipeline eval.pipeline_retrieval:setup $(EVAL_ARGS)
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config $(or $(RETR_CONFIG),retrieval@2) --split $(or $(SPLIT),all) --pipeline eval.pipeline_retrieval:setup $(EVAL_ARGS)
 eval-answers:  ## answers with judges: SPLIT=train MAX_USD=3 [FILTER=scope_docs=1] [DATASET=v2]
 	$(UV) env PYTHONPATH=.. python -m eval.run --suite full --config answers --split $(or $(SPLIT),train) --max-usd $(or $(MAX_USD),3) $(if $(DATASET),--dataset $(DATASET)) $(if $(FILTER),--filter $(FILTER)) --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
 eval-answers-v2:  ## v2 gold set: SPLIT=dev MAX_USD=3 [FILTER=stratum=injection] [EVAL_ARGS=...]

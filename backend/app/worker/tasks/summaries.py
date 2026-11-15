@@ -8,7 +8,6 @@ from app.core.settings import get_settings
 from app.insights.summaries import SUMMARY_TASK, retriever_select, run_summary
 from app.llm.gateway import build_gateway
 from app.retrieval.query_embed import QueryEmbedder, cache_client
-from app.retrieval.rerank import RerankClient
 from app.retrieval.retrieve import Retriever
 from app.worker.celery_app import celery_app
 from app.worker.runtime import SessionFactory, run_db
@@ -20,12 +19,10 @@ def summary_task(summary_id: str) -> str:
         settings = get_settings()
         gateway = build_gateway(sm, settings)
         rds = cache_client(settings.redis_url)
-        reranker = RerankClient.from_settings(settings)
         try:
-            retriever = Retriever(QueryEmbedder(gateway, rds), reranker, rds)
+            retriever = Retriever(QueryEmbedder(gateway, rds), rds)
             return await run_summary(sm, gateway, retriever_select(retriever, sm), uuid.UUID(summary_id))
         finally:
-            await reranker.aclose()
             await rds.aclose()
 
     return run_db(go)
