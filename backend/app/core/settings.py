@@ -125,10 +125,6 @@ class Settings(BaseSettings):
     chat_fast_path: bool = True
     chat_speculative_retrieval: bool = True  # retrieve on the raw question while `analyze` runs
 
-    # --- scored abstention: logistic combiner (config/abstain@1.yaml) replaces the binary gate;
-    # off until calibrated on a v2 run and the paired A/B accepts it ---
-    chat_abstain_scored: bool = False
-
     # --- routed locate loop for long filings: bounded search/find/open steps when the first pass
     # over one long document is low-confidence; off until the paired A/B decides ---
     chat_locate: bool = False

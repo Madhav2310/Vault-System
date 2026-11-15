@@ -53,10 +53,8 @@ __all__ = ["NO_DOCUMENTS", "NO_EVIDENCE", "TURN_ERROR", "TurnDeps", "run_turn"]
 def _analysis_record(state: TurnState) -> dict[str, Any] | None:
     a = state.analysis
     if a is None:
-        return {"abstain": state.abstain_features} if state.abstain_features else None
+        return None
     rec: dict[str, Any] = {"intent": a.intent, "dimensions": list(a.dimensions)}
-    if state.abstain_features:  # calibration inputs and the decision, only with `chat_abstain_scored`
-        rec["abstain"] = state.abstain_features
     if state.locate_log:  # typed actions, digests and counts only
         rec["locate"] = state.locate_log
     if state.clarification is not None:  # the options, so history can show the chips again

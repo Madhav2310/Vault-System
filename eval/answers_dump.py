@@ -50,49 +50,6 @@ def answer_row(
     return row
 
 
-ABSTAIN_MARGIN_RANK = 3  # the calibrator's `--margin-rank` default
-
-
-def abstain_path(run_id: object, directory: pathlib.Path) -> pathlib.Path:
-    return directory / f"{run_id}.abstain.jsonl"
-
-
-class _Cand:
-    """A recorded retrieval candidate in the shape `abstain.retrieval_features` reads."""
-
-    def __init__(self, d: Mapping[str, Any]) -> None:
-        self.rerank_score: float | None = d.get("rerank_score")
-        self.vector_distance: float | None = d.get("vector_distance")
-        self.id_match: bool = bool(d.get("id_match"))
-
-
-def abstain_row(
-    item: GoldItemV2, inputs: Mapping[str, Any], *, margin_rank: int = ABSTAIN_MARGIN_RANK
-) -> dict[str, Any]:
-    """One line of `<run_id>.abstain.jsonl`, the input of `eval.calibrate_abstain`.
-
-    `inputs` is what the harness read back for the run: `candidates` (final attempt: rerank_score,
-    vector_distance, id_match) and `run` (the persisted `analysis.abstain`: unsupported). `top`/`margin`
-    come from the candidates through the same function the gate uses; a feature the run did not record is
-    null (never an imputed value)."""
-    from app.chat.abstain import retrieval_features
-
-    feats = retrieval_features([_Cand(c) for c in inputs.get("candidates") or ()], margin_rank)
-    run = inputs.get("run") or {}
-    return {
-        "item_id": item.id,
-        "stratum": item.stratum,
-        "source_doc": item.source_doc,
-        "top": feats["top"],
-        "margin": feats["margin"],
-        "unsupported": run.get("unsupported"),
-    }
-
-
-def write_abstain(rows: Sequence[Mapping[str, Any]], path: pathlib.Path) -> pathlib.Path:
-    return write_answers(rows, path)
-
-
 def write_answers(rows: Sequence[Mapping[str, Any]], path: pathlib.Path) -> pathlib.Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in rows), "utf-8")

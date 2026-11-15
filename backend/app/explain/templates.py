@@ -34,10 +34,6 @@ ABSTAIN_TEXT_MANY = (
     "I could not find this in your {n} documents. "
     "Try asking in different words, or name the document you have in mind."
 )
-PARTIAL_ANSWER_TEXT = (
-    "That is what your documents back up. I could not find the rest, so please check the document itself "
-    "or name the section you have in mind."
-)
 CLARIFY_TEXT = "More than one of your documents could answer this. Which one should I look in?"
 ERROR_TEXT = "That did not work on my side, and no answer was written. Please try again in a moment."
 QUOTA_REACHED = "You have reached today's usage limit. It resets in {retry} s (at midnight UTC), so you can ask again then."
@@ -52,14 +48,6 @@ REASON_TEMPLATES: dict[str, str] = {
     "ABSTAIN_NO_EVIDENCE": (
         "The closest passages were too weak to answer from, so none was written. "
         "Try different words or name the document."
-    ),
-    "ABSTAIN_SCORED": (
-        "The passages found were too weak to answer from, so none was written. "
-        "Try different words or name the document."
-    ),
-    "PARTIAL_ANSWER": (
-        "Only part of the question was backed up by your documents, and the answer says so. "
-        "Try naming the document or section for the rest."
     ),
     "SCOPE_EMPTY": "There are no ready documents in scope. Upload one, or wait for processing to finish.",
     "FULL_CONTEXT_UNAVAILABLE": (

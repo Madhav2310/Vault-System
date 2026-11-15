@@ -114,7 +114,6 @@ class TurnState:
     last_reason: str | None = None  # a node may set a reason code for its step (e.g. FAST_PATH)
     fast_path: bool = False  # set by `route_question`: `analyze` is skipped
     gate_abstain: bool = False  # set by `gate`: the evidence is below the floor
-    abstain_features: dict[str, Any] | None = None  # set by `verify` (flag `chat_abstain_scored`)
     compare: bool = False  # set by `analyze`: a compare turn over 2-5 documents
     prev_clarified: bool = False  # set by `load_context`: the last assistant message was a clarification
     pick_document_id: uuid.UUID | None = None  # set by `load_context`: the option chosen from a clarification

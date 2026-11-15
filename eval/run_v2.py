@@ -41,14 +41,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 from app.core.ids import uuid7
 from eval import baseline as bl
 from eval import fingerprint
-from eval.answers_dump import (
-    abstain_path,
-    abstain_row,
-    answer_row,
-    answers_path,
-    write_abstain,
-    write_answers,
-)
+from eval.answers_dump import answer_row, answers_path, write_answers
 from eval.attribution import STAGES, UNKNOWN, from_sidecar_item, stage_table
 from eval.graders import (
     citation_metrics,
@@ -116,8 +109,6 @@ class ItemOutputV2(ItemOutput):
     """`ItemOutput` plus the chunk ids the generator was given (selected candidates and citations)."""
 
     evidence: list[str] | None = None
-    # Calibration inputs read back from the run record (`candidates`, `run`); see answers_dump.abstain_row
-    abstain_inputs: dict[str, Any] | None = None
 
 
 # --- selection --------------------------------------------------------------------------------------------
@@ -502,7 +493,6 @@ async def run_suite_v2(
         judged = [Judged() for _ in answered]
 
     answer_rows: list[dict[str, Any]] = []
-    abstain_rows: list[dict[str, Any]] = []
     for a, j in zip(answered, judged, strict=True):
         if j.budget_stop:  # judging was cut short: the item is not scored (and not counted)
             stopped = True
@@ -547,8 +537,6 @@ async def run_suite_v2(
                     judged=verdict_record(j.claims, j.support, j.abstain),
                 )
             )
-            if (inputs := getattr(a.out, "abstain_inputs", None)) is not None:
-                abstain_rows.append(abstain_row(item, inputs))
     if stopped:
         run.config["stopped"] = "budget"
     if harness.spent is not None:
@@ -569,8 +557,6 @@ async def run_suite_v2(
     write_sidecar(run, report_dir)
     if answers:
         write_answers(answer_rows, answers_path(run.run_id, report_dir))
-        if abstain_rows:  # the calibrator's input (`python -m eval.calibrate_abstain --run <file>`)
-            write_abstain(abstain_rows, abstain_path(run.run_id, report_dir))
     return run, write_report(run, report_dir)
 
 
