@@ -36,6 +36,8 @@ def identifier_query(query: str) -> str:
 MIN_MATCH_FROM = (
     4  # queries with at least this many lexemes must match 2 of them (cuts one-common-word noise)
 )
+# how many of the query's (distinct) lexemes the chunk has: one expression per row, not a tsquery per lexeme
+MATCHED_LEXEMES = "(length(c.tsv_en) - length(ts_delete(c.tsv_en, qq.lex)))"
 
 
 def lexical_statement(
@@ -60,7 +62,7 @@ def lexical_statement(
         "(SELECT string_agg(quote_literal(l), ' & ') FROM unnest(lex) AS l)::tsquery END AS qa, "
         f"CASE WHEN cardinality(lex) >= {MIN_MATCH_FROM} THEN 2 ELSE 1 END AS need FROM ql) "
     )
-    matched = "(SELECT count(*) FROM unnest(qq.lex) AS l WHERE c.tsv_en @@ quote_literal(l)::tsquery)"
+    matched = MATCHED_LEXEMES
     match_q = "(qq.q IS NOT NULL AND c.tsv_en @@ qq.q)"
     # cover density of an OR query ignores proximity, so chunks that also satisfy the AND query rank higher
     rank_or = "COALESCE(ts_rank_cd(c.tsv_en, qq.q), 0)"

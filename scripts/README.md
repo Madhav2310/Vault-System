@@ -8,5 +8,6 @@
 | `fresh_clone_check.sh` | Clones the repo to a temp dir and runs the reviewer path (prerequisites, `.env`, `make ci`); `--stack` adds `make up`, `/readyz`, the core demo smoke and `make down`; prints a pass/fail table | release check, `docs/operations.md` section 1 |
 | `wait_healthy.sh` | Waits until compose services are healthy | Makefile `up*` targets |
 | `check_trace.py` | Sends a request with a known trace id and finds it in Tempo (needs the observability stack) | manual check of trace propagation |
+| `bench_retrieval_sql.py` | Times the exact vector and lexical retrieval statements on the dev database (warm, or cold after a Postgres restart and a Docker VM page-cache drop) and checks the lexical minimum-match count against its per-lexeme form; $0 (eval questions, cached query vectors) | `docs/operations.md` section 2.3 |
 | `export_postman.py` | Generates `docs/api/vault.postman_collection.json` from the OpenAPI schema | `backend/tests/unit/api/test_postman_export.py` |
 | `gen_turn_diagram.py` | Writes `docs/img/chat_turn.mmd` from the turn graph | `make diagrams`, `backend/tests/unit/docs/test_diagrams.py` |

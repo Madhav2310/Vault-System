@@ -53,6 +53,15 @@ async def test_min_match(sm: SM, make_owner: Callable[[], Any]) -> None:
     assert one in short  # a short query needs only one
 
 
+async def test_min_match_counts_url_and_email_lexemes(sm: SM, make_owner: Callable[[], Any]) -> None:
+    o = await make_owner()
+    d = await seed_document(sm, o.id)
+    both = await seed_text_chunk(sm, o.id, d, "Docs at https://example.com/a/b, ask ops@acme.io.", ordinal=0)
+    one = await seed_text_chunk(sm, o.id, d, "Ask ops@acme.io only.", ordinal=1)
+    ids = {h.chunk_id for h in await _search(sm, o.id, "https://example.com/a/b, ops@acme.io zebra quagga")}
+    assert both in ids and one not in ids  # url and email lexemes count like words toward the minimum of 2
+
+
 async def test_more_terms_rank_higher(sm: SM, make_owner: Callable[[], Any]) -> None:
     o = await make_owner()
     d = await seed_document(sm, o.id)
