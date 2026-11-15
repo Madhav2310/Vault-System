@@ -24,7 +24,7 @@ from app.llm.gateway import LlmGateway
 
 DEGRADED_LEXICAL_ONLY = "lexical_only"
 CACHE_TTL_SECONDS = 7 * 24 * 3600
-DEFAULT_KEY_PREFIX = "qembed:v1:"
+DEFAULT_KEY_PREFIX = "qembed:v2:"  # v2: keys carry the owner
 CACHE_REDIS_TIMEOUT_S = 0.25  # a stalled Redis costs each cache command this, not redis-py's 5 s default
 
 _log = logging.getLogger(__name__)
@@ -53,8 +53,9 @@ def normalize_query(query: str) -> str:
     return " ".join(unicodedata.normalize("NFKC", query).split()).lower()
 
 
-def cache_key(prefix: str, normalized: str, model: str) -> str:
-    return prefix + hashlib.sha256(f"{model}\x00{normalized}".encode()).hexdigest()
+def cache_key(prefix: str, normalized: str, model: str, owner_id: uuid.UUID | None) -> str:
+    """Per owner: another owner's cached query is never a hit (its timing would reveal the question)."""
+    return prefix + hashlib.sha256(f"{owner_id or '-'}\x00{model}\x00{normalized}".encode()).hexdigest()
 
 
 def _pack(vector: list[float]) -> bytes:
@@ -92,7 +93,7 @@ class QueryEmbedder:
     async def embed(self, query: str, *, owner_id: uuid.UUID | None) -> QueryEmbedding:
         model = self._gw.settings.embedding_model
         dims = self._gw.settings.embedding_dim
-        key = cache_key(self._prefix, normalize_query(query), model)
+        key = cache_key(self._prefix, normalize_query(query), model, owner_id)
 
         blob = await self._get(key)
         if blob is not None and len(blob) == 2 * dims:

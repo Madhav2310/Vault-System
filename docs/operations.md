@@ -91,7 +91,7 @@ Behaviour under load is **not measured**; these are the mechanisms.
 | Sweeper (beat) | Re-dispatches lost dispatches, expired leases and due retries. Eventual recovery, not an outbox. | `backend/app/ingestion/sweeper.py` |
 | Per-owner ingestion cap | Not implemented: a large upload shares the `ingest` queue with everyone (upload requests are rate limited at 30 a minute). | `backend/app/ingestion/jobs.py` has no such limit |
 | Per-user chat limits | One active turn per session (a second gets 409), chat 20 requests a minute, upload 30 a minute, a daily cost quota, then 429 with `Retry-After`. | `backend/app/core/ratelimit.py`, `quota.py` |
-| Query embedding cache | Redis, keyed by embedding model and normalized query. A Redis failure or stall bypasses the cache (each cache command is cut at 0.25 s); an embedding failure degrades to lexical-only search. | `backend/app/retrieval/query_embed.py` |
+| Query embedding cache | Redis, keyed by owner, embedding model and normalized query (one owner's query is never another's hit). A Redis failure or stall bypasses the cache (each cache command is cut at 0.25 s); an embedding failure degrades to lexical-only search. | `backend/app/retrieval/query_embed.py` |
 | Document embedding cache | By content hash and model. A re-upload pays nothing for unchanged chunks. | `backend/app/ingestion/embed_index.py` |
 | Paid ingestion LLM outputs | Cached by content hash, prompt version and model. | `llm_cache` table |
 | Answers | Never cached. | |

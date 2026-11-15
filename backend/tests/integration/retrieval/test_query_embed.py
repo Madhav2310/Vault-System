@@ -39,8 +39,10 @@ async def prefix(rds: aioredis.Redis) -> AsyncIterator[str]:
 def test_normalize_and_key() -> None:
     assert normalize_query("  Payment \n\tTERMS  ") == "payment terms"
     assert normalize_query(chr(0xFB01) + "x") == "fix"  # NFKC expands ligatures
-    assert cache_key("p:", "a", "m1") != cache_key("p:", "a", "m2")
-    assert cache_key("p:", "a", "m") == cache_key("p:", "a", "m")
+    o1, o2 = uuid.uuid4(), uuid.uuid4()
+    assert cache_key("p:", "a", "m1", o1) != cache_key("p:", "a", "m2", o1)
+    assert cache_key("p:", "a", "m", o1) == cache_key("p:", "a", "m", o1)
+    assert cache_key("p:", "a", "m", o1) != cache_key("p:", "a", "m", o2)
 
 
 async def test_cache_hit_normalized(tmp_path: pathlib.Path, rds: aioredis.Redis, prefix: str) -> None:
@@ -52,9 +54,22 @@ async def test_cache_hit_normalized(tmp_path: pathlib.Path, rds: aioredis.Redis,
     assert not first.cache_hit and second.cache_hit
     assert first.vector is not None and second.vector == first.vector  # miss path is quantized like the cache
     assert len(first.vector) == 1536 and first.degraded is None and not first.lexical_fallback
-    assert await rds.ttl(cache_key(prefix, "payment terms", MODEL)) > 6 * 86400
+    assert await rds.ttl(cache_key(prefix, "payment terms", MODEL, None)) > 6 * 86400
     # the original text (not the normalized one) is what gets embedded
     assert prov.embed_calls[0][1] == ("  Payment   TERMS ",)
+
+
+async def test_cache_is_per_owner(tmp_path: pathlib.Path, rds: aioredis.Redis, prefix: str) -> None:
+    """One owner's cached query is never another owner's hit (a hit's timing would tell that someone else
+    asked the same question)."""
+    gw, prov, _, _ = make_gateway(tmp_path)
+    qe = QueryEmbedder(gw, rds, key_prefix=prefix)
+    a, b = uuid.uuid4(), uuid.uuid4()
+    first = await qe.embed("payment terms", owner_id=a)
+    other = await qe.embed("payment terms", owner_id=b)
+    again = await qe.embed("payment terms", owner_id=a)
+    assert not first.cache_hit and not other.cache_hit and again.cache_hit
+    assert len(prov.embed_calls) == 2
 
 
 async def test_failure_degrades(tmp_path: pathlib.Path, rds: aioredis.Redis, prefix: str) -> None:
