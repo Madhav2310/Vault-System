@@ -32,7 +32,7 @@ from app.core.logging import get_logger
 from app.core.quota import over_quota
 from app.ingestion import status as vs
 from app.ingestion.runner import StageContext, StageResult
-from app.ingestion.stages import document_deleted
+from app.ingestion.stages import document_deleted, version_not_current
 from app.insights.brief import (
     BRIEF_FACTS_CAPPED,
     BRIEF_MERGE_FALLBACK,
@@ -433,6 +433,8 @@ class BriefStage:
             return StageResult(detail={"skipped": "no_gateway"})
         if await document_deleted(ctx):
             return StageResult(detail={"skipped": "deleted"})
+        if await version_not_current(ctx):  # finished after a newer version: nobody reads its brief
+            return StageResult(detail={"skipped": "not_current"})
         settings = ctx.services["settings"]
         job = ctx.job
         async with ctx.sm() as s:

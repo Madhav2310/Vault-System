@@ -57,6 +57,24 @@ async def document_deleted(ctx: StageContext) -> bool:
         )
 
 
+async def version_not_current(ctx: StageContext) -> bool:
+    """True when the job's version is not its document's current version (an older version that finished
+    after a newer one stays behind it): enrichment of it would never be read."""
+    async with ctx.sm() as s:
+        return bool(
+            (
+                await s.execute(
+                    text(
+                        "SELECT d.current_version_id IS DISTINCT FROM v.id FROM documents d "
+                        "JOIN document_versions v ON v.document_id = d.id "
+                        "WHERE v.id = :v AND v.owner_id = :o"
+                    ),
+                    {"v": ctx.job.version_id, "o": ctx.job.owner_id},
+                )
+            ).scalar_one_or_none()
+        )
+
+
 # Environment of the parser subprocess: it reads untrusted files, so it gets no API keys or DB credentials.
 _PARSER_ENV_KEYS = ("PATH", "HOME", "LANG", "LC_ALL", "TMPDIR", "PYTHONHASHSEED")
 

@@ -355,3 +355,21 @@ async def test_redelivery_does_not_spend_the_cap_again(sm, make_owner, enqueued)
     assert prov.requests == []
     (row,) = await insight_rows(sm, seeded.ref.version_id)
     assert (row["status"], row["content"]) == ("failed", {"error_code": "budget_exhausted"})
+
+
+async def test_a_version_that_is_not_current_gets_no_brief(sm, make_owner, enqueued) -> None:  # type: ignore[no-untyped-def]
+    """An older version that finished indexing after a newer one stays behind it (not current): briefing
+    it would pay for a summary nobody can reach, so the stage skips it and leaves the version as it is."""
+    o = await make_owner()
+    seeded = await seed_ready_version(sm, o.id, [ChunkSpec(SERVICES)])
+    async with sm() as s:
+        await s.execute(
+            text("UPDATE documents SET current_version_id = NULL WHERE id = :d"),
+            {"d": seeded.ref.document_id},
+        )
+        await s.commit()
+    gw, prov, ledger = brief_gateway([brief_reply(services_facts())])
+    await run_brief(sm, seeded.ref.job_id, gw, enqueued)
+    assert prov.requests == [] and ledger.records == []
+    assert await insight_rows(sm, seeded.ref.version_id) == []
+    assert (await version_status(sm, seeded.ref.version_id))[0] == "ready"
