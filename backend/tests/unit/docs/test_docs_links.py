@@ -14,7 +14,7 @@ DOCS = [
 TOP_DIRS = ("docs", "backend", "eval", "scripts", "frontend", "reranker", "ops")
 ROOT_FILES = ("README.md", "ARCHITECTURE.md", "CLAUDE.md", "AI_USAGE.md", "Makefile", ".env.example")
 # paths that are produced by running a command or fetched from third parties, so they are not committed
-GENERATED_PREFIXES = ("eval/sources/", "eval/reports/", "eval/baselines/answer_v2.json")
+GENERATED_PREFIXES = ("eval/sources/", "eval/reports/", "eval/baselines/answer.json")
 PATH_SPAN = re.compile(r"`([^`\s]+)`")
 LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)\)")
 BANNED = re.compile(

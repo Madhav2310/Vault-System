@@ -6,8 +6,8 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 API="${API_BASE_URL:-http://localhost:${API_PORT:-8100}}"
-DOC="${DEMO_DOC:-eval/datasets/vault_eval_v1/docs/amendment_consulting.md}"
-DOC2="${DEMO_DOC2:-eval/datasets/vault_eval_v1/docs/side_letter_endorsement.docx}"
+DOC="${DEMO_DOC:-eval/datasets/vault_eval/docs/amendment_consulting.md}"
+DOC2="${DEMO_DOC2:-eval/datasets/vault_eval/docs/side_letter_endorsement.docx}"
 QUESTION="${DEMO_QUESTION:-How much written notice does either party have to give to terminate, and what is the term?}"
 Q_COMPARE="${DEMO_Q_COMPARE:-Compare the two documents: do they differ on the term or the notice period?}"
 step() { printf '\n== %s\n' "$*"; }

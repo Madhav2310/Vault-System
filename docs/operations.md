@@ -71,14 +71,14 @@ The two AMD figures (494 and a 429 maximum) come from different extraction versi
 | Exact top-40 vector query on a 21,000-chunk owner | 8.9 ms, pruned to 1 of 32 hash partitions | `EXPLAIN (ANALYZE)` of the scoped query in `backend/app/retrieval/vector.py` on a seeded owner |
 | Scoped vector search, 1,500 rows | 6.5 ms plan, 23.6 ms end to end | the `EXPLAIN (ANALYZE)` above |
 | Switch point to an approximate index | 100,000 chunks in one scope (a design default, not a measured crossover) | design default; `backend/app/retrieval/vector.py` is exact search only |
-| Exact top-40 vector query (per-document quota 12), 10,299-chunk owner (78 documents), warm, 40 questions | 9.0 ms median execution (p95 12.1 ms), 8,972 shared buffers: `embedding` and `tsv_en` are stored in the heap (`STORAGE MAIN`, migration `backend/app/db/migrations/versions/0006_chunks_inline_vectors.py`); stored out of line, the same query took 25.5 ms and 36,811 buffers | `cd backend && uv run --frozen env PYTHONPATH=.. python ../scripts/bench_retrieval_sql.py --leg vector --owner <owner id>` (questions from `eval/datasets/vault_eval_v2`, vectors from the Redis query-embedding cache, $0) |
+| Exact top-40 vector query (per-document quota 12), 10,299-chunk owner (78 documents), warm, 40 questions | 9.0 ms median execution (p95 12.1 ms), 8,972 shared buffers: `embedding` and `tsv_en` are stored in the heap (`STORAGE MAIN`, migration `backend/app/db/migrations/versions/0006_chunks_inline_vectors.py`); stored out of line, the same query took 25.5 ms and 36,811 buffers | `cd backend && uv run --frozen env PYTHONPATH=.. python ../scripts/bench_retrieval_sql.py --leg vector --owner <owner id>` (questions from `eval/datasets/vault_eval`, vectors from the Redis query-embedding cache, $0) |
 | Same query, cold (Postgres restarted, Docker VM page cache dropped) | 8,741 blocks read (11,148 out of line); 492 to 569 ms over three runs. Cold time is bound by the Docker Desktop disk and not reproducible: two cold runs of the out-of-line layout read the same blocks and took 296 and 1,230 ms | the command above with `--cold` |
 | Lexical leg, same owner, 40 questions | 14.8 ms median execution (p95 190 ms), about 3,800 shared buffers; 42.1 ms and 81,800 buffers with `tsv_en` out of line and a per-lexeme match count | the command above with `--leg lexical` |
 | Lexical minimum-match count: one expression per row against one tsquery per query lexeme, same data | 16.7 to 14.3 ms median with `tsv_en` in the heap; 44.0 to 23.5 ms (81,000 to 28,000 buffers) with `tsv_en` in TOAST, where every lexeme re-read it. The same (chunk, score, id_match) lists for all 5,584 pairs of 16 owners and 349 questions and prior turns (1,938,921 hits) | the command above with `--lexical-equivalence` |
 | Chunk partitions on disk, 47,986 chunks | 470 MB: heap 309, TOAST 128, indexes 33 (out of line: 515 MB, 156, 270, 89; the migration's rewrite also rebuilt bloated indexes) | `select pg_size_pretty(sum(pg_relation_size(c.oid))) ... from pg_class c join pg_inherits i on i.inhrelid = c.oid where i.inhparent = 'chunks'::regclass` |
 | Postgres memory (1 GB container cap) | `shared_buffers` 256 MB (25 percent of the cap), `effective_cache_size` 768 MB (75 percent), `work_mem` 4 MB (the largest retrieval sort uses 1.2 MB in memory), `maintenance_work_mem` 64 MB. A sequential scan of a partition larger than a quarter of `shared_buffers` (64 MB) uses a small ring buffer, so a 67 MB partition is served partly from the page cache (4,327 of 8,576 blocks per warm query) | `docker-compose.yml`; `EXPLAIN (ANALYZE, BUFFERS)` via the command above |
 | Exact search latency at 100,000 chunks in one scope | TBD | the `EXPLAIN` above on a seeded 100,000-chunk owner |
-| Retrieval-only evaluation, 100 items, warm | 145 s, about $0.0001 | `make eval-retrieval-fast` |
+| Retrieval-only evaluation, train split, 118 items | 180 s with the query embeddings uncached, 3.9 s with them cached; about $0.0001 | `make eval-retrieval` |
 
 ---
 
@@ -124,9 +124,7 @@ Chat cost is per question, not per document.
 
 | Item | Value | Source |
 |---|---:|---|
-| Answer per turn (the turn's `rag_runs.cost_usd`) | $0.007 on the sealed test run and on the final train and dev runs of the golden set | `make eval-answers-v2 SPLIT=test MAX_USD=4`; `make eval-answers-v2 SPLIT=train MAX_USD=3` |
-| Smoke evaluation, 21 items | about $0.10 | `make eval-smoke` |
-| Full legacy retrieval evaluation, 122 items | about $0.70 | `make eval-retrieval` |
+| Answer per turn (the turn's `rag_runs.cost_usd`) | $0.007 on the sealed test run and on the final train and dev runs of the golden set | `make eval-answers SPLIT=test MAX_USD=4`; `make eval-answers SPLIT=train MAX_USD=3` |
 | Planning estimate at 1,000 daily users (133 turns a minute at peak) | about $165 a day at $0.011 a turn; an estimate, not a measurement | arithmetic: 1,000 users x turns per day x cost per turn |
 
 The daily quota (`USER_DAILY_USD`, default $1.00; admins unlimited) sums `llm_calls.cost_usd` since UTC midnight. That includes the estimated cost of aborted attempts (`status='estimated'`: cancelled by a deadline or a closed stream, timed out, or failed after output began), priced as the estimated input plus the output streamed so far, because the provider may bill it and OpenAI's documentation does not say it does not. Ingestion is never blocked by it; the brief stage defers instead. The demo run is capped by `DEMO_MAX_USD` and prints its spend from the ledger.

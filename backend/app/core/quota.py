@@ -32,7 +32,7 @@ from app.explain.templates import QUOTA_REACHED
 
 KEY_PREFIX = "vault:quota:inflight"
 # Held per turn in flight. The most expensive turn of the 252 final evaluation turns cost $0.027
-# (eval/baselines/v2_final); the mean is $0.007.
+# (eval/baselines/final); the mean is $0.007.
 TURN_RESERVE_USD = Decimal("0.05")
 RESERVATION_TTL_S = 180  # longer than the longest route deadline (60 s)
 

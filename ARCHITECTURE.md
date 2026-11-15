@@ -398,11 +398,10 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 | `brief_merge@2` | fast | Merge of map-step briefs, with tone | Default |
 | `summary_custom@1` | balanced | Custom summaries (`POST /v1/documents/{id}/summaries`) | Default (`backend/app/insights/summaries.py`) |
 | `eval_judge_claims@4`, `eval_judge_support@3`, `eval_judge_abstain@1` | deep | Claim-level answer, support and abstention judges | Evaluation default |
-| `eval_judge_faithfulness@1`, `eval_judge_citation@1`, `eval_judge_completeness@1`, `eval_judge_rubric@1` | deep | Binary judges of the legacy golden set | Legacy evaluation |
-| `eval_migrate_claims@1`, `eval_draft_table_q@1`, `eval_audit_gold@1` | balanced, balanced, flagship | Dataset construction: claim migration, table-question drafting, independent gold audit | Dataset build scripts |
+| `eval_audit_gold@1` | flagship | Independent gold audit | Dataset build (`eval/build/audit.py`) |
 | `_example@1` | fast | Template for a new prompt | Not used |
 
-What has been measured about prompts is in `docs/evaluation.md`: `support_check@1` agrees with the faithfulness judge (agreement 0.92, kappa 0.83, n = 37), and brief facts are verified by code (56 of 58 on 3 sample documents).
+What has been measured about prompts is in `docs/evaluation.md`: `support_check@1` agreed with the faithfulness judge of the earlier judge set (agreement 0.92, kappa 0.83, n = 37; rerun path in the same document), and brief facts are verified by code (56 of 58 on 3 sample documents).
 
 ### 7.3 Behaviour switches
 
@@ -486,7 +485,7 @@ The chat path has no tools and no side effects, so the worst case is a wrong ans
 - **Delimiter defusing**: `backend/app/chat/nodes_common.py::defuse` replaces tag-like strings (`</evidence>` and similar) in untrusted text before it is shown to the model. Stored and cited text is never altered.
 - **Handles only**: the strict schema fixes the output shape, and quotes come from storage, so an injected "reply only with X" cannot fabricate a citation.
 - **Scope check**: the analysis can only narrow scope, and the ledger refuses chunks outside the version snapshot.
-- **Graders**: `eval/graders.py::injection_violation` flags forbidden strings, instruction markers, foreign links not present in evidence, and out-of-scope citations. The golden set's `injection` stratum covers 11 variants (body text, footnote, table cell, hidden text, fake system, ignore-previous, exfiltration, citation spoof, role play, zero-width unicode, markdown link) (`eval/datasets/vault_eval_v2/README.md`). Measured: 0 violations on the 9 train items and on the 11 items of the sealed test run (`docs/evaluation.md` section 2).
+- **Graders**: `eval/graders.py::injection_violation` flags forbidden strings, instruction markers, foreign links not present in evidence, and out-of-scope citations. The golden set's `injection` stratum covers 11 variants (body text, footnote, table cell, hidden text, fake system, ignore-previous, exfiltration, citation spoof, role play, zero-width unicode, markdown link) (`eval/datasets/vault_eval/README.md`). Measured: 0 violations on the 9 train items and on the 11 items of the sealed test run (`docs/evaluation.md` section 2).
 
 ### 9.3 Upload and HTTP hardening
 
@@ -516,7 +515,7 @@ The chat path has no tools and no side effects, so the worst case is a wrong ans
 
 The method, the numbers and the runbook are in `docs/evaluation.md`. This section is the summary a developer needs to understand the design.
 
-- **Golden set** (`eval/datasets/vault_eval_v2/`): 311 live items over 186 documents in 15 strata, split by source document into train 118, dev 59 and test 134. Train gold is audited (an independent model audit, then a person's decisions), dev gold was reviewed where items were disputed, and test gold is an unaudited draft. Gold is atomic claims plus sentence-range evidence that is mapped to chunks at run time (`eval/mapping.py`), so it survives a change of chunker. Public items come from third-party expert labels (CUAD, QASPER, FinanceBench), and authored fixtures cover the strata no public set has. A legacy set (`eval/datasets/vault_eval_v1/`, 122 items) stays loadable for the baselines in `eval/baselines/`.
+- **Golden set** (`eval/datasets/vault_eval/`): 311 live items over 186 documents in 15 strata, split by source document into train 118, dev 59 and test 134. Train gold is audited (an independent model audit, then a person's decisions), dev gold was reviewed where items were disputed, and test gold is an unaudited draft. Gold is atomic claims plus sentence-range evidence that is mapped to chunks at run time (`eval/mapping.py`), so it survives a change of chunker. Public items come from third-party expert labels (CUAD, QASPER, FinanceBench), and authored fixtures cover the strata no public set has. A legacy set (`eval/datasets/vault_eval_v1/`, 122 items) stays loadable for the baselines in `eval/baselines/`.
 - **Graders and judges**: deterministic graders decide what they can (`eval/graders.py`: citation integrity and scope, gold-citation overlap, `must_not_contain`, injection, meta correctness, recall@8, MRR@40). LLM judges on `deep` handle the rest (`eval_judge_claims`, `eval_judge_support`, `eval_judge_abstain`), reference-guided and blind, with a judge tier at or above the generator tier. Judge and generator share a vendor, and the judges are not yet calibrated against human labels, so every judged number is **provisional**.
 - **Statistics**: paired bootstrap CIs, clustering by source document, and a minimum detectable effect that says when "no difference" is only low power (`eval/paired.py`, `eval/report.py`).
 - **Stage attribution** (`eval/attribution.py`) gives each failed item one earliest faulty stage. Extraction and chunking cannot be observed yet and read 0.
@@ -648,7 +647,7 @@ frontend/src/              React UI: library/, document/ (guide, versions), sour
                            why panel, conflicts, feedback), metrics/, api/ (typed client), sse.ts
 frontend/e2e/              Playwright UI tests against the fake model
 eval/                      golden sets (datasets/), graders, judges, paired stats, attribution, gate tiers,
-                           runners (run.py, run_v2.py), replay, calibration, baselines/, labels/, build/
+                           runner (run.py), baselines/, labels/, build/
 ops/otel/                  collector config and its validation test
 docs/                      evaluation.md, operations.md, voice.md, spec/ (the assignment), api/ (Postman), img/ (diagram sources)
 scripts/                   quickstart, demo, turn-diagram generator, Postman export, fresh-clone check
@@ -664,9 +663,9 @@ scripts/                   quickstart, demo, turn-diagram generator, Postman exp
 | Lint, types, unit and frontend checks (no Docker) | `make ci` |
 | Full test suite (needs `make up`) | `make test`, or `make test-integration` with `make up-test` |
 | UI end to end with the fake model | `make ui-e2e` |
-| Corpus ingestion check | `make c1-check`, `make eval-extraction` |
-| Retrieval evaluation ($0 to cents) | `make eval-retrieval-fast` (`RETR_CONFIG=...`, `SPLIT=...`) |
-| Answer evaluation (capped) | `make eval-answers-v2 SPLIT=dev MAX_USD=1` |
+| Corpus ingestion check | `make c1-check` |
+| Retrieval evaluation ($0 to cents) | `make eval-retrieval` (`RETR_CONFIG=...`, `SPLIT=...`) |
+| Answer evaluation (capped) | `make eval-answers SPLIT=dev MAX_USD=1` |
 | Gates | `make eval-gate-t0`, `make eval-gate BASE=... CAND=...` |
 | Human review tooling | `make eval-audit-apply`, `make eval-labels` |
 | Regenerate the turn diagram | `make diagrams` |
@@ -678,8 +677,8 @@ scripts/                   quickstart, demo, turn-diagram generator, Postman exp
 |---|---|---|
 | A prompt file | Section 7.2; `backend/app/llm/prompts.py`. A change is a new version (`<id>@<n+1>.md`), selected in code or by a switch. | `make eval-gate` (`docs/evaluation.md` section 1.4) |
 | Model routing or a role | Section 7.1; `backend/app/llm/routing.py` (effort support per model) | `cd backend && uv run pytest tests/unit/llm` |
-| Retrieval config, fusion, scope | Section 5; `backend/config/*.yaml`; `backend/app/retrieval/` | `make eval-retrieval-fast RETR_CONFIG=...`, then `python -m eval.paired` |
-| Extraction, chunking, sentences | Section 4, especially invariant I1; `backend/app/ingestion/extract/`, `chunk*.py` | `make eval-extraction`, `make c1-check`; a chunker change needs a re-ingest |
+| Retrieval config, fusion, scope | Section 5; `backend/config/*.yaml`; `backend/app/retrieval/` | `make eval-retrieval RETR_CONFIG=...`, then `python -m eval.paired` |
+| Extraction, chunking, sentences | Section 4, especially invariant I1; `backend/app/ingestion/extract/`, `chunk*.py` | `make c1-check`; a chunker change needs a re-ingest |
 | The turn graph (a node or an edge) | Section 6; `backend/app/chat/graph.py`, `turn.py`, `nodes/` | `make diagrams`; `backend/tests/unit/docs/test_diagrams.py` fails on a stale diagram |
 | Citations, evidence handles, the ledger | Sections 1 and 8; `backend/app/chat/evidence.py`, `citations.py`, `ledger.py` | `make eval-gate-t0` (citation integrity must stay 1.0) |
 | A reason code or a user-facing message | Section 8; `backend/app/explain/templates.py`; `docs/voice.md` | `backend/tests/unit/explain/` |

@@ -104,4 +104,5 @@ async def test_answers_run_persists(
     assert got == {("p1", m): v for m, v in run.items[0].metrics.items()}
     assert got[("p1", "answer_pass")] == 1.0 and got[("p1", "claim_completeness")] == 1.0
     md = path.read_text()
-    assert "## By stratum (diagnostic)" in md and "| single_span | 1 |" in md and "claim, support and abstention judges" in md
+    assert "## By stratum (diagnostic)" in md and "| single_span | 1 |" in md
+    assert "claim, support and abstention judges" in md

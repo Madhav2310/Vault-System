@@ -37,7 +37,7 @@ import uuid
 from typing import Any
 
 import redis
-from eval.loader import load_dataset_v2
+from eval.loader import load_dataset
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -70,7 +70,7 @@ def make_cold() -> None:
 
 
 def questions() -> list[str]:
-    return sorted({i.question for i in load_dataset_v2().items})
+    return sorted({i.question for i in load_dataset().items})
 
 
 def cached_vector(r: "redis.Redis[bytes]", question: str, model: str, owner: uuid.UUID) -> list[float] | None:
@@ -147,7 +147,7 @@ async def run_leg(leg: str, owner: uuid.UUID, n: int, cold: bool) -> None:
 
 
 async def lexical_equivalence() -> None:
-    texts = sorted({t for i in load_dataset_v2().items for t in (i.question, *i.prior_turns)})
+    texts = sorted({t for i in load_dataset().items for t in (i.question, *i.prior_turns)})
     sm = get_sessionmaker()
     async with sm() as s:
         owners = [
