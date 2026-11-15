@@ -120,7 +120,12 @@ async def test_retry_cap(tmp_path: pathlib.Path, engine: AsyncEngine, owner: uui
         (2, "timeout"),
         (3, "rate_limited"),
     ]
-    assert all(r.status == "error" and r.cost_usd == 0 for r in rows)
+    # error statuses (the provider refused) are free; a timeout may be in progress, so it is estimated
+    assert [(r.status, r.cost_usd > 0) for r in rows] == [
+        ("error", False),
+        ("estimated", True),
+        ("error", False),
+    ]
     assert len(prov.requests) == 3 and len(slp.delays) == 2
     # no retry-after → jittered exponential backoff: base 0.5 s, rng 0.5 → 0.375 s then 0.75 s
     assert slp.delays == [pytest.approx(0.375), pytest.approx(0.75)]
@@ -135,7 +140,7 @@ async def test_role_fallback(tmp_path: pathlib.Path, engine: AsyncEngine, owner:
     rows = await _rows(engine, owner)
     assert [(r.attempt, r.role, r.model, r.status) for r in rows] == [
         (1, "fast", "gpt-6-luna", "error"),
-        (2, "fast", "gpt-6-luna", "error"),
+        (2, "fast", "gpt-6-luna", "estimated"),  # the timeout: may be in progress, so never free
         (3, "fast", "gpt-6-luna", "error"),
         (4, "balanced", "gpt-6.1-terra", "ok"),
     ]
