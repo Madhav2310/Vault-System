@@ -71,6 +71,7 @@ class Settings(BaseSettings):
     llm_max_retries: int = 2  # retries after the first attempt, retryable errors only
     llm_retry_base_s: float = 0.5  # backoff base when no retry-after is given
     llm_retry_max_s: float = 8.0
+    llm_retry_after_max_s: float = 60.0  # a longer retry-after is not slept in process: the call raises
     # Per-model price overrides, USD per MTok, merged over app/llm/pricing.py defaults. JSON, e.g.
     # {"gpt-6.1-terra": {"input": 1, "output": 5, "cache_read": 0.05, "cache_write": 1.25}}
     llm_prices: dict[str, dict[str, float]] = Field(default_factory=dict)

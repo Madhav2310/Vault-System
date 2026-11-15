@@ -668,12 +668,15 @@ class LlmGateway:
     def _retry_delay(
         self, e: ProviderError, attempt: int, budget: Budget | None, retries: int | None = None
     ) -> float | None:
-        """None = do not retry. Honors retry-after (plus jitter); otherwise jittered exponential backoff."""
+        """None = do not retry. Honors retry-after (plus jitter) up to `llm_retry_after_max_s`; otherwise
+        jittered exponential backoff."""
         s = self.settings
         cap_retries = s.llm_max_retries if retries is None else retries
         if not e.retryable or attempt > cap_retries:
             return None
         if e.retry_after is not None:
+            if e.retry_after > s.llm_retry_after_max_s:
+                return None
             delay = e.retry_after + self._rng() * s.llm_retry_base_s
         else:
             cap = min(s.llm_retry_max_s, s.llm_retry_base_s * 2 ** (attempt - 1))

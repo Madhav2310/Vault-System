@@ -72,6 +72,8 @@ The two AMD figures (494 and a 429 maximum) come from different extraction versi
 | Exact top-40 vector query on a 21,000-chunk owner | 8.9 ms, pruned to 1 of 32 hash partitions | `EXPLAIN (ANALYZE)` of the scoped query in `backend/app/retrieval/vector.py` on a seeded owner |
 | Scoped vector search, 1,500 rows | 6.5 ms plan, 23.6 ms end to end | the `EXPLAIN (ANALYZE)` above |
 | Switch point to an approximate index | 100,000 chunks in one scope (a design default, not a measured crossover) | design default; `backend/app/retrieval/vector.py` is exact search only |
+| Exact top-40 vector query, 10,299-chunk owner (78 documents), warm | 19.4 ms execution, 21 ms median over asyncpg, about 34,000 shared buffers (the 3 KB `halfvec` is stored out of line, so every row also reads TOAST); 957 ms on a cold cache | `EXPLAIN (ANALYZE, BUFFERS)` of `vector_statement` on the dev database's largest owner |
+| Lexical leg (`lexical: v2`), same owner, a six-lexeme question | 89 ms median, about 130,000 shared buffers for 3,182 matching chunks (the per-lexeme match count re-reads `tsv_en` for every lexeme) | `EXPLAIN (ANALYZE, BUFFERS)` of `lexical_statement(..., variant="v2")` on the same owner |
 | Exact search latency at 100,000 chunks in one scope | TBD | the `EXPLAIN` above on a seeded 100,000-chunk owner |
 | Reranker, 40 passages, native, 4 threads, batch 8 | p50 260 ms, 354 MB peak | `cd reranker && python bench.py --threads 4 --batch 8 --words 180 --n 40` |
 | Reranker in its container (3 CPUs, 3 threads, 20 passages) | p50 350.8 ms, p95 578 ms, 230 MB | `make up-rerank`, then `python reranker/bench_http.py` |
@@ -89,7 +91,7 @@ Behaviour under load is **not measured**; these are the mechanisms.
 | Sweeper (beat) | Re-dispatches lost dispatches, expired leases and due retries. Eventual recovery, not an outbox. | `backend/app/ingestion/sweeper.py` |
 | Per-owner ingestion cap | Not implemented: a large upload shares the `ingest` queue with everyone (upload requests are rate limited at 30 a minute). | `backend/app/ingestion/jobs.py` has no such limit |
 | Per-user chat limits | One active turn per session (a second gets 409), chat 20 requests a minute, upload 30 a minute, a daily cost quota, then 429 with `Retry-After`. | `backend/app/core/ratelimit.py`, `quota.py` |
-| Query embedding cache | Redis. A failure degrades to lexical-only search. | `backend/app/retrieval/` |
+| Query embedding cache | Redis, keyed by embedding model and normalized query. A Redis failure or stall bypasses the cache (each cache command is cut at 0.25 s); an embedding failure degrades to lexical-only search. | `backend/app/retrieval/query_embed.py` |
 | Document embedding cache | By content hash and model. A re-upload pays nothing for unchanged chunks. | `backend/app/ingestion/embed_index.py` |
 | Paid ingestion LLM outputs | Cached by content hash, prompt version and model. | `llm_cache` table |
 | Answers | Never cached. | |
@@ -98,7 +100,7 @@ Idempotency, in short: every boundary tolerates a second delivery. Uploads dedup
 
 Failure handling: Redis down means uploads return 503 and the limiter fails open; Postgres down means 503; a missing reranker means fusion order with `degraded=no_rerank`; embeddings down means ingestion retries and queries go lexical-only; a turn that dies is finished as `failed` by the reaper.
 
-**How this handles thousands of documents.** Search is exact and scoped to the owner's hash partition, which gives perfect recall and a few milliseconds at tens of thousands of chunks. Ingestion is bound by CPU-heavy extraction, so it scales by adding `worker-ingest` processes; `worker-ai` is I/O-bound and scales with provider rate limits. A document is searchable once `index` commits, before its brief, so a large batch of uploads becomes usable progressively. There is no per-owner cap on concurrently processing versions, so one very large upload can delay others.
+**How this handles thousands of documents.** Search is exact and scoped to the owner's hash partition, which gives perfect recall; its cost grows linearly with the chunks in scope, and at about 10,000 chunks the lexical leg (about 90 ms) dominates the vector leg (about 20 ms) (section 2.3). Ingestion is bound by CPU-heavy extraction, so it scales by adding `worker-ingest` processes; `worker-ai` is I/O-bound and scales with provider rate limits. A document is searchable once `index` commits, before its brief, so a large batch of uploads becomes usable progressively. There is no per-owner cap on concurrently processing versions, so one very large upload can delay others.
 
 ---
 
@@ -135,7 +137,7 @@ The daily quota (`USER_DAILY_USD`, default $1.00; admins unlimited) sums `llm_ca
 A deployment sketch for roughly 1,000 daily users and 100 concurrent turns. It is not built and not load tested.
 
 - **Postgres**: managed, with point-in-time recovery and a read replica for the metrics API. Start at about 8 vCPU and 32 GB (a guess).
-- **Connections**: PgBouncer in transaction mode with the asyncpg prepared-statement cache disabled. A `pgbouncer` compose profile exists and is unused in dev.
+- **Connections**: PgBouncer in transaction mode. The asyncpg statement cache can stay on: the pinned PgBouncer (1.26) tracks protocol-level prepared statements in transaction mode. A `pgbouncer` compose profile exists and is unused in dev.
 - **Files**: an S3-compatible object store instead of the local `blobs` volume. Blobs are already addressed by sha256 behind `backend/app/storage/base.py`.
 - **Workers**: more `worker-ingest` processes for extraction. Dedicated reranker hosts if the reranker is enabled.
 - **Vector search**: switch an owner's partition to an HNSW index with iterative scan once a scope passes about 100,000 chunks. Designed, not built.

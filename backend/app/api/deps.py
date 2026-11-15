@@ -36,17 +36,15 @@ def get_store() -> ObjectStore:
 
 @lru_cache(maxsize=1)
 def _turn_deps() -> "TurnDeps":
-    import redis.asyncio as aioredis
-
     from app.chat.turn import TurnDeps
     from app.llm.gateway import get_gateway
-    from app.retrieval.query_embed import QueryEmbedder
+    from app.retrieval.query_embed import QueryEmbedder, cache_client
     from app.retrieval.rerank import RerankClient
     from app.retrieval.retrieve import Retriever
 
     s = get_settings()
     gw = get_gateway()
-    rds = aioredis.from_url(s.redis_url)
+    rds = cache_client(s.redis_url)
     return TurnDeps(
         get_sessionmaker(), gw, Retriever(QueryEmbedder(gw, rds), RerankClient.from_settings(s), rds)
     )

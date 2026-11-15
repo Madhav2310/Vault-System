@@ -241,6 +241,19 @@ async def test_budget_charged_once_and_deadline_stops_retry(tmp_path: pathlib.Pa
     assert len(prov2.requests) == 1
 
 
+async def test_long_retry_after_without_deadline_is_not_slept_in_process(tmp_path: pathlib.Path) -> None:
+    """Without a turn deadline (ingestion), a retry-after above `llm_retry_after_max_s` raises instead of
+    parking the worker slot for that long; the job layer retries later. Shorter ones are still honoured."""
+    gw, prov, _, slp = make_gateway(tmp_path, [fake.rate_limited(3600)])
+    with pytest.raises(errors.RateLimitedError):
+        await gw.embed(purpose="embed_chunks", lane="background", texts=["a"], owner_id=OWNER)
+    assert slp.delays == [] and len(prov.embed_calls) == 1
+
+    gw2, _, _, slp2 = make_gateway(tmp_path, [fake.rate_limited(5.0)])
+    await gw2.embed(purpose="embed_chunks", lane="background", texts=["a"], owner_id=OWNER)
+    assert slp2.delays == [5.25]  # retry-after plus jitter (rng 0.5 x base 0.5)
+
+
 async def test_embed(tmp_path: pathlib.Path) -> None:
     gw, prov, led, _ = make_gateway(tmp_path, [fake.rate_limited(0.0)])
     r = await gw.embed(purpose="embed_chunks", lane="background", texts=["a b", "c"], owner_id=OWNER)

@@ -25,8 +25,16 @@ from app.llm.gateway import LlmGateway
 DEGRADED_LEXICAL_ONLY = "lexical_only"
 CACHE_TTL_SECONDS = 7 * 24 * 3600
 DEFAULT_KEY_PREFIX = "qembed:v1:"
+CACHE_REDIS_TIMEOUT_S = 0.25  # a stalled Redis costs each cache command this, not redis-py's 5 s default
 
 _log = logging.getLogger(__name__)
+
+
+def cache_client(redis_url: str) -> aioredis.Redis:
+    """The client of the query-embedding and retrieval caches: short timeouts, because a miss is cheap."""
+    return aioredis.from_url(
+        redis_url, socket_connect_timeout=CACHE_REDIS_TIMEOUT_S, socket_timeout=CACHE_REDIS_TIMEOUT_S
+    )
 
 
 @dataclass(frozen=True)
