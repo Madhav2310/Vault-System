@@ -17,10 +17,12 @@ from typing import Any
 
 import pytest
 import yaml
-from eval.brief_eval import corpus_chunks
 
 from app.chat.evidence import EvidenceChunk
 from app.core.settings import get_settings
+from app.ingestion.chunk import chunk_document
+from app.ingestion.extract.pdf import PdfExtractor
+from app.ingestion.extract.text import TextExtractor
 from app.insights.summaries import (
     WORD_LIMIT,
     ChunkRef,
@@ -39,6 +41,43 @@ pytestmark = pytest.mark.live
 ROOT = pathlib.Path(__file__).resolve().parents[4]
 DOC = "cuad_consulting"
 CAP = Decimal("0.10")
+
+
+def _source_roots() -> list[pathlib.Path]:
+    roots = [ROOT]
+    parts = ROOT.parts
+    if ".claude" in parts:  # worktree: .../<repo>/.claude/worktrees/<name>
+        roots.append(pathlib.Path(*parts[: parts.index(".claude")]))
+    return roots
+
+
+def _chunks(key: str) -> list[EvidenceChunk]:
+    """The document's chunks as ingestion stores them (production extractor and chunker)."""
+    meta = yaml.safe_load((ROOT / "eval/datasets/vault_eval_v1/documents.yaml").read_text())["documents"][key]
+    rel = meta["file"]
+    path = next((r / rel for r in _source_roots() if (r / rel).is_file()), None)
+    if path is None:
+        pytest.fail(f"{rel} not found under {_source_roots()}; run `make eval-fetch`")
+    if path.suffix.lower() == ".pdf":
+        extracted = PdfExtractor().extract(str(path))
+    else:
+        extracted = TextExtractor(markdown=path.suffix.lower() == ".md").extract(str(path))
+    title = meta.get("title", key)
+    vid = uuid.uuid4()
+    return [
+        EvidenceChunk(
+            uuid.uuid4(),
+            vid,
+            title,
+            1,
+            d.page_start,
+            d.page_end,
+            tuple(d.section_path),
+            d.original_text,
+            tuple(d.sentences),
+        )
+        for d in chunk_document(extracted, title)
+    ]
 
 
 def _gateway(ledger: MemoryLedger) -> LlmGateway:
@@ -71,11 +110,7 @@ async def _summary(gw: LlmGateway, chunks: list[EvidenceChunk], **params: Any) -
 
 
 async def test_length_control() -> None:
-    meta = yaml.safe_load((ROOT / "eval/datasets/vault_eval_v1/documents.yaml").read_text())["documents"][DOC]
-    try:
-        chunks = corpus_chunks(DOC, meta)
-    except FileNotFoundError as e:
-        pytest.fail(str(e))
+    chunks = _chunks(DOC)
     ledger = MemoryLedger()
     gw = _gateway(ledger)
     samples: dict[str, Any] = {}
