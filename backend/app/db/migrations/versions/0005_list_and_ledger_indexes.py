@@ -20,17 +20,34 @@ branch_labels: Sequence[str] | None = None
 depends_on: Sequence[str] | None = None
 
 
+# CONCURRENTLY: building an index on a large `llm_calls` or `chat_messages` must not block the ledger and
+# message writes of live turns. It cannot run inside a transaction, hence the autocommit block; IF NOT EXISTS
+# makes a rerun after an interrupted build safe (Postgres then leaves an INVALID index: drop it and rerun).
+
+
 def upgrade() -> None:
-    op.execute("DROP INDEX IF EXISTS ix_chat_sessions_owner")
-    op.execute(
-        "CREATE INDEX ix_chat_sessions_owner_created ON chat_sessions (owner_id, created_at DESC, id DESC)"
-    )
-    op.execute("CREATE INDEX ix_chat_messages_owner_created ON chat_messages (owner_id, created_at)")
-    op.execute("CREATE INDEX ix_llm_calls_job ON llm_calls (job_id) WHERE job_id IS NOT NULL")
+    with op.get_context().autocommit_block():
+        op.execute(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_chat_sessions_owner_created "
+            "ON chat_sessions (owner_id, created_at DESC, id DESC)"
+        )
+        op.execute("DROP INDEX CONCURRENTLY IF EXISTS ix_chat_sessions_owner")
+        op.execute(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_chat_messages_owner_created "
+            "ON chat_messages (owner_id, created_at)"
+        )
+        op.execute(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_llm_calls_job "
+            "ON llm_calls (job_id) WHERE job_id IS NOT NULL"
+        )
 
 
 def downgrade() -> None:
-    op.execute("DROP INDEX IF EXISTS ix_llm_calls_job")
-    op.execute("DROP INDEX IF EXISTS ix_chat_messages_owner_created")
-    op.execute("DROP INDEX IF EXISTS ix_chat_sessions_owner_created")
-    op.execute("CREATE INDEX ix_chat_sessions_owner ON chat_sessions (owner_id, updated_at)")
+    with op.get_context().autocommit_block():
+        op.execute(
+            "CREATE INDEX CONCURRENTLY IF NOT EXISTS ix_chat_sessions_owner "
+            "ON chat_sessions (owner_id, updated_at)"
+        )
+        op.execute("DROP INDEX CONCURRENTLY IF EXISTS ix_llm_calls_job")
+        op.execute("DROP INDEX CONCURRENTLY IF EXISTS ix_chat_messages_owner_created")
+        op.execute("DROP INDEX CONCURRENTLY IF EXISTS ix_chat_sessions_owner_created")
