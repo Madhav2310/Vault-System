@@ -25,7 +25,7 @@ Docker runs a Linux VM that keeps its memory. Keep it small, and off when nothin
 
 Every service has `mem_limit` and `cpus` in `docker-compose.yml`: api 1.5 CPU and 768 MB, worker-ingest 2 CPU, worker-ai 1.5, postgres 2 (with `fsync=off`, for dev and test only), redis 0.5 (no persistence, because its state is rebuildable), reranker 3, otel-lgtm 1, beat 0.25.
 
-Working rules: Docker stays off unless a task needs it; run one heavy command at a time; check `uptime` first and wait if the load average is above about 8; use targeted tests (`pytest path::test`) while developing and the full gates once per change set; stop optional containers when idle (`docker compose stop otel-lgtm reranker`; retrieval keeps fusion order without the reranker).
+Working rules: Docker stays off unless a task needs it; run one heavy command at a time; check `uptime` first and wait if the load average is above about 8; use targeted tests (`pytest path::test`) while developing and the full gates once per change set; stop optional containers when idle (`docker compose stop otel-lgtm reranker`; the default retrieval reranks with an LLM call and does not use the reranker container, which only `retrieval@2-rerank` needs).
 
 **Fresh-clone check.** `scripts/fresh_clone_check.sh [--no-stack|--stack] [PATH_OR_URL]` clones the repository (committed files only) into a temp dir and runs the reviewer path there: prerequisites (git, make, uv; with `--stack` also Docker and curl), `.env` from `.env.example`, `make ci`. It prints a pass/fail table and exits non-zero on any failure. `--no-stack` is the default and needs no Docker. `--stack` also runs `make up`, waits for `/readyz`, runs `scripts/demo_core.sh` and runs `make down`; stop your own stack first (shared ports), and export `OPENAI_API_KEY` for the smoke step (it is written to the clone's `.env`, never printed; without it the step is reported as SKIP). The frontend checks inside `make ci` are skipped in a clone, because the frontend dependencies are not installed there.
 
@@ -121,7 +121,7 @@ Chat cost is per question, not per document.
 
 | Item | Value | Source |
 |---|---:|---|
-| Answer per turn (analyze plus answer) | $0.0056 on the legacy smoke set; $0.0057 on the golden-set train run | `make eval-smoke`; `make eval-answers-v2 SPLIT=train MAX_USD=3` |
+| Answer per turn (the turn's `rag_runs.cost_usd`) | $0.007 on the sealed test run and on the final train and dev runs of the golden set | `make eval-answers-v2 SPLIT=test MAX_USD=4`; `make eval-answers-v2 SPLIT=train MAX_USD=3` |
 | Smoke evaluation, 21 items | about $0.10 | `make eval-smoke` |
 | Full legacy retrieval evaluation, 122 items | about $0.70 | `make eval-retrieval` |
 | Planning estimate at 1,000 daily users (133 turns a minute at peak) | about $165 a day at $0.011 a turn; an estimate, not a measurement | arithmetic: 1,000 users x turns per day x cost per turn |
@@ -142,7 +142,7 @@ A deployment sketch for roughly 1,000 daily users and 100 concurrent turns. It i
 - **Recovery**: a transactional outbox instead of sweeper-based recovery.
 - **Telemetry**: tail sampling in the collector, and a managed or self-hosted Grafana stack in place of `otel-lgtm`.
 - **Growth**: about 4.5 million new chunks a month at 1,000 daily users, which is why a single global index was rejected.
-- **First bottlenecks** (estimates): reranker CPU or the database pool; then provider latency variance, which is why time to first token has its own budget.
+- **First bottlenecks** (estimates): the database pool, or reranker CPU when the cross-encoder is used; then provider latency variance (the default reranker is one more model call per turn), which is why time to first token has its own budget.
 
 ---
 

@@ -3,7 +3,7 @@
 Upload documents, get cited summaries, chat across them; every claim cites a stored sentence. Docs: `README.md` (run it), `ARCHITECTURE.md` (design and rationale; its last table says what to read before changing each area), `docs/evaluation.md` (measurement and runbook), `docs/operations.md` (environment, scale, cost), `docs/voice.md` (tone), `AI_USAGE.md`. The assignment is `docs/spec/case-study.pdf`.
 
 ## Stack
-Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector (halfvec, `chunks` hash-partitioned by owner), Celery + Redis, pdfplumber / python-docx, OpenAI SDK (Responses API for generation, analysis, extraction, judging; embeddings; an Anthropic adapter is dormant), a reranker service (fastembed cross-encoder), OpenTelemetry + grafana/otel-lgtm, React 18 + Vite UI, pytest, ruff, mypy, Playwright. docker-compose runs everything. Use only uv-managed Python 3.12 environments.
+Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector (halfvec, `chunks` hash-partitioned by owner), Celery + Redis, pdfplumber / python-docx, OpenAI SDK (Responses API for generation, analysis, extraction, judging; embeddings; an Anthropic adapter is dormant), an LLM listwise reranker (default) and an optional cross-encoder reranker service (fastembed), OpenTelemetry + grafana/otel-lgtm, React 18 + Vite UI, pytest, ruff, mypy, Playwright. docker-compose runs everything. Use only uv-managed Python 3.12 environments.
 
 ## Layout
 `backend/app/{api,core,db,documents,storage,ingestion,retrieval,chat,insights,feedback,llm,explain,metrics,observability,worker}` · `backend/prompts/<id>@<version>.md` · `backend/config/` (retrieval and abstention YAML) · `backend/tests/{unit,integration,e2e,live}` · `frontend/` · `reranker/` · `eval/` (datasets, graders, judges, baselines) · `ops/otel/` · `scripts/` · `docs/`
@@ -42,5 +42,5 @@ Roles to defaults (no date suffixes; change via `MODEL_*` settings): `fast` = `g
 ## Machine hygiene
 - One eval- or ingestion-heavy command at a time; no loops of full evaluations. Prefer replay (`eval.replay`), retrieval-only (`make eval-retrieval-fast`) and the train or smoke split.
 - Run the full gates (`make ci`, `make test`) once per change set, not per edit.
-- Containers have CPU and memory caps in `docker-compose.yml`; Postgres runs with fsync off (dev and test only). Stop `otel-lgtm` and `reranker` when idle (`docker compose stop otel-lgtm reranker`); retrieval degrades to fusion order without the reranker.
+- Containers have CPU and memory caps in `docker-compose.yml`; Postgres runs with fsync off (dev and test only). Stop `otel-lgtm` and `reranker` when idle (`docker compose stop otel-lgtm reranker`); the default `retrieval@5` reranks with an LLM call and does not need the container, and `retrieval@2-rerank` degrades to fusion order without it.
 - Check `uptime` before heavy work and wait if the load average is above about 8.

@@ -1,8 +1,12 @@
 # vault_eval_v2
 
-Gold set v2: about 300 items, atomic claims. `golden.yaml` has a top-level `items:` list; load it with
-`eval.loader.load_dataset_v2()` (schema: `eval.schema.GoldItemV2`). v1 (`../vault_eval_v1`) stays loadable with
-`eval.loader.load_dataset()` for old reports.
+Gold set v2: 311 live items, atomic claims. The items live in `parts/*.yaml` and `authored/*.yaml` (and an optional
+`golden.yaml`), each with a top-level `items:` list; load them with `eval.loader.load_dataset_v2()` (schema:
+`eval.schema.GoldItemV2`). v1 (`../vault_eval_v1`) stays loadable with `eval.loader.load_dataset()` for old reports.
+
+Gold status: train (118 live items) is `verified` after an independent model audit and a person's decisions; dev
+(59) has 7 `verified` items from the owner review of disputed items and 52 `draft`; test (134) is all `draft`,
+never reviewed. The decisions are recorded in `audit_queue.yaml` (the owner review is `review_2026_11_14`).
 
 ## Item fields (unknown keys are rejected)
 
