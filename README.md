@@ -19,7 +19,7 @@ Every claim in an answer points to the exact sentence it came from. That sentenc
 </tr>
 </table>
 
-The screenshots are captured by `frontend/e2e/screenshots.spec.ts` against a scripted fake model, so the answers are fixtures. Run the stack with a key to see real ones.
+The screenshots are captured by `frontend/e2e/screenshots.spec.ts` against a mocked API, so the answers are fixtures. Run the stack with a key to see real ones.
 
 ## Quickstart
 
@@ -268,5 +268,4 @@ Live and evaluation commands always run on samples with a spend cap, never on th
 | [`docs/operations.md`](docs/operations.md) | Dev environment, fresh-clone check, scale and cost, observability |
 | [`docs/demo.md`](docs/demo.md) | The 3 to 4 minute demo script: what to click and say |
 | [`docs/voice.md`](docs/voice.md) | How Vault talks |
-| [`docs/README.md`](docs/README.md) | Index of the documentation tree |
 | [`CLAUDE.md`](CLAUDE.md) | Rules and conventions for contributors and coding agents |

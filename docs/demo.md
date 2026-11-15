@@ -24,7 +24,7 @@ To record the walk-through automatically instead of by hand, run `make demo-reco
 | 2:45 | Ask `What is the CEO's favourite colour?` | "When the documents do not contain the answer, Vault says so and offers a next step. It does not guess." |
 | 3:05 | Click "Why this answer?" on an earlier answer. | "The explanation is built from reason codes and templates, never by asking the model to explain itself." |
 | 3:20 | Open Metrics in the top bar, then in a terminal run `curl -fsS -H "Authorization: Bearer $KEY" http://localhost:8100/v1/metrics/documents` (and `/v1/metrics/chat`). | "Document counts, processing times, chat latency, time to first token, cost per turn and feedback, from the API the page reads." |
-| 3:40 | Show the evaluation report: open `docs/evaluation.md` at the current results table, or the kept report `eval/baselines/v2_train/01a1d89d-acd4-7586-b22e-f5c770961fea.md`. | "Quality is measured on a golden set with its own report. Every number names the command that regenerates it, and the doc lists what is not met." |
+| 3:40 | Open `docs/evaluation.md` at the results table. | "Quality is measured on a golden set with its own report. Every number names the command that regenerates it, and the doc lists what is not met." |
 | 3:55 | Close on the README feature table. | "One command runs everything. The README maps every requirement in the case study to where it lives and whether it is built." |
 
 ## If something goes wrong on camera

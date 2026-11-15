@@ -23,15 +23,11 @@ How Vault talks. It reads like a calm, kind colleague who has read your document
 
 **Partial**
 - Avoid: "The documents provided do not state an answer to: renewal terms."
-- Prefer: "I did not find anything about renewal terms in these documents. Try a document that covers it."
+- Prefer: "That is what your documents back up. I could not find the rest, so please check the document itself or name the section you have in mind."
 
 **Not found**
 - Avoid: "I could not find anything in your 2 documents that answers this."
 - Prefer: "I could not find this in your 2 documents. Try asking in different words, or name the document you have in mind."
-
-**Ambiguous**
-- Avoid: "The question was too ambiguous to answer, so you were asked to clarify."
-- Prefer: "The question could be read more than one way, so you were asked to clarify."
 
 **Conflict**
 - Avoid: "The sources disagree on a point, so both sides are shown with their citations."
