@@ -17,7 +17,7 @@ class TurnLimits:
 ROUTE_LIMITS: dict[str, TurnLimits] = {
     "qa": TurnLimits(4, 30.0, 6000),
     "compare": TurnLimits(4, 45.0, 10000),
-    "summarize": TurnLimits(2, 60.0, 0),
+    "summarize": TurnLimits(3, 60.0, 0),  # analyze, generate and the support check
     "meta": TurnLimits(1, 10.0, 0),
     "chitchat": TurnLimits(1, 10.0, 0),
 }
