@@ -9,7 +9,7 @@
 # Fake mode (no spend): start the UI-test stack, then point the script at it. The fake model only answers
 # the questions in backend/tests/fixtures/ui_script.yaml, so the meta step is skipped:
 #   export COMPOSE_PROJECT_NAME=vault-uitest COMPOSE_FILE=docker-compose.yml:docker-compose.ui-test.yml \
-#          API_PORT=8190 POSTGRES_PORT=5542 REDIS_PORT=6489 RERANKER_PORT=8280
+#          API_PORT=8190 POSTGRES_PORT=5542 REDIS_PORT=6489
 #   make up && LLM_PROVIDER=fake scripts/demo.sh
 #
 # Env: API_BASE_URL (default http://localhost:$API_PORT, 8100), DEMO_API_KEY (skip user creation; no Docker
@@ -166,14 +166,14 @@ curl -fsS "${AUTH[@]}" "$API/v1/runs/$LOOKUP_RUN" \
 
 step "upload a new version of the first document and show the stale marker"
 FIRST_FILE="${DOCS%% *}"
-V2="$TMP/v2/$(basename "$FIRST_FILE")"
-mkdir -p "$TMP/v2"
+NEW_VERSION="$TMP/new/$(basename "$FIRST_FILE")"
+mkdir -p "$TMP/new"
 {
   cat "$FIRST_FILE"
   printf '\nAmendment: either party may now terminate on 60 days written notice.\n'
-} >"$V2"
-UP2=$(curl -fsS "${AUTH[@]}" -F "file=@$V2" "$API/v1/documents/$FIRST_DID/versions")
-echo "  v2: $(echo "$UP2" | jq -c '{document_id, version_id, status, deduplicated}')"
+} >"$NEW_VERSION"
+UP2=$(curl -fsS "${AUTH[@]}" -F "file=@$NEW_VERSION" "$API/v1/documents/$FIRST_DID/versions")
+echo "  version 2: $(echo "$UP2" | jq -c '{document_id, version_id, status, deduplicated}')"
 for i in $(seq 1 60); do
   V=$(curl -fsS "${AUTH[@]}" "$API/v1/documents/$FIRST_DID" | jq -c '.versions[0] | {version_no, status}')
   echo "  t=$((i * 2))s newest version: $V"

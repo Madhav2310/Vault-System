@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Core demo (C3 exit check): upload two documents -> ready -> streamed cited answer (events printed) -> compare
+# Core demo smoke: upload two documents -> ready -> streamed cited answer (events printed) -> compare
 # question -> run explanation -> history -> metrics, against the running stack (`make up`). Uses a fresh
 # throwaway user (key printed only to this script's memory) and the authored sample documents. Two asks cost
 # about $0.03 of OpenAI usage. Exits non-zero on the first failed step.

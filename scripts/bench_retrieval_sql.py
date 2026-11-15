@@ -1,6 +1,6 @@
 """Time the exact vector and lexical retrieval statements against the dev database, at $0.
 
-Queries are the vault_eval_v2 questions (text only); query vectors are their cached embeddings in Redis (a
+Queries are the evaluation questions (text only); query vectors are their cached embeddings in Redis (a
 question without a cached vector is skipped, nothing is embedded). Each statement is the one the retriever
 runs (`vector_statement`, `lexical_statement`) over the owner's whole live scope.
 
@@ -12,10 +12,11 @@ Run: cd backend && uv run --frozen env PYTHONPATH=.. python ../scripts/bench_ret
   --cold                 restart the postgres container and drop the Docker VM page cache once (a privileged
                          container writes /proc/sys/vm/drop_caches), then time the first query of each leg
                          once; give the legs owners in different partitions so one leg cannot warm the other
-  --lexical-equivalence  instead of timing: for every v2 question and prior turn and every owner with live
-                         chunks, the lexical statement with the former per-lexeme `matched` subquery and the
-                         current one return the same (chunk_id, score, id_match) list (all matches, no k cut),
-                         and both counts agree on every row that matches the OR query; exits 1 on a difference
+  --lexical-equivalence  instead of timing: for every evaluation question and prior turn and every owner
+                         with live chunks, the lexical statement with the former per-lexeme `matched`
+                         subquery and the current one return the same (chunk_id, score, id_match) list (all
+                         matches, no k cut), and both counts agree on every row that matches the OR query;
+                         exits 1 on a difference
 
 Warm: one unrecorded pass, then EXPLAIN (ANALYZE, BUFFERS) per query, then the plain statement timed in the
 client. Printed: median and p95 execution ms, median shared buffers (hit + read), client median ms.
@@ -43,7 +44,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.settings import get_settings
 from app.db.session import get_engine, get_sessionmaker
 from app.retrieval.lexical import MATCHED_LEXEMES, lexical_statement
-from app.retrieval.query_embed import normalize_query
+from app.retrieval.query_embed import DEFAULT_KEY_PREFIX, cache_key, normalize_query
 from app.retrieval.scope import compute_scope
 from app.retrieval.vector import vector_statement
 
@@ -73,15 +74,9 @@ def questions() -> list[str]:
 
 
 def cached_vector(r: "redis.Redis[bytes]", question: str, model: str, owner: uuid.UUID) -> list[float] | None:
-    norm = normalize_query(question)
-    keys = [
-        "qembed:v2:" + hashlib.sha256(f"{owner}\x00{model}\x00{norm}".encode()).hexdigest(),
-        "qembed:v1:" + hashlib.sha256(f"{model}\x00{norm}".encode()).hexdigest(),
-    ]
-    for key in keys:
-        blob = r.get(key)
-        if isinstance(blob, bytes) and len(blob) == 2 * 1536:
-            return list(struct.unpack(f"<{len(blob) // 2}e", blob))
+    blob = r.get(cache_key(DEFAULT_KEY_PREFIX, normalize_query(question), model, owner))
+    if isinstance(blob, bytes) and len(blob) == 2 * 1536:
+        return list(struct.unpack(f"<{len(blob) // 2}e", blob))
     return None
 
 
