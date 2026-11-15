@@ -129,7 +129,7 @@ Chat cost is per question, not per document.
 | Full legacy retrieval evaluation, 122 items | about $0.70 | `make eval-retrieval` |
 | Planning estimate at 1,000 daily users (133 turns a minute at peak) | about $165 a day at $0.011 a turn; an estimate, not a measurement | arithmetic: 1,000 users x turns per day x cost per turn |
 
-The daily quota (`USER_DAILY_USD`, default $1.00; admins unlimited) sums `llm_calls.cost_usd` since UTC midnight. That includes the estimated cost of aborted attempts (`status='estimated'`: cancelled by a deadline or a closed stream, or failed after output began), priced as the estimated input plus the output streamed so far, because the provider may bill it and OpenAI's documentation does not say it does not. Ingestion is never blocked by it; the brief stage defers instead. The demo run is capped by `DEMO_MAX_USD` and prints its spend from the ledger.
+The daily quota (`USER_DAILY_USD`, default $1.00; admins unlimited) sums `llm_calls.cost_usd` since UTC midnight. That includes the estimated cost of aborted attempts (`status='estimated'`: cancelled by a deadline or a closed stream, timed out, or failed after output began), priced as the estimated input plus the output streamed so far, because the provider may bill it and OpenAI's documentation does not say it does not. Ingestion is never blocked by it; the brief stage defers instead. The demo run is capped by `DEMO_MAX_USD` and prints its spend from the ledger.
 
 ---
 

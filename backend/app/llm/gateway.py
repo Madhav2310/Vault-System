@@ -446,13 +446,13 @@ class LlmGateway:
                 if final is None:
                     raise ProviderConnectionError("stream ended without a final event")
             except ProviderError as e:
-                if ttft is None:  # an error status (or our first-token cut) before any output: $0
+                if ttft is None and not isinstance(e, ProviderTimeoutError):  # refused before output: $0
                     ids.append(
                         await self._record(
                             meta, attempt, Usage(), Decimal(0), _ms(t0), ttft, e.error_type, None
                         )
                     )
-                else:  # output was being generated: billed, but the provider's usage never arrived
+                else:  # output was being generated, or a timeout (the request may be in progress)
                     ids.append(
                         await self._record_estimate(meta, attempt, streamed, _ms(t0), ttft, e.error_type)
                     )
@@ -746,11 +746,16 @@ class LlmGateway:
                     try:
                         r = await op()
                     except ProviderError as e:
-                        acct.ids.append(
-                            await self._record(
-                                meta, attempt, Usage(), Decimal(0), _ms(t0), None, e.error_type, None
+                        if isinstance(e, ProviderTimeoutError):  # sent, maybe in progress: never free
+                            acct.ids.append(
+                                await self._record_estimate(meta, attempt, (), _ms(t0), None, e.error_type)
                             )
-                        )
+                        else:  # an error status: the provider refused the request
+                            acct.ids.append(
+                                await self._record(
+                                    meta, attempt, Usage(), Decimal(0), _ms(t0), None, e.error_type, None
+                                )
+                            )
                         self._on_failure(e, span)
                         delay = self._retry_delay(e, attempt, budget, retries)
                         if delay is None:

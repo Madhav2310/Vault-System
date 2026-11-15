@@ -1,5 +1,6 @@
 """ASGI entry point."""
 
+import asyncio
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -12,11 +13,13 @@ from app.api import chat, chunks, documents, feedback, health, metrics, runs, se
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.api.openapi import install_openapi
-from app.core.logging import configure_logging
+from app.core.logging import configure_logging, get_logger
 from app.core.ratelimit import RateLimitHeadersMiddleware, enforce_rate_limit
 from app.core.settings import get_settings
 from app.llm.routing import ModelRouter
 from app.observability.otel import instrument_fastapi, setup_telemetry
+
+_log = get_logger("vault.main")
 
 _UI_CANDIDATES = (
     Path(__file__).resolve().parents[1] / "ui_dist",  # the api image (node build stage)
@@ -54,6 +57,18 @@ def _mount_ui(app: FastAPI, dist: Path | None) -> None:
         return FileResponse(index, headers=_UI_HEADERS)
 
 
+async def _warm_tokenizer() -> None:
+    """Build the tiktoken encoder off the event loop at startup: the gateway counts the streamed tokens of an
+    aborted attempt with it, and building it lazily there is CPU-bound work on the loop. Never blocks
+    startup."""
+    from app.ingestion.chunk import count_tokens
+
+    try:
+        await asyncio.to_thread(count_tokens, "warm")
+    except Exception as e:  # a missing encoder file only costs the first aborted attempt the build
+        _log.warning("tokenizer_warmup_failed", error_type=type(e).__name__)
+
+
 def create_app(*, telemetry: bool = False, ui_dist: Path | None = None) -> FastAPI:
     """`telemetry=True` (the served app only) installs OTel on startup; tests build apps without it.
     `ui_dist` overrides where the built UI is looked up (tests)."""
@@ -66,6 +81,7 @@ def create_app(*, telemetry: bool = False, ui_dist: Path | None = None) -> FastA
         if telemetry:
             provider = setup_telemetry(settings, settings.otel_service_name)
             instrument_fastapi(app, tracer_provider=provider)
+        await _warm_tokenizer()
         yield
 
     app = FastAPI(title="Vault", version=__version__, lifespan=lifespan)

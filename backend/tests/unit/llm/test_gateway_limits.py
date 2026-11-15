@@ -308,3 +308,29 @@ async def test_a_call_cancelled_while_queued_records_nothing(tmp_path: pathlib.P
     assert len(prov.requests) == 1
     assert isinstance(led, MemoryLedger) and [r.status for r in led.records] == ["ok"]
     assert lim.in_flight("interactive") == 0
+
+
+async def test_a_timeout_is_estimated_like_a_cancellation(tmp_path: pathlib.Path) -> None:
+    """A timeout means the request reached the provider and may be in progress: it is recorded at the input
+    estimate (as a cancellation is), never as free. An error status (a refusal to start) stays at $0."""
+    gw, prov, led, _ = make_gateway(tmp_path, [fake.timeout()] * 6)
+    with pytest.raises(errors.ProviderTimeoutError):
+        await _call(gw, inputs=BIG)
+    assert isinstance(led, MemoryLedger)
+    assert led.records and len(led.records) == len(prov.requests)  # one row per attempt (retries, fallback)
+    for row, req in zip(led.records, prov.requests, strict=True):
+        expected = Usage(input_tokens=_est_input(req))
+        assert (row.status, row.error_type, row.usage) == ("estimated", "timeout", expected)
+        assert row.cost_usd > 0
+
+
+async def test_a_stream_timeout_before_the_first_token_is_estimated(tmp_path: pathlib.Path) -> None:
+    gw, prov, led, _ = make_gateway(tmp_path, [fake.timeout()] * 6)
+    with pytest.raises(errors.ProviderTimeoutError):
+        async for _ in _stream(gw, inputs=BIG):
+            pass
+    assert isinstance(led, MemoryLedger)
+    assert led.records and len(led.records) == len(prov.requests)
+    for row, req in zip(led.records, prov.requests, strict=True):
+        assert (row.status, row.error_type, row.ttft_ms) == ("estimated", "timeout", None)
+        assert row.usage == Usage(input_tokens=_est_input(req)) and row.cost_usd > 0
