@@ -112,7 +112,7 @@ class Settings(BaseSettings):
     chat_speculative_retrieval: bool = True  # retrieve on the raw question while `analyze` runs
 
     # --- telemetry ---
-    otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
+    otel_exporter_otlp_endpoint: str = ""  # empty: no exporter (`make up-full` sets it)
     otel_service_name: str = "vault-api"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
 

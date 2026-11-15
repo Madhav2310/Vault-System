@@ -30,7 +30,7 @@ up-test:  ## Postgres and Redis only (integration tests need nothing else)
 	$(COMPOSE) up -d postgres redis
 	scripts/wait_healthy.sh 120 postgres redis
 up-full:  ## default stack plus observability (heavy)
-	GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) --profile full up -d --build
+	OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-lgtm:4317 GIT_SHA=$$(git rev-parse --short HEAD) $(COMPOSE) --profile full up -d --build
 	COMPOSE_PROFILES=full scripts/wait_healthy.sh 240
 down:  ## stop every service of every profile
 	$(COMPOSE) --profile '*' down

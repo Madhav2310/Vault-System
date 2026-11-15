@@ -3,9 +3,9 @@
 How AI tools were used to design and build this project, including where they were wrong and how that was caught.
 
 ## Tools used
-- **Claude Code (Claude Opus 5.5)**: research, design, planning, implementation, tests, eval-set construction.
-- **ChatGPT**: independent critique of the design. Its review was reconciled into design v2 (decision log D1–D25 in `docs/design.md`).
-- **Claude / OpenAI / DeepSeek APIs**: product runtime (answers, analysis, embeddings) and cross-family eval judges.
+- **Claude Code (Claude Opus 5.5 and Sonnet 5.5)**: research, design, implementation, tests, evaluation-set construction, and the cleanup and audit passes.
+- **ChatGPT and DeepSeek**: independent reviewers. Their critiques of the plan and of each experiment's results were pasted in and reconciled by the author before anything changed; neither touched the code.
+- **OpenAI API (Responses API and embeddings)**: the product's runtime and the evaluation judges. Judges and generator share a vendor, so judged numbers are provisional (`docs/evaluation.md`). An Anthropic adapter exists in the gateway but is dormant.
 
 ## Workflow
 1. **Design first.** Design (`docs/design.md`) and research passes (`docs/research/01–06`) were written before any code, then cross-reviewed with ChatGPT.

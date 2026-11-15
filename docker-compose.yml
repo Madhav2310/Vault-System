@@ -14,7 +14,7 @@ x-app: &app
     DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-vault}:${POSTGRES_PASSWORD:-vault}@postgres:5432/${POSTGRES_DB:-vault}
     REDIS_URL: redis://redis:6379/0
     OBJECT_STORE_ROOT: /data/blobs
-    OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-lgtm:4317
+    OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_EXPORTER_OTLP_ENDPOINT:-}
     OTEL_RESOURCE_ATTRIBUTES: deployment.environment=dev,service.version=${GIT_SHA:-dev}
   volumes:
     - blobs:/data/blobs

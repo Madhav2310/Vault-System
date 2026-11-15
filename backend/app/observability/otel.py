@@ -54,8 +54,7 @@ def setup_telemetry(
     tracer_provider = TracerProvider(resource=resource)
     if span_processor is not None:
         tracer_provider.add_span_processor(span_processor)
-    else:
-        endpoint = settings.otel_exporter_otlp_endpoint
+    elif endpoint := settings.otel_exporter_otlp_endpoint.strip():
         tracer_provider.add_span_processor(
             BatchSpanProcessor(OTLPSpanExporter(endpoint=endpoint, insecure=True))
         )
@@ -67,6 +66,8 @@ def setup_telemetry(
         )
         set_logger_provider(logger_provider)
         logging.getLogger().addHandler(LoggingHandler(logger_provider=logger_provider))
+    # No endpoint (the default stack has no collector): spans stay in process, nothing is exported, and the
+    # logs go to stdout only. `make up-full` starts the collector and points the services at it.
     trace.set_tracer_provider(tracer_provider)
     _provider = tracer_provider
     if not _configured:
