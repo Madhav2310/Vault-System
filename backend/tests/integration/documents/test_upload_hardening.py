@@ -72,6 +72,46 @@ async def test_blob_restored_after_purge_race(api, make_owner, sm, store, monkey
     assert await store.exists(f"blobs/{sha}")  # re-asserted after the commit
 
 
+async def test_blob_survives_an_upload_between_purge_commit_and_file_delete(
+    api, make_owner, sm, store
+) -> None:  # type: ignore[no-untyped-def]
+    """The purge's last reference goes, and before it deletes the file another upload of the same bytes
+    commits a new reference (its post-commit re-assert sees the file still there). The file must survive."""
+    import asyncio
+    import hashlib
+
+    from app.documents.delete import purge_document
+    from app.storage.local import LocalObjectStore
+
+    data = VALID_PDF.read_bytes() + uuid.uuid4().bytes  # bytes unique to this test
+    sha = hashlib.sha256(data).hexdigest()
+    a, b = await make_owner(), await make_owner()
+    up = await upload(api, a, "a.pdf", data)
+    async with sm() as s:
+        await s.execute(
+            text("UPDATE documents SET deleted_at = now() WHERE id = :d"), {"d": up["document_id"]}
+        )
+        await s.commit()
+    other: dict[str, asyncio.Task[dict[str, object]]] = {}
+
+    class UploadBeforeBlobDelete(LocalObjectStore):
+        async def delete(self, key: str) -> None:
+            if key == f"blobs/{sha}" and not other:
+                other["t"] = asyncio.ensure_future(upload(api, b, "b.pdf", data))
+                await asyncio.wait({other["t"]}, timeout=1.0)  # it may have to wait for the purge's commit
+            await super().delete(key)
+
+    assert await purge_document(sm, UploadBeforeBlobDelete(store.root), uuid.UUID(up["document_id"])) == 1
+    assert other, "the purge never deleted the blob"
+    await other["t"]
+    async with sm() as s:
+        refs = (
+            await s.execute(text("SELECT refcount FROM blobs WHERE sha256 = :s"), {"s": sha})
+        ).scalar_one()
+    assert refs == 1
+    assert await store.exists(f"blobs/{sha}")
+
+
 async def test_artifact_written_only_by_a_committing_stage(api, make_owner, sm, store, enqueued) -> None:  # type: ignore[no-untyped-def]
     """The extracted artifact is written inside the fenced commit: a mid-extract delete leaves none."""
     o = await make_owner()

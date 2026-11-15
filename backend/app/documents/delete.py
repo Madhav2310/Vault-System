@@ -151,9 +151,16 @@ async def _purge_version(
                 ),
                 {"s": sha},
             )
+            # Before the commit, while the refcount update holds the blob row: a concurrent upload of the same
+            # bytes blocks in `add_blob_ref` until we commit, and its post-commit re-assert then restores the
+            # file. Deleted after the commit, the file could vanish under a reference committed in between.
+            await store.delete(blob_key(sha))
         await s.commit()
-    if refcount == 0:
-        await store.delete(blob_key(sha))
+    # Again after the commit: a stage commit holding the job row when the first deletes ran (the document was
+    # deleted after its fence check) may have written an artifact since. Its job row is gone now, so no later
+    # stage commit can pass the fence and write another.
+    await store.delete(f"layouts/{version_id}.json.gz")
+    await store.delete(f"extracted/{version_id}.json.gz")
     return True
 
 

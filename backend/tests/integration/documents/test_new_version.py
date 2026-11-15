@@ -1,5 +1,6 @@
 """POST /v1/documents/{id}/versions: a new version of an existing document."""
 
+import asyncio
 import uuid
 from collections.abc import Callable
 from typing import Any
@@ -104,6 +105,36 @@ async def test_current_moves(
     assert doc["current_version_id"] == v2["version_id"] and doc["status"] == "ready"
     by_no = {v["version_no"]: v["status"] for v in doc["versions"]}
     assert by_no == {1: "superseded", 2: "ready"}
+
+
+async def test_older_version_finishing_last_stays_behind_the_newer(
+    api: httpx.AsyncClient, make_owner: Callable[[], Any], enqueued: Any, sm: Any, store: Any
+) -> None:
+    """v2 (large, slow) and v3 (a quick fix) process concurrently and v3 is ready first: v2 reaching `ready`
+    later must neither become current nor supersede the newer v3."""
+    o = await make_owner()
+    v1 = await _upload(api, o, docx_bytes("first text"))
+    await _make_ready(sm, store, enqueued, o, v1, "a")
+    v2 = (await _post_version(api, o, v1["document_id"], docx_bytes("second text"))).json()
+    v3 = (await _post_version(api, o, v1["document_id"], docx_bytes("third text"))).json()
+    await _make_ready(sm, store, enqueued, o, v3, "c")
+    await _make_ready(sm, store, enqueued, o, v2, "b")
+    doc = (await api.get(f"/v1/documents/{v1['document_id']}", headers=o.auth)).json()
+    assert doc["current_version_id"] == v3["version_id"]
+    by_no = {v["version_no"]: v["status"] for v in doc["versions"]}
+    assert by_no[3] == "ready" and by_no[1] == "superseded"
+
+
+async def test_concurrent_identical_new_versions_create_one(
+    api: httpx.AsyncClient, make_owner: Callable[[], Any], enqueued: Any, sm: Any
+) -> None:
+    o = await make_owner()
+    v1 = await _upload(api, o, docx_bytes("first text"))
+    data = docx_bytes("second text")
+    rs = await asyncio.gather(*(_post_version(api, o, v1["document_id"], data) for _ in range(4)))
+    assert sorted(r.status_code for r in rs) == [200, 200, 200, 202]
+    assert len({r.json()["version_id"] for r in rs}) == 1
+    assert await _count_versions(sm, uuid.UUID(v1["document_id"])) == 2
 
 
 async def test_dedupe_same_bytes(

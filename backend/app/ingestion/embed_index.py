@@ -167,7 +167,10 @@ class IndexStage:
         async def write(s: AsyncSession) -> None:
             cur = (
                 await s.execute(
-                    text("SELECT status, document_id FROM document_versions WHERE id = :v FOR UPDATE"),
+                    text(
+                        "SELECT status, document_id, version_no FROM document_versions "
+                        "WHERE id = :v FOR UPDATE"
+                    ),
                     {"v": job.version_id},
                 )
             ).one()
@@ -175,23 +178,30 @@ class IndexStage:
                 return  # re-delivery after this stage committed: nothing to redo, hook not called again
             doc = (
                 await s.execute(
-                    text("SELECT current_version_id FROM documents WHERE id = :d FOR UPDATE"),
+                    text(
+                        "SELECT d.current_version_id, p.version_no AS current_no FROM documents d "
+                        "LEFT JOIN document_versions p ON p.id = d.current_version_id "
+                        "WHERE d.id = :d FOR UPDATE OF d"
+                    ),
                     {"d": cur.document_id},
                 )
             ).one()
             prev = doc.current_version_id
-            if prev is not None and prev != job.version_id:
+            # An older version finishing after a newer one became current stays behind it (out-of-order
+            # completion of concurrent versions): only a newer version supersedes.
+            if prev is None or prev == job.version_id or doc.current_no < cur.version_no:
+                if prev is not None and prev != job.version_id:
+                    await s.execute(
+                        text(
+                            "UPDATE document_versions SET status = 'superseded', superseded_at = now() "
+                            "WHERE id = :p AND status IN ('ready', 'enriched')"
+                        ),
+                        {"p": prev},
+                    )
                 await s.execute(
-                    text(
-                        "UPDATE document_versions SET status = 'superseded', superseded_at = now() "
-                        "WHERE id = :p AND status IN ('ready', 'enriched')"
-                    ),
-                    {"p": prev},
+                    text("UPDATE documents SET current_version_id = :v WHERE id = :d"),
+                    {"v": job.version_id, "d": cur.document_id},
                 )
-            await s.execute(
-                text("UPDATE documents SET current_version_id = :v WHERE id = :d"),
-                {"v": job.version_id, "d": cur.document_id},
-            )
             await fill_tsv_ids(s, job.owner_id, job.version_id)  # identifier tokens for lexical search
             await on_version_ready(s, job.owner_id, cur.document_id, job.version_id)
 

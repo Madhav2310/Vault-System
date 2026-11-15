@@ -318,9 +318,16 @@ async def _fail(
             return "lost_lease"
         if terminal:
             version_status = err.version_status if err.permanent else vs.FAILED
-            await vs.set_version_status(
-                s, job.version_id, version_status, error_code=err.code, error_detail=err.detail
-            )
+            current = (
+                await s.execute(
+                    text("SELECT status FROM document_versions WHERE id = :v AND owner_id = :o"),
+                    {"v": job.version_id, "o": job.owner_id},
+                )
+            ).scalar_one()
+            if current == vs.PROCESSING:  # an enrichment stage (after `ready`) leaves the version as it is
+                await vs.set_version_status(
+                    s, job.version_id, version_status, error_code=err.code, error_detail=err.detail
+                )
             await s.execute(
                 text(
                     "UPDATE processing_jobs SET status = 'dead', attempt_count = :a, lease_owner = NULL, "
