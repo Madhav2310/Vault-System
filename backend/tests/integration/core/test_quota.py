@@ -8,7 +8,6 @@ from decimal import Decimal
 from typing import Any
 
 import httpx
-import pytest
 from sqlalchemy import text
 
 from app.api.deps import get_turn_runner
@@ -78,28 +77,50 @@ async def test_brief_deferred(sm: Any, make_owner: Callable[[], Any], enqueued: 
     assert (await version_status(sm, seeded.ref.version_id))[0] == "ready"
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="admission-only quota: spend is read through a 30 s cache and nothing is reserved per turn",
-)
-async def test_turns_cannot_spend_past_the_quota(
+async def _in_flight(owner_id: uuid.UUID) -> int:
+    from app.core.quota import KEY_PREFIX
+    from app.core.ratelimit import get_ratelimit_redis
+
+    return int(await (await get_ratelimit_redis()).zcard(f"{KEY_PREFIX}:{owner_id}"))
+
+
+async def test_concurrent_turns_are_held_to_the_quota(
     api: httpx.AsyncClient, sm: Any, make_owner: Callable[[], Any]
 ) -> None:
-    """Spend $0.90 of $1.00, then turns that each cost $0.50: at most one turn may start (the one that
-    crosses the limit), whether the next ones arrive concurrently or right after it."""
+    """$0.90 of $1.00 spent, five concurrent turns of $0.04 each: a turn is admitted only while spend plus
+    the reservations of the turns in flight ($0.05 each) stays under the quota, so two start, spend ends at
+    $0.98, and every reservation is released when its turn ends."""
+    from app.core.quota import TURN_RESERVE_USD
+
+    assert Decimal("0.04") <= TURN_RESERVE_USD
     o = await make_owner()
     await _spend(sm, o.id, "0.90")
 
     async def costly(*_a: object) -> None:
-        await asyncio.sleep(0.1)
-        await _spend(sm, o.id, "0.50")
+        await asyncio.sleep(0.2)  # all five requests are admitted or refused while these turns run
+        await _spend(sm, o.id, "0.04")
 
     api._transport.app.dependency_overrides[get_turn_runner] = lambda: costly  # type: ignore[attr-defined]
-    concurrent = await asyncio.gather(*(_post(api, o) for _ in range(4)))
-    after = await _post(api, o)
-    started = sum(1 for r in [*concurrent, after] if r.status_code in (200, 202))
+    rs = await asyncio.gather(*(_post(api, o) for _ in range(5)))
+    assert sorted(r.status_code for r in rs) == [202, 202, 429, 429, 429], [r.text for r in rs]
     async with sm() as s:
         spent = (
             await s.execute(text("SELECT sum(cost_usd) FROM llm_calls WHERE owner_id = :o"), {"o": o.id})
         ).scalar_one()
-    assert started <= 1, f"{started} turns started, ${spent} spent against a $1.00 quota"
+    assert spent == Decimal("0.98")
+    assert await _in_flight(o.id) == 0
+    assert (await _post(api, o)).status_code == 202  # nothing held any more: $0.98 is still under $1.00
+
+
+async def test_a_request_that_starts_no_turn_releases_its_reservation(
+    api: httpx.AsyncClient, make_owner: Callable[[], Any]
+) -> None:
+    o = await make_owner()
+    missing = uuid.uuid4()
+    r = await api.post(
+        f"/v1/chat/sessions/{missing}/messages",
+        json={"content": "hello", "client_message_id": "m1"},
+        headers=o.auth,
+    )
+    assert r.status_code == 404
+    assert await _in_flight(o.id) == 0

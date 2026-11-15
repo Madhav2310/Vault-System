@@ -18,9 +18,9 @@ from app.chat import history
 from app.chat import sessions as svc
 from app.chat import stream as stream_mod
 from app.chat.events import event_schema
-from app.core.auth import CurrentUser
+from app.core.auth import AuthUser, CurrentUser
 from app.core.error_codes import ErrorCode
-from app.core.quota import enforce_chat_quota
+from app.core.quota import TurnReservation, enforce_chat_quota
 
 router = APIRouter(prefix="/v1/chat", tags=["Chat"])
 _TASKS: set[asyncio.Future[None]] = set()  # strong refs: running turns must outlive the request
@@ -196,7 +196,6 @@ async def events_schema(user: CurrentUser) -> dict[str, Any]:
     "/sessions/{session_id}/messages",
     status_code=202,
     summary="Post a message and get a cited answer",
-    dependencies=[Depends(enforce_chat_quota)],
     response_model=None,
     responses={
         202: {"model": PostMessageOut, "description": "Turn accepted (or finished): run and message ids"},
@@ -219,12 +218,29 @@ async def post_message(
     db: Annotated[AsyncSession, Depends(get_db)],
     response: Response,
     run_turn: Annotated[TurnRunner, Depends(get_turn_runner)],
+    reservation: Annotated[TurnReservation, Depends(enforce_chat_quota)],
 ) -> Any:
     """Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
     while running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion
     before the response and returns 200 with the assistant message; it keeps running and persists even if the
     client disconnects. With `Accept: text/event-stream` the turn streams events instead: the
     status codes above are decided before the stream starts and the stream itself answers 200."""
+    try:
+        return await _post_message(session_id, body, request, user, db, response, reservation.guard(run_turn))
+    finally:
+        if not reservation.handed_off:  # no turn started (dedupe, 409, 404, ...): release at once
+            await reservation.release()
+
+
+async def _post_message(
+    session_id: uuid.UUID,
+    body: PostMessage,
+    request: Request,
+    user: AuthUser,
+    db: AsyncSession,
+    response: Response,
+    run_turn: TurnRunner,
+) -> Any:
     sse = "text/event-stream" in request.headers.get("accept", "")
     content = body.content
     if body.reask_of is not None:

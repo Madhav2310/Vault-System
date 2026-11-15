@@ -189,7 +189,12 @@ class IndexStage:
             prev = doc.current_version_id
             # An older version finishing after a newer one became current stays behind it (out-of-order
             # completion of concurrent versions): only a newer version supersedes.
-            if prev is None or prev == job.version_id or doc.current_no < cur.version_no:
+            if (
+                prev is None
+                or prev == job.version_id
+                or doc.current_no is None
+                or doc.current_no < cur.version_no
+            ):
                 if prev is not None and prev != job.version_id:
                     await s.execute(
                         text(

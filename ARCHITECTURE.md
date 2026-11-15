@@ -174,7 +174,7 @@ erDiagram
 | `eval_runs`, `eval_results` | eval bookkeeping | Not used by the product path. |
 | `matrices`, `matrix_columns`, `matrix_cells` | schema for the Compare Matrix | **The tables exist, but no code uses them**; the comparison matrix is not built (see [section 12](#12-decisions-trade-offs-and-limits)). |
 
-Quotas are not a table. Spend today is `sum(llm_calls.cost_usd)` since UTC midnight, cached in Redis for 30 s, against `USER_DAILY_USD` (default $1.00; admins are unlimited). Ingestion is never blocked by the quota: the brief stage defers instead (`backend/app/core/quota.py`).
+Quotas are not a table. Spend today is `sum(llm_calls.cost_usd)` since UTC midnight, read from the ledger at each chat admission, against `USER_DAILY_USD` (default $1.00; admins are unlimited). A turn's cost reaches the ledger only while it runs, so each admitted turn also holds a $0.05 reservation in a Redis sorted set until it ends (or for at most 180 s): a turn is admitted while spend plus the reservations in flight stays under the quota, so concurrent turns cannot run past it. Ingestion is never blocked by the quota: the brief stage defers instead (`backend/app/core/quota.py`).
 
 ---
 
