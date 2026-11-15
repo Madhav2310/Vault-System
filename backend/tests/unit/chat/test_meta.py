@@ -26,7 +26,7 @@ def decide(meta_op: MetaOpOut | None) -> Any:
         standalone_query="q", target_refs=[], dimensions=[], intent="meta", needs_whole_document=False,
         clarification=None, meta_op=meta_op,
     )  # fmt: skip
-    return apply_decision(out, "q", [D1], clarification_allowed=True)
+    return apply_decision(out, "q", [D1])
 
 
 def test_unknown_op_rejected() -> None:

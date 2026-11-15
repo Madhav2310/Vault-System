@@ -9,8 +9,6 @@ import pytest
 from app.chat.memory import Memory, Msg
 from app.chat.nodes.analyze import (
     ANALYZE_FALLBACK,
-    CLARIFY_AMBIGUOUS_DOCUMENT,
-    CLARIFY_AMBIGUOUS_QUERY,
     CLARIFY_REJECTED,
     MAX_DIMENSIONS,
     MAX_STANDALONE_CHARS,
@@ -71,12 +69,9 @@ def gateway(*script: Step) -> tuple[LlmGateway, FakeProvider]:
     return gw, fake
 
 
-async def run(*script: Step, question: str = "q?", memory: Memory = NO_MEMORY, docs: list[ScopeDoc] = DOCS,
-              allowed: bool = True):  # fmt: skip
+async def run(*script: Step, question: str = "q?", memory: Memory = NO_MEMORY, docs: list[ScopeDoc] = DOCS):
     gw, fake = gateway(*script)
-    res = await analyze_query(
-        gw, question=question, memory=memory, documents=docs, owner_id=OWNER, clarification_allowed=allowed
-    )
+    res = await analyze_query(gw, question=question, memory=memory, documents=docs, owner_id=OWNER)
     return res, fake
 
 
@@ -148,32 +143,21 @@ def clarify(kind: str, options: list[str], question: str = "Which one?") -> dict
     return out(intent="clarify", clarification={"kind": kind, "question": question, "options": options})
 
 
-async def test_clarification_only_when_plan_allows() -> None:
-    titles = [D1.title, D2.title]
-    res, _ = await run(structured(clarify("document", [*titles, "Not a doc"])))
-    assert res.intent == "clarify" and res.reason_codes == (CLARIFY_AMBIGUOUS_DOCUMENT,)
-    assert res.clarification is not None and res.clarification.options == tuple(
-        titles
-    )  # invented chip dropped
-    res, _ = await run(structured(clarify("query", ["a", "b", "c", "d", "e", "a"])))
-    assert res.reason_codes == (CLARIFY_AMBIGUOUS_QUERY,) and res.clarification is not None
-    assert res.clarification.options == ("a", "b", "c", "d")
-    # not allowed by the caller, single-document scope, or too few valid options: answer instead
-    for kwargs, script in (
-        ({"allowed": False}, clarify("query", ["a", "b"])),
-        ({"docs": [D1]}, clarify("document", [D1.title, D1.title])),
-        ({}, clarify("document", [D1.title, "invented"])),
-        ({}, clarify("query", ["only one"])),
-        ({}, clarify("query", ["a", "b"], question="  ")),
-        ({}, out(intent="clarify", clarification=None)),
+async def test_a_clarify_intent_is_answered_as_a_question() -> None:
+    for script in (
+        clarify("document", [D1.title, D2.title]),
+        clarify("query", ["a", "b"]),
+        out(intent="clarify", clarification=None),
     ):
-        res, _ = await run(structured(script), **kwargs)
-        assert res.intent == "qa" and res.clarification is None and CLARIFY_REJECTED in res.reason_codes
+        res, fake = await run(structured(script))
+        assert res.intent == "qa" and res.reason_codes == (CLARIFY_REJECTED,)
+        content = fake.requests[0].messages[0]["content"]
+        assert json.loads(content[len("<inputs>") : -len("</inputs>")])["clarification_allowed"] is False
     # a clarification object on a non-clarify intent is ignored
     res, _ = await run(
         structured(out(clarification={"kind": "query", "question": "?", "options": ["a", "b"]}))
     )
-    assert res.intent == "qa" and res.clarification is None and res.reason_codes == ()
+    assert res.intent == "qa" and res.reason_codes == ()
 
 
 @pytest.mark.parametrize(
@@ -199,7 +183,7 @@ async def test_failure_falls_back_never_raises(step: Step) -> None:
         (),
         (),
     )
-    assert res.clarification is None and not res.needs_whole_document
+    assert not res.needs_whole_document
 
 
 async def test_inputs_shape_and_trimming() -> None:

@@ -288,7 +288,6 @@ flowchart TD
     compare_retrieve["compare_retrieve"]
     generate["generate"]
     verify["verify"]
-    clarify["clarify"]
     meta["meta"]
     abstain_no_documents["abstain_no_documents"]
     abstain_no_evidence["abstain_no_evidence"]
@@ -299,7 +298,6 @@ flowchart TD
     route_question --> route_question__r{after_route_question}
     route_question__r --> analyze
     analyze --> analyze__r{after_analyze}
-    analyze__r --> clarify
     analyze__r --> meta
     analyze__r --> plan_context
     plan_context --> plan_context__r{after_plan_context}
@@ -309,17 +307,14 @@ flowchart TD
     plan_context__r --> abstain_no_evidence
     retrieve --> retrieve__r{after_retrieve}
     retrieve__r --> abstain_no_evidence
-    retrieve__r --> clarify
     retrieve__r --> generate
     compare_retrieve --> compare_retrieve__r{after_retrieve}
     compare_retrieve__r --> abstain_no_evidence
-    compare_retrieve__r --> clarify
     compare_retrieve__r --> generate
     generate --> generate__r{after_generate}
     generate__r --> verify
     generate__r --> persist
     verify --> persist
-    clarify --> persist
     meta --> persist
     abstain_no_documents --> persist
     abstain_no_evidence --> persist

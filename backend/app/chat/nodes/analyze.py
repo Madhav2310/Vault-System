@@ -3,8 +3,9 @@
 The model sees the question, a trimmed history, session memory and document *titles* (as short refs, never
 ids or text). It returns a typed decision; this module applies it: unknown or foreign refs are dropped (the
 node can narrow the scope, never widen it), the intent is restricted to the route enum, free text is capped,
-and a clarification survives only when the caller allows it and its shape is sound. Any gateway failure
-(schema violation, refusal, truncation, timeout, budget) yields a deterministic fallback decision.
+and a `clarify` intent becomes `qa` (`CLARIFY_REJECTED`): the prompt's input says clarifications are not
+allowed, and none is ever asked. Any gateway failure (schema violation, refusal, truncation, timeout, budget)
+yields a deterministic fallback decision.
 """
 
 import json
@@ -49,8 +50,6 @@ def render_ordered(inputs: Mapping[str, Any]) -> str:
     return f"<inputs>{json.dumps(ordered, ensure_ascii=False, default=str)}</inputs>"
 
 
-CLARIFY_AMBIGUOUS_DOCUMENT = "CLARIFY_AMBIGUOUS_DOCUMENT"
-CLARIFY_AMBIGUOUS_QUERY = "CLARIFY_AMBIGUOUS_QUERY"
 CLARIFY_REJECTED = "CLARIFY_REJECTED"
 TARGET_OUT_OF_SCOPE = "TARGET_OUT_OF_SCOPE"
 ANALYZE_FALLBACK = "ANALYZE_FALLBACK"
@@ -59,9 +58,6 @@ MAX_QUESTION_CHARS = 2000  # sent to the model
 MAX_STANDALONE_CHARS = 500
 MAX_DIMENSIONS = 5
 MAX_DIMENSION_CHARS = 80
-MAX_OPTIONS = 4
-MAX_OPTION_CHARS = 160
-MAX_CLARIFY_QUESTION_CHARS = 200
 HISTORY_TURNS = 4
 HISTORY_MSG_CHARS = 500
 MAX_DOCUMENTS = 100
@@ -100,20 +96,12 @@ class ScopeDoc:
 
 
 @dataclass(frozen=True)
-class Clarification:
-    kind: Literal["document", "query"]
-    question: str
-    options: tuple[str, ...]
-
-
-@dataclass(frozen=True)
 class AnalyzeResult:
     intent: Intent
     standalone_query: str
     target_document_ids: tuple[uuid.UUID, ...]  # always a subset of the documents passed in
     dimensions: tuple[str, ...]
     needs_whole_document: bool
-    clarification: Clarification | None
     reason_codes: tuple[str, ...]
     fallback: bool = False
     dropped_targets: int = 0
@@ -141,9 +129,7 @@ def _entities(raw: Mapping[str, Any], id_to_ref: Mapping[str, str]) -> dict[str,
     return out
 
 
-def build_inputs(
-    question: str, memory: Memory, documents: Sequence[ScopeDoc], *, clarification_allowed: bool
-) -> dict[str, Any]:
+def build_inputs(question: str, memory: Memory, documents: Sequence[ScopeDoc]) -> dict[str, Any]:
     docs = list(documents)[:MAX_DOCUMENTS]
     id_to_ref = {str(d.id): f"D{i}" for i, d in enumerate(docs, 1)}
     summary = _cap(memory.rolling_summary, MAX_SUMMARY_CHARS) if memory.rolling_summary else None
@@ -155,7 +141,7 @@ def build_inputs(
         "documents": [
             {"ref": f"D{i}", "title": _cap(d.title, MAX_TITLE_CHARS)} for i, d in enumerate(docs, 1)
         ],
-        "clarification_allowed": clarification_allowed,
+        "clarification_allowed": False,  # part of the analyze_query@4 input: Vault never asks back
     }
 
 
@@ -167,7 +153,6 @@ def _fallback(question: str, error: LlmError) -> AnalyzeResult:
         target_document_ids=(),
         dimensions=(),
         needs_whole_document=False,
-        clarification=None,
         reason_codes=(ANALYZE_FALLBACK,),
         fallback=True,
     )
@@ -194,27 +179,7 @@ def _resolve_targets(refs: Sequence[str], documents: Sequence[ScopeDoc]) -> tupl
     return tuple(kept), dropped
 
 
-def _clarification(
-    out: ClarificationOut | None, documents: Sequence[ScopeDoc], allowed: bool
-) -> Clarification | None:
-    if out is None or not allowed:
-        return None
-    question = _cap(out.question, MAX_CLARIFY_QUESTION_CHARS)
-    options = list(dict.fromkeys(_cap(o, MAX_OPTION_CHARS) for o in out.options if o.strip()))
-    if out.kind == "document":
-        if len(documents) < 2:
-            return None
-        titles = {_cap(d.title, MAX_TITLE_CHARS) for d in documents}
-        options = [o for o in options if o in titles]  # chips must name real documents
-    options = options[:MAX_OPTIONS]
-    if not question or len(options) < 2:
-        return None
-    return Clarification(out.kind, question, tuple(options))
-
-
-def apply_decision(
-    out: AnalyzeQueryOut, question: str, documents: Sequence[ScopeDoc], *, clarification_allowed: bool
-) -> AnalyzeResult:
+def apply_decision(out: AnalyzeQueryOut, question: str, documents: Sequence[ScopeDoc]) -> AnalyzeResult:
     """Pure validation of a parsed model decision against the allowed documents."""
     codes: list[str] = []
     targets, dropped = _resolve_targets(out.target_refs, documents)
@@ -224,21 +189,16 @@ def apply_decision(
     dims = tuple(dict.fromkeys(d for d in (_cap(x, MAX_DIMENSION_CHARS) for x in out.dimensions) if d))
     dims = dims[:MAX_DIMENSIONS]
     intent: Intent = out.intent
-    clar: Clarification | None = None
     if intent == "clarify":
-        clar = _clarification(out.clarification, documents, clarification_allowed)
-        if clar is None:
-            intent = "qa"
-            codes.append(CLARIFY_REJECTED)
-        else:
-            codes.append(CLARIFY_AMBIGUOUS_DOCUMENT if clar.kind == "document" else CLARIFY_AMBIGUOUS_QUERY)
+        intent = "qa"
+        codes.append(CLARIFY_REJECTED)
     meta_op: MetaOp | None = None
     if intent == "meta":
         meta_op = validate_op(out.meta_op, _doc_keys(documents))
         if meta_op is None:  # unknown op or unusable parameters: answer it as an ordinary question
             intent = "qa"
             codes.append(META_OP_REJECTED)
-    if intent in ("meta", "chitchat", "clarify"):
+    if intent in ("meta", "chitchat"):
         targets, dims = (), ()
     return AnalyzeResult(
         intent=intent,
@@ -246,7 +206,6 @@ def apply_decision(
         target_document_ids=targets,
         dimensions=dims,
         needs_whole_document=out.needs_whole_document and intent in ("qa", "compare", "summarize"),
-        clarification=clar,
         reason_codes=tuple(codes),
         dropped_targets=dropped,
         meta_op=meta_op,
@@ -262,10 +221,9 @@ async def analyze_query(
     owner_id: uuid.UUID,
     run_id: uuid.UUID | None = None,
     budget: Budget | None = None,
-    clarification_allowed: bool = True,
 ) -> AnalyzeResult:
     """Never raises for model or provider failures (fallback decision); programming errors still propagate."""
-    inputs = build_inputs(question, memory, documents, clarification_allowed=clarification_allowed)
+    inputs = build_inputs(question, memory, documents)
     try:
         res = await gateway.call(
             purpose="analyze_query",
@@ -281,7 +239,7 @@ async def analyze_query(
         return _fallback(question, e)
     assert res.output is not None  # schema calls either parse or raise
     result = replace(
-        apply_decision(res.output, question, documents, clarification_allowed=clarification_allowed),
+        apply_decision(res.output, question, documents),
         cost_usd=res.cost_usd,
         call_ids=res.call_ids,
         degraded=res.degraded,

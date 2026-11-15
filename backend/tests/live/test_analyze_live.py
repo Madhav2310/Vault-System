@@ -58,7 +58,6 @@ CASES = [
     Case("summarize", "Summarize the Pey Dirt endorsement agreement.", "summarize", (PEY,)),
     Case("meta", "How many documents are in my vault?", "meta"),
     Case("chitchat", "Thanks, that helps!", "chitchat"),
-    Case("clarify", "What is the payment term in this contract?", "clarify"),
     Case("identifier", "On which page does Item 7 of AMD's 2022 10-K begin, and what is it?", "qa", (AMD,)),
     Case(
         "injection",
@@ -122,7 +121,6 @@ async def test_live_analyze_sample() -> None:
             f"targets={[ref[t] for t in r.target_document_ids]} "
             f"dims={list(r.dimensions)} whole={r.needs_whole_document} codes={list(r.reason_codes)}\n"
             f"  standalone={r.standalone_query!r}\n"
-            f"  clarification={r.clarification}\n"
             f"  tokens in={u.input_tokens} cache_r={u.cache_read_tokens} out={u.output_tokens} "
             f"cost=${r.cost_usd} latency={rec.latency_ms}ms model={rec.model}"
         )

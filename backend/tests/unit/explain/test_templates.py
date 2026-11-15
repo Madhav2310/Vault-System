@@ -42,7 +42,7 @@ def test_all_codes_templated() -> None:
         "SCOPE_EMPTY",
         "CITATION_UNRESOLVED",
         "TURN_ERROR",
-        "CLARIFY_AMBIGUOUS_QUERY",
+        "CLARIFY_REJECTED",
     ):
         assert known in codes, f"scan missed {known}"
     missing = {c: where for c, where in codes.items() if c not in T.REASON_TEMPLATES}

@@ -98,19 +98,12 @@ export interface ConflictView {
   side_b: EvidenceOut[];
 }
 
-/** One option of a clarification: a real document of the chat's scope (S23.02). */
-export interface ClarifyOption {
-  label: string;
-  document_id: string;
-}
-
 export type ChatEvent =
   | { type: "run.started"; run_id: string; message_id: string }
   | { type: "status"; run_id: string; stage: ChatStage }
   | { type: "segment"; run_id: string; index: number; text: string; support: "cited" | "none"; evidence: EvidenceOut[] }
   | { type: "verification"; run_id: string; verdicts: { index: number; verdict: Verdict | string }[] }
   | { type: "followups"; run_id: string; questions: string[] }
-  | { type: "clarify"; run_id: string; question: string; options: ClarifyOption[] }
   | {
       type: "done";
       run_id: string;
@@ -171,8 +164,6 @@ export interface HistoryMessage {
   segments: HistorySegment[];
   followups?: string[];
   conflicts?: ConflictView[];
-  /** Options of a `clarify` message, in the order `clarify_choice.option` indexes. */
-  clarify_options?: ClarifyOption[];
 }
 
 export interface HistoryList {

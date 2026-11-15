@@ -50,12 +50,6 @@ const conflictStream = [
   done("answer", "The sources differ about the monthly fee.", `,"conflicts":${JSON.stringify([conflictBody])}`),
 ].join("");
 const abstain = [frame("run.started", { message_id: "m-u1" }), frame("followups", { questions: ["What documents do I have?"] }), done("abstain", "I could not find this in your 2 documents. Try asking in different words, or name the document you have in mind.")].join("");
-const clarify = [
-  frame("run.started", { message_id: "m-u1" }),
-  frame("segment", { index: 0, text: "More than one of your documents could answer this. Which one should I look in?", support: "none", evidence: [] }),
-  frame("clarify", { question: "More than one of your documents could answer this. Which one should I look in?", options: [{ label: "Master services agreement", document_id: DOC }, { label: "Pricing memo", document_id: DOC2 }] }),
-  done("clarify", "More than one of your documents could answer this. Which one should I look in?").replace('"m-a1"', '"m-c1"'),
-].join("");
 
 async function mock(page: Page, o: { stream?: string; status?: number } = {}) {
   await page.route("**/v1/session", (r) => r.fulfill({ status: 204 }));
@@ -126,13 +120,6 @@ for (const sz of sizes) {
       await page.getByTestId("abstain-card").waitFor();
       await settle(page);
       await shot(page, "05-abstain");
-    });
-    test("clarify", async ({ page }) => {
-      await mock(page, { stream: clarify });
-      await ask(page, "What is the notice period?");
-      await page.getByTestId("clarify-chips").waitFor();
-      await settle(page);
-      await shot(page, "06-clarify");
     });
     test("error", async ({ page }) => {
       await mock(page, { status: 500 });

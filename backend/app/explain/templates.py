@@ -26,7 +26,6 @@ NO_EVIDENCE_TEXT = (
     "I could not find this in your documents. "
     "Try asking in different words, or name the document or section you have in mind."
 )
-CLARIFY_TEXT = "More than one of your documents could answer this. Which one should I look in?"
 ERROR_TEXT = "That did not work on my side, and no answer was written. Please try again in a moment."
 QUOTA_REACHED = "You have reached today's usage limit. It resets in {retry} s (at midnight UTC), so you can ask again then."
 RATE_LIMITED = "That was a lot of requests at once. Please try again in {retry} s."
@@ -41,9 +40,6 @@ REASON_TEMPLATES: dict[str, str] = {
     "FULL_CONTEXT_UNAVAILABLE": (
         "Reading the whole document was not possible this time, so the best-matching passages were used."
     ),
-    "CLARIFY_AMBIGUOUS_DOCUMENT": "The question could point to more than one document, so you were asked which.",
-    "CLARIFY_AMBIGUOUS_QUERY": "The question could be read more than one way, so you were asked to clarify.",
-    "CLARIFY_NO_ANTECEDENT": "The question did not say which document it meant, so you were asked which.",
     "CLARIFY_REJECTED": "A clarifying question was not needed, so the question was answered as written.",
     "TARGET_OUT_OF_SCOPE": "A document named in the question is outside this chat's scope, so it was left out.",
     "TARGET_IGNORED": "A document named in the question could not be used, so it was left out.",

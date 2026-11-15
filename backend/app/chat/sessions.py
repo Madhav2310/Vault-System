@@ -352,9 +352,8 @@ async def start_turn(
 async def set_run_hints(
     db: AsyncSession, owner_id: uuid.UUID, run_id: uuid.UUID, hints: dict[str, Any]
 ) -> None:
-    """Record request-time facts on a just-started run, in `rag_runs.analysis`: `clarify_pick` (the
-    document chosen from a clarification; `load_context` narrows to it) and `supersedes` (the earlier run this
-    turn replaces: Regenerate and Edit-and-resend; history and memory then hide the replaced turn)."""
+    """Record request-time facts on a just-started run, in `rag_runs.analysis`: `supersedes` (the earlier run
+    this turn replaces: Regenerate and Edit-and-resend; history and memory then hide the replaced turn)."""
     await db.execute(
         text("UPDATE rag_runs SET analysis = CAST(:h AS jsonb) WHERE id = :r AND owner_id = :o"),
         {"h": json.dumps(hints), "r": run_id, "o": owner_id},

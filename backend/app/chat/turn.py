@@ -34,7 +34,7 @@ from app.chat.nodes.retrieve import retrieve
 from app.chat.nodes.route_question import route_question
 from app.chat.nodes.run_analyze import analyze
 from app.chat.nodes.run_generate import generate
-from app.chat.nodes.terminal import abstain_no_documents, abstain_no_evidence, clarify
+from app.chat.nodes.terminal import abstain_no_documents, abstain_no_evidence
 from app.chat.nodes.verify import verify
 from app.chat.speculative import cancel_all
 from app.chat.support_check import PROMPT as SUPPORT_PROMPT
@@ -53,10 +53,6 @@ def _analysis_record(state: TurnState) -> dict[str, Any] | None:
     if a is None:
         return None
     rec: dict[str, Any] = {"intent": a.intent, "dimensions": list(a.dimensions)}
-    if state.clarification is not None:  # the options, so history can show the chips again
-        rec["clarify"] = state.clarification.to_json()
-    if state.pick_document_id is not None:
-        rec["clarify_pick"] = {"document_id": str(state.pick_document_id)}
     if state.supersedes is not None:
         rec["supersedes"] = str(state.supersedes)
     return rec
@@ -91,11 +87,9 @@ def after_route_question(s: TurnState) -> str:
     return "analyze"  # the fast path skips the call inside the `analyze` node (recorded as a skipped step)
 
 
-@router("clarify", "meta", "plan_context")
+@router("meta", "plan_context")
 def after_analyze(s: TurnState) -> str:
     a = s.analysis
-    if s.clarification is not None:  # decided by code, never by the model alone
-        return "clarify"
     return "meta" if a is not None and a.intent == "meta" and a.meta_op is not None else "plan_context"
 
 
@@ -106,10 +100,8 @@ def after_plan_context(s: TurnState) -> str:
     return "generate" if s.chunks else "abstain_no_evidence"
 
 
-@router("abstain_no_evidence", "clarify", "generate")
+@router("abstain_no_evidence", "generate")
 def after_retrieve(s: TurnState) -> str:
-    if s.clarification is not None:
-        return "clarify"
     return "generate" if s.chunks else "abstain_no_evidence"
 
 
@@ -197,14 +189,14 @@ def build_graph() -> Graph:
             "plan_context": plan_context, "retrieve": retrieve, "compare_retrieve": compare_retrieve,
             "generate": generate,
             "verify": verify,
-            "clarify": clarify, "meta": meta, "abstain_no_documents": abstain_no_documents,
+            "meta": meta, "abstain_no_documents": abstain_no_documents,
             "abstain_no_evidence": abstain_no_evidence, "persist": persist,
         },
         edges={
             "load_context": after_load_context, "route_question": after_route_question,
             "analyze": after_analyze, "plan_context": after_plan_context, "retrieve": after_retrieve,
             "compare_retrieve": after_retrieve,
-            "generate": after_generate, "verify": "persist", "clarify": "persist", "meta": "persist",
+            "generate": after_generate, "verify": "persist", "meta": "persist",
             "abstain_no_documents": "persist", "abstain_no_evidence": "persist", "persist": END,
         },
         start="load_context",

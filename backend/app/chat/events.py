@@ -31,7 +31,6 @@ NODE_STAGE: dict[str, Stage] = {
     "retrieve": "retrieving",
     "compare_retrieve": "retrieving",
     "generate": "writing",
-    "clarify": "writing",
     "meta": "writing",
     "abstain_no_documents": "writing",
     "abstain_no_evidence": "writing",
@@ -88,19 +87,6 @@ class Followups(_Event):
     questions: list[str]
 
 
-class ClarifyOptionOut(BaseModel):
-    label: str
-    document_id: str
-
-
-class Clarify(_Event):
-    """The turn ended with a question. Text and options come from code, never the model."""
-
-    type: Literal["clarify"] = "clarify"
-    question: str
-    options: list[ClarifyOptionOut]
-
-
 class UsageOut(BaseModel):
     input_tokens: int
     output_tokens: int
@@ -129,7 +115,7 @@ class Error(_Event):
 
 
 TurnEvent = Annotated[
-    RunStarted | Status | Segment | Verification | Followups | Clarify | Done | Error,
+    RunStarted | Status | Segment | Verification | Followups | Done | Error,
     Field(discriminator="type"),
 ]
 _ADAPTER: TypeAdapter[TurnEvent] = TypeAdapter(TurnEvent)

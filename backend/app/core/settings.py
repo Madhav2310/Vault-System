@@ -125,9 +125,6 @@ class Settings(BaseSettings):
     chat_fast_path: bool = True
     chat_speculative_retrieval: bool = True  # retrieve on the raw question while `analyze` runs
 
-    # --- clarify when ambiguous: code-checked ambiguity gives option chips; off until reviewed ---
-    chat_clarify: bool = False
-
     # --- telemetry ---
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"

@@ -9,7 +9,6 @@ It costs at most the one embedding (the LLM reranker config skips it: that reran
 
 import asyncio
 
-from app.chat.clarify import no_antecedent
 from app.chat.compare import limit_compare
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.harness import ROUTE_LIMITS, TurnBudget
@@ -22,36 +21,12 @@ from app.retrieval.retrieve import RetrievalResult
 from app.retrieval.scope import ScopeWideningError, narrow
 
 
-def clarify_ok(state: TurnState, ctx: TurnCtx) -> bool:
-    """Clarifying is on and the last assistant message was not a clarification (never twice in a row)."""
-    return bool(ctx.deps.gateway.settings.chat_clarify) and not state.prev_clarified
-
-
-def _pre_clarify(state: TurnState, ctx: TurnCtx) -> None:
-    """Rule (b), decided by code from the question, the history and the scope."""
-    a = state.analysis
-    if a is None or not clarify_ok(state, ctx) or a.intent == "meta":
-        return
-    prior = len(state.memory.turns) if state.memory is not None else 0
-    hinted = (
-        a.clarification.options if a.clarification is not None and a.clarification.kind == "document" else ()
-    )
-    state.clarification = no_antecedent(
-        state.question,
-        prior_turns=prior,
-        scope_docs=[(d.id, d.title) for d in state.docs],
-        hinted_titles=hinted,
-        narrowed=bool(a.target_document_ids) or state.pick_document_id is not None,
-    )
-
-
 async def analyze(state: TurnState, ctx: TurnCtx) -> TurnState:
     if state.fast_path:  # the raw question is the standalone query, route `qa`, no model call
         query = " ".join(state.question.split())
-        state.analysis = AnalyzeResult("qa", query, (), (), False, None, (FAST_PATH,))
+        state.analysis = AnalyzeResult("qa", query, (), (), False, (FAST_PATH,))
         state.last_status, state.last_reason = "skipped", FAST_PATH
         state.last_decision = {"intent": "qa"}
-        _pre_clarify(state, ctx)
         return state
     deps = ctx.deps
 
@@ -76,7 +51,6 @@ async def analyze(state: TurnState, ctx: TurnCtx) -> TurnState:
             owner_id=ctx.owner_id,
             run_id=ctx.run_id,
             budget=ctx.budget,
-            clarification_allowed=clarify_ok(state, ctx),
         )
     )
     e_task = asyncio.create_task(embed())
@@ -106,17 +80,14 @@ async def analyze(state: TurnState, ctx: TurnCtx) -> TurnState:
     except ScopeWideningError:  # never widen; keep the wider scope but leave a trace
         state.reasons.append(TARGET_IGNORED)
     limit_compare(state)  # compare needs 2-5 documents in scope, else it is a plain question
-    # a clarification hint is only a hint: the turn goes on as `qa`, and code decides after retrieval
     cur = state.analysis
-    state.clarify_hint = cur.clarification is not None and cur.clarification.kind == "document"
-    state.route = cur.intent if cur.intent in ROUTE_LIMITS and cur.intent != "clarify" else "qa"
+    state.route = cur.intent if cur.intent in ROUTE_LIMITS else "qa"
     ctx.budget = TurnBudget(ROUTE_LIMITS[state.route], ctx.budget.deadline_at, ctx.budget.calls_used)
     spec = state.spec_retrieval
     if spec is not None and not _speculation_usable(state, spec):
         # the turn will not retrieve this query: stop the work now (`retrieve` records the miss)
         await cancel(spec.task)
     state.last_decision = {"intent": state.analysis.intent}
-    _pre_clarify(state, ctx)
     return state
 
 

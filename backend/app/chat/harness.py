@@ -20,7 +20,6 @@ ROUTE_LIMITS: dict[str, TurnLimits] = {
     "summarize": TurnLimits(2, 60.0, 0),
     "meta": TurnLimits(1, 10.0, 0),
     "chitchat": TurnLimits(1, 10.0, 0),
-    "clarify": TurnLimits(1, 10.0, 0),
 }
 DEFAULT_LIMITS = TurnLimits(4, 30.0, 6000)
 

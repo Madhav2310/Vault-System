@@ -33,13 +33,6 @@ class CreateSession(BaseModel):
     title: str | None = Field(default=None, max_length=300)
 
 
-class ClarifyChoice(BaseModel):
-    message_id: uuid.UUID = Field(description="Id of the `clarify` assistant message the option belongs to.")
-    option: int = Field(
-        ge=0, le=3, description="Index of the chosen option in that message's `clarify_options`."
-    )
-
-
 class PostMessage(BaseModel):
     content: str | None = Field(
         default=None,
@@ -59,11 +52,6 @@ class PostMessage(BaseModel):
         description="Id of a message of this session whose turn this one replaces (Regenerate, Edit and "
         "resend): once this turn completes, the replaced question and answer leave the history.",
     )
-    clarify_choice: ClarifyChoice | None = Field(
-        default=None,
-        description="The option picked from a clarification: the clarified question is asked again, with the "
-        "scope narrowed by the server to the chosen document. Omit `content` and `reask_of`.",
-    )
 
     model_config = ConfigDict(
         json_schema_extra={
@@ -76,9 +64,8 @@ class PostMessage(BaseModel):
 
     @model_validator(mode="after")
     def _content_or_reask(self) -> Self:
-        given = [x for x in (self.content, self.reask_of, self.clarify_choice) if x is not None]
-        if len(given) != 1:
-            raise ValueError("send exactly one of `content`, `reask_of` and `clarify_choice`")
+        if (self.content is None) == (self.reask_of is None):
+            raise ValueError("send exactly one of `content` and `reask_of`")
         return self
 
 
@@ -257,18 +244,6 @@ async def _post_message(
         content = await history.original_question(db, user.id, session_id, body.reask_of)
         if content is None:
             raise DomainError(ErrorCode.NOT_FOUND)
-    pick: uuid.UUID | None = None
-    if body.clarify_choice is not None:
-        try:
-            await svc.get_session(db, user.id, session_id)
-        except svc.SessionNotFound:
-            raise DomainError(ErrorCode.NOT_FOUND) from None
-        chosen = await history.clarify_pick(
-            db, user.id, session_id, body.clarify_choice.message_id, body.clarify_choice.option
-        )
-        if chosen is None:
-            raise DomainError(ErrorCode.NOT_FOUND)
-        content, pick = chosen
     assert content is not None
     replaced: uuid.UUID | None = None
     if body.replaces is not None:
@@ -285,13 +260,8 @@ async def _post_message(
         raise DomainError(
             ErrorCode.IDEMPOTENCY_KEY_REUSED, "client_message_id was used with different content"
         ) from None
-    if t.created and (pick is not None or replaced is not None):  # read back by `load_context`
-        hints: dict[str, Any] = {}
-        if pick is not None:
-            hints["clarify_pick"] = {"document_id": str(pick)}
-        if replaced is not None:
-            hints["supersedes"] = str(replaced)
-        await svc.set_run_hints(db, user.id, t.run_id, hints)
+    if t.created and replaced is not None:  # read back by `load_context`
+        await svc.set_run_hints(db, user.id, t.run_id, {"supersedes": str(replaced)})
     if sse:
         if t.created:
             sink, turn = stream_mod.start_sink_task(

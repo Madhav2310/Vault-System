@@ -687,20 +687,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** ClarifyChoice */
-        ClarifyChoice: {
-            /**
-             * Message Id
-             * Format: uuid
-             * @description Id of the `clarify` assistant message the option belongs to.
-             */
-            message_id: string;
-            /**
-             * Option
-             * @description Index of the chosen option in that message's `clarify_options`.
-             */
-            option: number;
-        };
         /** CreateSession */
         CreateSession: {
             /** Document Ids */
@@ -1041,8 +1027,6 @@ export interface components {
         };
         /** PostMessage */
         PostMessage: {
-            /** @description The option picked from a clarification: the clarified question is asked again, with the scope narrowed by the server to the chosen document. Omit `content` and `reask_of`. */
-            clarify_choice?: components["schemas"]["ClarifyChoice"] | null;
             /** Client Message Id */
             client_message_id: string;
             /**

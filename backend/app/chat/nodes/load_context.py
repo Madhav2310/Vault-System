@@ -8,9 +8,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.chat import sessions as svc
 from app.chat.graph import TurnCtx, TurnState
 from app.chat.memory import load_memory
-from app.chat.nodes._common import TARGET_IGNORED
 from app.chat.nodes.analyze import ScopeDoc
-from app.retrieval.scope import Scope, ScopeWideningError, compute_scope, narrow
+from app.retrieval.scope import Scope, compute_scope
 
 
 async def _scope_docs(s: AsyncSession, owner_id: uuid.UUID, scope: Scope) -> list[ScopeDoc]:
@@ -22,25 +21,16 @@ async def _scope_docs(s: AsyncSession, owner_id: uuid.UUID, scope: Scope) -> lis
     return [ScopeDoc(d, titles[d]) for d in scope.document_ids if d in titles]
 
 
-async def _clarify_state(s: AsyncSession, ctx: TurnCtx) -> tuple[bool, uuid.UUID | None, uuid.UUID | None]:
-    """(the last assistant message was a clarification, the document chosen from it, the run it replaces)."""
-    last = (
-        await s.execute(
-            text(
-                "SELECT response_type FROM chat_messages WHERE session_id = :s AND owner_id = :o "
-                "AND role = 'assistant' ORDER BY created_at DESC, id DESC LIMIT 1"
-            ),
-            {"s": ctx.session_id, "o": ctx.owner_id},
-        )
-    ).scalar()
+async def _supersedes(s: AsyncSession, ctx: TurnCtx) -> uuid.UUID | None:
+    """The earlier run this turn replaces (Regenerate, Edit and resend), recorded on the run by the POST."""
     hints = (
         await s.execute(
             text("SELECT analysis FROM rag_runs WHERE id = :r AND owner_id = :o"),
             {"r": ctx.run_id, "o": ctx.owner_id},
         )
     ).scalar() or {}
-    pick, sup = hints.get("clarify_pick", {}).get("document_id"), hints.get("supersedes")
-    return last == "clarify", uuid.UUID(pick) if pick else None, uuid.UUID(sup) if sup else None
+    sup = hints.get("supersedes")
+    return uuid.UUID(sup) if sup else None
 
 
 async def load_context(state: TurnState, ctx: TurnCtx) -> TurnState:
@@ -50,12 +40,7 @@ async def load_context(state: TurnState, ctx: TurnCtx) -> TurnState:
         state.memory = await load_memory(
             s, ctx.owner_id, ctx.session_id, exclude_message_id=ctx.user_message_id
         )
-        state.prev_clarified, state.pick_document_id, state.supersedes = await _clarify_state(s, ctx)
-        if state.pick_document_id is not None:  # the chosen option narrows the scope (never widens it)
-            try:
-                state.scope = narrow(state.scope, [state.pick_document_id])
-            except ScopeWideningError:
-                state.reasons.append(TARGET_IGNORED)
+        state.supersedes = await _supersedes(s, ctx)
         state.docs = await _scope_docs(s, ctx.owner_id, state.scope)
     state.last_decision = {"documents": len(state.scope.entries)}
     return state

@@ -191,7 +191,7 @@ async def test_cross_encoder_rerank_hidden_in_analysis(
 
 
 async def test_cancel_all_stops_leftover_tasks() -> None:
-    """`persist` calls this: a turn that never retrieved (clarify, meta, failure) leaves no running task."""
+    """`persist` calls this: a turn that never retrieved (meta, failure) leaves no running task."""
     from app.chat.graph import TurnState
     from app.chat.speculative import SpeculativeRetrieval, cancel_all
     from app.retrieval.scope import Scope

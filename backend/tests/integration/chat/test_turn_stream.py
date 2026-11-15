@@ -241,7 +241,6 @@ async def test_schema_endpoint(
         "segment",
         "verification",
         "followups",
-        "clarify",
         "done",
         "error",
     }

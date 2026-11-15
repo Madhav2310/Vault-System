@@ -27,7 +27,7 @@ from app.retrieval.scope import Scope
 def _state(n: int, intent: str = "compare", dims: tuple[str, ...] = ()) -> TurnState:
     docs = [ScopeDoc(uuid.uuid4(), f"Doc {i}") for i in range(n)]
     scope = Scope(entries=tuple((d.id, uuid.uuid4()) for d in docs))
-    a: Any = AnalyzeResult(intent, "q", (), dims, False, None, ())  # type: ignore[arg-type]
+    a: Any = AnalyzeResult(intent, "q", (), dims, False, ())  # type: ignore[arg-type]
     return TurnState(question="q", docs=docs, scope=scope, analysis=a)
 
 

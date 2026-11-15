@@ -42,4 +42,4 @@ async def test_question_is_last_in_the_user_turn() -> None:
     content = fake.requests[0].messages[0]["content"]
     inputs = json.loads(content[len("<inputs>") : -len("</inputs>")])
     assert list(inputs) == list(INPUT_ORDER) and INPUT_ORDER[-1] == "question"
-    assert inputs == build_inputs("when?", mem, [D1], clarification_allowed=True)  # same data, new order
+    assert inputs == build_inputs("when?", mem, [D1])  # same data, new order
