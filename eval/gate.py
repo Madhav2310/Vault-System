@@ -1,13 +1,13 @@
-"""CI gate tiers for the v2 answer eval.
+"""CI gate tiers for the answer evaluation.
 
 Tier 0 ($0, every PR): dataset schema + coverage (`schema`), citation integrity on stored runs (`citations`);
-the Makefile target `eval-gate-t0` also runs the replay, the retrieval-only baseline compare, the documents
-map check and the security tests. Tier 1 (prompt / model / routing changes, live): `compare BASE CAND`.
+the Makefile target `eval-gate-t0` also runs the documents map check, the retrieval-only baseline compare and
+the security tests. Tier 1 (prompt / model / routing changes, live): `compare BASE CAND`.
 
     python -m eval.gate compare BASE.json CAND.json [--margin 0.02] [--strict-power]
 
 The gate makes no model call: it consumes two files (a run sidecar `eval/reports/<run_id>.json` or a frozen
-baseline `eval/baselines/answer_v2.json`) and prints PASS / FAIL / INCONCLUSIVE per criterion with the numbers
+baseline such as `eval/baselines/answer.json`) and prints PASS / FAIL / INCONCLUSIVE per criterion with the numbers
 and the MDE. Exit 1 when any criterion FAILs (INCONCLUSIVE too with `--strict-power`). The candidate
 sidecar is produced separately (docs/evaluation.md).
 
@@ -40,7 +40,7 @@ MARGIN = 0.02  # 2 points
 PRIMARY = ("answer_pass", "support_rate")
 EPS = 1e-9
 PASS, FAIL, INCONCLUSIVE = "PASS", "FAIL", "INCONCLUSIVE"
-V2_BASELINE = ROOT / "eval" / "baselines" / "answer_v2.json"
+ANSWER_BASELINE = ROOT / "eval" / "baselines" / "answer.json"
 
 
 @dataclass(frozen=True)
@@ -58,7 +58,7 @@ def load_any(path: str | pathlib.Path) -> tuple[Sidecar, int]:
         return sc, sum(1 for i in sc.items if i.error)
     if "per_item" in data:
         items = [
-            SidecarItem(item_id=k, category="v2", split=str(data.get("split", "")), metrics=m)
+            SidecarItem(item_id=k, category="", split=str(data.get("split", "")), metrics=m)
             for k, m in sorted(data["per_item"].items())
         ]
         sc = Sidecar(
@@ -237,10 +237,7 @@ def run_compare(base_path: str, cand_path: str, margin: float, strict_power: boo
 
 
 def run_citations(paths: Sequence[str]) -> int:
-    targets = [pathlib.Path(p) for p in paths] or ([V2_BASELINE] if V2_BASELINE.exists() else [])
-    if not targets:
-        print("SKIP citations: no stored v2 run (eval/baselines/answer_v2.json not frozen yet)")
-        return 0
+    targets = [pathlib.Path(p) for p in paths] or [ANSWER_BASELINE]
     rc = 0
     for p in targets:
         sc, _ = load_any(p)
@@ -261,9 +258,9 @@ def run_citations(paths: Sequence[str]) -> int:
 
 def run_schema() -> int:
     from eval.build import check_coverage
-    from eval.loader import DATASET_V2_DIR
+    from eval.loader import DATASET_DIR
 
-    return check_coverage.main([str(DATASET_V2_DIR)])
+    return check_coverage.main([str(DATASET_DIR)])
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -277,7 +274,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     c.add_argument("--seed", type=int, default=7)
     z = sub.add_parser("citations", help="Tier 0: citation integrity of stored runs")
     z.add_argument("paths", nargs="*")
-    sub.add_parser("schema", help="Tier 0: v2 dataset schema and coverage")
+    sub.add_parser("schema", help="Tier 0: dataset schema and coverage")
     a = ap.parse_args(argv)
     if a.cmd == "compare":
         return run_compare(a.base, a.cand, a.margin, a.strict_power, a.seed)

@@ -1,25 +1,24 @@
-"""Chunker-independent gold: map each gold quote to chunks and sentence ranges at run time.
+"""Chunker-independent gold: map gold evidence to chunks and sentence ranges at run time.
 
-Gold is stored as verbatim quotes plus pages. Here a quote is located inside the ingested chunks' text with
-the build scripts' normalization (`build_external.norm`, quote reference markers removed, long quotes
-matched by a 300-char head and tail) and the same fuzzy fallback (`partial_ratio >= FUZZ_MIN`). Table cell
-separators (` | `) are synthetic formatting, so they are dropped from chunk text before matching, exactly as
-`eval/extraction_check.py` does.
+Gold evidence is a document-level sentence range; the runner joins those sentences into a quote and this
+module locates the quote inside the ingested chunks of that document (`map_quote`), so gold survives a change
+of chunker. Text is compared normalized (NFKC, curly quotes and dashes folded, whitespace collapsed,
+lowercase; quote reference markers removed; quotes over 400 characters matched by a 300-character head and
+tail), with a fuzzy fallback (`partial_ratio >= FUZZ_MIN`). Table cell separators (` | `) are synthetic
+formatting, so they are dropped from chunk text before matching.
 
 A chunk is normalized sentence by sentence (the chunk's `sentences` offsets) and the pieces are joined by one
 space, so a hit position maps back to a half-open sentence range `[start, end)`, the same unit citations use.
 
-Strategy per gold quote: exact normalized substring first (word-bounded when possible, restricted to chunks
-on the labelled page when any exist there); only when no exact hit exists anywhere in the document, the best
-fuzzy chunk(s). Very short quotes ("REIT", "Company") legitimately hit several chunks on their page: all of
-them count as acceptable evidence.
+Strategy per quote: exact normalized substring first (word-bounded when possible, restricted to chunks on the
+given page when any exist there); only when no exact hit exists anywhere in the document, the best fuzzy
+chunk(s). A very short quote may legitimately hit several chunks: all of them count as acceptable evidence.
 """
 
 from __future__ import annotations
 
-import pathlib
 import re
-import sys
+import unicodedata
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from functools import lru_cache
@@ -27,23 +26,21 @@ from typing import Any, Literal
 
 from rapidfuzz import fuzz
 
-from eval.schema import Gold, GoldenItem
+__all__ = ["FUZZ_MIN", "REF", "ChunkHit", "ChunkInfo", "GoldTarget", "map_quote", "norm"]
 
-_BUILD = pathlib.Path(__file__).resolve().parent / "build"
-if str(_BUILD) not in sys.path:
-    sys.path.insert(0, str(_BUILD))
-from build_external import FUZZ_MIN, REF  # type: ignore[import-not-found]  # noqa: E402
-from build_external import norm as _build_norm  # noqa: E402
-
-__all__ = ["FUZZ_MIN", "REF", "ChunkHit", "ChunkInfo", "GoldTarget", "map_item", "map_quote", "norm"]
+REF = re.compile(r"\s*(BIBREF|TABREF|FIGREF|SECREF|INLINEFORM|DISPLAYFORM)\d*")  # QASPER reference markers
+FUZZ_MIN = 88  # partial_ratio threshold for a located quote
 
 
 def norm(s: str) -> str:
-    """The build scripts' normalization (NFKC, quotes, dashes, whitespace, lowercase)."""
-    return str(_build_norm(s))
+    """NFKC, curly quotes and dashes folded, soft hyphens dropped, whitespace collapsed, lowercase."""
+    s = unicodedata.normalize("NFKC", s)
+    s = s.replace("\u2019", "'").replace("\u2018", "'").replace("\u201c", '"').replace("\u201d", '"')
+    s = s.replace("\u2013", "-").replace("\u2014", "-").replace("\u00ad", "")
+    return re.sub(r"\s+", " ", s).strip().lower()
 
 
-_LONG = 400  # build_external.locate: quotes longer than this are matched by a 300-char head
+_LONG = 400  # quotes longer than this are matched by a 300-char head and tail
 _HEAD = 300
 _TIE = 1.0  # fuzzy hits within this many points of the best count as ties
 
@@ -194,23 +191,6 @@ def map_quote(
     ]
     here = [h for h in hits if h.on_page]
     return GoldTarget(item_id, doc_id, quote, page, tuple(here or hits))
-
-
-def map_item(item: GoldenItem, chunks_by_doc: Mapping[str, Sequence[ChunkInfo]]) -> list[GoldTarget]:
-    """Targets for every gold quote of an item (all turns for multi-turn items), in gold order.
-    Gold marked `not_found` by the build is returned unmapped with that reason."""
-    golds: list[tuple[str, Gold]] = [(item.gold_doc(g), g) for g in item.gold]
-    for t in item.turns or []:
-        golds += [(item.gold_doc(g), g) for g in t.gold]
-    out: list[GoldTarget] = []
-    for doc, g in golds:
-        if g.match == "not_found":
-            out.append(GoldTarget(item.id, doc, g.quote, g.page, (), "gold not located at build time"))
-        elif doc not in chunks_by_doc or not chunks_by_doc[doc]:
-            out.append(GoldTarget(item.id, doc, g.quote, g.page, (), "document has no ingested chunks"))
-        else:
-            out.append(map_quote(g.quote, g.page, chunks_by_doc[doc], item_id=item.id, doc_id=doc))
-    return out
 
 
 def chunks_from_rows(rows: Iterable[Mapping[str, Any]], doc_key_by_id: Mapping[str, str]) -> list[ChunkInfo]:

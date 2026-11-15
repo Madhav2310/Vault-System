@@ -1,26 +1,25 @@
-"""LLM judges for Vault-Eval: four judge types, each a versioned prompt with a
-strict structured verdict, run on role `deep` (primary) and, on a stable hash-selected subset, `flagship`
-(secondary).
+"""LLM judges for the golden set: three narrow judges, each a versioned prompt with a strict structured
+verdict, run on role `deep` (calibration may run them on `flagship`).
 
-Bias controls (the judge shares the generator's vendor):
-  1. deterministic graders run first (`deterministic_verdict`); an item they decide never reaches a judge;
-  2. reference-guided: gold quotes / the expected answer are part of the judge input;
-  3. blind: the input is built from answer text + evidence + gold only, and model names are scrubbed;
-  4. judge tier >= generator tier (`check_tiers`; roles ordered fast < balanced < deep < flagship);
-  5. inter-judge agreement (this module's CLI) until the human check (S10).
+- claims (`eval_judge_claims`): each required claim entailed by the answer? completeness = recall over the
+  required claims; answer_pass = every required claim entailed.
+- support (`eval_judge_support`): each answer segment entailed by its own cited sentences?
+- abstain (`eval_judge_abstain`): did the answer decline, correct a false premise or pick the right version as
+  the item requires (strata unanswerable / false_premise / versioned)?
 
-Verdict -> score: pass = 1.0, partial = 0.5, fail = 0.0. Two verdicts AGREE when their scores differ by at
-most TOLERANCE (0.25, i.e. only identical verdicts agree: pass vs partial is a real disagreement). Items whose
-primary and secondary verdicts disagree get `grader_suspect = True` and are left out of `tuner_scores`.
+Code applies the decisions. A "yes" that carries a quote the answer (or the cited passages) does not contain
+is overruled to "no": the model's quote is never trusted.
 
-Sampling rule (`in_secondary_sample`): an item is on the secondary judge iff
-sha256(f"{judge_type}:{item_id}") read as a fraction of 2**64 is below SECONDARY_FRACTION (0.25): stable
-across runs and machines, independent of the item order.
+Bias controls (the judge shares the generator's vendor): deterministic graders run first (eval.graders);
+reference-guided (gold claims are part of the input); blind (the input is answer text, evidence and gold only,
+and model names are scrubbed); judge tier >= generator tier (`check_tiers`; roles ordered fast < balanced <
+deep < flagship); human labels for calibration (`--calibrate`).
 
 CLI (from backend/, PYTHONPATH=..):
-    python -m eval.judge --inter-judge --sample 20 --max-usd 6        # live: the cap is mandatory
-    python -m eval.judge --inter-judge --sample 20 --dry-run          # scripted provider, no network
-Prints per-type agreement; exits 1 when any type is below 0.80 (or has no cases), 2 on a usage error.
+    python -m eval.judge --export-labels 200 --answers ../eval/reports/<run_id>.answers.jsonl
+    python -m eval.judge --calibrate ../eval/labels/labeled.yaml --max-usd 3     # live: the cap is mandatory
+Prints TPR / TNR / kappa per judge; exits 1 when a judge misses the targets, 2 on a usage error, 3 when the
+spend cap stopped the run.
 """
 
 from __future__ import annotations
@@ -30,85 +29,33 @@ import asyncio
 import hashlib
 import json
 import math
+import os
+import pathlib
 import re
 import sys
 import unicodedata
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from decimal import Decimal
-from typing import Any, Literal, get_args
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, ConfigDict
 
-from app.llm.errors import LlmError
 from app.llm.gateway import LlmGateway, MemoryLedger, render_inputs
 from app.llm.routing import EFFORT_SUPPORT, ROLES, ModelRouter, Role, Route
-from eval.graders import grade_item
 from eval.labels.schema import LabeledPair, LabeledSegment, LabelFile
-from eval.mapping import ChunkInfo, GoldTarget
-from eval.schema import CitedRange, GoldenItem, GoldItemV2, ItemOutput
-
-JudgeType = Literal["faithfulness", "citation", "completeness", "rubric"]
-JUDGE_TYPES: tuple[JudgeType, ...] = get_args(JudgeType)
-Verdict = Literal["pass", "partial", "fail"]
+from eval.mapping import ChunkInfo
+from eval.schema import CitedRange, GoldItem, ItemOutput
 
 PURPOSE = "eval_judge"  # gateway node: routed to role `deep` (routing.DEFAULT_ROUTES)
 SECONDARY_ROUTE = "flagship"
 SECONDARY_ROUTE_ROW = Route("flagship", "low")
-VERDICT_SCORE: dict[str, float] = {"pass": 1.0, "partial": 0.5, "fail": 0.0}
-TOLERANCE = 0.25
-SECONDARY_FRACTION = 0.25
-AGREEMENT_TARGET = 0.80
 ROLE_RANK: dict[str, int] = {r: i for i, r in enumerate(ROLES)}  # ROLES is ordered fast..flagship
-
-# --- verdict schemas (strict-mode compatible: all fields required, no defaults; field order = generation)
-
-
-class FaithfulnessVerdict(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    reason: str
-    verdict: Verdict
-    unsupported_claims: list[str]
-    confidence: float
-
-
-class CitationVerdict(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    reason: str
-    verdict: Verdict
-    unsupported_segments: list[int]
-    confidence: float
-
-
-class CompletenessVerdict(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    reason: str
-    verdict: Verdict
-    missing_facts: list[str]
-    confidence: float
-
-
-class RubricVerdict(BaseModel):
-    model_config = ConfigDict(extra="forbid")
-    reason: str
-    verdict: Verdict
-    criteria_met: list[bool]
-    confidence: float
-
-
-JudgeSchema = FaithfulnessVerdict | CitationVerdict | CompletenessVerdict | RubricVerdict
-SCHEMAS: dict[JudgeType, type[JudgeSchema]] = {
-    "faithfulness": FaithfulnessVerdict,
-    "citation": CitationVerdict,
-    "completeness": CompletenessVerdict,
-    "rubric": RubricVerdict,
-}
-PROMPTS: dict[JudgeType, tuple[str, int]] = {t: (f"eval_judge_{t}", 1) for t in JUDGE_TYPES}
 
 
 class JudgeOutputError(ValueError):
-    """The model returned a schema-valid verdict that contradicts itself (rubric verdict vs criteria)."""
+    """The model returned a schema-valid verdict that does not cover the judged units exactly."""
 
 
 class SpendCapReached(Exception):
@@ -132,28 +79,6 @@ class SegmentView:
     passages: tuple[str, ...]
 
 
-@dataclass(frozen=True)
-class JudgeCase:
-    item_id: str
-    question: str
-    segments: tuple[SegmentView, ...]
-    reference_quotes: tuple[str, ...]
-    expected_answer: str | tuple[str, ...] | None
-    criteria: tuple[str, ...]
-
-    @property
-    def answer(self) -> str:
-        return "\n".join(s.text for s in self.segments)
-
-    @property
-    def evidence(self) -> tuple[str, ...]:
-        seen: dict[str, None] = {}
-        for s in self.segments:
-            for p in s.passages:
-                seen[p] = None
-        return tuple(seen)
-
-
 def _passage(ci: ChunkInfo, c: CitedRange) -> str | None:
     n = len(ci.sentences)
     if not 0 <= c.sentence_start < c.sentence_end <= n:
@@ -161,8 +86,9 @@ def _passage(ci: ChunkInfo, c: CitedRange) -> str | None:
     return ci.text[ci.sentences[c.sentence_start][0] : ci.sentences[c.sentence_end - 1][1]].strip()
 
 
-def build_case(item: GoldenItem, out: ItemOutput, chunks: Mapping[str, ChunkInfo]) -> JudgeCase:
-    """The judge's view of one graded answer. Invalid or unknown citations contribute no passage."""
+def segment_views(out: ItemOutput, chunks: Mapping[str, ChunkInfo]) -> tuple[SegmentView, ...]:
+    """The judge's view of one answer: each segment with its cited passages (stored sentences, never
+    model-written quotes). Invalid or unknown citations contribute no passage."""
     segs: list[SegmentView] = []
     for seg in out.segments:
         passages: list[str] = []
@@ -172,15 +98,7 @@ def build_case(item: GoldenItem, out: ItemOutput, chunks: Mapping[str, ChunkInfo
             if text:
                 passages.append(text)
         segs.append(SegmentView(seg.text, tuple(passages)))
-    exp = item.expected_answer
-    return JudgeCase(
-        item_id=item.id,
-        question=item.question or "",
-        segments=tuple(segs),
-        reference_quotes=tuple(g.quote for g in item.gold),
-        expected_answer=tuple(exp) if isinstance(exp, list) else exp,
-        criteria=tuple(item.rubric or ()),
-    )
+    return tuple(segs)
 
 
 def _scrub(obj: Any, pat: re.Pattern[str]) -> Any:
@@ -204,46 +122,6 @@ def assert_blind(inputs: Mapping[str, Any], model_names: Sequence[str]) -> None:
     for n in model_names:
         if n and n.lower() in blob:
             raise BlindnessError("judge input names a generator model")
-
-
-def build_inputs(case: JudgeCase, jt: JudgeType, *, model_names: Sequence[str] = ()) -> dict[str, Any]:
-    """The `inputs` object for one judge call, with every model name scrubbed from the text."""
-    q = case.question
-    exp: Any = list(case.expected_answer) if isinstance(case.expected_answer, tuple) else case.expected_answer
-    raw: dict[str, Any]
-    if jt == "faithfulness":
-        raw = {
-            "question": q,
-            "answer": case.answer,
-            "evidence": [{"id": f"E{i}", "text": t} for i, t in enumerate(case.evidence, 1)],
-            "reference_quotes": list(case.reference_quotes),
-        }
-    elif jt == "citation":
-        raw = {
-            "question": q,
-            "segments": [
-                {"id": i, "text": s.text, "cited_passages": list(s.passages)}
-                for i, s in enumerate(case.segments)
-            ],
-            "reference_quotes": list(case.reference_quotes),
-        }
-    elif jt == "completeness":
-        raw = {
-            "question": q,
-            "answer": case.answer,
-            "expected_answer": exp,
-            "reference_quotes": list(case.reference_quotes),
-        }
-    else:
-        raw = {
-            "question": q,
-            "answer": case.answer,
-            "criteria": [{"id": i, "text": c} for i, c in enumerate(case.criteria)],
-            "reference_quotes": list(case.reference_quotes),
-        }
-    out: dict[str, Any] = _scrub(raw, _name_pattern(model_names))
-    assert_blind(out, model_names)
-    return out
 
 
 # --- tiers --------------------------------------------------------------------------------------------
@@ -274,79 +152,6 @@ def check_tiers(router: ModelRouter) -> tuple[Role, Role]:
     return primary, secondary
 
 
-# --- deterministic graders first ----------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class DetVerdict:
-    verdict: Verdict
-    code: str
-
-
-def applicable(item: GoldenItem, jt: JudgeType) -> bool:
-    if item.category == "multi_turn":
-        return False  # judged per turn through `GoldenItem.turn_item`
-    if jt == "rubric":
-        return bool(item.rubric)
-    return item.grading not in ("rubric", "exact_meta", "set_meta", "abstention")
-
-
-def deterministic_verdict(
-    item: GoldenItem,
-    out: ItemOutput,
-    targets: Sequence[GoldTarget],
-    chunks: Mapping[str, ChunkInfo],
-    jt: JudgeType,
-) -> DetVerdict | None:
-    """A verdict from the deterministic graders (abstention, must_not_contain, exact/set meta, gold-citation
-    overlap), or None when an LLM judge must fill the gap."""
-    m = grade_item(item, out, targets, chunks, retrieval=False)
-    if m.get("abstain_correct") == 0.0:
-        return DetVerdict("fail", "ABSTENTION_MISMATCH")
-    if item.expected_coverage == "insufficient":
-        return DetVerdict("pass", "ABSTAINED_CORRECTLY")
-    if m.get("must_not_contain_ok") == 0.0:
-        return DetVerdict("fail", "FORBIDDEN_STRING")
-    if "meta_correct" in m:
-        return DetVerdict("pass" if m["meta_correct"] == 1.0 else "fail", "META_EXACT")
-    if jt == "citation" and "cite_sent_recall" in m:
-        rec, prec = m["cite_sent_recall"], m["cite_sent_precision"]
-        if rec == 1.0 and prec == 1.0:
-            return DetVerdict("pass", "GOLD_CITATION_OVERLAP")
-        if rec == 0.0 and prec == 0.0:
-            return DetVerdict("fail", "GOLD_CITATION_NO_OVERLAP")
-    return None
-
-
-# --- sampling and agreement ---------------------------------------------------------------------------
-
-
-def _frac(key: str) -> float:
-    return int(hashlib.sha256(key.encode()).hexdigest()[:16], 16) / 2**64
-
-
-def in_secondary_sample(item_id: str, jt: JudgeType, fraction: float = SECONDARY_FRACTION) -> bool:
-    return _frac(f"{jt}:{item_id}") < fraction
-
-
-def sample_ids(ids: Sequence[str], n: int, salt: str = "inter-judge") -> list[str]:
-    """The first `n` ids in a stable hash order (independent of input order)."""
-    return sorted(ids, key=lambda i: _frac(f"{salt}:{i}"))[:n]
-
-
-def verdicts_agree(a: str, b: str, tolerance: float = TOLERANCE) -> bool:
-    return abs(VERDICT_SCORE[a] - VERDICT_SCORE[b]) <= tolerance
-
-
-def agreement(pairs: Sequence[tuple[str | None, str | None]], tolerance: float = TOLERANCE) -> float:
-    """Fraction of (primary, secondary) verdict pairs that agree; a missing verdict is a disagreement; NaN
-    when there are no pairs."""
-    if not pairs:
-        return math.nan
-    ok = sum(1 for a, b in pairs if a is not None and b is not None and verdicts_agree(a, b, tolerance))
-    return ok / len(pairs)
-
-
 # --- spend cap ------------------------------------------------------------------------------------------
 
 
@@ -365,10 +170,6 @@ class SpendGuard:
             raise SpendCapReached(f"spent {self.spent} + next {worst_case} > cap {self.cap}")
 
 
-def _worst_case(gw: LlmGateway, jt: JudgeType, inputs: Mapping[str, Any], route: str | None) -> Decimal:
-    return _worst_case_for(gw, PROMPTS[jt], inputs, route)
-
-
 def _worst_case_for(
     gw: LlmGateway, prompt: tuple[str, int], inputs: Mapping[str, Any], route: str | None
 ) -> Decimal:
@@ -379,224 +180,11 @@ def _worst_case_for(
     return (Decimal(in_tok) * price.input + Decimal(p.max_tokens) * price.output) / Decimal(1_000_000)
 
 
-# --- judging ------------------------------------------------------------------------------------------
+# --- claim, support and abstention judges -----------------------------------------------------------------
 
-
-@dataclass(frozen=True)
-class JudgeVerdict:
-    judge_type: JudgeType
-    tier: Literal["primary", "secondary"]
-    role: str | None
-    verdict: Verdict
-    score: float
-    confidence: float
-    reason: str
-    cost_usd: Decimal
-
-
-def effective_verdict(out: JudgeSchema, n_criteria: int) -> Verdict:
-    """The model's verdict; a rubric verdict is derived from `criteria_met` (code applies decisions)."""
-    if isinstance(out, RubricVerdict):
-        if len(out.criteria_met) != n_criteria:
-            raise JudgeOutputError("criteria_met length does not match the criteria")
-        met = sum(out.criteria_met)
-        return "pass" if met == n_criteria else ("fail" if met == 0 else "partial")
-    return out.verdict
-
-
-async def run_judge(
-    gw: LlmGateway,
-    case: JudgeCase,
-    jt: JudgeType,
-    *,
-    secondary: bool = False,
-    guard: SpendGuard | None = None,
-) -> JudgeVerdict:
-    check_tiers(gw.router)
-    inputs = build_inputs(case, jt, model_names=list(gw.router.role_models.values()))
-    route = SECONDARY_ROUTE if secondary else None
-    if guard is not None:
-        guard.check(_worst_case(gw, jt, inputs, route))
-    res = await gw.call(
-        purpose=PURPOSE,
-        lane="background",
-        prompt=PROMPTS[jt],
-        owner_id=None,
-        schema=SCHEMAS[jt],
-        route=route,
-        inputs=inputs,
-    )
-    if res.output is None:
-        raise JudgeOutputError("no parsed output")
-    verdict = effective_verdict(res.output, len(case.criteria))
-    return JudgeVerdict(
-        jt,
-        "secondary" if secondary else "primary",
-        res.role,
-        verdict,
-        VERDICT_SCORE[verdict],
-        min(1.0, max(0.0, res.output.confidence)),
-        res.output.reason,
-        res.cost_usd,
-    )
-
-
-@dataclass(frozen=True)
-class Judgement:
-    item_id: str
-    judge_type: JudgeType
-    source: Literal["deterministic", "judge", "error", "not_applicable"]
-    verdict: Verdict | None
-    score: float | None
-    code: str | None  # deterministic reason code or error type
-    primary: JudgeVerdict | None = None
-    secondary: JudgeVerdict | None = None
-    grader_suspect: bool = False
-
-
-def mark_suspect(j: Judgement, tolerance: float = TOLERANCE) -> Judgement:
-    """`grader_suspect` iff both judges ran and their verdicts disagree."""
-    if j.primary is None or j.secondary is None:
-        return j
-    bad = not verdicts_agree(j.primary.verdict, j.secondary.verdict, tolerance)
-    return Judgement(**{**j.__dict__, "grader_suspect": bad})
-
-
-def tuner_scores(judgements: Sequence[Judgement]) -> dict[tuple[str, str], float]:
-    """(item_id, judge_type) -> score for the tuner's accept/reject: scored items only, suspects left out."""
-    return {
-        (j.item_id, j.judge_type): j.score
-        for j in judgements
-        if j.score is not None and not j.grader_suspect and j.source in ("deterministic", "judge")
-    }
-
-
-async def judge_item(
-    gw: LlmGateway,
-    item: GoldenItem,
-    out: ItemOutput,
-    targets: Sequence[GoldTarget],
-    chunks: Mapping[str, ChunkInfo],
-    jt: JudgeType,
-    *,
-    secondary: bool | None = None,
-    guard: SpendGuard | None = None,
-    tolerance: float = TOLERANCE,
-) -> Judgement:
-    if not applicable(item, jt) and jt == "rubric":
-        return Judgement(item.id, jt, "not_applicable", None, None, None)
-    det = deterministic_verdict(item, out, targets, chunks, jt)
-    if det is not None:
-        return Judgement(item.id, jt, "deterministic", det.verdict, VERDICT_SCORE[det.verdict], det.code)
-    if not applicable(item, jt):
-        return Judgement(item.id, jt, "not_applicable", None, None, None)
-    case = build_case(item, out, chunks)
-    want_secondary = in_secondary_sample(item.id, jt) if secondary is None else secondary
-    try:
-        primary = await run_judge(gw, case, jt, guard=guard)
-        sec = await run_judge(gw, case, jt, secondary=True, guard=guard) if want_secondary else None
-    except LlmError as e:
-        return Judgement(item.id, jt, "error", None, None, e.error_type)
-    except JudgeOutputError:
-        return Judgement(item.id, jt, "error", None, None, "JUDGE_OUTPUT_INCONSISTENT")
-    j = Judgement(item.id, jt, "judge", primary.verdict, primary.score, None, primary, sec)
-    return mark_suspect(j, tolerance)
-
-
-# --- inter-judge agreement ---------------------------------------------------------------------------
-
-
-@dataclass(frozen=True)
-class AgreementReport:
-    judge_type: JudgeType
-    n: int
-    rate: float
-    disagreeing: tuple[str, ...]
-    errors: int
-
-
-async def inter_judge(
-    gw: LlmGateway,
-    cases: Mapping[JudgeType, Sequence[JudgeCase]],
-    *,
-    guard: SpendGuard | None = None,
-    tolerance: float = TOLERANCE,
-) -> dict[JudgeType, AgreementReport]:
-    """Run primary and secondary on every case; a failed call counts as a disagreement (conservative)."""
-    reports: dict[JudgeType, AgreementReport] = {}
-    for jt, cs in cases.items():
-        pairs: list[tuple[str | None, str | None]] = []
-        bad: list[str] = []
-        errors = 0
-        for c in cs:
-            try:
-                p = await run_judge(gw, c, jt, guard=guard)
-                s = await run_judge(gw, c, jt, secondary=True, guard=guard)
-                pair: tuple[str | None, str | None] = (p.verdict, s.verdict)
-            except (LlmError, JudgeOutputError):
-                errors += 1
-                pair = (None, None)
-            pairs.append(pair)
-            if pair[0] is None or pair[1] is None or not verdicts_agree(pair[0], pair[1], tolerance):
-                bad.append(c.item_id)
-        reports[jt] = AgreementReport(jt, len(cs), agreement(pairs, tolerance), tuple(bad), errors)
-    return reports
-
-
-def _answer_text(item: GoldenItem) -> str:
-    exp = item.expected_answer
-    return "\n".join(exp) if isinstance(exp, list) else (exp or "")
-
-
-def sample_cases(items: Sequence[GoldenItem], jt: JudgeType, n: int) -> list[JudgeCase]:
-    """Cases for the agreement run: the dataset's own expected answer (a positive) or another item's expected
-    answer against this item's evidence (a negative), so the judges see both verdict directions. Evidence is
-    the gold quotes. Rubric items give both variants (there are few); other types alternate by hash rank."""
-    pool = [i for i in items if applicable(i, jt) and i.expected_coverage != "insufficient"]
-    if jt != "rubric":
-        pool = [i for i in pool if i.gold]
-    chosen_ids = sample_ids([i.id for i in pool], n)
-    by_id = {i.id: i for i in pool}
-    chosen = [by_id[i] for i in chosen_ids]
-    cases: list[JudgeCase] = []
-    for k, it in enumerate(chosen):
-        variants = (True, False) if jt == "rubric" else ((k % 2 == 0),)
-        for positive in variants:
-            other = chosen[(k + 1) % len(chosen)] if len(chosen) > 1 else None
-            if not positive and (other is None or other.id == it.id):
-                continue
-            text = _answer_text(it) if positive else _answer_text(other or it)
-            passages = tuple(g.quote for g in it.gold)
-            cases.append(
-                JudgeCase(
-                    item_id=f"{it.id}{'' if positive else '#neg'}",
-                    question=it.question or "",
-                    segments=(SegmentView(text, passages),),
-                    reference_quotes=passages,
-                    expected_answer=tuple(it.expected_answer)
-                    if isinstance(it.expected_answer, list)
-                    else it.expected_answer,
-                    criteria=tuple(it.rubric or ()),
-                )
-            )
-    return cases
-
-
-# --- v2 claim-level judges -------------------------------------------------------------------
-#
-# Three narrow judges, each a binary decision per unit: claim entailed by the answer (completeness), segment
-# entailed by its own cited sentences (support), answer behaved correctly on an unanswerable / false-premise /
-# versioned item (abstention). Code applies the decisions: completeness = recall over required claims,
-# answer_pass = all required claims entailed. A "supported" decision that carries a quote the answer (or the
-# cited passages) does not contain is overruled to false: the model's quote is never trusted.
-# The v1 judges above are untouched and still serve v1 reports.
-
-PROMPTS_V2: dict[str, tuple[str, int]] = {
-    "claims": (
-        "eval_judge_claims",
-        4,
-    ),  # @4 = @3 (numbers as quantities, value lists, stated aliases) with a neutral alias example
-    "support": ("eval_judge_support", 3),  # @3 = @2 with neutral examples (no evaluation item's wording)
+PROMPTS: dict[str, tuple[str, int]] = {
+    "claims": ("eval_judge_claims", 4),
+    "support": ("eval_judge_support", 3),
     "abstain": ("eval_judge_abstain", 1),
 }
 ABSTAIN_STRATA = ("unanswerable", "false_premise", "versioned")
@@ -654,7 +242,7 @@ def _quote_in(quote: str, haystacks: Sequence[str]) -> bool:
     return bool(q) and any(q in _norm(h) for h in haystacks)
 
 
-async def _call_v2(
+async def _call(
     gw: LlmGateway,
     key: str,
     schema: type[BaseModel],
@@ -668,11 +256,11 @@ async def _call_v2(
     inputs = _scrub(inputs, _name_pattern(names))
     assert_blind(inputs, names)
     if guard is not None:
-        guard.check(_worst_case_for(gw, PROMPTS_V2[key], inputs, route))
+        guard.check(_worst_case_for(gw, PROMPTS[key], inputs, route))
     res = await gw.call(
         purpose=PURPOSE,
         lane="background",
-        prompt=PROMPTS_V2[key],
+        prompt=PROMPTS[key],
         owner_id=None,
         schema=schema,
         route=route,
@@ -703,7 +291,7 @@ def _complete_indices(got: Sequence[int], n: int, what: str) -> None:
 
 
 @dataclass(frozen=True)
-class Verdict2:
+class UnitVerdict:
     """One judged unit (claim or segment) as the model said it and as code applied it."""
 
     index: int
@@ -729,7 +317,7 @@ class ClaimJudgement:
     item_id: str
     entailed: tuple[bool, ...]  # per required claim, in item order
     cost_usd: Decimal
-    details: tuple[Verdict2, ...] = ()
+    details: tuple[UnitVerdict, ...] = ()
 
     @property
     def completeness(self) -> float:
@@ -740,7 +328,7 @@ class ClaimJudgement:
         return bool(self.entailed) and all(self.entailed)
 
 
-def claim_inputs(item: GoldItemV2, answer: str) -> dict[str, Any]:
+def claim_inputs(item: GoldItem, answer: str) -> dict[str, Any]:
     return {
         "question": item.question,
         "answer": answer,
@@ -753,7 +341,7 @@ def claim_inputs(item: GoldItemV2, answer: str) -> dict[str, Any]:
 
 async def judge_claims(
     gw: LlmGateway,
-    item: GoldItemV2,
+    item: GoldItem,
     answer: str,
     *,
     route: str | None = None,
@@ -762,18 +350,15 @@ async def judge_claims(
     n = len(item.required_claims)
     if n == 0:
         raise ValueError(f"item {item.id} has no required claims")
-    out, cost = await _call_v2(
-        gw, "claims", ClaimsVerdict, claim_inputs(item, answer), route=route, guard=guard
-    )
+    out, cost = await _call(gw, "claims", ClaimsVerdict, claim_inputs(item, answer), route=route, guard=guard)
     _complete_indices([d.claim_index for d in out.decisions], n, "claim")
     by = {d.claim_index: d for d in out.decisions}
     details = []
     for i in range(n):
         d = by[i]
         verified = _quote_in(d.quote, [answer])
-        details.append(
-            Verdict2(i, d.entailed and verified, d.entailed, d.quote, verified, d.entailed and not verified)
-        )
+        ok = d.entailed and verified
+        details.append(UnitVerdict(i, ok, d.entailed, d.quote, verified, d.entailed and not verified))
     return ClaimJudgement(item.id, tuple(v.decision for v in details), cost, tuple(details))
 
 
@@ -784,7 +369,7 @@ async def judge_claims(
 class SupportJudgement:
     supported: tuple[bool | None, ...]  # per segment; None = no cited passages, not judged
     cost_usd: Decimal
-    details: tuple[Verdict2 | None, ...] = ()  # per segment; None = not judged
+    details: tuple[UnitVerdict | None, ...] = ()  # per segment; None = not judged
 
     @property
     def rate(self) -> float:
@@ -801,8 +386,8 @@ async def judge_support(
     question: str | None = None,
     documents: Sequence[str] = (),
 ) -> SupportJudgement:
-    """`question` and `documents` (names of the source documents) are metadata for the naming rule of
-    eval_judge_support@2; they are never evidence."""
+    """`question` and `documents` (names of the source documents) are metadata for the prompt's naming rule;
+    they are never evidence."""
     idx = [i for i, s in enumerate(segments) if s.passages]
     if not idx:
         return SupportJudgement(tuple(None for _ in segments), Decimal(0), tuple(None for _ in segments))
@@ -814,17 +399,17 @@ async def judge_support(
     inputs["segments"] = [
         {"index": i, "text": segments[i].text, "cited_passages": list(segments[i].passages)} for i in idx
     ]
-    out, cost = await _call_v2(gw, "support", SupportVerdict, inputs, route=route, guard=guard)
+    out, cost = await _call(gw, "support", SupportVerdict, inputs, route=route, guard=guard)
     by = {d.segment_index: d for d in out.decisions}
     if len(out.decisions) != len(idx) or set(by) != set(idx):
         raise JudgeOutputError(f"segment decisions {sorted(by)} do not match the judged segments {idx}")
     res: list[bool | None] = [None] * len(segments)
-    det: list[Verdict2 | None] = [None] * len(segments)
+    det: list[UnitVerdict | None] = [None] * len(segments)
     for i in idx:
         d = by[i]
         verified = _quote_in(d.quote, segments[i].passages) if d.quote else None
         ok = d.supported and verified is not False
-        det[i] = Verdict2(i, ok, d.supported, d.quote, verified, d.supported and not ok)
+        det[i] = UnitVerdict(i, ok, d.supported, d.quote, verified, d.supported and not ok)
         res[i] = ok
     return SupportJudgement(tuple(res), cost, tuple(det))
 
@@ -854,7 +439,7 @@ def verdict_record(
     claims: ClaimJudgement | None, support: SupportJudgement | None, abstain: AbstainJudgement | None
 ) -> dict[str, Any]:
     """Per-claim / per-segment / abstention verdicts for the answers dump (additive `judge` field)."""
-    rec: dict[str, Any] = {"prompts": {k: f"{n}@{v}" for k, (n, v) in PROMPTS_V2.items()}}
+    rec: dict[str, Any] = {"prompts": {k: f"{n}@{v}" for k, (n, v) in PROMPTS.items()}}
     if claims is not None:
         rec["claims"] = [v.as_dict() for v in claims.details]
     if support is not None:
@@ -868,13 +453,13 @@ def verdict_record(
     return rec
 
 
-def abstain_applicable(item: GoldItemV2) -> bool:
+def abstain_applicable(item: GoldItem) -> bool:
     return item.stratum in ABSTAIN_STRATA
 
 
 async def judge_abstention(
     gw: LlmGateway,
-    item: GoldItemV2,
+    item: GoldItem,
     answer: str,
     *,
     route: str | None = None,
@@ -889,7 +474,7 @@ async def judge_abstention(
         "expected_behaviour": EXPECTED_BEHAVIOUR[item.stratum],
         "reference_claims": list(item.required_claims),
     }
-    out, cost = await _call_v2(gw, "abstain", AbstainVerdict, inputs, route=route, guard=guard)
+    out, cost = await _call(gw, "abstain", AbstainVerdict, inputs, route=route, guard=guard)
     # versioned: a correct answer answers from the current version, so `answered_as_asked` is expected;
     # elsewhere a contradictory verdict (correct but answered as asked) is not a pass
     ok = out.correct if item.stratum == "versioned" else out.correct and out.behaviour != "answered_as_asked"
@@ -1001,7 +586,7 @@ def _rank(seed: int, key: str) -> str:
 
 
 def export_labels(
-    items: Mapping[str, GoldItemV2], answers: Sequence[AnswerRecord], n: int, seed: int = 0
+    items: Mapping[str, GoldItem], answers: Sequence[AnswerRecord], n: int, seed: int = 0
 ) -> LabelFile:
     """Pick up to `n` pairs, about FAILURE_SHARE of them failures (all failures when fewer), in a seeded
     hash order; every pair carries its source_doc split and null labels."""
@@ -1059,7 +644,7 @@ def load_labels(path: str) -> LabelFile:
 async def calibrate(
     gw: LlmGateway,
     labels: LabelFile,
-    items: Mapping[str, GoldItemV2],
+    items: Mapping[str, GoldItem],
     *,
     split: str = "test",
     route: str | None = None,
@@ -1114,44 +699,29 @@ def format_calibration(res: Mapping[str, Confusion], *, route: str | None) -> st
 # --- CLI ------------------------------------------------------------------------------------------------
 
 
-def _dry_gateway(ledger: MemoryLedger) -> LlmGateway:
-    from app.core.settings import Settings
-    from app.llm.pricing import DEFAULT_PRICES, PriceTable
-    from app.llm.prompts import default_registry
-    from app.llm.providers.fake import FakeProvider
-    from app.llm.types import ChatRequest, ChatResponse, TextPart, Usage
-
-    class DryProvider(FakeProvider):
-        """Valid all-pass verdicts for whichever judge schema the request carries; no network."""
-
-        async def complete(self, req: ChatRequest) -> ChatResponse:
-            self.requests.append(req)
-            props = (req.output_schema or {}).get("properties", {})
-            body: dict[str, Any] = {"reason": "dry run", "verdict": "pass", "confidence": 0.9}
-            if "unsupported_claims" in props:
-                body["unsupported_claims"] = []
-            if "unsupported_segments" in props:
-                body["unsupported_segments"] = []
-            if "missing_facts" in props:
-                body["missing_facts"] = []
-            if "criteria_met" in props:
-                data = json.loads(
-                    str(req.messages[0]["content"]).removeprefix("<inputs>").removesuffix("</inputs>")
-                )
-                body["criteria_met"] = [True] * len(data["criteria"])
-            return ChatResponse((TextPart(json.dumps(body)),), "end_turn", Usage(1500, 150), None, req.model)
-
-    settings = Settings(_env_file=None, database_url="postgresql+asyncpg://x/y", redis_url="redis://x")  # type: ignore[call-arg]
-    return LlmGateway(
-        chat=DryProvider(),
-        prompts=default_registry(),
-        prices=PriceTable({**DEFAULT_PRICES}),
-        ledger=ledger,
-        settings=settings,
-    )
+def _load_key_from_env_files() -> None:
+    """Make OPENAI_API_KEY visible when run from a worktree: read it from the nearest gitignored `.env` up the
+    tree (the main checkout's). Only that variable is read, and its value is never printed."""
+    if os.environ.get("OPENAI_API_KEY"):
+        return
+    root = pathlib.Path(__file__).resolve().parents[1]
+    for base in (root, *root.parents[:4]):
+        f = base / ".env"
+        if not f.exists():
+            continue
+        for line in f.read_text().splitlines():
+            k, sep, v = line.partition("=")
+            if sep and k.strip() == "OPENAI_API_KEY" and v.strip():
+                os.environ["OPENAI_API_KEY"] = v.strip().strip("'\"")
+                return
 
 
-def _live_gateway(ledger: MemoryLedger) -> LlmGateway:
+def live_gateway(ledger: MemoryLedger) -> LlmGateway:
+    """The judges' own gateway (in-memory ledger, so their spend is capped separately from the system's)."""
+    _load_key_from_env_files()
+    # the judges never touch the database or Redis; Settings only requires the variables to exist
+    os.environ.setdefault("DATABASE_URL", "postgresql+asyncpg://unused/unused")
+    os.environ.setdefault("REDIS_URL", "redis://unused")
     from app.core.settings import get_settings
     from app.llm.pricing import price_table_from_settings
     from app.llm.prompts import default_registry
@@ -1170,28 +740,10 @@ def _live_gateway(ledger: MemoryLedger) -> LlmGateway:
     )
 
 
-async def _inter_judge_cli(sample: int, split: str, gw: LlmGateway, guard: SpendGuard) -> int:
+async def _calibrate_cli(path: str, split: str, route: str | None, gw: LlmGateway, guard: SpendGuard) -> int:
     from eval.loader import load_dataset
 
-    items = load_dataset().select(split)
-    cases = {jt: sample_cases(items, jt, sample) for jt in JUDGE_TYPES}
-    reports = await inter_judge(gw, cases, guard=guard)
-    worst = True
-    for jt, r in reports.items():
-        ok = r.n > 0 and r.rate >= AGREEMENT_TARGET
-        worst = worst and ok
-        rate = "n/a" if math.isnan(r.rate) else f"{r.rate:.2f}"
-        print(f"{jt:13s} n={r.n:3d} agreement={rate} errors={r.errors} {'OK' if ok else 'BELOW 0.80'}")
-        if r.disagreeing:
-            print(f"  disagreeing: {', '.join(r.disagreeing)}")
-    print(f"spent ${guard.spent} of cap ${guard.cap}")
-    return 0 if worst else 1
-
-
-async def _calibrate_cli(path: str, split: str, route: str | None, gw: LlmGateway, guard: SpendGuard) -> int:
-    from eval.loader import load_dataset_v2
-
-    items = load_dataset_v2().by_id()
+    items = load_dataset().by_id()
     res = await calibrate(gw, load_labels(path), items, split=split, route=route, guard=guard)
     print(format_calibration(res, route=route))
     print(f"spent ${guard.spent} of cap ${guard.cap}")
@@ -1199,9 +751,9 @@ async def _calibrate_cli(path: str, split: str, route: str | None, gw: LlmGatewa
 
 
 def _export_cli(n: int, answers: str, out: str, seed: int) -> int:
-    from eval.loader import load_dataset_v2
+    from eval.loader import load_dataset
 
-    lf = export_labels(load_dataset_v2().by_id(), load_answers(answers), n, seed)
+    lf = export_labels(load_dataset().by_id(), load_answers(answers), n, seed)
     dump_labels(lf, out)
     by_split = {s: sum(p.split == s for p in lf.pairs) for s, _ in SPLIT_FRACTIONS}
     print(
@@ -1213,13 +765,7 @@ def _export_cli(n: int, answers: str, out: str, seed: int) -> int:
 
 def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="eval.judge")
-    ap.add_argument(
-        "--inter-judge", action="store_true", help="primary (deep) vs secondary (flagship) agreement"
-    )
-    ap.add_argument("--sample", type=int, default=20, help="items per judge type")
-    ap.add_argument("--split", default="train", choices=["train", "test", "smoke", "all"])
-    ap.add_argument("--max-usd", type=Decimal, default=None, help="spend cap (mandatory for live calls)")
-    ap.add_argument("--dry-run", action="store_true", help="scripted FakeProvider replies, no network")
+    ap.add_argument("--max-usd", type=Decimal, default=None, help="spend cap (mandatory for --calibrate)")
     ap.add_argument("--export-labels", type=int, metavar="N", help="write N (item, answer) pairs to label")
     ap.add_argument("--answers", help="JSONL of answers for --export-labels (see eval/labels/README.md)")
     ap.add_argument("--out", default="eval/labels/labeled.yaml", help="--export-labels output file")
@@ -1232,23 +778,17 @@ def main(argv: Sequence[str] | None = None) -> int:
         if a.export_labels < 1 or not a.answers:
             ap.error("--export-labels needs N >= 1 and --answers")
         return _export_cli(a.export_labels, a.answers, a.out, a.seed)
-    if not a.inter_judge and not a.calibrate:
-        ap.error("nothing to do: pass --inter-judge, --calibrate or --export-labels")
-    if a.sample < 1:
-        ap.error("--sample must be >= 1")
-    if not a.dry_run and a.max_usd is None:
+    if not a.calibrate:
+        ap.error("nothing to do: pass --calibrate or --export-labels")
+    if a.max_usd is None:
         print("refusing live calls without an explicit --max-usd cap", file=sys.stderr)
         return 2
-    if a.calibrate and a.dry_run:
-        ap.error("--calibrate has no dry run: it compares live judge output with human labels")
     ledger = MemoryLedger()
-    gw = _dry_gateway(ledger) if a.dry_run else _live_gateway(ledger)
-    guard = SpendGuard(ledger, a.max_usd if a.max_usd is not None else Decimal(1000))  # dry run: no spend
+    gw = live_gateway(ledger)
+    guard = SpendGuard(ledger, a.max_usd)
     try:
         check_tiers(gw.router)
-        if a.calibrate:
-            return asyncio.run(_calibrate_cli(a.calibrate, a.label_split, a.judge_route, gw, guard))
-        return asyncio.run(_inter_judge_cli(a.sample, a.split, gw, guard))
+        return asyncio.run(_calibrate_cli(a.calibrate, a.label_split, a.judge_route, gw, guard))
     except SpendCapReached as e:
         print(f"stopped: {e}", file=sys.stderr)
         return 3

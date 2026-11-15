@@ -290,22 +290,22 @@ async def _load(run: str, cache: dict, until: dt.datetime) -> list[dict]:
     from sqlalchemy import text
 
     from app.db.session import get_sessionmaker
-    from eval.build.build_v2_docs import document_units, load_documents_v2
-    from eval.loader import load_dataset_v2
+    from eval.build.build_docs import document_units, load_documents
+    from eval.loader import load_dataset
     from eval.mapping import chunks_from_rows
-    from eval.run_v2 import gold_targets
-    from eval.splits_v2 import live_items, select_v2
+    from eval.run import gold_targets
+    from eval.splits import live_items, select_split
 
     uid, doc_ids = cache["uid"], cache["doc_ids"]
     by_id = {v: k for k, v in doc_ids.items()}
     report = json.loads((REPORTS / f"{run}.json").read_text())
-    items = {i.id: i for i in select_v2(live_items(load_dataset_v2().items), report["split"])}
+    items = {i.id: i for i in select_split(live_items(load_dataset().items), report["split"])}
     side = {i["item_id"]: i for i in report["items"]}
     answers = {
         json.loads(ln)["item_id"]: json.loads(ln)
         for ln in (REPORTS / f"{run}.answers.jsonl").read_text().splitlines()
     }
-    docs = load_documents_v2()
+    docs = load_documents()
     async with get_sessionmaker()() as s:
         rows = (
             (

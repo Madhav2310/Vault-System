@@ -1,9 +1,9 @@
-"""Answers file of a v2 run: `eval/reports/<run_id>.answers.jsonl`, one line per scored item.
+"""Answers file of a run: `eval/reports/<run_id>.answers.jsonl`, one line per scored item.
 
-The v2 sidecar carries metrics only. This file carries what `eval.build.audit --answers` and
+The sidecar carries metrics only. This file carries what `eval.build.audit --answers` and
 `eval.judge --export-labels --answers` read (`item_id`, `answer`, `segments: [{text, passages}]`, `failed`)
-plus context for humans. Passages are the stored sentences the answer cited (`eval.judge.build_case`), never
-model-written quotes. Identity and text only: no keys, no model names.
+plus context for humans. Passages are the stored sentences the answer cited (`eval.judge.segment_views`),
+never model-written quotes. Identity and text only: no keys, no model names.
 """
 
 from __future__ import annotations
@@ -14,9 +14,9 @@ from collections.abc import Mapping, Sequence
 from typing import Any
 
 from eval.graders import citations_of
-from eval.judge import build_case
+from eval.judge import segment_views
 from eval.mapping import ChunkInfo
-from eval.schema import GoldenItem, GoldItemV2, ItemOutput
+from eval.schema import GoldItem, ItemOutput
 
 
 def answers_path(run_id: object, directory: pathlib.Path) -> pathlib.Path:
@@ -24,15 +24,14 @@ def answers_path(run_id: object, directory: pathlib.Path) -> pathlib.Path:
 
 
 def answer_row(
-    item: GoldItemV2,
+    item: GoldItem,
     out: ItemOutput,
     chunks: Mapping[str, ChunkInfo],
-    view: GoldenItem,
     *,
     failed: bool,
     judged: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    segs = build_case(view, out, chunks).segments
+    segs = segment_views(out, chunks)
     cited = list(dict.fromkeys(c.chunk_id for c in citations_of(out)))
     row: dict[str, Any] = {
         "item_id": item.id,

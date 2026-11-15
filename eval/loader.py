@@ -1,7 +1,8 @@
-"""Load and validate Vault-Eval v1 (`eval/datasets/vault_eval_v1`): every item, the splits, the documents.
+"""Load and validate the golden set (`eval/datasets/vault_eval`).
 
-`load_dataset()` raises `DatasetError` listing every problem found (it does not stop at the first), so a bad
-edit to golden.yaml is diagnosed in one run. Document-level holdout is checked by `holdout_violations`.
+Items live in part files (`parts/*.yaml`, `authored/*.yaml`), each with a top-level `items:` list. They are
+validated together, so the per-document cap spans parts. `DatasetError` lists every problem found (it does
+not stop at the first), so a bad edit is diagnosed in one run.
 """
 
 from __future__ import annotations
@@ -14,14 +15,12 @@ from typing import Any
 import yaml
 from pydantic import ValidationError
 
-from eval.schema import GoldenItem, GoldItemV2, Split
+from eval.schema import GoldItem
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-DATASET_DIR = ROOT / "eval" / "datasets" / "vault_eval_v1"
-EXPECTED_ITEMS = 122
-DATASET_V2_DIR = ROOT / "eval" / "datasets" / "vault_eval_v2"
+DATASET_DIR = ROOT / "eval" / "datasets" / "vault_eval"
+DATASET_ID = "vault_eval"
 MAX_ITEMS_PER_DOC = 3  # design effect about 1.6
-SPLITS: tuple[Split, ...] = ("train", "test", "smoke")
 
 
 class DatasetError(Exception):
@@ -32,101 +31,21 @@ class DatasetError(Exception):
 
 @dataclass(frozen=True)
 class Dataset:
-    items: tuple[GoldenItem, ...]
-    splits: dict[str, tuple[str, ...]]  # train / test / smoke -> item ids
-    holdout_docs: frozenset[str]
-    documents: dict[str, dict[str, Any]]  # documents.yaml entries by key
+    items: tuple[GoldItem, ...]
 
-    def by_id(self) -> dict[str, GoldenItem]:
-        return {i.id: i for i in self.items}
-
-    def select(self, split: str = "all") -> list[GoldenItem]:
-        """Items of one split in golden.yaml order; `all` = every item."""
-        if split == "all":
-            return list(self.items)
-        if split not in self.splits:
-            raise KeyError(f"unknown split {split!r}")
-        wanted = set(self.splits[split])
-        return [i for i in self.items if i.id in wanted]
-
-    def split_of(self, item_id: str) -> str:
-        """`train` or `test` (smoke is an overlay on both)."""
-        return "train" if item_id in set(self.splits["train"]) else "test"
-
-
-def load_dataset(root: pathlib.Path = DATASET_DIR, *, expected_items: int | None = EXPECTED_ITEMS) -> Dataset:
-    problems: list[str] = []
-    raw = yaml.safe_load((root / "golden.yaml").read_text())["items"]
-    items: list[GoldenItem] = []
-    for n, r in enumerate(raw):
-        try:
-            items.append(GoldenItem.model_validate(r))
-        except ValidationError as e:
-            name = r.get("id", f"#{n}") if isinstance(r, dict) else f"#{n}"
-            problems.append(
-                f"{name}: " + "; ".join(f"{'.'.join(map(str, x['loc']))}: {x['msg']}" for x in e.errors())
-            )
-    ids = [i.id for i in items]
-    problems += [f"duplicate item id {k}" for k, c in Counter(ids).items() if c > 1]
-    if expected_items is not None and len(raw) != expected_items:
-        problems.append(f"expected {expected_items} items, found {len(raw)}")
-
-    sp = yaml.safe_load((root / "splits.yaml").read_text())
-    docs: dict[str, dict[str, Any]] = yaml.safe_load((root / "documents.yaml").read_text())["documents"]
-    splits: dict[str, tuple[str, ...]] = {k: tuple(sp[k]) for k in SPLITS}
-    known = set(ids)
-    for k, v in splits.items():
-        problems += [f"splits.{k}: unknown item {i}" for i in v if i not in known]
-        problems += [f"splits.{k}: duplicate item {i}" for i, c in Counter(v).items() if c > 1]
-    both = set(splits["train"]) & set(splits["test"])
-    problems += [f"item {i} is in both train and test" for i in sorted(both)]
-    unassigned = known - set(splits["train"]) - set(splits["test"])
-    problems += [f"item {i} is in neither train nor test" for i in sorted(unassigned)]
-    for i in items:
-        problems += [f"{i.id}: unknown document {d}" for d in sorted(i.referenced_docs()) if d not in docs]
-    holdout = frozenset(sp["holdout_docs"])
-    problems += [f"holdout document {d} is not in documents.yaml" for d in sorted(holdout - set(docs))]
-
-    ds = Dataset(tuple(items), splits, holdout, docs)
-    if not problems:
-        problems += holdout_violations(ds)
-    if problems:
-        raise DatasetError(problems)
-    return ds
-
-
-def holdout_violations(ds: Dataset) -> list[str]:
-    """Document-level holdout: holdout documents are referenced by test items only (and by at least one),
-    so a test item can never depend on content the tuner saw through a train item."""
-    by_id = ds.by_id()
-    train_docs = {d for i in ds.splits["train"] for d in by_id[i].referenced_docs()}
-    test_docs = {d for i in ds.splits["test"] for d in by_id[i].referenced_docs()}
-    out: list[str] = []
-    for i in ds.splits["train"]:
-        bad = by_id[i].referenced_docs() & ds.holdout_docs
-        out += [f"train item {i} references holdout document {d}" for d in sorted(bad)]
-    out += [f"holdout document {d} appears in train items" for d in sorted(train_docs & ds.holdout_docs)]
-    out += [f"holdout document {d} is not used by any test item" for d in sorted(ds.holdout_docs - test_docs)]
-    return out
-
-
-@dataclass(frozen=True)
-class DatasetV2:
-    items: tuple[GoldItemV2, ...]
-
-    def by_id(self) -> dict[str, GoldItemV2]:
+    def by_id(self) -> dict[str, GoldItem]:
         return {i.id: i for i in self.items}
 
 
-def validate_items_v2(raw: list[Any]) -> DatasetV2:
-    """Validate raw v2 items; raises `DatasetError` listing every problem (item level, then dataset level).
+def validate_items(raw: list[Any]) -> Dataset:
+    """Validate raw items; raises `DatasetError` listing every problem (item level, then dataset level).
 
     The per-document cap counts every item with its `source_doc` except `audit_status: dropped` ones."""
     problems: list[str] = []
-    items: list[GoldItemV2] = []
+    items: list[GoldItem] = []
     for n, r in enumerate(raw):
         try:
-            items.append(GoldItemV2.model_validate(r))
+            items.append(GoldItem.model_validate(r))
         except ValidationError as e:
             name = r.get("id", f"#{n}") if isinstance(r, dict) else f"#{n}"
             problems.append(
@@ -145,19 +64,15 @@ def validate_items_v2(raw: list[Any]) -> DatasetV2:
             )
     if problems:
         raise DatasetError(problems)
-    return DatasetV2(tuple(items))
+    return Dataset(tuple(items))
 
 
-def load_dataset_v2(root: pathlib.Path = DATASET_V2_DIR) -> DatasetV2:
-    """Load v2 items from `golden.yaml` plus part files (`parts/*.yaml`, `authored/*.yaml`), each a top-level
-    `items:` list, validated together so the per-document cap spans parts. v1 stays on `load_dataset`."""
-    files = [
-        root / "golden.yaml",
-        *sorted((root / "parts").glob("*.yaml")),
-        *sorted((root / "authored").glob("*.yaml")),
-    ]
+def part_files(root: pathlib.Path = DATASET_DIR) -> list[pathlib.Path]:
+    return [*sorted((root / "parts").glob("*.yaml")), *sorted((root / "authored").glob("*.yaml"))]
+
+
+def load_dataset(root: pathlib.Path = DATASET_DIR) -> Dataset:
     raw: list[dict[str, Any]] = []
-    for f in files:
-        if f.exists():
-            raw += (yaml.safe_load(f.read_text()) or {}).get("items", [])
-    return validate_items_v2(raw)
+    for f in part_files(root):
+        raw += (yaml.safe_load(f.read_text()) or {}).get("items", [])
+    return validate_items(raw)

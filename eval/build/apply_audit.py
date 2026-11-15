@@ -1,4 +1,4 @@
-"""Apply the human decisions of `audit_queue.yaml` to the v2 dataset files.
+"""Apply the human decisions of `audit_queue.yaml` to the dataset part files.
 
 Decision rules (deterministic, idempotent; a second run changes nothing):
 
@@ -34,10 +34,10 @@ from typing import Any
 
 import yaml
 from eval.build.audit import DECISIONS, QUEUE_FILE, load_queue
-from eval.loader import DATASET_V2_DIR, DatasetError, validate_items_v2
+from eval.loader import DATASET_DIR, DatasetError, part_files, validate_items
 from eval.schema import MAX_REQUIRED_CLAIMS
 
-MARKER = "[S21.05 audit: "
+MARKER = "[S21.05 audit: "  # the audit-note prefix the stored items carry; matched as is
 _MARKER_RE = re.compile(r"\s*\[S21\.05 audit: [^\]]*\].*\Z", re.S)
 _ITEM_RE = re.compile(r"^(\s*)- id: ")
 
@@ -247,21 +247,9 @@ def patch_text(text: str, changes: Mapping[str, Change], raws: Mapping[str, Mapp
 # --- dataset files ----------------------------------------------------------------------------------------
 
 
-def dataset_files(root: pathlib.Path) -> list[pathlib.Path]:
-    return [
-        f
-        for f in [
-            root / "golden.yaml",
-            *sorted((root / "parts").glob("*.yaml")),
-            *sorted((root / "authored").glob("*.yaml")),
-        ]
-        if f.exists()
-    ]
-
-
 def apply(queue: Mapping[str, Any], root: pathlib.Path) -> tuple[dict[pathlib.Path, str], dict[str, Change]]:
     """New file texts (changed files only) and the changes applied. Raises `ApplyError` and writes nothing."""
-    texts = {f: f.read_text(encoding="utf-8") for f in dataset_files(root)}
+    texts = {f: f.read_text(encoding="utf-8") for f in part_files(root)}
     parsed = {f: (yaml.safe_load(t) or {}).get("items", []) for f, t in texts.items()}
     raws: dict[str, dict[str, Any]] = {r["id"]: r for items in parsed.values() for r in items}
     problems = check_queue(queue, raws)
@@ -283,7 +271,7 @@ def apply(queue: Mapping[str, Any], root: pathlib.Path) -> tuple[dict[pathlib.Pa
         if new != t:
             new_texts[f] = new
     try:
-        validate_items_v2(final_all)
+        validate_items(final_all)
     except DatasetError as e:
         raise ApplyError([f"the resulting dataset is invalid: {p}" for p in e.problems]) from e
     return new_texts, changes
@@ -305,7 +293,7 @@ def summary(queue: Mapping[str, Any], changes: Mapping[str, Change], n_files: in
 def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="eval.build.apply_audit")
     ap.add_argument("--queue", type=pathlib.Path, default=QUEUE_FILE)
-    ap.add_argument("--dataset-dir", type=pathlib.Path, default=DATASET_V2_DIR)
+    ap.add_argument("--dataset-dir", type=pathlib.Path, default=DATASET_DIR)
     ap.add_argument(
         "--accept-proposed",
         action="store_true",

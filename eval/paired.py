@@ -1,18 +1,18 @@
 """Paired A/B comparison of two eval runs.
 
     cd backend && PYTHONPATH=.. uv run --frozen python -m eval.paired A.json B.json \
-        --metric recall@8 [--seed 7] [--allow FIELD ...] [--legacy] [--ledger]
+        --metric recall@8 [--seed 7] [--allow FIELD ...] [--ledger]
 
 Items are paired by id (items present in only one run are excluded and counted). Prints the means, the
 delta (B - A) with a 95% paired-bootstrap CI over items (10,000 resamples, fixed seed), a p-value and a
-verdict. For `recall@8` the p-value is the exact McNemar test on per-quote hits (discordant pairs); for other
+verdict. For `recall@8` the p-value is the exact McNemar test on per-gold-range hits (discordant pairs); for other
 metrics it is the two-sided bootstrap sign p-value. Verdict: `B better` when CI_low > 0 and p < 0.05,
 `B worse` when CI_high < 0 and p < 0.05, else `no detectable difference`. For lower-is-better metrics
 (latency, cost) read the delta in that direction yourself: the verdict text is about the raw metric value.
 
 Both sidecars carry a `fingerprint` (eval.fingerprint): the comparison is refused (exit 2, with a field diff)
 when anything differs except the fields named by `--allow` (dotted paths or their parents: `answer.prompts`,
-`answer`, `judge`, `code`, `items`, ...). Sidecars without one need `--legacy` (warns).
+`answer`, `judge`, `code`, `items`, ...). A sidecar without a fingerprint is refused.
 
 `--ledger` also lists, item by item, what changed between the runs for a 0/1 metric such as `answer_pass`:
 the items that went from fail to pass and from pass to fail, with their stratum.
@@ -190,22 +190,13 @@ def load(path: str) -> Sidecar:
     return Sidecar.model_validate(json.loads(pathlib.Path(path).read_text()))
 
 
-def check_fingerprints(
-    a: Sidecar, b: Sidecar, allow: Sequence[str] = (), legacy: bool = False
-) -> tuple[list[str], list[str]]:
-    """(refusals, warnings). A refusal is a reason the two runs must not be compared."""
+def check_fingerprints(a: Sidecar, b: Sidecar, allow: Sequence[str] = ()) -> list[str]:
+    """Reasons the two runs must not be compared (empty = comparable)."""
     refusals: list[str] = []
-    warnings: list[str] = []
     fa, fb = a.fingerprint, b.fingerprint
     if fa is None or fb is None:
         missing = " and ".join(n for n, f in (("A", fa), ("B", fb)) if f is None)
-        if legacy:
-            warnings.append(f"{missing} has no fingerprint: comparison basis is unchecked (--legacy)")
-        else:
-            refusals.append(
-                f"{missing} has no fingerprint (a report from before fingerprints): pass --legacy"
-            )
-        return refusals, warnings
+        return [f"{missing} has no fingerprint, so what it measured is unknown"]
     for name, sc, fp in (("A", a, fa), ("B", b, fb)):
         have = sorted(i.item_id for i in sc.items)
         if have != fp.get("items", {}).get("ids"):
@@ -219,7 +210,7 @@ def check_fingerprints(
             "fingerprints differ (name a field with --allow <field> to compare anyway):\n"
             + fingerprint.render_differences(diffs)
         )
-    return refusals, warnings
+    return refusals
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -236,17 +227,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         help="fingerprint field allowed to differ, e.g. answer.prompts, answer.retrieval (repeatable); "
         "`items` allows different item sets (filtered arms)",
     )
-    ap.add_argument(
-        "--legacy",
-        action="store_true",
-        help="compare sidecars that carry no fingerprint",
-    )
     ap.add_argument("--ledger", action="store_true", help="list the items that changed, in each direction")
     args = ap.parse_args(argv)
     sa, sb = load(args.a), load(args.b)
-    refusals, warnings = check_fingerprints(sa, sb, args.allow, args.legacy)
-    for w in warnings:
-        print(f"warning: {w}", file=sys.stderr)
+    refusals = check_fingerprints(sa, sb, args.allow)
     if refusals:
         for r in refusals:
             print(f"refusing to compare: {r}", file=sys.stderr)

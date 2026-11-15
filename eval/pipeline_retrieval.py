@@ -1,19 +1,20 @@
 """Retrieval-only harness for `eval.run`: no analyze, no generation, no chat-model calls.
 
-`python -m eval.run --suite retrieval --config retrieval@1 --pipeline eval.pipeline_retrieval:setup`
-answers each item by calling `Retriever.retrieve` in process against the dev database, for a stable eval user
-(`eval-retrieval@vault.local`). The 15 Vault-Eval documents are uploaded once (through the running stack's
-HTTP API) and reused by sha256 afterwards. Only `embed_query` rows reach `llm_calls` (about $0.00001 each).
-`--config` names a retrieval config file (`backend/config/<name>.yaml`). `EVAL_RANK` (rrf, vector, lexical,
-rerank, final; default final) picks which stored ranking is scored, for ablations.
+    python -m eval.run --suite retrieval --config retrieval@2 --split train \\
+        --pipeline eval.pipeline_retrieval:setup
+
+Each item is answered by `Retriever.retrieve` in process against the dev database. `--config` names a
+retrieval config file (`backend/config/<name>.yaml`). Only `embed_query` rows reach `llm_calls` (about
+$0.00001 each, cached per owner and query). `EVAL_RANK` (rrf, vector, lexical, rerank, final; default final)
+picks which candidate ranking is scored, for ablations.
 
 `EVAL_USER` (an email; default `eval-retrieval@vault.local`) names the user whose corpus is scored. Unset, or
-naming a user that does not exist yet: the user is created (the default user's API key is rotated each run) and
-missing documents are uploaded through the API as above. Naming an EXISTING user other than the default: that
-user's already-ingested corpus is scored as is, with no key rotation, no upload and no re-ingestion; every
-dataset document must already be there (matched by sha256 of the current ready/enriched version), otherwise the
-run exits naming the missing keys. This is how a differently indexed corpus (for example one backfilled with
-`python -m app.ingestion.contextualize --owner-email ...`) is compared against the default user's.
+naming a user that does not exist yet: the user is created (the default user's API key is rotated each run)
+and the documents the items need (`doc_keys`, map: `vault_eval/documents.yaml`) are uploaded through the
+running stack's HTTP API once, then reused by sha256. Naming an EXISTING other user: that user's ingested
+corpus is scored as is, with no key rotation, no upload and no re-ingestion; every needed document must
+already be there (matched by sha256 of the current ready version), otherwise the run exits naming the
+missing keys. This is how the corpus an answers run ingested for a split is reused.
 """
 
 from __future__ import annotations
@@ -24,7 +25,8 @@ import os
 import pathlib
 import time
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
 
 import httpx
 import redis.asyncio as aioredis
@@ -40,14 +42,11 @@ from app.retrieval.config import CONFIG_DIR, RetrievalConfig, get_config
 from app.retrieval.query_embed import QueryEmbedder
 from app.retrieval.retrieve import Retriever
 from app.retrieval.scope import compute_scope
-from eval.loader import load_dataset
+from eval.build.build_docs import gold_units, load_documents, missing_files, resolve_file
 from eval.mapping import ChunkInfo, chunks_from_rows
-from eval.multiturn import Pipeline
-from eval.replay import Cand, rank
-from eval.run import Harness
+from eval.run import Harness, Pipeline
 from eval.schema import EvalContext, ItemOutput, Query
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
 EVAL_EMAIL = "eval-retrieval@vault.local"
 READY = {"ready", "enriched"}
 FAILED = {"failed", "unsupported", "needs_ocr"}
@@ -59,6 +58,51 @@ def resolve_config(name: str) -> RetrievalConfig:
     if not path.is_file():
         raise SystemExit(f"unknown retrieval config {name!r}: {path} does not exist")
     return get_config(name)
+
+
+@dataclass(frozen=True)
+class Cand:
+    """One retrieval candidate with the scores and ranks every ranking mode reads."""
+
+    chunk_id: str
+    rrf: float | None = None
+    rerank: float | None = None
+    vector_rank: int | None = None
+    lexical_rank: int | None = None
+    selected: bool = False
+    result_index: int | None = None
+
+
+def _final_key(c: Cand) -> tuple[int, float, float]:
+    return (
+        (0, float(c.result_index or 0), 0.0)
+        if c.selected
+        else (1, -(c.rerank if c.rerank is not None else float("-inf")), -(c.rrf or 0.0))
+    )
+
+
+def rank(cands: Sequence[Cand], mode: str) -> list[str]:
+    """rrf: fusion score; vector / lexical: that leg's rank (candidates without one are absent); rerank:
+    rerank score (unreranked candidates are absent); final: selected in evidence order, then rerank, rrf."""
+    if mode == "rrf":
+        return [c.chunk_id for c in sorted(cands, key=lambda c: -(c.rrf or 0.0))]
+    if mode == "vector":
+        return [
+            c.chunk_id for c in sorted((c for c in cands if c.vector_rank), key=lambda c: c.vector_rank or 0)
+        ]
+    if mode == "lexical":
+        return [
+            c.chunk_id
+            for c in sorted((c for c in cands if c.lexical_rank), key=lambda c: c.lexical_rank or 0)
+        ]
+    if mode == "rerank":
+        return [
+            c.chunk_id
+            for c in sorted((c for c in cands if c.rerank is not None), key=lambda c: -(c.rerank or 0.0))
+        ]
+    if mode == "final":
+        return [c.chunk_id for c in sorted(cands, key=_final_key)]
+    raise ValueError(f"unknown ranking {mode!r}")
 
 
 def sha256_of(path: pathlib.Path) -> str:
@@ -182,13 +226,16 @@ def make_pipeline(
     return pipeline
 
 
-async def setup(config: str) -> Harness:
+async def setup(config: str, *, doc_keys: Sequence[str]) -> Harness:
     cfg = resolve_config(config)
-    ds = load_dataset()
+    docs = load_documents()
+    if bad := missing_files(doc_keys, docs):
+        lines = [f"  {k}: {why}" for k, why in list(bad.items())[:20]]
+        raise SystemExit(f"{len(bad)} document(s) unavailable:\n" + "\n".join(lines))
     sm = get_sessionmaker()
     settings = get_settings()
     email = os.environ.get("EVAL_USER") or EVAL_EMAIL
-    files = {k: ROOT / m["file"] for k, m in ds.documents.items()}
+    files = {k: resolve_file(docs[k]["file"]) for k in doc_keys}
     async with sm() as s:
         uid = (await s.execute(text("SELECT id FROM users WHERE email = :e"), {"e": email})).scalar()
     if uid is not None and email != EVAL_EMAIL:  # an existing user's corpus: score it as is
@@ -218,4 +265,5 @@ async def setup(config: str) -> Harness:
         make_pipeline(sm, retriever, uid, doc_ids),
         chunks,
         EvalContext(owner_id=uid, doc_ids=doc_ids, services={"sm": sm, "retriever": retriever}),
+        gold_units=gold_units(docs),
     )

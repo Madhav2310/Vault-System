@@ -1,10 +1,9 @@
-"""Coverage check for the v2 gold set: items per stratum vs the matrix target, per document.
+"""Coverage check for the golden set: items per stratum vs the matrix target, per document.
 
-    python -m eval.build.check_coverage eval/datasets/vault_eval_v2 [--require-all]
+    python -m eval.build.check_coverage eval/datasets/vault_eval [--require-all]
 
-Without `--require-all` only strata that have at least one item are checked (other lanes add strata 1-6
-and the migrated v1 items in separate part files, so a partial dataset is normal). With it every stratum
-must be present and at least 80% of target, and the total must be 280-320. A document with more than 3
+Without `--require-all` only strata that have at least one item are checked. With it every stratum must be
+present and at least 80% of target, and the total must be 280-320. A document with more than 3
 non-dropped items always fails (the loader enforces the same cap). Also hosts the helpers the
 authored-item tests share: the injection-variant constant, the document sentence enumeration and the
 lexical-leak measure.
@@ -18,10 +17,10 @@ import re
 import sys
 from collections import Counter
 
-from eval.loader import MAX_ITEMS_PER_DOC, DatasetError, load_dataset_v2
-from eval.schema import GoldItemV2
+from eval.loader import MAX_ITEMS_PER_DOC, DatasetError, load_dataset
+from eval.schema import GoldItem
 
-# Matrix (docs/plan/S21.md): stratum -> target n. Order = matrix order.
+# Stratum -> target n (the dataset README lists the same matrix). Order = matrix order.
 TARGETS: dict[str, int] = {
     "single_span": 40,
     "conditional": 20,
@@ -59,12 +58,12 @@ INJECTION_VARIANTS: tuple[str, ...] = (
 _VARIANT = re.compile(r"^variant=([a-z_]+);")
 
 
-def variant_of(item: GoldItemV2) -> str | None:
+def variant_of(item: GoldItem) -> str | None:
     m = _VARIANT.match(item.audit_note or "")
     return m.group(1) if m else None
 
 
-# --- document sentence enumeration (the convention gold_evidence ranges use; see the v2 README appendix) ---
+# --- document sentence enumeration (the convention gold_evidence ranges use; see the dataset README) ---
 
 
 def document_sentences(text: str) -> list[str]:
@@ -119,7 +118,7 @@ def longest_shared_run(a: str, b: str) -> int:
 # --- the check ---
 
 
-def check(items: list[GoldItemV2], *, require_all: bool = False) -> tuple[list[str], list[str]]:
+def check(items: list[GoldItem], *, require_all: bool = False) -> tuple[list[str], list[str]]:
     """Returns (report lines, problems)."""
     live = [i for i in items if i.audit_status != "dropped"]
     per_stratum = Counter(i.stratum for i in live)
@@ -154,7 +153,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--require-all", action="store_true", help="every stratum present, total 280-320")
     args = ap.parse_args(argv)
     try:
-        ds = load_dataset_v2(args.root)
+        ds = load_dataset(args.root)
     except DatasetError as e:
         print(e)
         return 1

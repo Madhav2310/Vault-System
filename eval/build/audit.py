@@ -1,6 +1,6 @@
 """Cross-model gold audit (the "Platinum" method), tool only.
 
-For every live v2 item two answers are collected: Vault's (read from an answers file of an earlier run, never
+For every live item two answers are collected: Vault's (read from an answers file of an earlier run, never
 re-run here) and a strong model's (`flagship` through `app.llm.gateway`, prompt `eval_audit_gold@1`), the
 latter given the question and the GOLD evidence text only. Both are graded against the gold by the existing
 judges (`eval.judge.judge_claims` against `required_claims`; `judge_abstention` for abstention strata).
@@ -16,12 +16,12 @@ human fills `decision` (gold_wrong | gold_incomplete | ambiguous | system_wrong)
 Vault answers file (`--answers`), one of
   - JSONL, one object per line: {"item_id": ..., "answer": ...}  (the `eval.judge.load_answers` format), or
   - JSON: {"items": [{"item_id" | "id": ..., "answer": ...}]} or {"answers": {"<id>": "<text>"}}.
-(The v2 sidecar report carries no answer text; export answers with the runner's answers dump.)
+(The sidecar report carries no answer text; the runner writes the answers file beside it.)
 
 CLI (from backend/, PYTHONPATH=..):
     python -m eval.build.audit --answers run_answers.jsonl --max-usd 2           # live, cap mandatory
     python -m eval.build.audit --answers run_answers.jsonl --dry-run --limit 5   # scripted provider, $0
-    python -m eval.build.audit --render ../eval/datasets/vault_eval_v2/audit_queue.yaml   # review markdown
+    python -m eval.build.audit --render ../eval/datasets/vault_eval/audit_queue.yaml       # review markdown
 Prints counts and the spend from the gateway ledger against the cap; exit 3 when the cap stopped the audit
 (the queue then lists only what was audited, and `apply_audit` leaves the rest alone).
 """
@@ -50,9 +50,9 @@ from eval.judge import (
     judge_abstention,
     judge_claims,
 )
-from eval.loader import DATASET_V2_DIR, load_dataset_v2
-from eval.schema import GoldItemV2
-from eval.splits_v2 import live_items
+from eval.loader import DATASET_DIR, load_dataset
+from eval.schema import GoldItem
+from eval.splits import live_items
 from pydantic import BaseModel, ConfigDict
 
 from app.llm.gateway import LlmGateway, MemoryLedger, render_inputs
@@ -60,7 +60,7 @@ from app.llm.routing import Route
 
 PURPOSE = "eval_audit"
 PROMPT = ("eval_audit_gold", 1)
-QUEUE_FILE = DATASET_V2_DIR / "audit_queue.yaml"
+QUEUE_FILE = DATASET_DIR / "audit_queue.yaml"
 DECISIONS = ("gold_wrong", "gold_incomplete", "ambiguous", "system_wrong")
 UNITS_UNAVAILABLE = "gold evidence text unavailable (document sentences could not be loaded)"
 NO_ANSWER_TEXT = "The documents do not contain this information."
@@ -96,14 +96,14 @@ def load_vault_answers(path: str | pathlib.Path) -> dict[str, str]:
     for r in rows:
         iid = r.get("item_id", r.get("id")) if isinstance(r, dict) else None
         if iid is None or not isinstance(r.get("answer"), str):
-            continue  # a metrics-only row (the v2 sidecar) carries no answer text
+            continue  # a metrics-only row (a sidecar) carries no answer text
         out[str(iid)] = r["answer"]
     if not out:
-        raise SystemExit(f"{path}: no (item id, answer) rows found (a v2 sidecar has metrics only)")
+        raise SystemExit(f"{path}: no (item id, answer) rows found (a sidecar has metrics only)")
     return out
 
 
-def gold_passages(item: GoldItemV2, units_of: UnitsOf) -> list[dict[str, Any]] | None:
+def gold_passages(item: GoldItem, units_of: UnitsOf) -> list[dict[str, Any]] | None:
     """One passage per gold range (its sentences joined); None when any range cannot be turned into text."""
     out: list[dict[str, Any]] = []
     for g in item.gold_evidence:
@@ -123,7 +123,7 @@ def gold_passages(item: GoldItemV2, units_of: UnitsOf) -> list[dict[str, Any]] |
 # --- the strong answer ------------------------------------------------------------------------------------
 
 
-def strong_inputs(item: GoldItemV2, passages: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
+def strong_inputs(item: GoldItem, passages: Sequence[Mapping[str, Any]]) -> dict[str, Any]:
     return {
         "question": item.question,
         "earlier_user_turns": list(item.prior_turns),
@@ -140,7 +140,7 @@ def _worst_case(gw: LlmGateway, inputs: Mapping[str, Any]) -> Decimal:
 
 
 async def strong_answer(
-    gw: LlmGateway, item: GoldItemV2, passages: Sequence[Mapping[str, Any]], guard: SpendGuard
+    gw: LlmGateway, item: GoldItem, passages: Sequence[Mapping[str, Any]], guard: SpendGuard
 ) -> str:
     inputs = strong_inputs(item, passages)
     guard.check(_worst_case(gw, inputs))
@@ -184,7 +184,7 @@ class Side:
 
 @dataclass
 class Audited:
-    item: GoldItemV2
+    item: GoldItem
     passages: list[dict[str, Any]]
     vault: Side
     strong: Side
@@ -265,7 +265,7 @@ class AuditResult:
 
 
 async def _grade(
-    gw: LlmGateway, item: GoldItemV2, answer: str | None, guard: SpendGuard, errors: list[str], who: str
+    gw: LlmGateway, item: GoldItem, answer: str | None, guard: SpendGuard, errors: list[str], who: str
 ) -> Side:
     side = Side(answer)
     if answer is None:
@@ -282,7 +282,7 @@ async def _grade(
 
 async def audit_one(
     gw: LlmGateway,
-    item: GoldItemV2,
+    item: GoldItem,
     vault_answer: str | None,
     units_of: UnitsOf,
     guard: SpendGuard,
@@ -304,7 +304,7 @@ async def audit_one(
 
 async def run_audit(
     gw: LlmGateway,
-    items: Sequence[GoldItemV2],
+    items: Sequence[GoldItem],
     vault_answers: Mapping[str, str],
     units_of: UnitsOf,
     guard: SpendGuard,
@@ -314,13 +314,13 @@ async def run_audit(
     check_tiers(gw.router)
     res = AuditResult()
 
-    async def one(item: GoldItemV2) -> tuple[GoldItemV2, Audited | str | None]:
+    async def one(item: GoldItem) -> tuple[GoldItem, Audited | str | None]:
         try:
             return item, await audit_one(gw, item, vault_answers.get(item.id), units_of, guard)
         except SpendCapReached:
             return item, None
 
-    results: list[tuple[GoldItemV2, Audited | str | None]] = await gather_bounded(
+    results: list[tuple[GoldItem, Audited | str | None]] = await gather_bounded(
         [one(i) for i in live_items(items)], concurrency
     )
     for item, out in results:
@@ -349,7 +349,7 @@ def _str(dumper: yaml.SafeDumper, data: str) -> yaml.ScalarNode:
 _Dumper.add_representer(str, _str)
 
 HEADER = (
-    "# S21.05 gold audit queue (generated by eval/build/audit.py; decisions are yours).\n"
+    "# Gold audit queue (generated by eval/build/audit.py; decisions are yours).\n"
     "# For every queued item set `decision`: gold_wrong | gold_incomplete | ambiguous | system_wrong.\n"
     "#   gold_wrong / gold_incomplete: also set `fix` to the corrected FULL list of required claims.\n"
     "#   ambiguous: the item is dropped (say why in `note`).  system_wrong: gold right, system not.\n"
@@ -511,9 +511,9 @@ def _dry_gateway(ledger: MemoryLedger) -> LlmGateway:
 
 def default_units_of() -> UnitsOf:
     """Document sentence streams from `documents.yaml` (PDFs are parsed once and cached by the sampler)."""
-    from eval.build.build_v2_docs import document_units, load_documents_v2
+    from eval.build.build_docs import document_units, load_documents
 
-    docs = load_documents_v2()
+    docs = load_documents()
     cache: dict[str, Sequence[str] | None] = {}
 
     def units(key: str) -> Sequence[str] | None:
@@ -579,16 +579,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     if a.dry_run:
         gw = _dry_gateway(ledger)
     else:
-        from eval.build.migrate_v1 import _live_gateway
+        from eval.judge import live_gateway
 
-        gw = _live_gateway(ledger)
+        gw = live_gateway(ledger)
     cap = a.max_usd
     guard = SpendGuard(ledger, cap if cap is not None else Decimal(1000))
-    items = list(live_items(load_dataset_v2().items))
+    items = list(live_items(load_dataset().items))
     if a.split != "all":
-        from eval.splits_v2 import select_v2
+        from eval.splits import select_split
 
-        items = select_v2(items, a.split)
+        items = select_split(items, a.split)
     if a.limit is not None:
         items = items[: a.limit]
     res = asyncio.run(

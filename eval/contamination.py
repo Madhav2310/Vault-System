@@ -83,14 +83,14 @@ def default_prompts() -> list[tuple[str, int]]:
     from app.chat.nodes.generate import PROMPT as ANSWER
     from app.chat.support_check import PROMPT as SUPPORT_CHECK
     from app.retrieval.listwise import PROMPT as RERANK
-    from eval.judge import PROMPTS_V2
+    from eval.judge import PROMPTS
 
-    return sorted({ANALYZE, ANSWER, COMPARE_PROMPT, SUPPORT_CHECK, RERANK, *PROMPTS_V2.values()})
+    return sorted({ANALYZE, ANSWER, COMPARE_PROMPT, SUPPORT_CHECK, RERANK, *PROMPTS.values()})
 
 
 def item_index(items: Iterable[object]) -> dict[str, set[tuple[str, str]]]:
     """5-gram -> {(split, item id)} over each item's question, claims and accepted variants."""
-    from eval.splits_v2 import split_of
+    from eval.splits import split_of
 
     idx: dict[str, set[tuple[str, str]]] = {}
     for it in items:
@@ -108,7 +108,7 @@ def item_index(items: Iterable[object]) -> dict[str, set[tuple[str, str]]]:
 
 def name_index(items: Iterable[object]) -> dict[str, set[tuple[str, str]]]:
     """proper name -> {(split, item id)} over each item's question and claims."""
-    from eval.splits_v2 import split_of
+    from eval.splits import split_of
 
     idx: dict[str, set[tuple[str, str]]] = {}
     for it in items:
@@ -139,9 +139,9 @@ def name_matches(prompt_text: str, idx: dict[str, set[tuple[str, str]]]) -> dict
 
 def findings(files: Sequence[Path]) -> list[tuple[str, str, str, str, list[str]]]:
     """(prompt file, kind, split, item id, shared text) for every match."""
-    from eval.loader import load_dataset_v2
+    from eval.loader import load_dataset
 
-    items = load_dataset_v2().items
+    items = load_dataset().items
     gidx, nidx = item_index(items), name_index(items)
     out = []
     for f in files:

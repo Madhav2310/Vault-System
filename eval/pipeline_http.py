@@ -1,10 +1,12 @@
 """Real-pipeline harness for `eval.run`: drives the running stack (`make up`) over its HTTP API.
 
-`python -m eval.run --pipeline eval.pipeline_http:setup ...` creates a throwaway eval user, uploads the 15
-Vault-Eval documents (deduplicated per owner), waits until ready, and answers each item through
+`python -m eval.run --pipeline eval.pipeline_http:setup ...` creates a throwaway eval user, uploads the
+documents the selected items need (`doc_keys`, map: `vault_eval/documents.yaml`) in ingest-light mode (wait
+for `ready`; the brief stage is never awaited), and answers each item through
 `POST /v1/chat/sessions/{id}/messages`. Retrieved chunk ids come from the run's `retrieval_candidates`
-(best first), citations from the stored evidence. Needs DATABASE_URL (host) and API_BASE_URL; the models are
-the stack's, so a run costs real money: use the `smoke` suite or `--split` samples.
+(best first), citations from the stored evidence. `EVAL_REUSE_CACHE` (a gitignored JSON) keeps one ingested
+corpus across runs. Needs DATABASE_URL (host) and API_BASE_URL; the models are the stack's, so a run costs
+real money: always pass a split and a `--max-usd` cap.
 """
 
 from __future__ import annotations
@@ -25,14 +27,14 @@ from app.core.auth import hash_api_key, new_api_key
 from app.core.settings import get_settings
 from app.db.models import User
 from app.db.session import get_sessionmaker
+from eval.build.build_docs import gold_units, load_documents, missing_files, resolve_file
 from eval.fingerprint import merge_answer_config
-from eval.loader import load_dataset
+from eval.judge import SpendGuard, live_gateway
 from eval.mapping import ChunkInfo, chunks_from_rows
 from eval.run import Harness
 from eval.schema import AnswerSegment, CitedRange, EvalContext, ItemOutput, Query
 from eval.sse import read_turn_stream
 
-ROOT = pathlib.Path(__file__).resolve().parents[1]
 READY = {"ready", "enriched"}
 
 
@@ -68,35 +70,23 @@ async def _all_ready(http: httpx.AsyncClient, doc_ids: dict[str, str]) -> bool:
 async def setup(
     config: str,
     *,
+    doc_keys: Sequence[str],
     with_judges: bool | None = None,
     stream: bool = False,
-    dataset: str = "v1",
-    doc_keys: Sequence[str] | None = None,
 ) -> Harness:
-    """`dataset="v2"` uploads the documents `doc_keys` names (map: vault_eval_v2/documents.yaml) in
-    ingest-light mode (wait for `ready`; the brief stage is never awaited), attaches judges, gold."""
-    import os
-
+    """Upload (or reuse) the documents `doc_keys` names; attach the judges and the gold sentence streams."""
     base = os.environ.get("API_BASE_URL", "http://localhost:8100")
-    v2 = dataset == "v2"
-    if v2:
-        from eval.build.build_v2_docs import document_units, load_documents_v2, missing_files, resolve_file
-
-        v2_docs = load_documents_v2()
-        keys = list(doc_keys or ())
-        if bad := missing_files(keys, v2_docs):
-            lines = [f"  {k}: {why}" for k, why in list(bad.items())[:20]]
-            raise RuntimeError(f"{len(bad)} v2 document(s) unavailable:\n" + "\n".join(lines))
-        documents: dict[str, dict[str, Any]] = {k: v2_docs[k] for k in keys}
-    else:
-        documents = load_dataset().documents
+    all_docs = load_documents()
+    keys = list(doc_keys)
+    if bad := missing_files(keys, all_docs):
+        lines = [f"  {k}: {why}" for k, why in list(bad.items())[:20]]
+        raise RuntimeError(f"{len(bad)} document(s) unavailable:\n" + "\n".join(lines))
+    documents: dict[str, dict[str, Any]] = {k: all_docs[k] for k in keys}
     with_judges = config.startswith("answers") if with_judges is None else with_judges
     sm = get_sessionmaker()
-    reuse_path = os.environ.get(
-        "EVAL_REUSE_CACHE"
-    )  # a gitignored json: keep one ingested corpus across A/B arms
+    reuse_path = os.environ.get("EVAL_REUSE_CACHE")  # a gitignored json: one ingested corpus across A/B arms
     doc_ids: dict[str, str] = {}
-    reused = _load_reuse(reuse_path, list(documents)) if reuse_path and v2 else None
+    reused = _load_reuse(reuse_path, list(documents)) if reuse_path else None
     if reused is not None:
         key, uid, doc_ids = reused
         http = httpx.AsyncClient(base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=180)
@@ -112,7 +102,7 @@ async def setup(
             await s.commit()
         http = httpx.AsyncClient(base_url=base, headers={"Authorization": f"Bearer {key}"}, timeout=180)
         for k, meta in documents.items():
-            p = resolve_file(meta["file"]) if v2 else ROOT / meta["file"]
+            p = resolve_file(meta["file"])
             for _attempt in range(
                 8
             ):  # the upload route is rate limited per user (30/min): wait as told, then retry
@@ -133,7 +123,7 @@ async def setup(
                 if st in {"failed", "unsupported", "needs_ocr"} or time.monotonic() > deadline:
                     raise RuntimeError(f"document {k} ended in {st}")
                 await asyncio.sleep(2)
-        if reuse_path and v2:
+        if reuse_path:
             _save_reuse(reuse_path, key, uid, doc_ids)
     by_id = {v: k for k, v in doc_ids.items()}
     async with sm() as s:
@@ -213,21 +203,10 @@ async def setup(
                 )
             ).one()
             seen_runs.add(run[0])
-            call_ids = (
-                (
-                    await s.execute(
-                        text("SELECT id FROM llm_calls WHERE run_id = :r"),
-                        {"r": run[0]},
-                    )
-                )
-                .scalars()
-                .all()
-            )
             cand_rows = (
                 await s.execute(
                     text(
-                        "SELECT chunk_id, attempt, selected, rerank_score, vector_distance, id_match "
-                        "FROM retrieval_candidates "
+                        "SELECT chunk_id, attempt, selected FROM retrieval_candidates "
                         "WHERE run_id = :r ORDER BY "
                         "rerank_score DESC NULLS LAST, rrf_score DESC NULLS LAST"
                     ),
@@ -243,19 +222,11 @@ async def setup(
             "latency_ms": ms,
             "ttft_ms": ttft,
             "cost_usd": float(run[1] or 0),
-            "call_ids": tuple(str(c) for c in call_ids),
-            "verdicts": tuple(
-                seg["verification"] for seg in msg["segments"] if seg.get("verification") in _VERDICTS
-            ),
         }
-        if not v2:
-            return ItemOutput(**kw)
-        from eval.run_v2 import ItemOutputV2
-
         last = max((r[1] for r in cand_rows), default=0)  # the final attempt's selected chunks + cited ones
         picked = {str(r[0]) for r in cand_rows if r[2] and r[1] == last}
         picked |= {c.chunk_id for sg in segs for c in sg.citations}
-        return ItemOutputV2(**kw, evidence=sorted(picked))
+        return ItemOutput(**kw, evidence=sorted(picked))
 
     get_settings()  # fail early on a bad environment
     started = dt.datetime.now(dt.UTC)
@@ -315,44 +286,19 @@ async def setup(
         }
         return merge_answer_config([c for c in cfgs if c], index)
 
-    judges = _JudgeScorer() if with_judges else None
-    if v2:
-        units_cache: dict[str, list[str] | None] = {}
-
-        def gold_units(doc: str) -> list[str] | None:
-            if doc not in units_cache:
-                try:
-                    units_cache[doc] = document_units(doc, v2_docs[doc]) if doc in v2_docs else None
-                except Exception as e:  # unknown gold is reported as not recorded, never as a failure
-                    print(f"gold sentences unavailable for {doc}: {type(e).__name__}: {e}")
-                    units_cache[doc] = None
-            return units_cache[doc]
-
-        return Harness(
-            pipeline,
-            chunks,
-            EvalContext(owner_id=uid, doc_ids=doc_ids),
-            new_session,
-            spent=spent,
-            close=http.aclose,
-            judge_gw=judges.gw if judges else None,
-            judge_guard=judges.guard if judges else None,
-            gold_units=gold_units,
-            answer_config=answer_config,
-        )
+    judges = _Judges() if with_judges else None
     return Harness(
         pipeline,
         chunks,
         EvalContext(owner_id=uid, doc_ids=doc_ids),
         new_session,
-        extra_scorer=judges.score if judges else None,
         spent=spent,
         close=http.aclose,
+        judge_gw=judges.gw if judges else None,
+        judge_guard=judges.guard if judges else None,
+        gold_units=gold_units(all_docs),
         answer_config=answer_config,
     )
-
-
-_VERDICTS = {"supported", "partial", "unsupported"}
 
 
 async def _find_message(http: httpx.AsyncClient, sid: uuid.UUID, msg_id: str) -> dict[str, Any]:
@@ -372,29 +318,18 @@ async def _find_message(http: httpx.AsyncClient, sid: uuid.UUID, msg_id: str) ->
     raise LookupError(f"message {msg_id} not found in session history")
 
 
-class _JudgeScorer:
-    """Binary faithfulness + completeness judges (deterministic first), capped by their own ledger."""
+class _Judges:
+    """The judges' gateway with its own ledger, capped by EVAL_JUDGE_MAX_USD (default $1)."""
 
     def __init__(self) -> None:
         from decimal import Decimal
 
         from app.llm.gateway import MemoryLedger
-        from eval.judge import SpendGuard, _live_gateway
 
         self.ledger = MemoryLedger()
-        self.gw = _live_gateway(self.ledger)
+        self.gw = live_gateway(self.ledger)
         self.guard = SpendGuard(self.ledger, Decimal(os.environ.get("EVAL_JUDGE_MAX_USD", "1.0")))
 
     @property
     def spent(self) -> float:
         return float(self.guard.spent)
-
-    async def score(self, item: Any, out: ItemOutput, targets: Any, chunks: Any) -> dict[str, float]:
-        from eval.judge import judge_item
-        from eval.metrics.answer import judge_metrics, support_metrics
-
-        js = {
-            jt: await judge_item(self.gw, item, out, targets, chunks, jt, secondary=False, guard=self.guard)
-            for jt in ("faithfulness", "completeness")
-        }
-        return {**judge_metrics(js), **support_metrics(out)}

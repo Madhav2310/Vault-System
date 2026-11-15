@@ -1,6 +1,6 @@
-"""Re-judge stored v2 answers with the current judge prompts; no re-answering.
+"""Re-judge stored answers with the current judge prompts; no re-answering.
 
-    python -m eval.rejudge --answers eval/reports/<run_id>.answers.jsonl --dataset v2 --max-usd 0.6
+    python -m eval.rejudge --answers eval/reports/<run_id>.answers.jsonl --max-usd 0.6
 
 Reads the answers dump (answer text and per-segment cited passages), judges again (claims, support,
 abstention) and writes `<run_id>.rejudged.json`: per item the old metrics (from the run's sidecar
@@ -25,7 +25,7 @@ from typing import Any
 from app.llm.gateway import LlmGateway, MemoryLedger
 from eval import fingerprint
 from eval.judge import (
-    PROMPTS_V2,
+    PROMPTS,
     SegmentView,
     SpendCapReached,
     SpendGuard,
@@ -38,7 +38,7 @@ from eval.judge import (
     overrules,
     verdict_record,
 )
-from eval.schema import GoldItemV2
+from eval.schema import GoldItem
 
 METRICS = ("answer_pass", "claim_completeness", "support_rate", "abstention_correct")
 
@@ -63,7 +63,7 @@ def load_old_metrics(sidecar: pathlib.Path) -> dict[str, dict[str, float]]:
 
 
 async def rejudge_row(
-    gw: LlmGateway, item: GoldItemV2, row: Mapping[str, Any], guard: SpendGuard
+    gw: LlmGateway, item: GoldItem, row: Mapping[str, Any], guard: SpendGuard
 ) -> dict[str, Any]:
     answer = str(row.get("answer") or "")
     has = bool(answer.strip())
@@ -198,7 +198,7 @@ def format_diff(
 async def rejudge(
     gw: LlmGateway,
     rows: Sequence[Mapping[str, Any]],
-    items: Mapping[str, GoldItemV2],
+    items: Mapping[str, GoldItem],
     guard: SpendGuard,
     *,
     old: Mapping[str, Mapping[str, float]] | None = None,
@@ -237,7 +237,6 @@ async def rejudge(
 def main(argv: Sequence[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="eval.rejudge")
     ap.add_argument("--answers", required=True, help="<run_id>.answers.jsonl")
-    ap.add_argument("--dataset", default="v2", choices=["v2"])
     ap.add_argument("--max-usd", type=Decimal, default=None, help="spend cap (mandatory)")
     ap.add_argument(
         "--old", default=None, help="sidecar of the original run (default: <run_id>.json beside --answers)"
@@ -255,8 +254,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     if a.max_usd is None:
         print("refusing live calls without an explicit --max-usd cap", file=sys.stderr)
         return 2
-    from eval.build.migrate_v1 import _live_gateway
-    from eval.loader import load_dataset_v2
+    from eval.judge import live_gateway
+    from eval.loader import load_dataset
 
     path = pathlib.Path(a.answers)
     out = output_path(path, a.out_dir)
@@ -270,10 +269,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         rows = rows[: a.limit]
     old = load_old_metrics(pathlib.Path(a.old) if a.old else path.with_name(f"{run_id_of(path)}.json"))
     ledger = MemoryLedger()
-    gw = _live_gateway(ledger)
+    gw = live_gateway(ledger)
     guard = SpendGuard(ledger, a.max_usd)
     check_tiers(gw.router)
-    res = asyncio.run(rejudge(gw, rows, load_dataset_v2().by_id(), guard, old=old))
+    res = asyncio.run(rejudge(gw, rows, load_dataset().by_id(), guard, old=old))
     res["run_id"] = run_id_of(path)
     res["spent_usd"] = float(guard.spent)
     out.parent.mkdir(parents=True, exist_ok=True)
@@ -291,9 +290,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             print(f"--write-sidecar needs the original sidecar ({src})", file=sys.stderr)
             return 2
         old_sc = json.loads(src.read_text("utf-8"))
-        if old_sc.get("fingerprint") is None:
-            print("note: the original sidecar has no fingerprint; the written sidecar needs --legacy")
-        sc = rejudged_sidecar(old_sc, res, fingerprint.judge_versions(PROMPTS_V2), fingerprint.code_version())
+        sc = rejudged_sidecar(old_sc, res, fingerprint.judge_versions(PROMPTS), fingerprint.code_version())
         sc_out.write_text(json.dumps(sc, indent=1, ensure_ascii=False), "utf-8")
         print(f"wrote {sc_out}")
     return 0 if res["stopped"] is None else 3

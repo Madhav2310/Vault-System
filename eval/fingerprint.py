@@ -5,7 +5,7 @@ A fingerprint is a plain JSON object stored in `<run_id>.json` under `fingerprin
     dataset  {id, split, gold_sha, n_gold}   hash of the loaded live items of the split
     items    {n, ids, sha}                   the sorted item ids that were evaluated, and their hash
     filter   the `--filter` spec or null
-    judge    {claims, support, abstain}      judge prompt `id@version` (eval.judge.PROMPTS_V2)
+    judge    {claims, support, abstain}      judge prompt `id@version` (eval.judge.PROMPTS)
     answer   {prompts, models, retrieval, switches, index}  as the server recorded it
     code     {git_sha, dirty}                the eval code that ran
 

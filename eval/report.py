@@ -1,4 +1,4 @@
-"""Run results and the Markdown report (`eval/reports/<run_id>.md`): header, totals, per-category means and a
+"""Run results and the Markdown report (`eval/reports/<run_id>.md`): header, totals, per-stratum means and a
 per-item table. Totals average each metric only over the items where it is defined (n is shown)."""
 
 from __future__ import annotations
@@ -28,8 +28,7 @@ class ItemResult:
     split: str
     metrics: dict[str, float]
     error: str | None = None
-    turns: list[ItemResult] = field(default_factory=list)  # multi-turn: one per turn, ids `<id>#t<n>`
-    quote_hits: list[bool] | None = None  # per mapped gold quote: hit in the top 8 (paired tests)
+    quote_hits: list[bool] | None = None  # per mapped gold range: hit in the top 8 (paired McNemar test)
     degraded: tuple[str, ...] = ()
     source_doc: str | None = None  # cluster key; None = singleton cluster
     stratum: str | None = None
@@ -47,14 +46,14 @@ class RunResult:
     finished_at: dt.datetime | None = None
     items: list[ItemResult] = field(default_factory=list)
     config: dict[str, Any] = field(default_factory=dict)
-    fingerprint: dict[str, Any] | None = None  # eval.fingerprint (v2 runs)
+    fingerprint: dict[str, Any] | None = None  # eval.fingerprint
 
     @property
     def n_errors(self) -> int:
-        return sum(1 for i in self.items if i.error or any(t.error for t in i.turns))
+        return sum(1 for i in self.items if i.error)
 
     def degraded_rate(self) -> float:
-        """Share of items whose result was degraded (no_rerank, lexical_only...)."""
+        """Share of items whose result was degraded (lexical_only, ...)."""
         return sum(1 for i in self.items if i.degraded) / len(self.items) if self.items else 0.0
 
     def degraded_by_kind(self) -> dict[str, int]:
@@ -67,13 +66,12 @@ class RunResult:
     def metric_names(self) -> list[str]:
         return sorted({m for i in self.items for m in i.metrics})
 
-    def totals(self, category: str | None = None) -> dict[str, tuple[float, int]]:
+    def totals(self) -> dict[str, tuple[float, int]]:
         """metric -> (mean over items where defined, n items)."""
         vals: dict[str, list[float]] = defaultdict(list)
         for i in self.items:
-            if category is None or i.category == category:
-                for k, v in i.metrics.items():
-                    vals[k].append(v)
+            for k, v in i.metrics.items():
+                vals[k].append(v)
         return {k: (sum(v) / len(v), len(v)) for k, v in sorted(vals.items())}
 
 
@@ -211,12 +209,11 @@ def cluster_key(item_id: str, source_doc: str | None) -> str:
     return source_doc or item_id
 
 
-_SCOPE_V1 = (
-    "- scope: deterministic graders only (no LLM judge); labelled pre-review while every item is `draft`"
-)
-_SCOPE_V2 = (
-    "- scope: v2 claim/support/abstention judges plus deterministic graders; items `draft` until audited"
-)
+_SCOPE = {
+    "retrieval": "- scope: retrieval metrics only (no judge)",
+    "full": "- scope: claim, support and abstention judges plus deterministic graders; "
+    "items `draft` until audited",
+}
 
 
 def _f(v: float | None) -> str:
@@ -241,7 +238,7 @@ def render(run: RunResult) -> str:
         f"- name: `{run.name}`  suite: `{run.suite}`  split: `{run.split}`  git: `{run.git_sha}`",
         f"- started: {run.started_at.isoformat()}  finished: {_iso(run.finished_at)}",
         f"- items: {len(run.items)}  errored: {run.n_errors}",
-        _SCOPE_V2 if run.config.get("dataset") == "v2" else _SCOPE_V1,
+        _SCOPE.get(run.suite, f"- scope: {run.suite}"),
         "",
         "## Totals",
         "",
@@ -268,25 +265,14 @@ def render(run: RunResult) -> str:
                 vs = [i.metrics[m] for i in sub if m in i.metrics]
                 cells.append(_f(sum(vs) / len(vs)) if vs else "-")
             lines.append(f"| {st} | {len(sub)} | " + " | ".join(cells) + " |")
-    cats = sorted({i.category for i in run.items})
-    if len(cats) > 1:
-        lines += ["", "## By category", "", "| category | items | " + " | ".join(metrics) + " |"]
-        lines.append("|---|---:|" + "---:|" * len(metrics))
-        for c in cats:
-            t = run.totals(c)
-            n = sum(1 for i in run.items if i.category == c)
-            lines.append(
-                f"| {c} | {n} | " + " | ".join(_f(t[m][0]) if m in t else "-" for m in metrics) + " |"
-            )
-    lines += ["", "## Per item", "", "| item | category | split | " + " | ".join(metrics) + " | error |"]
+    lines += ["", "## Per item", "", "| item | stratum | split | " + " | ".join(metrics) + " | error |"]
     lines.append("|---|---|---|" + "---:|" * len(metrics) + "---|")
     for i in run.items:
-        for r in [i, *i.turns]:
-            lines.append(
-                f"| {_cell(r.item_id)} | {r.category} | {r.split} | "
-                + " | ".join(_f(r.metrics.get(m)) for m in metrics)
-                + f" | {_cell(r.error or '')} |"
-            )
+        lines.append(
+            f"| {_cell(i.item_id)} | {i.category} | {i.split} | "
+            + " | ".join(_f(i.metrics.get(m)) for m in metrics)
+            + f" | {_cell(i.error or '')} |"
+        )
     return "\n".join(lines) + "\n"
 
 

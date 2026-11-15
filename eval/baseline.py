@@ -1,4 +1,4 @@
-"""Baselines: `freeze(run)` writes `eval/baselines/<name>.json`;
+"""Baselines: `freeze(run, name)` writes `eval/baselines/<name>.json`;
 `compare_to_baseline(run, baseline, tolerance)` reports every metric that got worse beyond tolerance.
 
 Higher-is-better metrics regress when `baseline_mean - mean > tolerance` (absolute). Metrics in
@@ -13,11 +13,13 @@ from __future__ import annotations
 import json
 import math
 import pathlib
+from collections import Counter
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
 
-from eval.report import LOWER_IS_BETTER, ROOT, RunResult
+from eval.attribution import STAGES, UNKNOWN, from_sidecar_item, stage_table
+from eval.report import LOWER_IS_BETTER, ROOT, RunResult, cluster_ci, cluster_key, design_effect, mde, sidecar
 
 BASELINES_DIR = ROOT / "eval" / "baselines"
 DEFAULT_TOLERANCE = 0.02
@@ -58,17 +60,84 @@ class Comparison:
             raise BaselineRegression(self.regressions)
 
 
-def freeze(run: RunResult, name: str | None = None, directory: pathlib.Path = BASELINES_DIR) -> pathlib.Path:
-    """Write the run's aggregate means (and per-item metrics, for later diffs) as a baseline file."""
-    name = name or run.name
+def _metric_series(run: RunResult, metric: str, stratum: str | None = None) -> tuple[list[float], list[str]]:
+    vals: list[float] = []
+    clus: list[str] = []
+    for i in run.items:
+        if stratum is not None and i.stratum != stratum:
+            continue
+        if metric in i.metrics:
+            vals.append(i.metrics[metric])
+            clus.append(cluster_key(i.item_id, i.source_doc))
+    return vals, clus
+
+
+def freeze(run: RunResult, name: str, directory: pathlib.Path = BASELINES_DIR) -> pathlib.Path:
+    """`eval/baselines/<name>.json`: means with clustered CIs, per-stratum table (diagnostic), MDE inputs,
+    attribution counts per stage, and the per-item metrics for later diffs."""
+    metrics: dict[str, Any] = {}
+    mde_in: dict[str, Any] = {}
+    for m in run.metric_names():
+        v, c = _metric_series(run, m)
+        mean, lo, hi = cluster_ci(v, c)
+        var = sum((x - mean) ** 2 for x in v) / len(v)
+        deff = design_effect(v, c)
+        metrics[m] = {"mean": mean, "n": len(v), "ci_low": lo, "ci_high": hi, "clusters": len(set(c))}
+        # inputs for the paired MDE (eval.paired recomputes it from discordant pairs); the unpaired figure is
+        # the two-independent-runs worst case: var_diff = 2 * var
+        mde_in[m] = {
+            "n": len(v),
+            "var": var,
+            "design_effect": deff,
+            "clusters": len(set(c)),
+            "mde_80_unpaired": mde(2 * var, len(v), deff),
+        }
+    strata = sorted({i.stratum for i in run.items if i.stratum})
+    per_stratum = {
+        s: {
+            "n": sum(1 for i in run.items if i.stratum == s),
+            "note": "diagnostic",
+            "metrics": {
+                m: (sum(v) / len(v)) for m in run.metric_names() if (v := _metric_series(run, m, s)[0])
+            },
+        }
+        for s in strata
+    }
+    inputs = [
+        from_sidecar_item(it, raw.attribution) for it, raw in zip(sidecar(run).items, run.items, strict=True)
+    ]
+    table = stage_table(inputs)
+    failed = [a for a in inputs if a.failed]
+    not_recorded = Counter(
+        k
+        for i in run.items
+        if i.attribution and i.attribution.get("failed")
+        for k in i.attribution
+        if k != "failed" and i.attribution.get(k) is None
+    )
+    attribution = {
+        "failed": len(failed),
+        "by_stage": {
+            s: {"count": c, "share": sh, "ci_low": lo, "ci_high": hi} for s, (c, sh, lo, hi) in table.items()
+        },
+        "stages": [*STAGES, UNKNOWN],
+        "not_recorded_among_failed": dict(sorted(not_recorded.items())),
+    }
     data: dict[str, Any] = {
         "name": name,
+        "dataset": run.config.get("dataset"),
         "suite": run.suite,
         "split": run.split,
         "git_sha": run.git_sha,
         "run_id": str(run.run_id),
+        "n_items": len(run.items),
         "n_errors": run.n_errors,
-        "metrics": {m: {"mean": mean, "n": n} for m, (mean, n) in run.totals().items()},
+        "spent_usd": run.config.get("spent_usd"),
+        "clustered_by": "source_doc",
+        "metrics": metrics,
+        "per_stratum": per_stratum,
+        "mde_inputs": mde_in,
+        "attribution": attribution,
         "per_item": {i.item_id: i.metrics for i in run.items},
     }
     directory.mkdir(parents=True, exist_ok=True)
