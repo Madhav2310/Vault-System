@@ -83,11 +83,9 @@ def test_verify_tone_needs_a_citation_into_the_version() -> None:
     assert verify_tone([], uuid.uuid4()).reason == NO_CITATION
 
 
-def test_brief_prompts_v2_carry_tone_and_v1_still_loads() -> None:
+def test_brief_prompts_carry_tone() -> None:
     reg = default_registry()
-    e2, m2 = reg.get("brief_extract", 2), reg.get("brief_merge", 2)
-    assert "`tone_evidence`" in e2.body and "## 7. Tone" in e2.body and "## 8. Output reminder" in e2.body
+    e3, m2 = reg.get("brief_extract", 3), reg.get("brief_merge", 2)
+    assert "`tone_evidence`" in e3.body and "## 7. Tone" in e3.body and "## 8. Output reminder" in e3.body
     assert "`tone_note`" in m2.body and "tone evidence" in m2.body
-    assert (e2.role, e2.effort, e2.output) == ("balanced", "low", "schema")
-    assert "tone" not in reg.get("brief_extract", 1).body.lower().split("## 7.")[-1][:200]
-    assert reg.get("brief_merge", 1).version == 1
+    assert (e3.role, e3.effort, e3.output) == ("balanced", "low", "schema")

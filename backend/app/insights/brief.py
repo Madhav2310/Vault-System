@@ -50,7 +50,7 @@ MAX_TONE_NOTE_CHARS = 160
 MAX_TONE_EVIDENCE = 3
 
 KIND = "brief"  # document_insights.kind
-PROMPT_VERSION = 2  # brief_extract@2 / brief_merge@2 (adds tone); part of the insight key
+PROMPT_VERSION = 2  # the stored brief shape (with tone) and brief_merge@2; part of the insight key
 
 
 def params_hash(params: Mapping[str, Any]) -> str:

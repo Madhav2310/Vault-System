@@ -129,16 +129,16 @@ def test_answer_rag_frontmatter() -> None:
 
 
 def test_brief_extract_sections() -> None:
-    p = default_registry().get("brief_extract", 1)
+    p = default_registry().get("brief_extract", 3)
     assert (p.role, p.output, p.effort, p.purpose, p.max_tokens) == (
         "balanced",
         "schema",
         "low",
         "brief_extract",
-        2500,
+        1800,
     )
     headings = [ln for ln in p.body.splitlines() if ln.startswith("## ")]
-    assert [h.split(".")[0] for h in headings] == [f"## {i}" for i in range(1, 8)]
+    assert [h.split(".")[0] for h in headings] == [f"## {i}" for i in range(1, 9)]
     expected = [
         "Ground rules",
         "Untrusted content",
@@ -146,11 +146,12 @@ def test_brief_extract_sections() -> None:
         "Summary",
         "Suggested questions",
         "Category and tags",
+        "Tone",
         "Output reminder",
     ]
     assert [h.split(". ", 1)[1] for h in headings] == expected
 
 
 def test_brief_merge_frontmatter() -> None:
-    p = default_registry().get("brief_merge", 1)
+    p = default_registry().get("brief_merge", 2)
     assert (p.role, p.output, p.purpose) == ("fast", "schema", "brief_merge")

@@ -57,8 +57,6 @@ async def test_injection_rule_present() -> None:
     assert "category=policy" in prov.requests[0].messages[0]["content"]
 
 
-def test_trimmed_prompt_is_smaller_and_v2_loads() -> None:
-    reg = default_registry()
-    v2, v3 = reg.get("brief_extract", 2), reg.get("brief_extract", 3)
-    assert v2.max_tokens == 2500 and v3.max_tokens < v2.max_tokens
-    assert "At most 25 facts" in v3.body and "At most 40 facts" in v2.body
+def test_extract_prompt_caps_the_output() -> None:
+    p = default_registry().get(*PROMPT)
+    assert p.max_tokens == 1800 and "At most 25 facts" in p.body

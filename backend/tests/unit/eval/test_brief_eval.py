@@ -95,7 +95,7 @@ async def test_guard_checks_before_every_call() -> None:
         await g.call(
             purpose="brief_extract",
             lane="background",
-            prompt=("brief_extract", 2),
+            prompt=("brief_extract", 3),
             owner_id=uuid.uuid4(),
             schema=brief_schema(evidence),
             messages=[{"role": "user", "content": evidence.text}],
