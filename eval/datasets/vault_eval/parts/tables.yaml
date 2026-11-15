@@ -1,4 +1,5 @@
-# S21.04b: table_lookup items from eval/build/draft_tables.py (gold unaudited until S21.05)
+# table_lookup items over FinanceBench 10-Q table rows: gold built by code from the cell, question model-paraphrased.
+# Edited only through the audit.
 items:
 - id: tbl_table_lookup_6c981336b5
   stratum: table_lookup

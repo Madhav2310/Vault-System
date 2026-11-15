@@ -1,4 +1,4 @@
-# S21.03 authored stratum: compare_docs. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+# Authored stratum: compare_docs. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
 items:
 - id: s21-cmp-01
   stratum: compare_docs

@@ -1,4 +1,4 @@
-# S21.03 authored stratum: aggregation. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+# Authored stratum: aggregation. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
 items:
 - id: s21-agg-01
   stratum: aggregation

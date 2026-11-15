@@ -1,4 +1,4 @@
-# S21.03 authored stratum: injection. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
+# Authored stratum: injection. Fixture documents: ../docs/manifest.yaml. Evidence = [sentence_start, sentence_end) per ../README.md appendix.
 items:
 - id: s21-inj-01
   stratum: injection

@@ -1,8 +1,9 @@
-# vault_eval_v2
+# vault_eval
 
-Gold set v2: 311 live items, atomic claims. The items live in `parts/*.yaml` and `authored/*.yaml` (and an optional
-`golden.yaml`), each with a top-level `items:` list; load them with `eval.loader.load_dataset_v2()` (schema:
-`eval.schema.GoldItemV2`). v1 (`../vault_eval_v1`) stays loadable with `eval.loader.load_dataset()` for old reports.
+The golden set: 311 live items, atomic claims. The items live in `parts/*.yaml` and `authored/*.yaml`, each with a
+top-level `items:` list; load them with `eval.loader.load_dataset()` (schema: `eval.schema.GoldItem`).
+`documents.yaml` maps every document key to its file (`make eval-docs`); `sources.yaml` names the third-party
+documents `make eval-fetch` downloads; `docs/` holds the authored fixtures (`docs/manifest.yaml`).
 
 Gold status: train (118 live items) is `verified` after an independent model audit and a person's decisions; dev
 (59) has 7 `verified` items from the owner review of disputed items and 52 `draft`; test (134) is all `draft`,
@@ -34,14 +35,14 @@ never reviewed. The decisions are recorded in `audit_queue.yaml` (the owner revi
 (must be `abstain`) · 11. `false_premise` 15 · 12. `versioned` 15 · 13. `injection` 20 · 14. `multi_turn` 10 ·
 15. `formatting` 5.
 
-Check: `cd backend && uv run pytest tests/unit/eval/test_schema_v2.py`
+Check: `cd backend && uv run pytest tests/unit/eval/test_schema.py`
 
 ## Appendix: authored strata 7-14
 
-Files: `authored/{compare_docs,conflict,aggregation,unanswerable,false_premise,versioned,injection,multi_turn}.yaml`; fixtures in `docs/` (all CC0, authored; keys and titles in `docs/manifest.yaml`). Check: `python -m eval.build.check_coverage eval/datasets/vault_eval_v2 [--require-all]`.
+Files: `authored/{compare_docs,conflict,aggregation,unanswerable,false_premise,versioned,injection,multi_turn}.yaml`; fixtures in `docs/` (all CC0, authored; keys and titles in `docs/manifest.yaml`). Check: `python -m eval.build.check_coverage eval/datasets/vault_eval [--require-all]`.
 
 - **Sentence handles for fixtures.** `gold_evidence` ranges index the fixture's sentences in reading order: blocks are separated by blank lines; a heading line is one sentence; a table row is one sentence (separator rows skipped); other blocks use the ingestion sentence splitter (`eval.build.check_coverage.document_sentences`). DOCX fixtures count non-empty body paragraphs. Re-map against ingested chunks before relying on them (UNVERIFIED against the real pipeline).
 - **Injection variant tag.** Each injection item's `audit_note` starts with `variant=<tag>;`, tag in `eval.build.check_coverage.INJECTION_VARIANTS` (11): body_text, footnote, table_cell, hidden_text, fake_system, ignore_previous, exfiltration, citation_spoof, role_play, unicode_zero_width, markdown_link.
 - **false_premise** items use `answer_type: partial`: required claims state that the premise is wrong plus the nearest true fact. **unanswerable** items are `abstain`; every one explains the absence in `audit_note`.
 - **versioned**: `source_doc` is the current (`*_v2`) document; `must_not_contain` holds the stale v1 value. Absent-fact items about a versioned family use the v1 key as `source_doc` (the family is split across two cluster keys to respect the cap).
-- `multi_pdf`: `docs/newsletter_twocol.pdf` is a two-column PDF used only as an unanswerable-item scope (no sentence-level gold; stratum 15 items are another lane's).
+- Multi-column PDF: `docs/newsletter_twocol.pdf` is a two-column PDF used only as an unanswerable-item scope (no sentence-level gold).
