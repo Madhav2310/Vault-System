@@ -1,4 +1,4 @@
-import { SseHttpError, streamEvents, type SseFrame } from "../sse";
+import { streamEvents, type SseFrame } from "../sse";
 import type {
   DocumentList,
   ChatMetrics,
@@ -12,7 +12,7 @@ import type {
 } from "./types";
 
 /**
- * Auth is an httpOnly session cookie set by POST /v1/session (S22.11): the key is never stored in the page.
+ * Auth is an httpOnly session cookie set by POST /v1/session: the key is never stored in the page.
  * State-changing requests carry this custom header, which the server requires for cookie auth (CSRF guard).
  */
 export const CSRF_HEADERS: Record<string, string> = { "X-Requested-With": "vault-ui" };
@@ -180,5 +180,3 @@ export function decodeProcessing(f: SseFrame): ProcessingEvent | null {
   if (f.event === "timeout") return { type: "timeout", ...d } as ProcessingEvent;
   return null;
 }
-
-export { SseHttpError };

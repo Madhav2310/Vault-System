@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 
-// S19.06; run by `make ui-e2e` against the fake-LLM stack (real API, scripted model, fixtures from frontend/e2e/fixtures).
+// Run by `make ui-e2e` against the fake-LLM stack (real API, scripted model, fixtures from frontend/e2e/fixtures).
 const API_KEY = process.env.UI_API_KEY ?? "vk_test_demo";
 const QUESTION = "What is the notice period for termination?"; // scripted in backend/tests/fixtures/ui_script.yaml
 

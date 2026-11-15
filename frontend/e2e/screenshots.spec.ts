@@ -1,7 +1,8 @@
 import { test, type Page } from "@playwright/test";
 
-// Visual QA capture (S23.03b). Mocked API, no stack: `SHOTS=1 UI_BASE_URL=http://localhost:5199 npx playwright test e2e/screenshots.spec.ts`
-// (vite dev server on 5199). Skipped in `make ui-e2e`. Writes PNGs to e2e/screenshots/<scheme>-<size>/.
+// Visual QA capture. Mocked API, no stack: `SHOTS=1 UI_BASE_URL=http://localhost:5199 npx playwright test e2e/screenshots.spec.ts`
+// (vite dev server on 5199). Skipped in `make ui-e2e`. Writes PNGs to e2e/screenshots/<scheme>-<size>/ (ignored by git);
+// the README images in docs/img/ui/ are copies of 1440-light 01, 02, 04, 08 and 390-mobile 02.
 test.skip(!process.env["SHOTS"], "set SHOTS=1 to capture screenshots");
 
 const SESSION = "55555555-5555-4555-8555-555555555555";

@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Written for S19.03; run by `make ui-e2e` (S19.02) against the fake-LLM stack. Not run in the S19.01/03 lane.
+// Run by `make ui-e2e` against the fake-LLM stack.
 const API_KEY = process.env.UI_API_KEY ?? "vk_test_demo";
 
 async function signIn(page: Page) {

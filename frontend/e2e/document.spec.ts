@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// Written for S19.04; run by `make ui-e2e` (S19.02). The API is mocked with page.route so these specs are
+// Run by `make ui-e2e`. The API is mocked with page.route so these specs are
 // deterministic and need no fixtures; the app itself is served by the real stack.
 const DOC = "11111111-1111-4111-8111-111111111111";
 const FLOW_DOC = "22222222-2222-4222-8222-222222222222";
@@ -151,7 +151,7 @@ test("no page zero", async ({ page }) => {
   await expect(viewer.getByText("Page", { exact: true })).toHaveCount(0);
 });
 
-// --- S19.04 follow-up: new version upload with status, and delete -----------------------------------------
+// --- New version upload with status, and delete -----------------------------------------------------------
 
 const PROC = "**/v1/versions/*/processing/stream";
 const sse = (event: string, data: object) => `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;

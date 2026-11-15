@@ -1,6 +1,6 @@
 import { defineConfig } from "@playwright/test";
 
-// Run via `make ui-e2e` (S19.02) against the fake-LLM stack: one worker, headless Chromium.
+// Run via `make ui-e2e` against the fake-LLM stack: one worker, headless Chromium.
 export default defineConfig({
   testDir: "e2e",
   workers: 1,

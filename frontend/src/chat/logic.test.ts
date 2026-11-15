@@ -235,7 +235,7 @@ describe("trust, labels, failures", () => {
   });
 });
 
-describe("S23.03 interaction logic", () => {
+describe("interaction logic", () => {
   const answer = (): Msg => {
     const m = pendingAssistant("a1");
     return {

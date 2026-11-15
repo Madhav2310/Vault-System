@@ -62,7 +62,7 @@ export interface UploadResponse {
   deduplicated: boolean;
 }
 
-/** Processing SSE (`GET /v1/versions/{id}/processing/stream`, S14.05). */
+/** Processing SSE (`GET /v1/versions/{id}/processing/stream`). */
 export type ProcessingEvent =
   | { type: "stage"; name: string; status: string; attempt: number; at: string; error_code?: string }
   | { type: "done"; status: string; error_code: string | null }

@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page, type Route } from "@playwright/test";
 
-// Written for S19.05; run by `make ui-e2e`. The API is mocked with page.route (deterministic, no fixtures).
+// Run by `make ui-e2e`. The API is mocked with page.route (deterministic, no fixtures).
 const SESSION = "55555555-5555-4555-8555-555555555555";
 const DOC = "11111111-1111-4111-8111-111111111111";
 const CHUNK = "33333333-3333-4333-8333-333333333333";
@@ -199,7 +199,7 @@ test("history restored", async ({ page }) => {
   await expect(page.getByTestId("cited-sentence")).toHaveText(CITED);
 });
 
-// --- S19.05 follow-up: UI for conflicts, staleness, feedback, quota and the support-check verdict ---------
+// --- Conflicts, staleness, feedback, quota and the support-check verdict -----------------------------------
 
 const CHUNK_B = "77777777-7777-4777-8777-777777777777";
 const FEE_A = "The Services Agreement sets the monthly fee at 4,500 dollars.";
@@ -351,7 +351,7 @@ test("support-check verdict and reason from history", async ({ page }) => {
   await expect(page.getByTestId("segment").nth(3).getByTestId("tag-supported")).toHaveCount(0); // no check ran: no label
 });
 
-// --- S23.03: chat interaction polish ---------------------------------------------------------------------
+// --- Chat interaction details ----------------------------------------------------------------------------
 
 const HELD = `
   const realFetch = window.fetch.bind(window);
@@ -668,7 +668,7 @@ test("axe on a clarification", async ({ page }) => {
   await axeClean(page, "clarify");
 });
 
-// S23.03b: the question follows "Wrong document?", and Jump-to-latest is laid out from the composer.
+// The question follows "Wrong document?", and Jump-to-latest is laid out from the composer.
 test("Wrong document carries the question into the new chat's composer", async ({ page }) => {
   await mock(page);
   await ask(page, "How can the contract end?");

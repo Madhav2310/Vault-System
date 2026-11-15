@@ -47,14 +47,6 @@ export function foldProgress(events: readonly ProcessingEvent[]): Progress {
   return { stages, done };
 }
 
-export const TERMINAL: ReadonlySet<VersionStatus> = new Set([
-  "enriched",
-  "needs_ocr",
-  "unsupported",
-  "failed",
-  "superseded",
-]);
-
 /** Statuses for which a live stream is worth opening. */
 export function isLive(status: VersionStatus): boolean {
   return status === "uploaded" || status === "processing" || status === "ready";

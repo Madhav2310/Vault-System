@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 
-// S19 follow-up: the Metrics page. The API is mocked with page.route so the numbers are known.
+// The Metrics page. The API is mocked with page.route so the numbers are known.
 const json = (body: unknown, status = 200) => ({ status, contentType: "application/json", body: JSON.stringify(body) });
 
 const documents = {
