@@ -71,7 +71,14 @@ async def retrieve_per_doc(
         async with sem:
             return await retriever.retrieve(sm, owner_id, Scope(entries=(entry,)), query, embedding=emb)
 
-    results = await asyncio.gather(*(one(entry) for entry in scope.entries))
+    tasks = [asyncio.ensure_future(one(entry)) for entry in scope.entries]
+    try:
+        results = await asyncio.gather(*tasks)
+    except BaseException:  # gather leaves the siblings of a failed retrieval running: stop them
+        for t in tasks:
+            t.cancel()
+        await asyncio.gather(*tasks, return_exceptions=True)
+        raise
     picks = [r.selected[:per_doc] for r in results]
     order = {cid: i for i, cid in enumerate(c for pick in picks for c in pick)}
     candidates = tuple(

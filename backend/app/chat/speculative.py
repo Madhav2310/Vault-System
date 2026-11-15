@@ -24,13 +24,19 @@ class SpeculativeRetrieval:
 
 
 async def cancel(task: asyncio.Task[Any] | None) -> None:
-    """Cancel a task and wait for it to finish; its result or error is dropped."""
+    """Cancel a task and wait for it to finish; its result or error is dropped. A cancellation of the caller
+    itself (a node deadline, shutdown) while it waits is re-raised, not swallowed."""
     if task is None:
         return
     if not task.done():
         task.cancel()
-    with contextlib.suppress(asyncio.CancelledError, Exception):
-        await task
+    try:
+        with contextlib.suppress(Exception):
+            await task
+    except asyncio.CancelledError:
+        current = asyncio.current_task()
+        if current is not None and current.cancelling():
+            raise
 
 
 async def cancel_all(state: Any) -> None:

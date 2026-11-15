@@ -1,5 +1,6 @@
 """Daily cost quota per user: chat 429, admin exemption, brief deferral."""
 
+import asyncio
 import uuid
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
@@ -7,8 +8,10 @@ from decimal import Decimal
 from typing import Any
 
 import httpx
+import pytest
 from sqlalchemy import text
 
+from app.api.deps import get_turn_runner
 from tests.support.brief_kit import brief_gateway
 from tests.support.brief_seed import SERVICES, ChunkSpec, insight_rows, run_brief, seed_ready_version
 from tests.support.jobs import version_status
@@ -73,3 +76,30 @@ async def test_brief_deferred(sm: Any, make_owner: Callable[[], Any], enqueued: 
     rows = await insight_rows(sm, seeded.ref.version_id)
     assert [r["status"] for r in rows] == ["quota_deferred"]
     assert (await version_status(sm, seeded.ref.version_id))[0] == "ready"
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="admission-only quota: spend is read through a 30 s cache and nothing is reserved per turn",
+)
+async def test_turns_cannot_spend_past_the_quota(
+    api: httpx.AsyncClient, sm: Any, make_owner: Callable[[], Any]
+) -> None:
+    """Spend $0.90 of $1.00, then turns that each cost $0.50: at most one turn may start (the one that
+    crosses the limit), whether the next ones arrive concurrently or right after it."""
+    o = await make_owner()
+    await _spend(sm, o.id, "0.90")
+
+    async def costly(*_a: object) -> None:
+        await asyncio.sleep(0.1)
+        await _spend(sm, o.id, "0.50")
+
+    api._transport.app.dependency_overrides[get_turn_runner] = lambda: costly  # type: ignore[attr-defined]
+    concurrent = await asyncio.gather(*(_post(api, o) for _ in range(4)))
+    after = await _post(api, o)
+    started = sum(1 for r in [*concurrent, after] if r.status_code in (200, 202))
+    async with sm() as s:
+        spent = (
+            await s.execute(text("SELECT sum(cost_usd) FROM llm_calls WHERE owner_id = :o"), {"o": o.id})
+        ).scalar_one()
+    assert started <= 1, f"{started} turns started, ${spent} spent against a $1.00 quota"

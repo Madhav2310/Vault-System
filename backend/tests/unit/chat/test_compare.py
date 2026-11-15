@@ -1,5 +1,6 @@
 """The 2-5 document limit, per-document passage count and the code-written missing-side segment."""
 
+import asyncio
 import uuid
 from decimal import Decimal
 from typing import Any
@@ -13,6 +14,7 @@ from app.chat.compare import (
     limit_compare,
     name_missing_sides,
     per_doc_passages,
+    retrieve_per_doc,
 )
 from app.chat.graph import TurnState
 from app.chat.nodes.analyze import AnalyzeResult, ScopeDoc
@@ -79,3 +81,33 @@ def test_prompt_contract() -> None:
     p = default_registry().get("answer_compare", 3)
     assert (p.output, p.role, p.purpose, p.version) == ("segments", "balanced", "generate", 3)
     assert "markdown table" in p.body and "Nothing was found" in p.body
+
+
+class _OneFails:
+    """Retriever stub: the first document's retrieval fails at once, the others take a while."""
+
+    def __init__(self, failing: uuid.UUID) -> None:
+        self.failing, self.finished = failing, 0
+
+    async def retrieve(self, sm: Any, owner_id: uuid.UUID, scope: Scope, query: str, **kw: Any) -> Any:
+        if scope.entries[0][0] == self.failing:
+            raise RuntimeError("retrieval failed")
+        await asyncio.sleep(0.2)
+        self.finished += 1
+
+
+async def test_retrieve_per_doc_failure_stops_the_other_retrievals() -> None:
+    """One document's retrieval failing fails the node; the other retrievals are cancelled, not left running
+    after the turn has moved on."""
+    scope = _state(3).scope
+    stub = _OneFails(scope.entries[0][0])
+    before = len(asyncio.all_tasks())
+    try:
+        await retrieve_per_doc(stub, None, uuid.uuid4(), scope, "q", embedding=object())  # type: ignore[arg-type]
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("the failure must reach the caller")
+    assert len(asyncio.all_tasks()) == before, "no retrieval is left running"
+    await asyncio.sleep(0.3)
+    assert stub.finished == 0
