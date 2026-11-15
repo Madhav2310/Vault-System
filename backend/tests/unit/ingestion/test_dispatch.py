@@ -18,5 +18,4 @@ async def test_payload_only_job_id(monkeypatch) -> None:  # type: ignore[no-unty
         "embed",
         "index",
         "brief",
-        "contextualize",
     }

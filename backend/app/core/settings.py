@@ -74,7 +74,7 @@ class Settings(BaseSettings):
     llm_retry_after_max_s: float = 60.0  # a longer retry-after is not slept in process: the call raises
     # Model calls in flight per process and lane (app/llm/concurrency.py). Interactive: a turn overlaps at
     # most two calls, so 32 serves 16+ turns at once per API process before anything queues. Background:
-    # twice the largest per-task fan-out (EMBED_CONCURRENCY 4, contextualize wave 4, BRIEF_CONCURRENCY 3).
+    # twice the largest per-task fan-out (EMBED_CONCURRENCY 4, BRIEF_CONCURRENCY 3).
     llm_concurrency_interactive: int = 32
     llm_concurrency_background: int = 8
     llm_queue_max_wait_s: float = 120.0  # = LLM_TIMEOUT_S: longer means every slot is stuck; then capacity
@@ -107,13 +107,6 @@ class Settings(BaseSettings):
     brief_max_evidence_tokens: int = 12_000  # above this the brief maps over section groups, then merges
     brief_enabled: bool = True  # False skips the brief stage (eval uploads: no spend); version stays `ready`
     brief_max_usd: float = 0.05  # per document; reaching it stops further map calls (BRIEF_PARTIAL_BUDGET)
-
-    # --- contextual chunk headers, index side only; off until the A/B decides ---
-    contextualize_variant: Literal["off", "deterministic", "llm"] = "off"
-    contextualize_max_usd: float = 0.02  # per document; reaching it stops further header calls
-    # contextual index text for both legs: none = chunker text unchanged; deterministic = code header
-    # (title, section, table caption/header, written by the chunk stage); llm = chunk_context@1 headers.
-    index_context: Literal["none", "deterministic", "llm"] = "none"
 
     # --- retrieval config file under backend/config, e.g. retrieval@2 ---
     retrieval_config: str = "retrieval@5"

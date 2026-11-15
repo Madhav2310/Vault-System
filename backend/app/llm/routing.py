@@ -64,7 +64,6 @@ DEFAULT_ROUTES: dict[str, Route] = {
     "followups": Route("fast", "none"),
     "memory_compact": Route("fast", "none"),
     "tag_category": Route("fast", "none"),
-    "contextualize": Route("fast", "none"),
     "matrix_cell": Route("balanced", "low"),
     "eval_judge": Route("deep", "low"),
 }

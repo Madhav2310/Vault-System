@@ -39,7 +39,6 @@ EXPECTED = [
     (("followups", None, None), ("fast", LUNA, "none")),
     (("memory_compact", None, None), ("fast", LUNA, "none")),
     (("tag_category", None, None), ("fast", LUNA, "none")),
-    (("contextualize", None, None), ("fast", LUNA, "none")),
     (("matrix_cell", None, None), ("balanced", TERRA, "low")),
     (("eval_judge", None, None), ("deep", SOL, "low")),
 ]

@@ -54,9 +54,7 @@ async def test_terminal_failure_after_ready_keeps_the_version_ready(sm, make_own
             text("UPDATE document_versions SET status = 'ready' WHERE id = :v"), {"v": ref.version_id}
         )
         await s.commit()
-    out = await run_job(
-        sm, ref.job_id, "w", {"brief": FailsForGood()}, enqueued, order=("index", "brief", "contextualize")
-    )
+    out = await run_job(sm, ref.job_id, "w", {"brief": FailsForGood()}, enqueued, order=("index", "brief"))
     assert out == "dead"
     row = await job_row(sm, ref.job_id)
     assert (row["status"], row["error_code"], row["lease_owner"]) == ("dead", "boom", None)
