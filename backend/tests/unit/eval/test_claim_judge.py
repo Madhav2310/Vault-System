@@ -387,9 +387,9 @@ async def test_support_details_and_metadata_inputs() -> None:
     assert sent["question"] == "Rate for Vantage?" and sent["documents"] == ["agreement"]
 
 
-def test_claim_judge_3_prompt_states_number_list_and_alias_rules() -> None:
+def test_claim_judge_prompt_states_number_list_and_alias_rules() -> None:
     from app.llm.prompts import default_registry
 
-    body = default_registry().get("eval_judge_claims", 3).body
+    body = default_registry().get("eval_judge_claims", 4).body
     for rule in ("same amount after unit scale", "lists several values", "accepted_variants"):
         assert rule in body
