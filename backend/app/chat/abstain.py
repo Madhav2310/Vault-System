@@ -1,18 +1,17 @@
 """Scored abstention: a logistic combiner replaces the binary evidence floor.
 
 Features (all numbers, computed by code): `top` (best retrieval score, the gate's own `top_score`), `margin`
-(top minus the score at rank `margin_rank`), `not_found` (plan elements without a valid handle, capped
-at `MAX_NOT_FOUND`) and `unsupported` (share of cited segments the support check labelled unsupported,
-measured before removal). The probability that the question is answerable from the documents is
+(top minus the score at rank `margin_rank`) and `unsupported` (share of cited segments the support check
+labelled unsupported). The probability that the question is answerable from the documents is
 `sigmoid(bias + sum_i w_i * (x_i - mean_i) / std_i)`. Two thresholds cut it into three outcomes:
 `p < t_abstain` abstain, `t_abstain <= p < t_answer` partial (answer what is supported and say the rest
 was not found), `p >= t_answer` answer. Both thresholds are fitted offline (`eval/calibrate_abstain.py`)
 and loaded from `config/abstain@1.yaml`; the combiner never calls a model and decides nothing beyond
 these cuts.
 
-Two models share the math. `gate` (top, margin) runs before generation and can only abstain; `final` (all four
-features) runs after generation. A feature that was not computed is `None`: the model that needs it returns no
-score (never an imputed value) and the caller falls back (final -> gate -> the old behaviour).
+Two models share the math. `gate` (top, margin) runs before generation and can only abstain; `final` (all
+three features) runs after generation. A feature that was not computed is `None`: the model that needs it
+returns no score (never an imputed value) and the caller falls back (final -> gate -> the old behaviour).
 """
 
 import dataclasses
@@ -33,9 +32,8 @@ from app.explain.templates import PARTIAL_ANSWER_TEXT
 ABSTAIN_SCORED = "ABSTAIN_SCORED"
 PARTIAL_ANSWER = "PARTIAL_ANSWER"
 
-FEATURES = ("top", "margin", "not_found", "unsupported")
+FEATURES = ("top", "margin", "unsupported")
 GATE_FEATURES = ("top", "margin")
-MAX_NOT_FOUND = 4
 CONFIG_PATH = pathlib.Path(__file__).resolve().parents[2] / "config" / "abstain@1.yaml"
 
 Outcome = Literal["answer", "partial", "abstain"]
@@ -129,12 +127,9 @@ def retrieval_features(candidates: Iterable[Scored], margin_rank: int) -> dict[s
     return {"top": s[0], "margin": s[0] - s[margin_rank - 1] if len(s) >= margin_rank else None}
 
 
-def with_generation_features(
-    base: Features, not_found: int | None, unsupported_share: float | None
-) -> dict[str, float | None]:
-    """Add the post-generation features; `None` stays `None` (not computed is not zero)."""
+def with_generation_features(base: Features, unsupported_share: float | None) -> dict[str, float | None]:
+    """Add the post-generation feature; `None` stays `None` (not computed is not zero)."""
     out = dict(base)
-    out["not_found"] = None if not_found is None else float(min(max(not_found, 0), MAX_NOT_FOUND))
     out["unsupported"] = None if unsupported_share is None else min(max(unsupported_share, 0.0), 1.0)
     return out
 

@@ -6,7 +6,7 @@ Later slices add their fields here; `tests/unit/core/test_settings.py` keeps `.e
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr, field_validator, model_validator
+from pydantic import Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -117,18 +117,9 @@ class Settings(BaseSettings):
     chat_fast_path: bool = True
     chat_speculative_retrieval: bool = True  # retrieve on the raw question while `analyze` runs
 
-    # --- plan-first answers: answer_rag@4 + coverage plan; off until the A/B decides ---
-    chat_plan_first: bool = False
-
-    # --- support check: 2 = support_check@2 (prunes unneeded citations, removes unsupported
-    # segments, one regeneration if every segment fails); 1 until the paired A/B accepts it ---
-    chat_support_version: Literal[1, 2] = 1
-
     # --- scored abstention: logistic combiner (config/abstain@1.yaml) replaces the binary gate;
     # off until calibrated on a v2 run and the paired A/B accepts it ---
     chat_abstain_scored: bool = False
-    # --- typed calculation segments: answer_rag@5, code computes numbers; off until A/B decides ---
-    chat_calc: bool = False
 
     # --- routed locate loop for long filings: bounded search/find/open steps when the first pass
     # over one long document is low-confidence; off until the paired A/B decides ---
@@ -143,12 +134,6 @@ class Settings(BaseSettings):
     otel_exporter_otlp_endpoint: str = "http://otel-lgtm:4317"
     otel_service_name: str = "vault-api"
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
-
-    @field_validator("chat_support_version", mode="before")
-    @classmethod
-    def _int_from_env(cls, v: object) -> object:
-        """Env vars arrive as strings ("2"); the Literal[int] fields need the int."""
-        return int(v) if isinstance(v, str) and v.strip().isdigit() else v
 
     @model_validator(mode="after")
     def _no_fake_in_prod(self) -> "Settings":

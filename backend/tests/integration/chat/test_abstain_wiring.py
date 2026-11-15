@@ -167,53 +167,6 @@ async def test_partial_appends_template_and_streams(
     assert len(prov.requests) == 2
 
 
-async def test_partial_after_removal_keeps_indexes_unique(
-    sm: async_sessionmaker[AsyncSession],
-    ledger_owners: Callable[[], Any],
-    api: httpx.AsyncClient,
-    fitted: pathlib.Path,
-) -> None:
-    """support_check@2 removes the unsupported segment; the partial segment must not reuse its index."""
-    _, o, sid, r = await turn(
-        sm,
-        ledger_owners,
-        api,
-        [
-            TWO,
-            structured(
-                {
-                    "verdicts": [
-                        {
-                            "index": 0,
-                            "verdict": "supported",
-                            "contradicts": False,
-                            "needed": [],
-                            "reason": "r",
-                        },
-                        {
-                            "index": 1,
-                            "verdict": "unsupported",
-                            "contradicts": False,
-                            "needed": [],
-                            "reason": "r",
-                        },
-                    ]
-                }
-            ),
-        ],
-        sse=True,
-        chat_abstain_scored=True,
-        chat_support_version=2,
-    )
-    msg = await stored(api, sid, o)
-    assert [s["text"] for s in msg["segments"]] == ["Twelve months.", PARTIAL_ANSWER_TEXT]
-    events = parse_sse(r.text)
-    idx = [e["index"] for e in events if e["type"] == "segment"]
-    assert len(idx) == len(set(idx)) == 3  # two model segments, then the partial one
-    ver = next(e for e in events if e["type"] == "verification")
-    assert {v["index"]: v["verdict"] for v in ver["verdicts"]}[1] == "removed"
-
-
 async def test_abstain_replaces_answer(
     sm: async_sessionmaker[AsyncSession],
     ledger_owners: Callable[[], Any],
@@ -253,7 +206,7 @@ async def test_unfitted_config_keeps_old_behaviour(
     assert [s["text"] for s in msg["segments"]] == ["Twelve months.", "Ninety days notice."]
     codes, analysis = await run_row(sm, o)
     assert "ABSTAIN_SCORED" not in codes and "PARTIAL_ANSWER" not in codes
-    assert analysis["abstain"] == {"not_found": None, "unsupported": 1.0}
+    assert analysis["abstain"] == {"unsupported": 1.0}
 
 
 async def test_flag_off_is_unchanged(
@@ -276,16 +229,16 @@ async def test_missing_feature_keeps_old_behaviour(
     api: httpx.AsyncClient,
     fitted: pathlib.Path,
 ) -> None:
-    """A final model that needs `not_found` has no score without a plan: the answer stands."""
-    write_cfg(fitted, ("not_found", "unsupported"))
+    """A final model whose feature was not computed (no segment labelled) has no score: the answer stands."""
+    write_cfg(fitted, ("unsupported",))
     _, o, sid, _ = await turn(
-        sm, ledger_owners, api, [TWO, verdicts("unsupported", "unsupported")], chat_abstain_scored=True
+        sm, ledger_owners, api, [TWO, structured({"verdicts": []})], chat_abstain_scored=True
     )
     msg = await stored(api, sid, o)
     assert msg["response_type"] == "answer" and len(msg["segments"]) == 2
     codes, analysis = await run_row(sm, o)
     assert "ABSTAIN_SCORED" not in codes
-    assert analysis["abstain"] == {"not_found": None, "unsupported": 1.0}
+    assert analysis["abstain"] == {"unsupported": None}
 
 
 async def test_gate_abstain_records_scored_code(

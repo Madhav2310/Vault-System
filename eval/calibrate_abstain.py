@@ -8,8 +8,8 @@ versioned. `--write` stores the fit in `backend/config/abstain@1.yaml` (dev only
 
 Input (`--run`, default: the newest `eval/reports/*.abstain.jsonl`), one JSON object per scored item:
   item_id, stratum, source_doc (the split is derived with `eval.splits_v2.split_of`; a `split` field wins),
-  top, margin (retrieval features, margin to rank `--margin-rank`), not_found (plan elements without a valid
-  handle), unsupported (share of unsupported segments before removal); null/absent = not computed.
+  top, margin (retrieval features, margin to rank `--margin-rank`), unsupported (share of segments the
+  support check labelled unsupported); null/absent = not computed.
 A v2 run writes it next to its report as `<run_id>.abstain.jsonl`.
 
 Run from backend/ with PYTHONPATH=..:
@@ -182,7 +182,7 @@ def render_report(split: str, rep: Report) -> str:
 
 def write_config(path: pathlib.Path, cfg: A.AbstainConfig) -> None:
     head = (
-        "# Scored abstention (S22.07), written by `python -m eval.calibrate_abstain --write`: weights fitted on\n"
+        "# Scored abstention, written by `python -m eval.calibrate_abstain --write`: weights fitted on\n"
         "# train, thresholds picked on dev. Do not edit by hand; re-run the calibration instead.\n"
     )
     path.write_text(head + yaml.safe_dump(cfg.model_dump(), sort_keys=False), encoding="utf-8")

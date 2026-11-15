@@ -18,7 +18,7 @@ from app.explain import templates as T
 def model(
     t_abstain: float = 0.3, t_answer: float = 0.7, feats: tuple[str, ...] = A.GATE_FEATURES
 ) -> A.ModelCfg:
-    w = {"top": 2.0, "margin": 1.0, "not_found": -1.0, "unsupported": -2.0}
+    w = {"top": 2.0, "margin": 1.0, "unsupported": -2.0}
     return A.ModelCfg(
         features=list(feats),
         bias=0.0,
@@ -77,8 +77,8 @@ def test_missing_features_are_never_guessed() -> None:
     assert A.probability(m, {"top": 1.0, "margin": None}) is None
     assert A.probability(m, {"top": 1.0}) is None
     c = cfg(final=model(feats=A.FEATURES))
-    # final needs all four: with `unsupported` absent it falls back to the gate model, explicitly
-    x: dict[str, float | None] = {"top": 3.0, "margin": -1.0, "not_found": 1.0, "unsupported": None}
+    # final needs all three: with `unsupported` absent it falls back to the gate model, explicitly
+    x: dict[str, float | None] = {"top": 3.0, "margin": -1.0, "unsupported": None}
     d = A.decide(c, x, stage="final")
     assert d.model == "gate" and d.p == pytest.approx(0.7310585786)
     x["unsupported"] = 0.0
@@ -96,7 +96,7 @@ def test_gate_stage_never_returns_partial() -> None:
 
 def test_monotonic() -> None:
     m = model(feats=A.FEATURES)
-    base = {"top": 1.0, "margin": 1.0, "not_found": 0.0, "unsupported": 0.0}
+    base = {"top": 1.0, "margin": 1.0, "unsupported": 0.0}
 
     def p(**kw: float) -> float:
         out = A.probability(m, {**base, **kw})
@@ -105,7 +105,6 @@ def test_monotonic() -> None:
 
     assert p(top=2.0) > p(top=1.0) > p(top=0.0)
     assert p(margin=2.0) > p(margin=0.0)
-    assert p(not_found=2.0) < p(not_found=0.0)
     assert p(unsupported=0.5) < p(unsupported=0.0)
 
 
@@ -144,8 +143,8 @@ def test_retrieval_features() -> None:
 
 
 def test_generation_features() -> None:
-    f = A.with_generation_features({"top": 1.0}, 9, None)
-    assert f == {"top": 1.0, "not_found": 4.0, "unsupported": None}
+    assert A.with_generation_features({"top": 1.0}, None) == {"top": 1.0, "unsupported": None}
+    assert A.with_generation_features({"top": 1.0}, 1.5) == {"top": 1.0, "unsupported": 1.0}
     assert A.unsupported_share(["supported", "unsupported", "unchecked", None]) == 0.5
     assert A.unsupported_share(["unchecked"]) is None
 

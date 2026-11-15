@@ -18,7 +18,6 @@ from pydantic import BaseModel, ConfigDict, Field, create_model
 from app.chat.nodes_common import defuse
 
 MAX_ENUM_HANDLES = 1000
-CALC_OPS = ("add", "subtract", "ratio", "percent_change", "sum", "average")  # see `calc.py`
 HEADER_SEP = " · "  # middle dot, as in the design's header format
 
 Mode = Literal["rag", "full_context"]
@@ -107,51 +106,20 @@ def build_evidence(chunks: Sequence[EvidenceChunk]) -> EvidenceSet:
     return EvidenceSet(f"<evidence>\n{body}\n</evidence>", manifest, by_id, tuple(handles), chunk_handles)
 
 
-def answer_schema(
-    evidence: EvidenceSet | None, mode: Mode = "rag", plan_ids: Sequence[str] = (), calc: bool = False
-) -> type[BaseModel]:
-    """Strict answer schema. RAG mode with an enum-sized evidence set: handle enum; else plain strings.
-    `plan_ids` (e.g. `("R1", "R2")`) adds a `plan` field before the segments; empty = unchanged.
-    `calc` adds a nullable `calc` object to each segment; False = unchanged."""
+def answer_schema(evidence: EvidenceSet | None, mode: Mode = "rag") -> type[BaseModel]:
+    """Strict answer schema. RAG mode with an enum-sized evidence set: handle enum; else plain strings."""
     cfg = ConfigDict(extra="forbid")
     item: Any = str
     if mode == "rag" and evidence is not None and evidence.enum_ok and evidence.handles:
         item = Literal[evidence.handles]
     status: Any = Literal["answer", "abstain"]
-    extra: dict[str, Any] = {}
-    if calc:
-        operand: Any = create_model("CalcOperand", __config__=cfg, handle=(item, ...), value_text=(str, ...))
-        op_type: Any = Literal[CALC_OPS]
-        calc_model: Any = create_model(
-            "Calc",
-            __config__=cfg,
-            op=(op_type, ...),
-            operands=(list[operand], ...),
-            unit=(str, ...),
-            stated_result=(str, ...),
-        )
-        extra = {"calc": (calc_model | None, ...)}
-    segment: Any = create_model(
-        "Segment", __config__=cfg, text=(str, ...), evidence=(list[item], ...), **extra
-    )
-    plan: dict[str, Any] = {}
-    element_type: Any = Literal[tuple(plan_ids)] if plan_ids else str
-    if plan_ids:
-        entry: Any = create_model(
-            "PlanEntry",
-            __config__=cfg,
-            element=(element_type, ...),
-            handles=(list[item], ...),
-            not_found=(bool, ...),
-        )
-        plan = {"plan": (list[entry], ...)}
+    segment: Any = create_model("Segment", __config__=cfg, text=(str, ...), evidence=(list[item], ...))
     # `followups` comes last (the model writes segments first, so streaming is not delayed) and defaults to
     # empty for replies without it; on the wire the strict schema still requires it. Limits are code.
     return create_model(
         "Answer",
         __config__=cfg,
         status=(status, ...),
-        **plan,
         segments=(list[segment], ...),
         followups=(list[str], Field(default_factory=list)),
         # handles are plain strings (an enum here would triple the schema's enum-value count);
@@ -161,7 +129,7 @@ def answer_schema(
 
 
 def cache_mode_for(mode: Mode) -> Literal["implicit", "explicit"] | None:
-    """OpenAI prompt-cache mode per answer mode (F-021). RAG evidence differs on every request,
+    """OpenAI prompt-cache mode per answer mode. RAG evidence differs on every request,
     so caching it only adds the 1.25x write charge: `explicit` with no breakpoint disables it. FULL_CONTEXT
     keeps the default until the document-block breakpoint syntax is verified."""
     return "explicit" if mode == "rag" else None

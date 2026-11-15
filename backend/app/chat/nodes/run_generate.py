@@ -3,10 +3,8 @@
 import dataclasses
 from typing import Any
 
-from app.chat.calc import calc_call
 from app.chat.citations import ResolvedSegment
 from app.chat.compare import compare_call, missing_titles, name_missing_sides
-from app.chat.coverage import plan_call
 from app.chat.evidence import build_evidence
 from app.chat.followups import clean_followups
 from app.chat.graph import TURN_ERROR, TurnCtx, TurnState
@@ -17,16 +15,14 @@ from app.llm.errors import LlmError
 
 
 def generate_kwargs(state: TurnState, ctx: TurnCtx) -> dict[str, Any]:
-    """Every `generate` argument of this turn except `on_segment` (shared with the regeneration)."""
+    """Every `generate` argument of this turn except `on_segment`."""
     assert state.analysis is not None
     full = state.mode == "full_context"
     call: dict[str, Any] = {"route": state.analysis.intent if full else "qa"}
-    call["prompt"] = answer_prompt(ctx.deps.gateway.settings)  # compare, plan and calc below override
+    call["prompt"] = answer_prompt(ctx.deps.gateway.settings)  # a compare turn overrides it
     call.update(
         compare_call(state, ctx.deps.gateway.settings) if state.compare else {}
     )  # route, prompt, coverage
-    call.update(plan_call(state, ctx.deps.gateway.settings, full))  # empty unless switched on
-    call.update(calc_call(state, ctx.deps.gateway.settings, full))  # empty unless switched on
     return dict(
         gateway=ctx.deps.gateway, owner_id=ctx.owner_id, evidence=state.evidence,
         question=state.analysis.standalone_query, **call,

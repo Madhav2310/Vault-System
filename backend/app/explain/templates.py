@@ -34,18 +34,11 @@ ABSTAIN_TEXT_MANY = (
     "I could not find this in your {n} documents. "
     "Try asking in different words, or name the document you have in mind."
 )
-NOT_FOUND_ELEMENT = (
-    "I did not find anything about {element} in these documents. Try a document that covers it."
-)
 PARTIAL_ANSWER_TEXT = (
     "That is what your documents back up. I could not find the rest, so please check the document itself "
     "or name the section you have in mind."
 )
 CLARIFY_TEXT = "More than one of your documents could answer this. Which one should I look in?"
-UNSUPPORTED_ABSTAIN_TEXT = (
-    "I could not write an answer that your documents clearly back up. "
-    "Try asking in different words, or name the document or section you have in mind."
-)
 ERROR_TEXT = "That did not work on my side, and no answer was written. Please try again in a moment."
 QUOTA_REACHED = "You have reached today's usage limit. It resets in {retry} s (at midnight UTC), so you can ask again then."
 RATE_LIMITED = "That was a lot of requests at once. Please try again in {retry} s."
@@ -87,9 +80,6 @@ REASON_TEMPLATES: dict[str, str] = {
     "FULL_CONTEXT_TOO_LARGE": "The documents were too long to read whole, so the best passages were searched instead.",
     "SUPPORT_CHECK_FAILED": "The citations could not be double-checked this time.",
     "UNSUPPORTED_CLAIM": "A claim is not backed up by its cited source, so read it with care.",
-    "UNSUPPORTED_REMOVED": "One part of the draft was left out because your documents did not back it up.",
-    "ANSWER_REGENERATED": "The first draft was not backed up by your documents, so the answer was written again.",
-    "UNSUPPORTED_ABSTAINED": "No answer could be written that your documents back up, so none is shown.",
     "TURN_ABANDONED": "This turn stopped unexpectedly, so no answer was written. Try asking again.",
     "META_OP_REJECTED": "That question about your collection was answered from the document content instead.",
     "META_COUNT_DOCUMENTS": "Counted your documents from the document list.",
@@ -102,17 +92,6 @@ REASON_TEMPLATES: dict[str, str] = {
     "COMPARE_SIDE_MISSING": (
         "One document had nothing on this comparison, and the answer says so. "
         "Try adding a document that covers it."
-    ),
-    "ELEMENT_NOT_FOUND": (
-        "Part of the question had no supporting passage, and the answer says so. "
-        "Try a document that covers it."
-    ),
-    "CALC_CORRECTED": (
-        "A figure was recalculated from the numbers in the cited passages, and the answer shows the rechecked result."
-    ),
-    "CALC_OPERAND_UNVERIFIED": (
-        "I could not match every number in a calculation to its cited passage, so that figure is not shown as checked. "
-        "Check the passages yourself."
     ),
     "LOCATE_USED": (
         "The first search was a weak match for this long document, so I looked further inside it "
@@ -135,26 +114,6 @@ DEGRADED_TEMPLATES: dict[str, str] = {
     "no_rerank": "Passage ranking was not available, so passages are shown in search order.",
     "lexical_only": "Meaning-based search was not available, so only keyword search was used.",
 }
-
-
-def not_found_text(element: str) -> str:
-    return NOT_FOUND_ELEMENT.format(element=element)
-
-
-CALC_TEXTS = {  # the segment text of a checked calculation (code-written; the number is the computed one)
-    "add": "Adding {operands} gives {result}.",
-    "sum": "Adding {operands} gives {result}.",
-    "subtract": "{first} minus {second} is {result}.",
-    "ratio": "{first} divided by {second} is {result}.",
-    "percent_change": "The change from {first} to {second} is {result}.",
-    "average": "The average of {operands} is {result}.",
-}
-
-
-def calc_text(op: str, operands: list[str], result: str) -> str:
-    joined = operands[0] if len(operands) == 1 else ", ".join(operands[:-1]) + " and " + operands[-1]
-    first, second = [*operands, "", ""][:2]
-    return CALC_TEXTS[op].format(operands=joined, first=first, second=second, result=result)
 
 
 def plural(n: int, one: str, many: str | None = None) -> str:

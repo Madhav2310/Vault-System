@@ -21,7 +21,7 @@ ANSWER = {
     "prompts": ["answer_rag@7", "analyze_query@2"],
     "models": {"fast": "m1"},
     "retrieval": "retrieval@2",
-    "switches": {"chat_calc": "false"},
+    "switches": {"chat_clarify": "false"},
     "index": {"chunker": "chunker@1", "contextual_prefix": False},
 }
 
@@ -166,7 +166,7 @@ def test_merge_answer_config_unions_turns_and_marks_disagreement() -> None:
     m = fingerprint.merge_answer_config([c1, c2], {"chunker": "chunker@1"})
     assert m["prompts"] == ["answer_compare@2", "answer_rag@7", "support_check@1"]
     assert m["models"] == {"fast": "m1"} and m["retrieval"] == "retrieval@2"
-    c3 = {**c2, "models": {"fast": "m2"}, "switches": {"chat_calc": True}}
+    c3 = {**c2, "models": {"fast": "m2"}, "switches": {"chat_clarify": True}}
     assert fingerprint.merge_answer_config([c1, c3])["models"] == {"fast": "m1|m2"}
 
 

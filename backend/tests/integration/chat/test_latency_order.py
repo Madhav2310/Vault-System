@@ -60,7 +60,7 @@ async def test_answer_prefix_is_byte_identical_across_questions() -> None:
 
 
 def test_compose_puts_question_last() -> None:
-    msg = compose_user_message(evidence(), "Q?", "qa", MEM, coverage="c", conflicts="x", elements="e")
+    msg = compose_user_message(evidence(), "Q?", "qa", MEM, coverage="c", conflicts="x")
     assert msg.rstrip().endswith("</question>")
     assert msg.index("<question>") > max(msg.index(t) for t in ("<route>", "<coverage>", "<conflicts>"))
 

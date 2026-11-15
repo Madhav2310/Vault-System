@@ -39,6 +39,7 @@ from app.chat.nodes.run_generate import generate
 from app.chat.nodes.terminal import abstain_no_documents, abstain_no_evidence, clarify
 from app.chat.nodes.verify import verify
 from app.chat.speculative import cancel_all
+from app.chat.support_check import PROMPT as SUPPORT_PROMPT
 from app.core.logging import get_logger
 from app.llm.gateway import LlmGateway
 from app.retrieval.retrieve import RetrievalResult
@@ -160,7 +161,7 @@ async def persist(state: TurnState, ctx: TurnCtx) -> TurnState:
                 f"answer_compare@{compare_prompt(deps.gateway.settings)[1]}"
                 if state.compare
                 else f"answer_rag@{answer_prompt(deps.gateway.settings)[1]}",
-                f"support_check@{deps.gateway.settings.chat_support_version}",
+                f"support_check@{SUPPORT_PROMPT[1]}",
             ],
             "models": _models(deps.gateway),
             "retrieval": deps.retriever.config.version,

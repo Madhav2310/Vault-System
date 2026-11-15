@@ -72,9 +72,9 @@ def abstain_row(
     """One line of `<run_id>.abstain.jsonl`, the input of `eval.calibrate_abstain`.
 
     `inputs` is what the harness read back for the run: `candidates` (final attempt: rerank_score,
-    vector_distance, id_match) and `run` (the persisted `analysis.abstain`: not_found, unsupported, measured
-    before removal). `top`/`margin` come from the candidates through the same function the gate uses; a
-    feature the run did not record is null (never an imputed value)."""
+    vector_distance, id_match) and `run` (the persisted `analysis.abstain`: unsupported). `top`/`margin`
+    come from the candidates through the same function the gate uses; a feature the run did not record is
+    null (never an imputed value)."""
     from app.chat.abstain import retrieval_features
 
     feats = retrieval_features([_Cand(c) for c in inputs.get("candidates") or ()], margin_rank)
@@ -85,7 +85,6 @@ def abstain_row(
         "source_doc": item.source_doc,
         "top": feats["top"],
         "margin": feats["margin"],
-        "not_found": run.get("not_found"),
         "unsupported": run.get("unsupported"),
     }
 

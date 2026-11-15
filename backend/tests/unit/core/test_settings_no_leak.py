@@ -16,15 +16,6 @@ def test_validation_error_hides_input(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "sk-test" not in str(e.value)
 
 
-def test_version_switches_read_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    """CHAT_SUPPORT_VERSION=2 in the environment (a string) must work."""
-    monkeypatch.setenv("DATABASE_URL", "postgresql+asyncpg://u:p@h/db")
-    monkeypatch.setenv("REDIS_URL", "redis://h/0")
-    monkeypatch.setenv("CHAT_SUPPORT_VERSION", "2")
-    s = Settings(_env_file=None)  # type: ignore[call-arg]
-    assert s.chat_support_version == 2
-
-
 def test_the_answer_prompt_is_the_completeness_first_prompt() -> None:
     from app.chat.nodes.generate import PROMPT, answer_prompt
     from app.llm.prompts import default_registry
