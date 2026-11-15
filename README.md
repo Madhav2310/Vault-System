@@ -39,7 +39,7 @@ scripts/demo_core.sh      # shorter smoke: upload, ready, one cited answer, hist
 
 ## The assignment, feature by feature
 
-Source: `docs/spec/case-study.pdf`. Status is one of **built**, **built, switched off** (the code exists and is disabled until a paired evaluation shows it helps, see `ARCHITECTURE.md` section 7.3) or **not built**.
+Source: `docs/spec/case-study.pdf`. Status is one of **built** or **not built**; a behaviour change that did not survive its paired evaluation was deleted, not left switched off (`ARCHITECTURE.md` section 7.3).
 
 ### Backend components
 
@@ -79,7 +79,7 @@ Source: `docs/spec/case-study.pdf`. Status is one of **built**, **built, switche
 | Summary customization (length, focus, tone) | Built | `POST /v1/documents/{id}/summaries` |
 | Automated categorization and tagging | Built | Part of the brief (`category`, `tags`) |
 | Key insight extraction | Built | Key facts in `GET /v1/documents/{id}/brief`, each cited and verified in `backend/app/insights/verify.py` |
-| Sentiment analysis | Not built | |
+| Sentiment analysis | Built, per document | The brief classifies each document's tone (`positive`, `negative`, `mixed`, `adversarial`, `formal`, `neutral`) with a one-line reason and up to three cited sentences (`backend/prompts/brief_extract@3.md`); per-passage sentiment is not built |
 | Comparative analysis between documents | Built | Compare route with per-document retrieval and a conflict callout (`backend/app/chat/compare.py`, `conflicts.py`). |
 | Simple frontend | Built | `/app`: library, document page with source viewer, streaming chat, metrics (`frontend/`) |
 | Real-time updates | Built, over SSE | `GET /v1/versions/{id}/processing/stream` for processing, `text/event-stream` for chat; no WebSocket |

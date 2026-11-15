@@ -607,7 +607,7 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 - **Two quality targets are not met.** On the sealed test, answer_pass is 0.761 against a target of 0.80 and citation chunk precision 0.658 against 0.85; faithfulness (0.957) meets its 0.90 target. Multi-document strata (conflict, aggregation, compare) are the weakest (`docs/evaluation.md` section 3).
 - **Stage attribution cannot see extraction or chunking.**
 - **Unmeasured**: load and concurrency, documents per hour per worker, per-document embedding cost, exact search at 100k chunks, and live time to first token under the current configuration.
-- **Not built**: the comparison matrix (the tables exist, the code does not), the replay API and an operator run view, a tiered LLM evidence gate, memory compaction, OCR (scanned PDFs end as `needs_ocr`), the HNSW switch, Grafana dashboards, password login, sentiment analysis, and a per-owner ingestion cap. PDFs over 600 pages end as `unsupported`.
+- **Not built**: the comparison matrix (the tables exist, the code does not), the replay API and an operator run view, a tiered LLM evidence gate, memory compaction, OCR (scanned PDFs end as `needs_ocr`), the HNSW switch, Grafana dashboards, password login, per-passage sentiment (the brief records each document's tone), and a per-owner ingestion cap. PDFs over 600 pages end as `unsupported`.
 - **Memory** is the turn window only: nothing writes the rolling summary, and there is no cross-session memory.
 - **One known flaky test**: `backend/tests/integration/observability/test_trace_propagation.py::test_api_to_celery_same_trace` times out in full-suite runs and passes alone.
 
