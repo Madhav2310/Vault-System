@@ -1,7 +1,7 @@
 # api / workers / beat share this image; the command differs per service.
 FROM ghcr.io/astral-sh/uv:0.10.2 AS uv
 
-# Web UI build stage (S19.01). The build context is backend/, so the frontend comes in as a named context:
+# Web UI build stage. The build context is backend/, so the frontend comes in as a named context:
 #   docker build --build-context frontend=../frontend backend   (compose: additional_contexts)
 # Without it the stage builds an empty UI and /app answers 404.
 FROM scratch AS frontend
