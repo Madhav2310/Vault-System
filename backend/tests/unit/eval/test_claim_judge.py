@@ -325,7 +325,7 @@ def names_every_item(inputs: dict[str, Any]) -> dict[str, Any]:
 
 
 async def test_claim_judge_names_every_item_case() -> None:
-    assert J.PROMPTS["claims"] == ("eval_judge_claims", 4) and J.PROMPTS["support"] == (
+    assert J.PROMPTS["claims"] == ("eval_judge_claims", 5) and J.PROMPTS["support"] == (
         "eval_judge_support",
         3,
     )
@@ -390,6 +390,6 @@ async def test_support_details_and_metadata_inputs() -> None:
 def test_claim_judge_prompt_states_number_list_and_alias_rules() -> None:
     from app.llm.prompts import default_registry
 
-    body = default_registry().get("eval_judge_claims", 4).body
+    body = default_registry().get("eval_judge_claims", 5).body
     for rule in ("same amount after unit scale", "lists several values", "accepted_variants"):
         assert rule in body

@@ -69,7 +69,7 @@ def test_judge_version_difference_is_refused_and_named() -> None:
     a, b = _pair(_fp(), other)
     refusals = paired.check_fingerprints(a, b)
     assert len(refusals) == 1 and "judge.claims" in refusals[0]
-    assert "eval_judge_claims@4" in refusals[0] and "eval_judge_claims@2" in refusals[0]
+    assert "eval_judge_claims@5" in refusals[0] and "eval_judge_claims@2" in refusals[0]
 
 
 def test_allow_a_field_and_its_parent() -> None:
@@ -229,7 +229,7 @@ def test_rejudged_sidecar_carries_new_judge_versions() -> None:
     assert [i.item_id for i in sc.items] == ["a1"]
     assert sc.items[0].metrics == {"recall@8": 1.0, "answer_pass": 1.0}
     assert sc.fingerprint is not None
-    assert sc.fingerprint["judge"]["claims"] == "eval_judge_claims@4"
+    assert sc.fingerprint["judge"]["claims"] == "eval_judge_claims@5"
     assert sc.fingerprint["items"]["ids"] == ["a1"] and sc.fingerprint["code"]["git_sha"] == "new"
     assert sc.fingerprint["answer"] == ANSWER
     # compares against a fresh run on the same judges once items and code are allowed

@@ -2,8 +2,9 @@
 evaluation set.
 
 A prompt is contaminated when it shares a word 5-gram with any gold item's question, required or optional
-claims, or accepted variants, in any split, or when it uses a proper name (a capitalised word inside a
-sentence) that the gold items use, such as a party or document name. Matches are reported by prompt and item
+claims, or accepted variants, in any split, when it uses a proper name (a capitalised word inside a
+sentence) that the gold items use, such as a party or document name, or when it quotes a figure the gold
+items state (four or more significant digits, so plain years and small counts are exempt). Matches are reported by prompt and item
 id only; test-split text is never printed. Generic phrasing that recurs across many items (CUAD's template
 questions, the abstention template) is listed in `ALLOWED`, generic capitalised words in `GENERIC_NAMES`.
 
@@ -71,6 +72,25 @@ def names(text: str) -> set[str]:
     }
 
 
+_NUMBER = re.compile(r"(?<![\w.])\d[\d,]*(?:\.\d+)?(?![\w])")
+
+
+def numbers(text: str) -> set[str]:
+    """Figures with four or more significant digits, normalised: a figure with three or more integer digits
+    by its integer part (gold writes `5466.00`, a prompt `5,466.312`), a smaller one without trailing zeros.
+    Plain years (1900 to 2100) and short counts are left out."""
+    out: set[str] = set()
+    for m in _NUMBER.finditer(text):
+        raw = m.group(0).replace(",", "")
+        whole, _, frac = raw.partition(".")
+        if not frac and 1900 <= int(whole) <= 2100:
+            continue
+        key = whole if len(whole) >= 3 else (f"{whole}.{frac.rstrip('0')}" if frac.rstrip("0") else whole)
+        if sum(c.isdigit() for c in key) >= 4:
+            out.add(key)
+    return out
+
+
 def grams(text: str, n: int = N) -> set[str]:
     words = _WORD.findall(text.lower())
     return {" ".join(words[i : i + n]) for i in range(len(words) - n + 1)}
@@ -119,6 +139,33 @@ def name_index(items: Iterable[object]) -> dict[str, set[tuple[str, str]]]:
     return idx
 
 
+def number_index(items: Iterable[object]) -> dict[str, set[tuple[str, str]]]:
+    """figure -> {(split, item id)} over each item's question, claims and accepted variants."""
+    from eval.splits import split_of
+
+    idx: dict[str, set[tuple[str, str]]] = {}
+    for it in items:
+        alts = getattr(it, "alternates", None) or {}
+        texts = [getattr(it, "question", "") or ""]
+        texts += list(getattr(it, "required_claims", None) or []) + list(
+            getattr(it, "optional_claims", None) or []
+        )
+        texts += [v for vs in alts.values() for v in vs] if isinstance(alts, dict) else []
+        for t in texts:
+            for n in numbers(t):
+                idx.setdefault(n, set()).add((split_of(it.source_doc), it.id))  # type: ignore[attr-defined]
+    return idx
+
+
+def number_matches(prompt_text: str, idx: dict[str, set[tuple[str, str]]]) -> dict[tuple[str, str], list[str]]:
+    """(split, item id) -> the figures the prompt shares with that item."""
+    out: dict[tuple[str, str], list[str]] = {}
+    for n in sorted(numbers(prompt_text)):
+        for key in idx.get(n, ()):
+            out.setdefault(key, []).append(n)
+    return out
+
+
 def matches(prompt_text: str, idx: dict[str, set[tuple[str, str]]]) -> dict[tuple[str, str], list[str]]:
     """(split, item id) -> the shared 5-grams, `ALLOWED` excluded."""
     out: dict[tuple[str, str], list[str]] = {}
@@ -142,11 +189,15 @@ def findings(files: Sequence[Path]) -> list[tuple[str, str, str, str, list[str]]
     from eval.loader import load_dataset
 
     items = load_dataset().items
-    gidx, nidx = item_index(items), name_index(items)
+    gidx, nidx, fidx = item_index(items), name_index(items), number_index(items)
     out = []
     for f in files:
         text = f.read_text("utf-8")
-        for kind, found in (("5-gram", matches(text, gidx)), ("name", name_matches(text, nidx))):
+        for kind, found in (
+            ("5-gram", matches(text, gidx)),
+            ("name", name_matches(text, nidx)),
+            ("number", number_matches(text, fidx)),
+        ):
             out += [(f.name, kind, sp, iid, shared) for (sp, iid), shared in sorted(found.items())]
     return out
 

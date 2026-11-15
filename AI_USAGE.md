@@ -108,7 +108,7 @@ What the iterations taught:
 
 ### 4.3 Judge prompts and their decontamination
 
-- **`backend/prompts/eval_judge_claims@4.md`** (role `deep`) makes one binary decision per required claim against the answer. It compares numbers as quantities, accepts paraphrase and listed variants, and requires a verbatim quote. Code overrules a "yes" whose quote is not in the answer (`eval/judge.py`).
+- **`backend/prompts/eval_judge_claims@5.md`** (role `deep`; `@4` judged the frozen runs) makes one binary decision per required claim against the answer. It compares numbers as quantities, accepts paraphrase and listed variants, and requires a verbatim quote. Code overrules a "yes" whose quote is not in the answer (`eval/judge.py`).
   - claims@1 penalised correct `versioned` answers.
   - @2 fixed that and replaced train-mirroring examples with synthetic ones.
   - @3 added quantity and alias rules. Re-judging the answers flipped one item, so the judge explained almost none of the gap.
@@ -151,7 +151,7 @@ The contamination check covers every prompt that a default turn or judge run use
 
 - **The judges share a vendor with the generator.** The current judge versions have not been calibrated against the 200 human-labelled pairs in `eval/labels/labeled.yaml`, so judged numbers are provisional.
 - **Most gold is unaudited.** 52 of 59 dev items and all 134 test items are drafts that a model helped write. The gap between test answer_pass (0.761) and dev (0.847) is not diagnosed, because doing so would mean reading test items.
-- **The contamination check matches word 5-grams and names, not figures.** `eval_judge_claims@4` still uses figures from two dev items in its examples (a Netflix current-liabilities value and an HR@10 / NDCG@10 pair). Judged results on those two items may be lenient. Fixing that needs a new judge version and a re-judge.
+- **The contamination check once missed figures.** `eval_judge_claims@4` quoted figures from two dev items in its examples (a current-liabilities value and an HR@10 / NDCG@10 pair); the audit of this document found it. The check now compares figures too, `eval_judge_claims@5` uses invented ones, and re-judging the stored dev answers with it moved no `answer_pass` verdict (0.847 before and after; $0.31).
 - **Tests come from the same author as the code.** One independent review found 16 defects, and the race audit ran only after the freeze. Other defects of that kind may remain.
 - **Most prompt and feature decisions are underpowered.** The dev split detects about 8 to 9 points. "No detectable difference" often means "too few items".
 - **Nothing is load-tested.** Concurrency behaviour is designed and unit-tested but not measured under load (`docs/operations.md`).

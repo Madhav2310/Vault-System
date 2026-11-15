@@ -191,7 +191,7 @@ Assumptions: the reviewer runs on one machine with Docker; one owner has thousan
 
 ## Quality, scale and cost at a glance
 
-The shipped configuration: retrieval `retrieval@5` (an LLM listwise rerank of 50 fused candidates, top 8 kept), prompts `analyze_query@4`, `answer_rag@12`, `answer_compare@3` and the advisory `support_check@1`. Judges: `eval_judge_claims@4`, `eval_judge_support@3`, `eval_judge_abstain@1`. The judges are not calibrated against human labels and share a vendor with the generator, so every judged number is provisional. Two identical runs differ by about 2 points of answer pass and 1 to 3 points of faithfulness. Method, baselines and the full tables are in `docs/evaluation.md`.
+The shipped configuration: retrieval `retrieval@5` (an LLM listwise rerank of 50 fused candidates, top 8 kept), prompts `analyze_query@4`, `answer_rag@12`, `answer_compare@3` and the advisory `support_check@1`. Judges: `eval_judge_claims@5`, `eval_judge_support@3`, `eval_judge_abstain@1` (the frozen runs were judged with `@4`; the `@5` re-judge of dev gives the same answer pass, `docs/evaluation.md` section 2). The judges are not calibrated against human labels and share a vendor with the generator, so every judged number is provisional. Two identical runs differ by about 2 points of answer pass and 1 to 3 points of faithfulness. Method, baselines and the full tables are in `docs/evaluation.md`.
 
 **Sealed test split.** Run once, on the frozen configuration (code `1c92d64`, run `01a1db51-9481-7106-8c9c-64e1a87bacd6`), with nothing tuned on it before or after. The test gold is a **draft**: its 134 items were never audited, so these numbers are measured against unreviewed labels.
 

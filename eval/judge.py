@@ -183,7 +183,7 @@ def _worst_case_for(
 # --- claim, support and abstention judges -----------------------------------------------------------------
 
 PROMPTS: dict[str, tuple[str, int]] = {
-    "claims": ("eval_judge_claims", 4),
+    "claims": ("eval_judge_claims", 5),
     "support": ("eval_judge_support", 3),
     "abstain": ("eval_judge_abstain", 1),
 }

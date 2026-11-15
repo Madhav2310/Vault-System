@@ -29,3 +29,12 @@ def test_a_shared_party_name_is_found_and_generic_names_are_not() -> None:
     assert C.names("Agreement. The Customer pays in March.") == {"Customer", "March"} and not (
         C.names("The Customer pays in March.") - C.GENERIC_NAMES
     )
+
+
+def test_a_shared_figure_is_found_and_years_and_small_numbers_are_not() -> None:
+    prompt = "Net sales were $5,466.312 million, HR@10 0.657, in 2024, over 12 months, 3 parties."
+    assert C.numbers(prompt) == {"5466", "0.657"}  # large figures by integer part: gold writes 5466.00
+    assert C.numbers("The answer is $5466.00 million, or 0.6570.") == {"5466", "0.657"}
+    assert C.numbers("In 1999 and 2024, 12 of 350 votes, version 1.2.") == set()
+    idx = {"5466": {("dev", "item-3")}, "0.657": {("dev", "item-4")}}
+    assert C.number_matches(prompt, idx) == {("dev", "item-3"): ["5466"], ("dev", "item-4"): ["0.657"]}

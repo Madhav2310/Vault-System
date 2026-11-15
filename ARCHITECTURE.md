@@ -396,7 +396,7 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 | `brief_extract@3` | balanced | Document brief: summary, facts with handles, tags, category (1,800 max tokens) | Default (`backend/app/insights/stage.py`) |
 | `brief_merge@2` | fast | Merge of map-step briefs, with tone | Default |
 | `summary_custom@1` | balanced | Custom summaries (`POST /v1/documents/{id}/summaries`) | Default (`backend/app/insights/summaries.py`) |
-| `eval_judge_claims@4`, `eval_judge_support@3`, `eval_judge_abstain@1` | deep | Claim-level answer, support and abstention judges | Evaluation default |
+| `eval_judge_claims@5`, `eval_judge_support@3`, `eval_judge_abstain@1` | deep | Claim-level answer, support and abstention judges | Evaluation default |
 | `eval_audit_gold@1` | flagship | Independent gold audit | Dataset build (`eval/build/audit.py`) |
 | `_example@1` | fast | Template for a new prompt | Not used |
 
