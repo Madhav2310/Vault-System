@@ -35,7 +35,7 @@ def test_cost_table_present() -> None:
     brief = next(r for r in _rows() if r[0].startswith("Brief,"))
     assert f"${per_doc * 1000:.2f}" in brief[2], "brief row must equal the measured mean x 1,000"
     assert "brief_samples.json" in brief[-1]
-    for item in ("Embeddings", "Contextual chunk headers", "Total"):
+    for item in ("Embeddings", "Total"):
         assert any(r[0].strip("*").startswith(item) for r in _rows()), item
     assert "Assumptions:" in DOC and "Regenerate the brief row:" in DOC
 

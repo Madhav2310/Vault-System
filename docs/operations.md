@@ -19,13 +19,12 @@ Docker runs a Linux VM that keeps its memory. Keep it small, and off when nothin
 | Lint, types, unit tests, frontend checks | `make ci` | none |
 | Integration tests | `make up-test`, then `make test` | postgres, redis (about 1.3 GB) |
 | Running the app, the demo, evaluations | `make up` | plus api, workers, beat (about 4.4 GB limit) |
-| Reranker measurements | `make up-rerank` | plus reranker (768 MB) |
 | Observability (Grafana, Tempo) | `make up-full` | plus otel-lgtm (1 GB), heavy |
 | Stop everything | `make down` | |
 
-Every service has `mem_limit` and `cpus` in `docker-compose.yml`: api 1.5 CPU and 768 MB, worker-ingest 2 CPU, worker-ai 1.5, postgres 2 and 1 GB (with `fsync=off`, for dev and test only, and `shared_buffers` 256 MB), redis 0.5 (no persistence, because its state is rebuildable), reranker 3, otel-lgtm 1, beat 0.25.
+Every service has `mem_limit` and `cpus` in `docker-compose.yml`: api 1.5 CPU and 768 MB, worker-ingest 2 CPU, worker-ai 1.5, postgres 2 and 1 GB (with `fsync=off`, for dev and test only, and `shared_buffers` 256 MB), redis 0.5 (no persistence, because its state is rebuildable), otel-lgtm 1, beat 0.25.
 
-Working rules: Docker stays off unless a task needs it; run one heavy command at a time; check `uptime` first and wait if the load average is above about 8; use targeted tests (`pytest path::test`) while developing and the full gates once per change set; stop optional containers when idle (`docker compose stop otel-lgtm reranker`; the default retrieval reranks with an LLM call and does not use the reranker container, which only `retrieval@2-rerank` needs).
+Working rules: Docker stays off unless a task needs it; run one heavy command at a time; check `uptime` first and wait if the load average is above about 8; use targeted tests (`pytest path::test`) while developing and the full gates once per change set; stop optional containers when idle (`docker compose stop otel-lgtm`).
 
 **Fresh-clone check.** `scripts/fresh_clone_check.sh [--no-stack|--stack] [PATH_OR_URL]` clones the repository (committed files only) into a temp dir and runs the reviewer path there: prerequisites (git, make, uv; with `--stack` also Docker and curl), `.env` from `.env.example`, `make ci`. It prints a pass/fail table and exits non-zero on any failure. `--no-stack` is the default and needs no Docker. `--stack` also runs `make up`, waits for `/readyz`, runs `scripts/demo_core.sh` and runs `make down`; stop your own stack first (shared ports), and export `OPENAI_API_KEY` for the smoke step (it is written to the clone's `.env`, never printed; without it the step is reported as SKIP). The frontend checks inside `make ci` are skipped in a clone, because the frontend dependencies are not installed there.
 
@@ -79,8 +78,6 @@ The two AMD figures (494 and a 429 maximum) come from different extraction versi
 | Chunk partitions on disk, 47,986 chunks | 470 MB: heap 309, TOAST 128, indexes 33 (out of line: 515 MB, 156, 270, 89; the migration's rewrite also rebuilt bloated indexes) | `select pg_size_pretty(sum(pg_relation_size(c.oid))) ... from pg_class c join pg_inherits i on i.inhrelid = c.oid where i.inhparent = 'chunks'::regclass` |
 | Postgres memory (1 GB container cap) | `shared_buffers` 256 MB (25 percent of the cap), `effective_cache_size` 768 MB (75 percent), `work_mem` 4 MB (the largest retrieval sort uses 1.2 MB in memory), `maintenance_work_mem` 64 MB. A sequential scan of a partition larger than a quarter of `shared_buffers` (64 MB) uses a small ring buffer, so a 67 MB partition is served partly from the page cache (4,327 of 8,576 blocks per warm query) | `docker-compose.yml`; `EXPLAIN (ANALYZE, BUFFERS)` via the command above |
 | Exact search latency at 100,000 chunks in one scope | TBD | the `EXPLAIN` above on a seeded 100,000-chunk owner |
-| Reranker, 40 passages, native, 4 threads, batch 8 | p50 260 ms, 354 MB peak | `cd reranker && python bench.py --threads 4 --batch 8 --words 180 --n 40` |
-| Reranker in its container (3 CPUs, 3 threads, 20 passages) | p50 350.8 ms, p95 578 ms, 230 MB | `make up-rerank`, then `python reranker/bench_http.py` |
 | Retrieval-only evaluation, 100 items, warm | 145 s, about $0.0001 | `make eval-retrieval-fast` |
 
 ---
@@ -95,7 +92,7 @@ Behaviour under load is **not measured**; these are the mechanisms.
 | Sweeper (beat) | Re-dispatches lost dispatches, expired leases and due retries. Eventual recovery, not an outbox. | `backend/app/ingestion/sweeper.py` |
 | Per-owner ingestion cap | Not implemented: a large upload shares the `ingest` queue with everyone (upload requests are rate limited at 30 a minute). | `backend/app/ingestion/jobs.py` has no such limit |
 | Per-user chat limits | One active turn per session (a second gets 409), chat 20 requests a minute, upload 30 a minute, a daily cost quota, then 429 with `Retry-After`. | `backend/app/core/ratelimit.py`, `quota.py` |
-| Model call slots per process | At most `LLM_CONCURRENCY_INTERACTIVE` (32) chat and `LLM_CONCURRENCY_BACKGROUND` (8) ingestion and brief calls in flight, in separate pools, so background work cannot starve chat. Sizing: a turn overlaps at most two calls, so 32 serves 16 or more turns per API process (two uvicorn workers, so 64 calls) before anything queues; 8 is twice the largest per-task fan-out (4 embed batches, 4 contextual headers, 3 brief maps), and a prefork child runs one task at a time, so `worker-ai -c 4` sends at most 32. A queued call gives up 1 s before its turn deadline, or after 120 s without one, with `capacity` (503) and no provider call. These are reasoned defaults, not measured ones; the provider's per-key rate limits are not modelled. | `backend/app/llm/concurrency.py` |
+| Model call slots per process | At most `LLM_CONCURRENCY_INTERACTIVE` (32) chat and `LLM_CONCURRENCY_BACKGROUND` (8) ingestion and brief calls in flight, in separate pools, so background work cannot starve chat. Sizing: a turn overlaps at most two calls, so 32 serves 16 or more turns per API process (two uvicorn workers, so 64 calls) before anything queues; 8 is twice the largest per-task fan-out (4 embed batches, 3 brief maps), and a prefork child runs one task at a time, so `worker-ai -c 4` sends at most 32. A queued call gives up 1 s before its turn deadline, or after 120 s without one, with `capacity` (503) and no provider call. These are reasoned defaults, not measured ones; the provider's per-key rate limits are not modelled. | `backend/app/llm/concurrency.py` |
 | Query embedding cache | Redis, keyed by owner, embedding model and normalized query (one owner's query is never another's hit). A Redis failure or stall bypasses the cache (each cache command is cut at 0.25 s); an embedding failure degrades to lexical-only search. | `backend/app/retrieval/query_embed.py` |
 | Document embedding cache | By content hash and model. A re-upload pays nothing for unchanged chunks. | `backend/app/ingestion/embed_index.py` |
 | Paid ingestion LLM outputs | Cached by content hash, prompt version and model. | `llm_cache` table |
@@ -103,7 +100,7 @@ Behaviour under load is **not measured**; these are the mechanisms.
 
 Idempotency, in short: every boundary tolerates a second delivery. Uploads dedupe on `(owner_id, sha256)`. Resource-creating POSTs honour `Idempotency-Key`. A chat message is unique on `(session_id, client_message_id)`, so a retry returns the finished message or the running `run_id`. Each ingestion stage is one fenced transaction that replaces its outputs. Turn persistence is a no-op when the assistant message already exists. The full table is in `ARCHITECTURE.md` section 9.4.
 
-Failure handling: Redis down means uploads are still accepted and their jobs are enqueued by the sweeper once the broker answers (a stalled broker costs at most a 10 s socket timeout), and the limiter fails open; Postgres down means 503; a missing reranker means fusion order with `degraded=no_rerank`; embeddings down means ingestion retries and queries go lexical-only; a turn that dies is finished as `failed` by the reaper.
+Failure handling: Redis down means uploads are still accepted and their jobs are enqueued by the sweeper once the broker answers (a stalled broker costs at most a 10 s socket timeout), and the limiter fails open; Postgres down means 503; a failed rerank call means fusion order with `degraded=no_rerank`; embeddings down means ingestion retries and queries go lexical-only; a turn that dies is finished as `failed` by the reaper.
 
 **How this handles thousands of documents.** Search is exact and scoped to the owner's hash partition, which gives perfect recall; its cost grows linearly with the chunks in scope; at about 10,000 chunks the vector leg takes about 9 ms and the lexical leg about 15 ms median and 190 ms p95 (section 2.3). Ingestion is bound by CPU-heavy extraction, so it scales by adding `worker-ingest` processes; `worker-ai` is I/O-bound and scales with provider rate limits. A document is searchable once `index` commits, before its brief, so a large batch of uploads becomes usable progressively. There is no per-owner cap on concurrently processing versions, so one very large upload can delay others.
 
@@ -119,7 +116,6 @@ Regenerate the brief row: `python3 -c "import json;d=json.load(open('eval/baseli
 |---|---:|---:|---|
 | Brief, 3 sample documents | $0.0143 (total $0.043026 / 3) | $14.34 | `eval/baselines/brief_samples.json` (`cost_usd` fields 0.015790, 0.024223, 0.003013), command above |
 | Embeddings (`text-embedding-3-small`) | TBD (no per-document embedding cost is recorded) | TBD | formula: chunks per document x tokens per chunk x price per token; read `llm_calls` after `make c1-check` |
-| Contextual chunk headers (disabled by default) | TBD | TBD | `INDEX_CONTEXT=llm` ingest with `CONTEXTUALIZE_MAX_USD` set |
 | **Total, known part only** | $0.0143 (brief only) | **at least $14.34** | arithmetic: the sum of the measured rows |
 
 Assumptions: the three sampled documents (`cuad_consulting`, `fb_ulta_q4`, `auth_travel_policy`) are representative, cost is linear in documents, and cached prompt prefixes and `llm_cache` hits are not credited, so repeated or near-duplicate documents cost less.
@@ -144,12 +140,12 @@ A deployment sketch for roughly 1,000 daily users and 100 concurrent turns. It i
 - **Postgres**: managed, with point-in-time recovery and a read replica for the metrics API. Start at about 8 vCPU and 32 GB (a guess).
 - **Connections**: PgBouncer in transaction mode. The asyncpg statement cache can stay on: the pinned PgBouncer (1.26) tracks protocol-level prepared statements in transaction mode. A `pgbouncer` compose profile exists and is unused in dev.
 - **Files**: an S3-compatible object store instead of the local `blobs` volume. Blobs are already addressed by sha256 behind `backend/app/storage/base.py`.
-- **Workers**: more `worker-ingest` processes for extraction. Dedicated reranker hosts if the reranker is enabled.
+- **Workers**: more `worker-ingest` processes for extraction.
 - **Vector search**: switch an owner's partition to an HNSW index with iterative scan once a scope passes about 100,000 chunks. Designed, not built.
 - **Recovery**: a transactional outbox instead of sweeper-based recovery.
 - **Telemetry**: tail sampling in the collector, and a managed or self-hosted Grafana stack in place of `otel-lgtm`.
 - **Growth**: about 4.5 million new chunks a month at 1,000 daily users, which is why a single global index was rejected.
-- **First bottlenecks** (estimates): the database pool, or reranker CPU when the cross-encoder is used; then provider latency variance (the default reranker is one more model call per turn), which is why time to first token has its own budget.
+- **First bottlenecks** (estimates): the database pool; then provider latency variance (the reranker is one more model call per turn), which is why time to first token has its own budget.
 
 ---
 
@@ -160,7 +156,7 @@ A deployment sketch for roughly 1,000 daily users and 100 concurrent turns. It i
 - **Collector** (`ops/otel/collector.yaml`, validated by `make otel-validate`): memory limiter, batching, and a redaction processor as a backstop for message content. `make up-full` starts `grafana/otel-lgtm` (collector, Prometheus, Tempo, Loki, Grafana).
 - **Logs**: JSON with `trace_id`, `request_id`, `run_id`, `job_id`, `version_id`, route, node, reason and error codes, duration. Never document text, prompts or completions.
 - **Metric labels** are bounded enums. IDs go to traces, logs and exemplars.
-- **Product APIs**: owner-scoped `GET /v1/metrics/documents`, `/v1/metrics/processing` and `/v1/metrics/chat` (counts, stage durations, failures by error code, turns by outcome, time-to-first-token and latency percentiles, cost per turn), plus the UI page `frontend/src/metrics/MetricsPage.tsx`. `GET /healthz` is liveness; `GET /readyz` reports database, Redis, object store, reranker and provider configuration.
+- **Product APIs**: owner-scoped `GET /v1/metrics/documents`, `/v1/metrics/processing` and `/v1/metrics/chat` (counts, stage durations, failures by error code, turns by outcome, time-to-first-token and latency percentiles, cost per turn), plus the UI page `frontend/src/metrics/MetricsPage.tsx`. `GET /healthz` is liveness; `GET /readyz` reports database, Redis, object store and provider configuration.
 - **Not provided**: Grafana dashboards and alert rules.
 
 ---

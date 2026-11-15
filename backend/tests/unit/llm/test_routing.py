@@ -27,7 +27,6 @@ LUNA, TERRA, SOL = "gpt-6-luna", "gpt-6.1-terra", "gpt-6.1-sol"
 # (node, route, mode) → (role, model, effort)
 EXPECTED = [
     (("analyze_query", None, None), ("fast", LUNA, "none")),
-    (("evidence_gate", None, None), ("balanced", TERRA, "low")),
     (("generate", "qa", "rag"), ("balanced", TERRA, "none")),
     (("generate", "lookup", "rag"), ("balanced", TERRA, "none")),
     (("generate", "qa", "full_context"), ("balanced", TERRA, "low")),
@@ -36,10 +35,6 @@ EXPECTED = [
     (("generate", "conflict", "rag"), ("deep", SOL, "low")),
     (("brief_extract", None, None), ("balanced", TERRA, "low")),
     (("summary", None, None), ("balanced", TERRA, "low")),
-    (("followups", None, None), ("fast", LUNA, "none")),
-    (("memory_compact", None, None), ("fast", LUNA, "none")),
-    (("tag_category", None, None), ("fast", LUNA, "none")),
-    (("matrix_cell", None, None), ("balanced", TERRA, "low")),
     (("eval_judge", None, None), ("deep", SOL, "low")),
 ]
 
@@ -77,7 +72,7 @@ def test_sol_rejects_none() -> None:
 def test_override_and_validation() -> None:
     r = _router(model_routes={"analyze_query": {"role": "balanced", "effort": "low"}})
     assert r.resolve("analyze_query") == Resolved("balanced", TERRA, "low")
-    assert r.resolve("followups") == Resolved("fast", LUNA, "none")  # others unchanged
+    assert r.resolve("summary") == Resolved("balanced", TERRA, "low")  # others unchanged
     # a role → model remap flows through the table
     assert _router(model_balanced="gpt-6-astra").resolve("summary") == Resolved(
         "balanced", "gpt-6-astra", "low"

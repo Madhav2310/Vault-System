@@ -1,18 +1,20 @@
 flowchart LR
-    client["browser / API client"]
-    subgraph compose["docker-compose (default stack)"]
-        api["api<br/>FastAPI, REST + SSE, turn orchestration"]
-        wi["worker-ingest<br/>queue ingest: extract, quality, chunk"]
-        wa["worker-ai<br/>queue ai: embed, index, brief"]
-        beat["beat (single instance)<br/>sweepers, maintenance"]
-        pg[("postgres 16 + pgvector<br/>system of record, job state")]
-        redis[("redis<br/>Celery broker, rate limits, caches")]
-        blobs[("object store<br/>blobs volume")]
+    ui["Web UI (React 18 + Vite)<br/>served at /app"]
+    client["API client<br/>Bearer API key"]
+    subgraph compose["docker-compose.yml (default stack)"]
+        api["api<br/>FastAPI: REST + SSE, auth,<br/>scope, turn graph"]
+        wi["worker-ingest<br/>queue ingest (-c 1):<br/>extract, quality, chunk"]
+        wa["worker-ai<br/>queues ai,maintenance:<br/>embed, index, brief,<br/>summaries"]
+        beat["beat<br/>sweeper, reaper, purges"]
+        pg[("postgres 16 + pgvector 0.8<br/>system of record:<br/>metadata, halfvec, tsvector,<br/>jobs, ledger")]
+        redis[("redis<br/>broker, rate-limit buckets,<br/>caches (rebuildable)")]
+        blobs[("object store (blobs volume)<br/>blobs by sha256,<br/>layouts, extracted artifacts")]
     end
-    subgraph optional["optional profiles"]
-        obs["otel-lgtm<br/>profile obs"]
+    subgraph optional["optional compose profiles"]
+        obs["otel-lgtm<br/>collector, Prometheus, Tempo,<br/>Loki, Grafana; profile obs"]
     end
-    openai(["OpenAI<br/>generation, analysis, extraction, embeddings, judges"])
+    openai(["OpenAI<br/>Responses API + embeddings"])
+    ui --> api
     client --> api
     api --> pg
     api --> redis

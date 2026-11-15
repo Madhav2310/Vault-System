@@ -102,8 +102,6 @@ Source: `docs/spec/case-study.pdf`. Status is one of **built**, **built, switche
 | Support check per cited segment | Built | `backend/app/chat/support_check.py`; verdicts shown next to each segment |
 | Meta questions about your library, answered by owner-scoped SQL | Built | `backend/app/chat/meta.py` |
 | Whole-document answering for small scopes | Built, on request only | `backend/app/chat/full_context.py`; it is not automatic, because it showed no gain for twice the cost |
-| Evidence gate before answering | Built, switched off | `backend/app/chat/gate.py`; it refused answerable questions |
-| Scored abstention, a locate loop for long documents, clarification chips | Built, switched off | `ARCHITECTURE.md` section 7.3 |
 | Accessibility checks on the UI | Built | Automated axe scans and a keyboard-flow test in `frontend/e2e/a11y.spec.ts`; there has been no manual screen-reader audit |
 
 ### Deliverables
@@ -175,9 +173,9 @@ The Postman collection is `docs/api/vault.postman_collection.json`.
 
 ## How it works
 
-An API (FastAPI) accepts uploads and chat and does no CPU-heavy work. Celery workers extract, chunk, embed and summarize. PostgreSQL with pgvector is the single source of truth (metadata, vectors, full-text, the turn ledger). Redis carries queues, rate-limit buckets and caches. OpenAI models are called only through one gateway. Retrieved passages are reranked by one listwise call to the `fast` model. The cross-encoder reranker container and observability are optional sidecars the system survives losing.
+An API (FastAPI) accepts uploads and chat and does no CPU-heavy work. Celery workers extract, chunk, embed and summarize. PostgreSQL with pgvector is the single source of truth (metadata, vectors, full-text, the turn ledger). Redis carries queues, rate-limit buckets and caches. OpenAI models are called only through one gateway. Retrieved passages are reranked by one listwise call to the `fast` model. Observability is an optional sidecar the system survives losing.
 
-A chat turn is an explicit graph of nodes: load context, analyze (or skip on the fast path), retrieve and rerank, gate the evidence, generate a structured answer whose citations are evidence handles, verify each cited segment, persist the whole turn in one transaction. Code, not the model, chooses every edge. The diagram is generated from `GRAPH.describe()` and a test fails when it is stale.
+A chat turn is an explicit graph of nodes: load context, analyze (or skip on the fast path), retrieve and rerank, generate a structured answer whose citations are evidence handles, verify each cited segment, persist the whole turn in one transaction. Code, not the model, chooses every edge. The diagram is generated from `GRAPH.describe()` and a test fails when it is stale.
 
 | Decision | Why | Where |
 |---|---|---|
@@ -239,7 +237,7 @@ Live and evaluation commands always run on samples with a spend cap, never on th
 - Scanned PDFs end as `needs_ocr` (OCR is not built), and PDFs over 600 pages are unsupported.
 - Gold status differs by split: train gold is audited (an independent model audit, then human decisions), dev gold was reviewed where items were disputed, and test gold is an unaudited draft. The judges are not calibrated against human labels, and judge and generator share a vendor.
 - No concurrency or throughput claim exists beyond single-document measurements; no load test has been run.
-- Optional heavy components are off by default: the cross-encoder reranker container (`make up-rerank`, used only by the `retrieval@2-rerank` configuration; the default reranks with an LLM call) and observability with Grafana (`make up-full`).
+- Observability with Grafana is off by default (`make up-full`).
 - The full list is in `ARCHITECTURE.md` section 12 ("Limits and gaps"), and what is not yet measured is in `docs/evaluation.md` section 6.
 
 ## Repo map
@@ -248,10 +246,9 @@ Live and evaluation commands always run on samples with a spend cap, never on th
 |---|---|
 | `backend/app/` | FastAPI app: api, ingestion, retrieval, chat, insights, feedback, llm gateway, explain, metrics, observability |
 | `backend/prompts/` | Versioned prompt files (`<id>@<version>.md`) |
-| `backend/config/` | Versioned retrieval and abstention configuration |
+| `backend/config/` | Versioned retrieval configuration |
 | `backend/tests/` | Unit, integration and security tests |
 | `frontend/` | React UI served at `/app`, with Playwright specs in `frontend/e2e/` |
-| `reranker/` | Optional cross-encoder rerank service (`make up-rerank`) |
 | `eval/` | Golden sets, graders, judges, harness, frozen baselines (`eval/baselines/`) |
 | `ops/` | OpenTelemetry collector configuration |
 | `scripts/` | Quickstart, demo, diagram and Postman generators (see `scripts/README.md`) |

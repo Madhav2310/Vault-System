@@ -54,17 +54,12 @@ class Resolved:
 # Lookup order is most specific first: node:route:mode, node:route, node::mode, node.
 DEFAULT_ROUTES: dict[str, Route] = {
     "analyze_query": Route("fast", "none"),
-    "evidence_gate": Route("balanced", "low"),
     "generate": Route("balanced", "none"),  # qa / lookup over retrieved evidence
     "generate::full_context": Route("balanced", "low"),
     "generate:compare": Route("deep", "low"),
     "generate:conflict": Route("deep", "low"),  # the gate reported conflicting sources
     "brief_extract": Route("balanced", "low"),
     "summary": Route("balanced", "low"),
-    "followups": Route("fast", "none"),
-    "memory_compact": Route("fast", "none"),
-    "tag_category": Route("fast", "none"),
-    "matrix_cell": Route("balanced", "low"),
     "eval_judge": Route("deep", "low"),
 }
 
