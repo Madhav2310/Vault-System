@@ -37,6 +37,20 @@ scripts/demo_core.sh      # shorter smoke: upload, ready, one cited answer, hist
 - No OpenAI key: `make ui-e2e` runs the UI tests against a scripted fake model on its own ports and tears itself down. `scripts/demo.sh` also runs against that stack with `LLM_PROVIDER=fake` (instructions at the top of the script).
 - Docker is only needed to run the stack. Unit tests and lint need none: `make ci`. Docker limits and which target needs what: `docs/operations.md`.
 
+### Local setup without Docker
+
+`backend/uv.lock` is the source of truth for dependencies. `requirements.txt` (runtime) and `requirements-dev.txt` (adds lint, types and tests) are pinned exports of it, for tools that expect pip. Python 3.12 only. Postgres 16 with pgvector and Redis must be running; point `DATABASE_URL` and `REDIS_URL` at them in `.env`.
+
+```bash
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt     # or: cd backend && uv sync
+cd backend && alembic upgrade head
+uvicorn app.main:app --port 8100                       # API
+celery -A app.worker.celery_app worker -Q ingest,ai,maintenance -l info   # pipeline worker, second shell
+```
+
+Regenerate the two files after changing `pyproject.toml`: `make requirements`.
+
 ## The assignment, feature by feature
 
 Source: `docs/spec/case-study.pdf`. Status is one of **built** or **not built**; a behaviour change that did not survive its paired evaluation was deleted, not left switched off (`ARCHITECTURE.md` section 7.3).

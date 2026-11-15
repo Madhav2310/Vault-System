@@ -15,7 +15,7 @@ UI_E2E_ENV := COMPOSE_PROJECT_NAME=vault-uitest COMPOSE_FILE=docker-compose.yml:
 
 .PHONY: help up up-test up-full down logs migrate seed seed-users \
         ci lint fmt typecheck test test-unit test-integration test-e2e smoke-providers \
-        ui ui-types ui-types-check ui-check ui-e2e demo-record diagrams otel-validate \
+        requirements ui ui-types ui-types-check ui-check ui-e2e demo-record diagrams otel-validate \
         eval-answers eval-retrieval eval-diagnose eval-gate eval-gate-t0 eval-audit eval-audit-apply \
         eval-labels eval-docs eval-fetch c1-check
 
@@ -69,6 +69,9 @@ define ui_dump_openapi
 endef
 ui:  ## build the web UI served by the API at /app
 	cd frontend && npm ci && npm run build
+requirements:  ## regenerate requirements.txt (runtime) and requirements-dev.txt from uv.lock
+	cd backend && UV_PYTHON_PREFERENCE=only-managed uv export --frozen --no-hashes --no-emit-project --no-dev --group eval -o ../requirements.txt -q
+	cd backend && UV_PYTHON_PREFERENCE=only-managed uv export --frozen --no-hashes --no-emit-project -o ../requirements-dev.txt -q
 ui-types:  ## regenerate frontend/src/api/schema.gen.ts from the OpenAPI document
 	$(ui_dump_openapi)
 	cd frontend && npx openapi-typescript .openapi.json -o src/api/schema.gen.ts; rc=$$?; rm -f .openapi.json; exit $$rc
