@@ -103,7 +103,7 @@ Source: `docs/spec/case-study.pdf`. Status is one of **built**, **built, switche
 | Meta questions about your library, answered by owner-scoped SQL | Built | `backend/app/chat/meta.py` |
 | Whole-document answering for small scopes | Built, on request only | `backend/app/chat/full_context.py`; it is not automatic, because it showed no gain for twice the cost |
 | Evidence gate before answering | Built, switched off | `backend/app/chat/gate.py`; it refused answerable questions |
-| Plan-first answers, calculation segments, scored abstention, locate loop, clarification chips, warm voice | Built, switched off | `ARCHITECTURE.md` section 7.3 |
+| Scored abstention, a locate loop for long documents, clarification chips | Built, switched off | `ARCHITECTURE.md` section 7.3 |
 | Accessibility checks on the UI | Built | Automated axe scans and a keyboard-flow test in `frontend/e2e/a11y.spec.ts`; there has been no manual screen-reader audit |
 
 ### Deliverables
@@ -175,9 +175,9 @@ The Postman collection is `docs/api/vault.postman_collection.json`.
 
 ## How it works
 
-An API (FastAPI) accepts uploads and chat and does no CPU-heavy work. Celery workers extract, chunk, embed and summarize. PostgreSQL with pgvector is the single source of truth (metadata, vectors, full-text, the turn ledger). Redis carries queues, rate-limit buckets and caches. OpenAI models are called only through one gateway. The reranker and observability are optional sidecars the system survives losing.
+An API (FastAPI) accepts uploads and chat and does no CPU-heavy work. Celery workers extract, chunk, embed and summarize. PostgreSQL with pgvector is the single source of truth (metadata, vectors, full-text, the turn ledger). Redis carries queues, rate-limit buckets and caches. OpenAI models are called only through one gateway. Retrieved passages are reranked by one listwise call to the `fast` model. The cross-encoder reranker container and observability are optional sidecars the system survives losing.
 
-A chat turn is an explicit graph of nodes: load context, analyze (or skip on the fast path), retrieve, gate the evidence, generate a structured answer whose citations are evidence handles, verify each cited segment, persist the whole turn in one transaction. Code, not the model, chooses every edge. The diagram is generated from `GRAPH.describe()` and a test fails when it is stale.
+A chat turn is an explicit graph of nodes: load context, analyze (or skip on the fast path), retrieve and rerank, gate the evidence, generate a structured answer whose citations are evidence handles, verify each cited segment, persist the whole turn in one transaction. Code, not the model, chooses every edge. The diagram is generated from `GRAPH.describe()` and a test fails when it is stale.
 
 | Decision | Why | Where |
 |---|---|---|
@@ -193,20 +193,32 @@ Assumptions: the reviewer runs on one machine with Docker; one owner has thousan
 
 ## Quality, scale and cost at a glance
 
-Measured on a golden set whose gold labels and judges are not yet reviewed by a person, so judged numbers are **provisional**. Each row names the command that regenerates it; the method and the rest of the numbers are in `docs/evaluation.md`.
+The shipped configuration: retrieval `retrieval@5` (an LLM listwise rerank of 50 fused candidates, top 8 kept), prompts `analyze_query@4`, `answer_rag@12`, `answer_compare@3` and the advisory `support_check@1`. Judges: `eval_judge_claims@4`, `eval_judge_support@3`, `eval_judge_abstain@1`. The judges are not calibrated against human labels and share a vendor with the generator, so every judged number is provisional. Two identical runs differ by about 2 points of answer pass and 1 to 3 points of faithfulness. Method, baselines and the full tables are in `docs/evaluation.md`.
 
-| Measure | Value | Command |
+**Sealed test split.** Run once, on the frozen configuration (code `1c92d64`, run `01a1db51-9481-7106-8c9c-64e1a87bacd6`), with nothing tuned on it before or after. The test gold is a **draft**: its 134 items were never audited, so these numbers are measured against unreviewed labels.
+
+| Measure (test split, 134 items, draft gold) | Value | Command |
 |---|---|---|
-| Answer pass, train split of 123 items, all switches off | 0.642 | `make eval-answers-v2 SPLIT=train MAX_USD=3` |
-| Citation integrity (no invented citation reaches the user) | 1.000 | `make eval-gate-t0` |
-| Retrieval recall@8, same run | 0.807 | `make eval-answers-v2 SPLIT=train MAX_USD=3` |
-| Answer cost per turn | about $0.006 | `make eval-answers-v2 SPLIT=train MAX_USD=3` |
-| Mean answer latency | 5.2 s | `make eval-answers-v2 SPLIT=train MAX_USD=3` |
-| Brief cost per document, mean of 3 samples | $0.0143 | `python3 -c "import json;d=json.load(open('eval/baselines/brief_samples.json'));print(sum(float(v['cost_usd']) for v in d.values())/len(d))"` |
-| Corpus documents reaching ready | 19 of 19 in 36 s | `make c1-check` |
-| Gold quotes locatable in extracted PDFs | 100.0 percent | `make eval-extraction` |
+| Answer pass; claim completeness | 0.761 (102 of 134); 0.779 | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
+| Faithfulness (support rate of cited segments); abstention correct | 0.957; 0.913 | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
+| Citation integrity; prompt-injection violations; `must_not_contain` | 1.00; 0 of 11; 14 of 14 pass | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
+| Retrieval recall@8 | 0.753 | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
+| Cost and latency per turn; whole run including judges | $0.007, 7.3 s mean; $3.41 | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
 
-Targets that are not met: answer pass 0.80, faithfulness 0.90, citation precision 0.85. Scale: search is exact and scoped to the owner's hash partition, ingestion is bound by CPU-bound extraction and grows by adding `worker-ingest` processes, and no load test has been run (`docs/operations.md`).
+**Train and dev.** The baseline is the earlier default (fusion order without a reranker, `retrieval@2`, and an earlier answer prompt), re-judged with the same judges and gold as the final runs. Three numbers are kept apart: the locked benchmark (original gold, never edited), the audited-gold score, and the engineering gain (gold and judges held fixed). A gold correction raises both columns and is a benchmark correction, not an engineering gain.
+
+| Measure | Baseline | Final | Command |
+|---|---|---|---|
+| Answer pass, train, audited gold, 118 items (run `01a1db3b`) | 0.763 (90) | 0.873 (103) | `make eval-answers-v2 SPLIT=train MAX_USD=3` |
+| Answer pass, dev, audited gold, 59 items (run `01a1db44`) | 0.746 (44) | 0.847 (50) | `make eval-answers-v2 SPLIT=dev MAX_USD=3` |
+| Locked benchmark: answer pass, train, original pre-audit gold, 123 items | 0.699 (86) | 0.772 (95) | `cd backend && PYTHONPATH=.. uv run python -m eval.rejudge --answers ANSWERS --max-usd 1` on a checkout of the pre-audit gold (`docs/evaluation.md` section 2) |
+| Faithfulness, train / dev | 0.853 / 0.888 | 0.899 / 0.906 | `make eval-answers-v2 SPLIT=dev MAX_USD=3` |
+| Citation integrity (no invented citation reaches the user) | 1.00 | 1.00 | `make eval-gate-t0` |
+| Brief cost per document, mean of 3 samples | | $0.0143 | `python3 -c "import json;d=json.load(open('eval/baselines/brief_samples.json'));print(sum(float(v['cost_usd']) for v in d.values())/len(d))"` |
+| Corpus documents reaching ready | | 19 of 19 in 36 s | `make c1-check` |
+| Gold quotes locatable in extracted PDFs | | 100.0 percent | `make eval-extraction` |
+
+Engineering gain with gold and judges fixed: +11.0 points on train (13 items net) and +10.2 on dev (6 items net), from `python -m eval.paired BASELINE.json FINAL.json --metric answer_pass --ledger` (`docs/evaluation.md` section 1.3). Against the targets fixed before measuring (answer pass 0.80, faithfulness 0.90, citation chunk precision 0.85), the test run meets faithfulness and misses answer pass (0.761) and chunk precision (0.658). Scale: search is exact and scoped to the owner's hash partition, ingestion is bound by CPU-bound extraction and grows by adding `worker-ingest` processes, and no load test has been run (`docs/operations.md`).
 
 ## Testing
 
@@ -225,9 +237,9 @@ Live and evaluation commands always run on samples with a spend cap, never on th
 ## Limits
 
 - Scanned PDFs end as `needs_ocr` (OCR is not built), and PDFs over 600 pages are unsupported.
-- Gold labels are not audited by a person and the judges are not calibrated against human labels. Judge and generator share a vendor.
+- Gold status differs by split: train gold is audited (an independent model audit, then human decisions), dev gold was reviewed where items were disputed, and test gold is an unaudited draft. The judges are not calibrated against human labels, and judge and generator share a vendor.
 - No concurrency or throughput claim exists beyond single-document measurements; no load test has been run.
-- Optional heavy components are off by default: the reranker (`make up-rerank`; retrieval falls back to fusion order without it) and observability with Grafana (`make up-full`).
+- Optional heavy components are off by default: the cross-encoder reranker container (`make up-rerank`, used only by the `retrieval@2-rerank` configuration; the default reranks with an LLM call) and observability with Grafana (`make up-full`).
 - The full list is in `ARCHITECTURE.md` section 12 ("Limits and gaps"), and what is not yet measured is in `docs/evaluation.md` section 6.
 
 ## Repo map

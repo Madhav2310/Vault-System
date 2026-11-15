@@ -14,12 +14,12 @@ How Vault is built, why each part exists, which models do what, and how any answ
 1. Vault lets a user upload PDF, DOCX, TXT and Markdown files and chat with them. Every claim in an answer points to the exact stored sentence it came from.
 2. Citations are **application-managed**. Each evidence sentence gets a handle (`E3.1`), the model returns handles in a strict JSON schema, and code copies `cited_text` from the stored sentence. The model never writes a quote.
 3. Orchestration is code. A typed turn graph (`backend/app/chat/turn.py`) picks every edge. The model only returns typed decisions (an intent, handles, verdicts) that code validates and applies.
-4. One FastAPI API process, Celery workers on three queues (`ingest`, `ai`, `maintenance`), and PostgreSQL 16 with pgvector as the single source of truth. Redis holds rebuildable state only. The reranker and observability are optional sidecars.
+4. One FastAPI API process, Celery workers on three queues (`ingest`, `ai`, `maintenance`), and PostgreSQL 16 with pgvector as the single source of truth. Redis holds rebuildable state only. The cross-encoder reranker and observability are optional sidecars.
 5. Ingestion runs `extract → quality → chunk → embed → index → brief → contextualize`. Job state lives in `processing_jobs`, with compare-and-set (CAS) claims, leases and fenced commits, so at-least-once delivery has exactly-once effects.
-6. Retrieval is hybrid and exact: an OR tsquery plus `text-embedding-3-small` vectors over the owner's hash partition, fused with reciprocal rank fusion (RRF). The cross-encoder rerank and the evidence gate are **off by default** because measurements did not justify them.
+6. Retrieval is hybrid and exact: an OR tsquery plus `text-embedding-3-small` vectors over the owner's hash partition, fused with reciprocal rank fusion (RRF). One listwise call on the `fast` model reranks the top 50 fused candidates and keeps 8 (`retrieval@5`). The cross-encoder rerank and the evidence gate are **off by default** because measurements did not justify them.
 7. Models are addressed by role: `fast` = `gpt-6-luna`, `balanced` = `gpt-6.1-terra`, `deep` = `gpt-6.1-sol`, `flagship` = `gpt-6-astra`. Only `backend/app/llm/routing.py` and settings name models.
 8. Explanations come from reason codes and templates (`backend/app/explain/templates.py`), served at `GET /v1/runs/{id}`. The model is never asked to explain itself.
-9. Quality is measured on a golden set of 316 items in 15 strata, with document-level splits, claim-level judges and clustered confidence intervals (`docs/evaluation.md`). The measured numbers are provisional because the gold set and the judges are not yet reviewed by a person.
+9. Quality is measured on a golden set of 311 live items in 15 strata, with document-level splits, claim-level judges and clustered confidence intervals (`docs/evaluation.md`). The sealed test split, run once, scores answer_pass 0.761 with faithfulness 0.957 and citation integrity 1.00. The judged numbers are provisional: the judges are not calibrated against human labels, and the test gold is an unaudited draft.
 10. Behaviour changes ship **disabled** behind switches ([section 7.3](#73-behaviour-switches)) and are enabled only when a paired evaluation on the dev split shows a gain.
 
 ## Contents
@@ -241,8 +241,8 @@ flowchart LR
     vec --> rrf["RRF k=60<br/>id_boost 2"]
     lex --> rrf
     rrf --> rr{"rerank.kind"}
-    rr -->|"none (default)"| top["top 8"]
-    rr -->|"cross_encoder / llm"| rer["reranker service or<br/>rerank_listwise@1"] --> top
+    rr -->|"none"| top["top 8"]
+    rr -->|"llm (default) / cross_encoder"| rer["rerank_listwise@1 or<br/>reranker service"] --> top
     top --> exp["neighbor expansion<br/>max_evidence_tokens 4000"]
     exp --> rec["retrieval_candidates<br/>(every rank and score)"]
 ```
@@ -251,7 +251,7 @@ flowchart LR
 |---|---|
 | Scope (`scope.py`) | The latest `ready`/`enriched` version of each document in the session scope, owned by the caller and not deleted. The analysis may narrow it but never widen it. Every SQL statement filters `owner_id` and `version_id = ANY(...)`. |
 | Vector (`vector.py`) | Exact, brute-force cosine search over one owner's chunks, `k_vec` 40. `per_doc_quota` 12 caps the hits per document in a cross-document scope; a one-document scope gets the full `k_vec` list (`single_doc_full_k`). Hash partitioning prunes the query to 1 of 32 partitions. There is no ANN index. HNSW is the escape hatch above about 100,000 chunks in one scope, designed but **not built**. |
-| Lexical (`lexical.py`, `numbers.py`) | An **OR** tsquery of the query's English lexemes, ranked by `ts_rank_cd`, `k_lex` 40, plus an identifier query on `tsv_ids` for clause numbers, IDs, amounts and dates. `retrieval@2-lexical2` adds number and unit variants. |
+| Lexical (`lexical.py`) | An **OR** tsquery of the query's English lexemes, ranked by `ts_rank_cd`, `k_lex` 40, plus an identifier query on `tsv_ids` for clause numbers, IDs, amounts and dates. |
 | Fusion (`fusion.py`) | Reciprocal rank fusion, `rrf_k` 60, identifier matches weighted 2. |
 | Rerank (`rerank.py`, `listwise.py`, `windows.py`) | `kind: llm`: one `rerank_listwise@1` call on `fast` orders the top 50 fused candidates, each shown as a query-focused window of at most 180 words with dot-leader runs collapsed (`collapse_leaders`; the reranker's copy only, never evidence), and the top 8 are kept. The alternatives are `retrieval@2` (`kind: none`, fusion order) and `retrieval@2-rerank` (MiniLM cross-encoder in the `reranker` service). On a reranker timeout or failure, the turn keeps fusion order and records `degraded=no_rerank`. |
 | Expansion (`expand.py`) | Adds adjacent same-section chunks within a 4,000-token evidence budget, for answers split across chunks. |
@@ -262,12 +262,12 @@ flowchart LR
 | Decision | Why |
 |---|---|
 | The lexical leg uses an OR query, not AND. | AND starved the lexical leg: lexical-only recall@8 rose from 0.150 to 0.633. |
-| **Reranker off** (`rerank.kind: none`). | The rule was fixed before measuring: keep it only if it is better, or not different with MRR@40 up by 0.03, and it adds at most 400 ms at p50. There is no detectable quality difference and it adds 495 ms at p50. |
+| **LLM listwise reranker on** (`rerank.kind: llm`, 50 candidates). | Paired against fusion order: answer_pass +8.5 points on dev and +12.7 on train, faithfulness inside the run-to-run spread, +$0.0004 per turn. With 20 candidates the dev gain was not detectable, because the gold chunks sat at fused ranks 11 to 44. |
+| **Cross-encoder off** (`retrieval@2-rerank` keeps it available). | The rule was fixed before measuring: keep it only if it is better, or not different with MRR@40 up by 0.03, and it adds at most 400 ms at p50. There is no detectable quality difference and it adds 495 ms at p50. |
 | **Evidence gate off** (`gate.enabled: false`). | The calibrated floor refused 3 of 44 answerable train items. The floor value 0.3803 stays in the file for use with scored abstention. |
-| Number-aware lexical matching off. | No detectable difference on the retrieval set, which has few numeric queries. |
 | Whole-document mode only on request. | Automatic use showed no gain at about twice the cost per turn. |
 
-The largest known quality lever is ranking: on the train split, 12 of 27 real failures retrieved the gold chunk but did not keep it in the evidence set (`docs/evaluation.md` section 3).
+Ranking was the largest known quality lever: before the reranker, 12 of 27 real train failures retrieved the gold chunk but did not keep it in the evidence set (`docs/evaluation.md` section 3).
 
 ---
 
@@ -346,8 +346,8 @@ Legend: rectangles are nodes (async functions over the typed `TurnState`), and d
 | `retrieve` / `compare_retrieve` | Hybrid retrieval, or for a compare intent over 2 to 5 documents, per-document retrieval with `max(3, 8 // n)` passages each, so one document cannot crowd out the others (`backend/app/chat/compare.py`). | embeddings only |
 | `gate` | The no-LLM evidence floor on `top_score`, off in `retrieval@5`. With `CHAT_ABSTAIN_SCORED` and a fitted `backend/config/abstain@1.yaml`, a logistic combiner decides instead (`backend/app/chat/abstain.py`). | none |
 | `locate` | Behind `CHAT_LOCATE`. A bounded in-document loop for one long document (at least 150 chunks or 60 pages) when the first pass is low-confidence. `locate_step@1` returns `search`/`find`/`open`/`done`, and code validates and runs each step. | up to the step cap |
-| `generate` | Builds the evidence set with handles and calls `answer_rag@12` (or `answer_compare@3` for compare), streaming. Resolves citations in code, validates conflicts and follow-ups, and runs the calc and coverage checks when their flags are on. | 1 |
-| `verify` | The support check (`support_check@1`, `fast`) over cited segments. Version 1 is advisory: it annotates verdicts and adds reason codes. Version 2 (`CHAT_SUPPORT_VERSION=2`) also prunes, removes unsupported segments, and regenerates once. | 1 |
+| `generate` | Builds the evidence set with handles and calls `answer_rag@12` (or `answer_compare@3` for compare), streaming. Resolves citations in code and validates conflicts and follow-ups. | 1 |
+| `verify` | The support check (`support_check@1`, `fast`) over cited segments. It is advisory: it annotates verdicts and adds reason codes, and never removes a segment or blocks an answer. | 1 |
 | `clarify` | A code-written question with option chips (`backend/app/chat/clarify.py`, behind `CHAT_CLARIFY`). The model never decides to ask and never writes the options. | none |
 | `meta` | Questions about the library ("how many documents...") answered by one allowlisted, parameterized, owner-scoped query per op (`backend/app/chat/meta.py`). The model never writes SQL and never sees rows. | none |
 | `abstain_no_documents`, `abstain_no_evidence` | Template responses (`backend/app/chat/nodes/terminal.py`). | none |
@@ -383,7 +383,7 @@ Other models and services:
 | Purpose | Model | Notes |
 |---|---|---|
 | Embeddings | `text-embedding-3-small`, 1536 dims (`EMBEDDING_MODEL`, `EMBEDDING_DIM`) | Stored as `halfvec(1536)`. $0.02/MTok. Per-document embedding cost is **unmeasured** (`docs/operations.md` section 4). |
-| Rerank (optional) | `Xenova/ms-marco-MiniLM-L-6-v2` via fastembed in `reranker/` | Apache-licensed, so there is no non-commercial model. Container p50 350.8 ms at 20 passages (`docs/operations.md` section 2.3). Off by default. |
+| Rerank (optional) | `Xenova/ms-marco-MiniLM-L-6-v2` via fastembed in `reranker/` | Apache-licensed, so there is no non-commercial model. Container p50 350.8 ms at 20 passages (`docs/operations.md` section 2.3). Used only by `retrieval@2-rerank`; the default reranker is the `rerank_listwise@1` prompt. |
 | Judges | `eval_judge_*` prompts on `deep` | Same vendor as the generator. See [section 10](#10-evaluation-and-quality) for the bias controls. |
 
 **Fallback.** After retries on a retryable error, the gateway makes one attempt on the next role up (`FALLBACK_ROLE`: fast to balanced, balanced to deep) and records `DEGRADED_MODEL_FALLBACK`. There is no cross-vendor failover, and the Anthropic adapter is dormant.
@@ -398,12 +398,8 @@ All prompts live in `backend/prompts/<id>@<version>.md`, with front-matter for `
 |---|---|---|---|
 | `analyze_query@4` | fast | Intent, standalone query, dimensions, optional document narrowing, optional meta operation, clarification hint | Default (`backend/app/chat/nodes/analyze.py`) |
 | `answer_rag@12` | balanced | Segments with evidence handles, conflicts and follow-ups; answers every part the question asks, keeps qualifiers and every cited detail, names a document that has no such statement and gives what it does say on the point, stays within the version or document the question names (latest version for current-terms questions), and states no label, superlative, unit, count or figure the cited sentences do not contain | Default (`backend/app/chat/nodes/generate.py`) |
-| `answer_rag@3` | balanced | The short-answer wording ("as short as the question allows"); the plan and calc prompts below build on it | Base of the plan-first and calc prompts |
-| `answer_rag@4` | balanced | `answer_rag@3` plus a `plan` of required elements; code decides coverage | Switch `CHAT_PLAN_FIRST` |
-| `answer_rag@5` | balanced | `answer_rag@4` plus typed calculation segments; code does the arithmetic | Switch `CHAT_CALC` |
 | `answer_compare@3` | balanced, routed to `deep` | Per-document comparison answer | Default for compare turns |
 | `support_check@1` | fast | Per-segment support verdict; advisory | Default |
-| `support_check@2` | fast | Verdict plus the minimal handles needed; code repairs the answer | Switch `CHAT_SUPPORT_VERSION=2` |
 | `locate_step@1` | fast | Typed next move of the locate loop | Switch `CHAT_LOCATE` |
 | `rerank_listwise@1` | fast | LLM listwise rerank over the top 50 fused candidates | Default, through `retrieval@5` |
 | `brief_extract@3` | balanced | Document brief: summary, facts with handles, tags, category (1,800 max tokens) | Default (`backend/app/insights/stage.py`) |
@@ -423,17 +419,14 @@ Switches live in `backend/app/core/settings.py` and are mirrored in `.env.exampl
 
 | Switch (env) | Default | What it does | How it is decided |
 |---|---|---|---|
-| `CHAT_PLAN_FIRST` | `false` | `answer_rag@4`: a coverage plan, with `ELEMENT_NOT_FOUND` segments for required elements the evidence lacks | Paired dev evaluation |
-| `CHAT_CALC` | `false` | `answer_rag@5`: typed calculations computed in code with `Decimal` (`backend/app/chat/calc.py`) | Paired dev evaluation on the numeric stratum |
-| `CHAT_SUPPORT_VERSION` | `1` | `2` selects `support_check@2`: prune, remove unsupported segments and regenerate once | Paired dev evaluation |
 | `CHAT_ABSTAIN_SCORED` | `false` | Logistic abstention (`backend/config/abstain@1.yaml`, `fitted: false`) in place of the floor gate | Calibration on the train split, then a paired dev evaluation |
 | `CHAT_LOCATE` (+ `CHAT_LOCATE_MIN_CHUNKS` 150, `CHAT_LOCATE_MIN_PAGES` 60) | `false` | Locate loop for long single documents | Paired dev evaluation on long-filing strata |
 | `CHAT_CLARIFY` | `false` | Code-decided clarification chips | Review of the interaction in the UI |
 | `FULL_CONTEXT_MAX_TOKENS` | `50000` | The largest scope whole-document mode accepts on request | Measured: automatic whole-document mode showed no gain at twice the cost (`docs/evaluation.md` section 4) |
 | `CHUNKER_VERSION` | `chunker@1` | `chunker@2`, `chunker@2-overlap25` | Retrieval-only paired evaluation after a re-ingest |
 | `INDEX_CONTEXT` | `none` | `deterministic` or `llm` index-only headers | Retrieval-only paired evaluation after a re-ingest |
-| `CONTEXTUALIZE_VARIANT` (+ `CONTEXTUALIZE_MAX_USD` $0.02) | `off` | Alias for the same stage as `INDEX_CONTEXT`; `INDEX_CONTEXT` wins when both are set | As `INDEX_CONTEXT` |
-| `RETRIEVAL_CONFIG` | `retrieval@5` | `retrieval@2` (fusion order, no reranker), `retrieval@2-rerank` (cross-encoder), `retrieval@2-lexical2`, `retrieval@1` (the retrieval-only gate baseline) | Retrieval-only paired evaluation (section 5) |
+| `CONTEXTUALIZE_VARIANT` (+ `CONTEXTUALIZE_MAX_USD` $0.02) | `off` | Brief-based index headers: `deterministic` is the document type plus the brief summary's first sentence and the section path, `llm` uses `chunk_context@1` (`backend/app/ingestion/contextualize.py`); `INDEX_CONTEXT` wins when both are set | As `INDEX_CONTEXT` |
+| `RETRIEVAL_CONFIG` | `retrieval@5` | `retrieval@2` (fusion order, no reranker), `retrieval@2-rerank` (cross-encoder), `retrieval@1` (the retrieval-only gate baseline) | Retrieval-only paired evaluation (section 5) |
 
 Operational settings that are not behaviour experiments:
 
@@ -460,8 +453,8 @@ Operational settings that are not behaviour experiments:
 | Ledger check | `backend/app/chat/ledger.py` | The transaction aborts if a cited or candidate chunk is not the owner's or is outside the run's version snapshot. |
 | Per-segment verdicts | `backend/app/chat/support_check.py` → `answer_segments.verification` | `supported` / `partial` / `unsupported` / `unchecked`. The checker sees each segment with only its own `cited_text`. Failures yield `unchecked` plus `SUPPORT_CHECK_FAILED`, and the answer is never blocked. |
 | Conflicts | `backend/app/chat/conflicts.py` → `rag_runs.conflicts` | The model flags `{topic, handles_a, handles_b}`. Code keeps a conflict only if both sides resolve and touch at least 2 distinct chunks. The UI shows `frontend/src/chat/ConflictCallout.tsx` with both quotes. |
-| Abstain and partial | `backend/app/explain/templates.py` | Code-written texts (`ABSTAIN_TEXT_*`, `NOT_FOUND_ELEMENT`, `PARTIAL_ANSWER_TEXT`). A compare side with no evidence gets a code-appended "nothing relevant was found" sentence (`COMPARE_SIDE_MISSING`). |
-| Reason codes | `rag_runs.reason_codes`, `run_steps.reason_code` | `REASON_TEMPLATES` maps 47 codes to user lines, and an empty template means operator-only (for example `FAST_PATH`). A unit test greps every code constant in `app/chat`, `app/retrieval` and `app/llm` and requires a template (`backend/tests/unit/explain/test_templates.py`). |
+| Abstain and partial | `backend/app/explain/templates.py` | Code-written texts (`ABSTAIN_TEXT_*`, `PARTIAL_ANSWER_TEXT`). A compare side with no evidence gets a code-appended "nothing relevant was found" sentence (`COMPARE_SIDE_MISSING`). |
+| Reason codes | `rag_runs.reason_codes`, `run_steps.reason_code` | `REASON_TEMPLATES` maps every code to a user line, and an empty template means operator-only (for example `FAST_PATH`). A unit test greps every code constant in `app/chat`, `app/retrieval` and `app/llm` and requires a template (`backend/tests/unit/explain/test_templates.py`). |
 | Degradations | `rag_runs.degraded` | `no_rerank`, `lexical_only` map to `DEGRADED_TEMPLATES`. |
 | Run record | `rag_runs` | `config` holds the prompt versions, role-to-model map and retrieval config. `analysis` holds intent and dimensions, plus `abstain` features, `locate` (actions, argument digests, counts), `clarify` options and `supersedes` when present. Also tokens, cost, latency, TTFT and `trace_id`. |
 | Why view | `GET /v1/runs/{id}` (`backend/app/api/runs.py`, `backend/app/explain/views.py`) and `frontend/src/chat/WhyPanel.tsx` | Status, mode, route, reason codes, template-rendered `explanation` lines, sources (document, version, pages, passages used), node steps with durations, usage (calls, tokens, cost) and the stored message. It exposes no prompt ids, model names or trace ids. Another owner's run is 404. |
@@ -507,7 +500,7 @@ The chat path has no tools and no side effects, so the worst case is a wrong ans
 - **Delimiter defusing**: `backend/app/chat/nodes_common.py::defuse` replaces tag-like strings (`</evidence>` and similar) in untrusted text before it is shown to the model. Stored and cited text is never altered.
 - **Handles only**: the strict schema fixes the output shape, and quotes come from storage, so an injected "reply only with X" cannot fabricate a citation.
 - **Scope check**: the analysis can only narrow scope, and the ledger refuses chunks outside the version snapshot.
-- **Graders**: `eval/graders.py::injection_violation` flags forbidden strings, instruction markers, foreign links not present in evidence, and out-of-scope citations. The golden set's `injection` stratum covers 11 variants (body text, footnote, table cell, hidden text, fake system, ignore-previous, exfiltration, citation spoof, role play, zero-width unicode, markdown link) (`eval/datasets/vault_eval_v2/README.md`). Measured: 0 violations on 9 train items (`docs/evaluation.md` section 2). **The test split is unmeasured.**
+- **Graders**: `eval/graders.py::injection_violation` flags forbidden strings, instruction markers, foreign links not present in evidence, and out-of-scope citations. The golden set's `injection` stratum covers 11 variants (body text, footnote, table cell, hidden text, fake system, ignore-previous, exfiltration, citation spoof, role play, zero-width unicode, markdown link) (`eval/datasets/vault_eval_v2/README.md`). Measured: 0 violations on the 9 train items and on the 11 items of the sealed test run (`docs/evaluation.md` section 2).
 
 ### 9.3 Upload and HTTP hardening
 
@@ -537,13 +530,14 @@ The chat path has no tools and no side effects, so the worst case is a wrong ans
 
 The method, the numbers and the runbook are in `docs/evaluation.md`. This section is the summary a developer needs to understand the design.
 
-- **Golden set** (`eval/datasets/vault_eval_v2/`): 316 live items over 189 documents in 15 strata, split by source document into train 123, dev 59 and test 134. Gold is atomic claims plus sentence-range evidence that is mapped to chunks at run time (`eval/mapping.py`), so it survives a change of chunker. Public items come from third-party expert labels (CUAD, QASPER, FinanceBench), and authored fixtures cover the strata no public set has. A legacy set (`eval/datasets/vault_eval_v1/`, 122 items) stays loadable for the baselines in `eval/baselines/`.
+- **Golden set** (`eval/datasets/vault_eval_v2/`): 311 live items over 186 documents in 15 strata, split by source document into train 118, dev 59 and test 134. Train gold is audited (an independent model audit, then a person's decisions), dev gold was reviewed where items were disputed, and test gold is an unaudited draft. Gold is atomic claims plus sentence-range evidence that is mapped to chunks at run time (`eval/mapping.py`), so it survives a change of chunker. Public items come from third-party expert labels (CUAD, QASPER, FinanceBench), and authored fixtures cover the strata no public set has. A legacy set (`eval/datasets/vault_eval_v1/`, 122 items) stays loadable for the baselines in `eval/baselines/`.
 - **Graders and judges**: deterministic graders decide what they can (`eval/graders.py`: citation integrity and scope, gold-citation overlap, `must_not_contain`, injection, meta correctness, recall@8, MRR@40). LLM judges on `deep` handle the rest (`eval_judge_claims`, `eval_judge_support`, `eval_judge_abstain`), reference-guided and blind, with a judge tier at or above the generator tier. Judge and generator share a vendor, and the judges are not yet calibrated against human labels, so every judged number is **provisional**.
 - **Statistics**: paired bootstrap CIs, clustering by source document, and a minimum detectable effect that says when "no difference" is only low power (`eval/paired.py`, `eval/report.py`).
 - **Stage attribution** (`eval/attribution.py`) gives each failed item one earliest faulty stage. Extraction and chunking cannot be observed yet and read 0.
 - **Gates** (`eval/gate.py`): Tier 0 (`make eval-gate-t0`, $0) checks schema, citation integrity of stored runs, offline replay, the retrieval baseline and the security tests. Tier 1 (`make eval-gate BASE=... CAND=...`) is non-inferiority on answer_pass and support_rate, zero injection violations, abstention not lower, and citation integrity of 1.0, with `INCONCLUSIVE` when underpowered.
 - **Acceptance rule**: a behaviour switch is enabled only if a paired dev-split evaluation shows its primary metric improving with the CI excluding 0, or non-inferior with a better cost or latency. Tuning never uses test-split content.
-- **Headline numbers** (train split, all switches off, provisional): answer_pass 0.642, citation_integrity 1.000, recall@8 0.807, $0.0057 per turn. Re-judged with the current judges: answer_pass 0.659, support_rate 0.842. The quality targets (answer_pass 0.80, faithfulness 0.90, citation precision 0.85) are not met. Commands to regenerate each number: `docs/evaluation.md` section 2.
+- **Contamination check** (`eval/contamination.py`, in `make ci`): no default prompt or judge may share a word 5-gram or a proper name with any gold item.
+- **Headline numbers** (provisional). Sealed test split, run once on draft gold: answer_pass 0.761, faithfulness 0.957, citation integrity 1.00, 0 injection violations, $0.007 per turn, 7.3 s mean latency. Audited train gold: answer_pass 0.873 against a baseline of 0.763; dev: 0.847 against 0.746. Of the quality targets (answer_pass 0.80, faithfulness 0.90, citation chunk precision 0.85), the test run meets faithfulness only. Commands to regenerate each number: `docs/evaluation.md` section 2.
 
 ---
 
@@ -595,10 +589,10 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 | OpenAI only, addressed by role, one within-provider fallback, no cross-vendor failover | One key, a price ladder from $0.10 to $10 per million input tokens, model names in one file; a vendor switch would silently change citation behaviour | `backend/app/llm/routing.py` | A second provider key, which would allow a comparison with the dormant Anthropic adapter |
 | Exact vector search in owner hash partitions, `halfvec` | Perfect recall and a few ms at owner scale; no filtered-HNSW recall loss | 8.9 ms at 21k chunks (`docs/operations.md`) | A scope over about 100k chunks (HNSW per partition) |
 | OR lexical query | AND starved the lexical leg | 0.150 to 0.633 lexical recall@8 (`docs/evaluation.md`) | |
-| Reranker off, and a separate service when on | No detectable quality gain at +495 ms p50; a separate process keeps CPU off the event loop and lets it fail independently | `docs/evaluation.md` section 4 | A paired win on ranking-cut strata within the latency bar |
+| LLM listwise reranker by default; the cross-encoder is a separate, optional service | The LLM reranker moved answer_pass by +8.5 (dev) and +12.7 (train) points for $0.0004 a turn; the cross-encoder showed no detectable gain at +495 ms p50. A separate process keeps its CPU off the event loop and lets it fail independently | `docs/evaluation.md` section 4 | A paired win for another ranker on the ranking-cut strata within the latency bar |
 | Evidence gate off | Refused answerable questions | 3 of 44 train items refused | Scored abstention calibrated to at most 2% false refusals |
 | Whole-document mode not automatic | No gain at twice the cost | `docs/evaluation.md` section 4 | A paired gain on aggregation or multi-span strata |
-| Support check advisory | Never block an answer on a checker failure | kappa 0.83 against the faithfulness judge | A paired win for `support_check@2` |
+| Support check advisory | Never block an answer on a checker failure | kappa 0.83 against the faithfulness judge | A repairing check that wins a paired evaluation (one was measured, had a worse faithfulness estimate and was removed) |
 | Coverage states, not confidence percentages | No calibrated model exists, and a percentage misleads | | |
 | Behaviour changes ship disabled | Measure before adding | `docs/evaluation.md` section 1.5 | A paired dev-split acceptance per switch |
 | Answers are never cached | A cached answer could cite a stale or deleted version | | |
@@ -618,17 +612,17 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 | Jobs | Crash: lease expiry, then the sweeper. Lost enqueue: the sweeper. Duplicate delivery: the claim CAS. Poison document: `dead` after the maximum attempts. |
 | Providers | 429 or timeout: retry with jitter and `retry-after`, then one role fallback. Embeddings down: ingestion retries and queries go lexical-only. Refusal or `max_tokens`: a typed outcome. |
 | Retrieval | Identifier misses: `tsv_ids`. Split answers: neighbour expansion. Reranker down: fusion order with `degraded=no_rerank`. |
-| Grounding | Insufficient evidence: abstain. Partial: explicit not-found segments. Conflict: both sides shown. Unresolved citation: dropped and counted. Injection: data-only blocks and no tools. |
+| Grounding | Insufficient evidence: abstain. Partial: a code-written not-found segment (a compare side with no evidence). Conflict: both sides shown. Unresolved citation: dropped and counted. Injection: data-only blocks and no tools. |
 | Chat runtime | Concurrent turn: 409. Budget or deadline: partial or abstain with a reason. Disconnect: the turn continues and persists. Scope too large for whole-document mode: RAG. |
 | Platform | Redis down: uploads 503 and the limiter fails open. Postgres down: 503. No connection is held across a stream. Cost spike: daily quota. |
 
 **Limits and gaps.**
-- **Gold is unaudited.** The audit queue awaits a person, `table_lookup` gold is model-drafted, and the `formatting` stratum has 0 of 5 items.
+- **Test gold is an unaudited draft**, and only the disputed dev items were reviewed. `table_lookup` gold is model-drafted, and the `formatting` stratum has 0 of 5 items.
 - **Judges are not calibrated against human labels**, and judge and generator share a vendor, so every judged number is provisional.
-- **Ten behaviour switches are off** (section 7.3): plan-first, calculation, compare quota, support check with repair, the shorter analysis prompt, scored abstention, the locate loop, voice, the second chunker and contextual index text. Clarification chips are off pending review.
-- **Quality targets are not met.** answer_pass is about 0.64 to 0.66 against a target of 0.80. Real failures concentrate in ranking and retrieval (`docs/evaluation.md` section 3).
+- **Behaviour switches that are off** (section 7.3): scored abstention, the locate loop, the second chunker and contextual index text. Clarification chips are off pending review.
+- **Two quality targets are not met.** On the sealed test, answer_pass is 0.761 against a target of 0.80 and citation chunk precision 0.658 against 0.85; faithfulness (0.957) meets its 0.90 target. Multi-document strata (conflict, aggregation, compare) are the weakest (`docs/evaluation.md` section 3).
 - **Stage attribution cannot see extraction or chunking.**
-- **Unmeasured**: load and concurrency, documents per hour per worker, per-document embedding cost, exact search at 100k chunks, live time to first token with the shorter analysis prompt, and prompt injection on the test split.
+- **Unmeasured**: load and concurrency, documents per hour per worker, per-document embedding cost, exact search at 100k chunks, and live time to first token under the current configuration.
 - **Not built**: the comparison matrix (the tables exist, the code does not), the replay API and an operator run view, a tiered LLM evidence gate (the code has a no-LLM floor, and the `evidence_gate` route has no caller), memory compaction (`memory_compact`, `tag_category` and `matrix_cell` routes have no caller), OCR (scanned PDFs end as `needs_ocr`), the HNSW switch, Grafana dashboards, password login, sentiment analysis, and a per-owner ingestion cap. PDFs over 600 pages end as `unsupported`.
 - **Memory** is the turn window only: nothing writes the rolling summary, and there is no cross-session memory.
 - **One known flaky test**: `backend/tests/integration/observability/test_trace_propagation.py::test_api_to_celery_same_trace` times out in full-suite runs and passes alone.
@@ -654,7 +648,7 @@ backend/
   app/ingestion/           job dispatch, claim, lease, runner, sweeper; extractors (extract/), chunkers, contextualize
   app/retrieval/           scope, vector, lexical, fusion, rerank clients, expansion, query embedding
   app/chat/                turn graph (graph.py, turn.py), nodes/, citations, evidence, gate, support check, compare,
-                           conflicts, calc, coverage, clarify, locate, meta, voice, ledger, SSE stream, sessions, reaper
+                           conflicts, clarify, locate, meta, ledger, SSE stream, sessions, reaper
   app/insights/            brief stage, fact verification, custom summaries, staleness
   app/feedback/            answer feedback service
   app/llm/                 gateway, routing (roles to models), prompt registry, pricing, providers, fake model
