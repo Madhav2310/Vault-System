@@ -16,8 +16,8 @@ UI_E2E_ENV := COMPOSE_PROJECT_NAME=vault-uitest COMPOSE_FILE=docker-compose.yml:
 .PHONY: help up up-test up-full down logs migrate seed seed-users \
         ci lint fmt typecheck test test-unit test-integration test-e2e smoke-providers \
         ui ui-types ui-types-check ui-check ui-e2e demo-record diagrams otel-validate \
-        eval-retrieval eval-retrieval-fast eval-answers eval-answers-v2 eval-smoke eval-diagnose eval-gate \
-        eval-gate-t0 eval-audit eval-audit-apply eval-labels eval-v2-docs eval-fetch eval-build eval-extraction c1-check
+        eval-answers eval-retrieval eval-diagnose eval-gate eval-gate-t0 eval-audit eval-audit-apply \
+        eval-labels eval-docs eval-fetch c1-check
 
 help:  ## list the targets
 	@awk 'BEGIN {FS = ":.*## "} /^##@/ {printf "\n%s\n", substr($$0, 5)} /^[a-z0-9-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -111,46 +111,34 @@ otel-validate:  ## validate the OpenTelemetry collector config
 	  validate --feature-gates service.profilesSupport --config=file:/cfg/config.yaml
 
 ##@ Evaluation
-eval-retrieval:  ## retrieval suite through the API
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config retrieval --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
-eval-retrieval-fast:  ## retrieval-only suite in process: [RETR_CONFIG=retrieval@N] [SPLIT=dev]
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config $(or $(RETR_CONFIG),retrieval@2) --split $(or $(SPLIT),all) --pipeline eval.pipeline_retrieval:setup $(EVAL_ARGS)
-eval-answers:  ## answers with judges: SPLIT=train MAX_USD=3 [FILTER=scope_docs=1] [DATASET=v2]
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite full --config answers --split $(or $(SPLIT),train) --max-usd $(or $(MAX_USD),3) $(if $(DATASET),--dataset $(DATASET)) $(if $(FILTER),--filter $(FILTER)) --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
-eval-answers-v2:  ## v2 gold set: SPLIT=dev MAX_USD=3 [FILTER=stratum=injection] [EVAL_ARGS=...]
+eval-answers:  ## answers and judges on one split, capped: SPLIT=dev MAX_USD=1 [FILTER=stratum=injection] [EVAL_ARGS=...]
 	@grep -qiE '^BRIEF_ENABLED=false' .env 2>/dev/null || [ "$${BRIEF_ENABLED:-}" = false ] || echo "reminder: BRIEF_ENABLED=false must be set in the WORKER env (.env, then recreate the worker) or uploads pay for briefs"
-	$(MAKE) eval-answers DATASET=v2
-eval-smoke:  ## smoke suite through the API
-	$(UV) env PYTHONPATH=.. python -m eval.run --suite smoke --config smoke --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite full --config answers --split $(or $(SPLIT),train) --max-usd $(or $(MAX_USD),3) $(if $(FILTER),--filter $(FILTER)) --pipeline eval.pipeline_http:setup $(EVAL_ARGS)
+eval-retrieval:  ## retrieval-only suite in process, no chat model: [SPLIT=train] [RETR_CONFIG=retrieval@2] [EVAL_USER=...]
+	$(UV) env PYTHONPATH=.. python -m eval.run --suite retrieval --config $(or $(RETR_CONFIG),retrieval@2) --split $(or $(SPLIT),train) --pipeline eval.pipeline_retrieval:setup $(EVAL_ARGS)
 eval-diagnose:  ## where a run's gold passages were lost, offline: RUN=<run_id>
 	@test -n "$(RUN)" || { echo "usage: make eval-diagnose RUN=<run_id>"; exit 2; }
 	VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) $(UV) env PYTHONPATH=.. python -m eval.diagnose --run $(RUN) $(DIAG_ARGS)
-eval-gate:  ## Tier 1 gate, no model call: CAND=eval/reports/<run_id>.json [BASE=...]
-	@test -n "$(CAND)" || { echo "usage: make eval-gate [BASE=eval/baselines/answer_v2.json] CAND=eval/reports/<run_id>.json (docs/evaluation.md)"; exit 2; }
-	$(UV) env PYTHONPATH=.. python -m eval.gate compare ../$(or $(BASE),eval/baselines/answer_v2.json) ../$(CAND) $(GATE_ARGS)
-eval-gate-t0:  ## Tier 0 gate: schema, documents map, citations, replay, retrieval vs baseline, security
+eval-gate:  ## Tier 1 gate, no model call: CAND=eval/reports/<run_id>.json [BASE=eval/baselines/answer.json]
+	@test -n "$(CAND)" || { echo "usage: make eval-gate [BASE=eval/baselines/answer.json] CAND=eval/reports/<run_id>.json (docs/evaluation.md)"; exit 2; }
+	$(UV) env PYTHONPATH=.. python -m eval.gate compare ../$(or $(BASE),eval/baselines/answer.json) ../$(CAND) $(GATE_ARGS)
+eval-gate-t0:  ## Tier 0 gate: schema, documents map, citations, retrieval vs baseline, security [EVAL_USER=...]
 	$(UV) env PYTHONPATH=.. python -m eval.gate schema
-	$(MAKE) eval-v2-docs ARGS=--check
+	$(MAKE) eval-docs ARGS=--check
 	$(UV) env PYTHONPATH=.. python -m eval.gate citations $(RUNS)
-	$(UV) env PYTHONPATH=.. python -m eval.replay --run $(or $(RUN),latest)
-	$(MAKE) eval-retrieval-fast EVAL_ARGS="--compare retrieval"
+	$(MAKE) eval-retrieval EVAL_ARGS="--compare retrieval"
 	$(UV) pytest tests/integration/security
 eval-audit:  ## gold audit of a run's answers: ANSWERS=eval/reports/<run_id>.answers.jsonl [MAX_USD=2]
 	@test -n "$(ANSWERS)" || { echo "usage: make eval-audit ANSWERS=eval/reports/<run_id>.answers.jsonl [MAX_USD=2]"; exit 2; }
 	$(UV) env PYTHONPATH=.. python -m eval.build.audit --answers ../$(ANSWERS) --max-usd $(or $(MAX_USD),2) $(AUDIT_ARGS)
-eval-audit-apply:  ## apply audit_queue.yaml decisions to the v2 dataset [APPLY_ARGS=--check]
+eval-audit-apply:  ## apply audit_queue.yaml decisions to the dataset [APPLY_ARGS=--check]
 	$(UV) env PYTHONPATH=.. python -m eval.build.apply_audit $(APPLY_ARGS)
 eval-labels:  ## export judge-calibration label pairs: ANSWERS=... [N=200]
 	@test -n "$(ANSWERS)" || { echo "usage: make eval-labels ANSWERS=eval/reports/<run_id>.answers.jsonl [N=200]"; exit 2; }
 	$(UV) env PYTHONPATH=.. python -m eval.judge --export-labels $(or $(N),200) --answers ../$(ANSWERS) --out ../eval/labels/labeled.yaml
-eval-v2-docs:  ## regenerate vault_eval_v2/documents.yaml [ARGS=--download|--check]
-	cd backend && VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) UV_PYTHON_PREFERENCE=only-managed uv run --frozen python ../eval/build/build_v2_docs.py $(ARGS)
+eval-docs:  ## regenerate vault_eval/documents.yaml [ARGS=--download|--check]
+	cd backend && VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) UV_PYTHON_PREFERENCE=only-managed uv run --frozen python ../eval/build/build_docs.py $(ARGS)
 eval-fetch:  ## download the third-party sources into eval/sources/
 	eval/build/fetch_sources.sh
-eval-build:  ## rebuild the external and authored gold items
-	$(EVAL_PY) ../eval/build/build_external.py
-	$(EVAL_PY) ../eval/build/build_authored.py
-eval-extraction:  ## gold-quote locatability with the production PDF extractor (no model calls)
-	$(EVAL_PY) ../eval/extraction_check.py
 c1-check:  ## every corpus document through the real ingestion stages (fake embeddings, no cost)
 	export VAULT_CORPUS=1; $(UV) pytest tests/integration/ingestion/test_corpus_pipeline.py -s -q

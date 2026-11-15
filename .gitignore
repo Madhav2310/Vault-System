@@ -30,10 +30,7 @@ eval/sources/
 # Generated test fixtures too large to commit (backend/tests/fixtures/make_fixtures.py)
 backend/tests/fixtures/files/oversize.pdf
 
-eval/runs/
-eval/.cache/
-
-# Eval run outputs (the kept train run lives in eval/baselines/v2_train/)
+# Evaluation run outputs (the kept final runs live in eval/baselines/final/)
 eval/reports/*
 !eval/reports/.gitkeep
 eval/.reuse*.json
@@ -41,5 +38,3 @@ eval/.reuse*.json
 # Local scratch space
 .work/
 
-# Gold-audit workbook rendered by eval/build/audit_workbook.py
-AUDIT.md

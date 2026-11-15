@@ -197,24 +197,23 @@ The shipped configuration: retrieval `retrieval@5` (an LLM listwise rerank of 50
 
 | Measure (test split, 134 items, draft gold) | Value | Command |
 |---|---|---|
-| Answer pass; claim completeness | 0.761 (102 of 134); 0.779 | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
-| Faithfulness (support rate of cited segments); abstention correct | 0.957; 0.913 | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
-| Citation integrity; prompt-injection violations; `must_not_contain` | 1.00; 0 of 11; 14 of 14 pass | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
-| Retrieval recall@8 | 0.753 | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
-| Cost and latency per turn; whole run including judges | $0.007, 7.3 s mean; $3.41 | `make eval-answers-v2 SPLIT=test MAX_USD=4` |
+| Answer pass; claim completeness | 0.761 (102 of 134); 0.779 | `make eval-answers SPLIT=test MAX_USD=4` |
+| Faithfulness (support rate of cited segments); abstention correct | 0.957; 0.913 | `make eval-answers SPLIT=test MAX_USD=4` |
+| Citation integrity; prompt-injection violations; `must_not_contain` | 1.00; 0 of 11; 14 of 14 pass | `make eval-answers SPLIT=test MAX_USD=4` |
+| Retrieval recall@8 | 0.753 | `make eval-answers SPLIT=test MAX_USD=4` |
+| Cost and latency per turn; whole run including judges | $0.007, 7.3 s mean; $3.41 | `make eval-answers SPLIT=test MAX_USD=4` |
 
 **Train and dev.** The baseline is the earlier default (fusion order without a reranker, `retrieval@2`, and an earlier answer prompt), re-judged with the same judges and gold as the final runs. Three numbers are kept apart: the locked benchmark (original gold, never edited), the audited-gold score, and the engineering gain (gold and judges held fixed). A gold correction raises both columns and is a benchmark correction, not an engineering gain.
 
 | Measure | Baseline | Final | Command |
 |---|---|---|---|
-| Answer pass, train, audited gold, 118 items (run `01a1db3b`) | 0.763 (90) | 0.873 (103) | `make eval-answers-v2 SPLIT=train MAX_USD=3` |
-| Answer pass, dev, current gold (disputed items reviewed), 59 items (run `01a1db44`) | 0.746 (44) | 0.847 (50) | `make eval-answers-v2 SPLIT=dev MAX_USD=3` |
+| Answer pass, train, audited gold, 118 items (run `01a1db3b`) | 0.763 (90) | 0.873 (103) | `make eval-answers SPLIT=train MAX_USD=3` |
+| Answer pass, dev, current gold (disputed items reviewed), 59 items (run `01a1db44`) | 0.746 (44) | 0.847 (50) | `make eval-answers SPLIT=dev MAX_USD=3` |
 | Locked benchmark: answer pass, train, original pre-audit gold, 123 items | 0.699 (86) | 0.772 (95) | `cd backend && PYTHONPATH=.. uv run python -m eval.rejudge --answers ANSWERS --max-usd 1` on a checkout of the pre-audit gold (`docs/evaluation.md` section 2) |
-| Faithfulness, train / dev | 0.853 / 0.888 | 0.899 / 0.906 | `make eval-answers-v2 SPLIT=dev MAX_USD=3` |
+| Faithfulness, train / dev | 0.853 / 0.888 | 0.899 / 0.906 | `make eval-answers SPLIT=dev MAX_USD=3` |
 | Citation integrity (no invented citation reaches the user) | 1.00 | 1.00 | `make eval-gate-t0` |
 | Brief cost per document, mean of 3 samples | | $0.0143 | `python3 -c "import json;d=json.load(open('eval/baselines/brief_samples.json'));print(sum(float(v['cost_usd']) for v in d.values())/len(d))"` |
 | Corpus documents reaching ready | | 19 of 19 in 36 s | `make c1-check` |
-| Gold quotes locatable in extracted PDFs | | 100.0 percent | `make eval-extraction` |
 
 Engineering gain with gold and judges fixed: +11.0 points on train (13 items net) and +10.2 on dev (6 items net), from `python -m eval.paired BASELINE.json FINAL.json --metric answer_pass --ledger` (`docs/evaluation.md` section 1.3). Against the targets fixed before measuring (answer pass 0.80, faithfulness 0.90, citation chunk precision 0.85), the test run meets faithfulness and misses answer pass (0.761) and chunk precision (0.658). Scale: search is exact and scoped to the owner's hash partition, ingestion is bound by CPU-bound extraction and grows by adding `worker-ingest` processes, and no load test has been run (`docs/operations.md`).
 

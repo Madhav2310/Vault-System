@@ -9,7 +9,7 @@ Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector (
 `backend/app/{api,core,db,documents,storage,ingestion,retrieval,chat,insights,feedback,llm,explain,metrics,observability,worker}` · `backend/prompts/<id>@<version>.md` · `backend/config/` (retrieval YAML) · `backend/tests/{unit,integration,e2e,live}` · `frontend/` · `eval/` (datasets, graders, judges, baselines) · `ops/otel/` · `scripts/` · `docs/`
 
 ## Commands
-`make up` / `down` · `make ci` (lint, types, unit, frontend checks; no Docker) · `make test` (needs `make up`) · `make test-integration` (after `make up-test`) · `make ui-e2e` (fake model) · `make migrate` · `make diagrams` · `make eval-retrieval-fast`, `make eval-answers-v2 SPLIT=dev MAX_USD=1`, `make eval-gate`, `make eval-gate-t0`. Targeted tests while developing: `cd backend && uv run pytest path::test`.
+`make up` / `down` · `make ci` (lint, types, unit, frontend checks; no Docker) · `make test` (needs `make up`) · `make test-integration` (after `make up-test`) · `make ui-e2e` (fake model) · `make migrate` · `make diagrams` · `make eval-retrieval`, `make eval-answers SPLIT=dev MAX_USD=1`, `make eval-gate`, `make eval-gate-t0`. Targeted tests while developing: `cd backend && uv run pytest path::test`.
 
 ## Hard rules
 - **Root cause first.** At every failure, regression, timeout or inefficiency, find the cause from evidence (logs, rows, step timings, stored runs, paired comparisons) and rule out the alternatives before changing anything. No fix or explanation rests on an assumption; state what the data shows.
@@ -40,7 +40,7 @@ Python 3.12, FastAPI, SQLAlchemy 2 (async) + Alembic, PostgreSQL 16 + pgvector (
 Roles to defaults (no date suffixes; change via `MODEL_*` settings): `fast` = `gpt-6-luna`, `balanced` = `gpt-6.1-terra`, `deep` = `gpt-6.1-sol`, `flagship` = `gpt-6-astra` (gold audit and judge calibration only); embeddings `text-embedding-3-small`. Check SDK usage against current docs before writing; use the Responses API.
 
 ## Machine hygiene
-- One eval- or ingestion-heavy command at a time; no loops of full evaluations. Prefer replay (`eval.replay`), retrieval-only (`make eval-retrieval-fast`) and the train or smoke split.
+- One eval- or ingestion-heavy command at a time; no loops of full evaluations. Prefer retrieval-only (`make eval-retrieval`) and the train split.
 - Run the full gates (`make ci`, `make test`) once per change set, not per edit.
 - Containers have CPU and memory caps in `docker-compose.yml`; Postgres runs with fsync off (dev and test only). Stop `otel-lgtm` when idle (`docker compose stop otel-lgtm`).
 - Check `uptime` before heavy work and wait if the load average is above about 8.

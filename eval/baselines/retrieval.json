@@ -1,716 +1,668 @@
 {
-  "git_sha": "a596172",
-  "metrics": {
-    "cost_usd": {
-      "mean": 0.005618680327868852,
-      "n": 122
+  "attribution": {
+    "by_stage": {
+      "abstention": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      },
+      "chunking": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      },
+      "citation": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      },
+      "extraction": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      },
+      "generation": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      },
+      "grading": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      },
+      "ranking": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      },
+      "retrieval": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      },
+      "unknown_stage": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      },
+      "utilization": {
+        "ci_high": 0.0,
+        "ci_low": 0.0,
+        "count": 0,
+        "share": 0.0
+      }
     },
-    "latency_ms": {
-      "mean": 5932.090203610154,
-      "n": 122
-    },
+    "failed": 0,
+    "not_recorded_among_failed": {},
+    "stages": [
+      "extraction",
+      "chunking",
+      "retrieval",
+      "ranking",
+      "utilization",
+      "citation",
+      "generation",
+      "abstention",
+      "grading",
+      "unknown_stage"
+    ]
+  },
+  "clustered_by": "source_doc",
+  "dataset": "vault_eval",
+  "git_sha": "127794d",
+  "mde_inputs": {
     "mrr@40": {
-      "mean": 0.5045111647611648,
-      "n": 100
+      "clusters": 69,
+      "design_effect": 1.550310964417719,
+      "mde_80_unpaired": 0.18944143329996108,
+      "n": 105,
+      "var": 0.15483987772133037
     },
     "recall@8": {
-      "mean": 0.7593055555555556,
-      "n": 100
+      "clusters": 69,
+      "design_effect": 1.0779039671352744,
+      "mde_80_unpaired": 0.13772299621281103,
+      "n": 105,
+      "var": 0.11770219198790628
+    }
+  },
+  "metrics": {
+    "mrr@40": {
+      "ci_high": 0.7067267683772538,
+      "ci_low": 0.5258305820852834,
+      "clusters": 69,
+      "mean": 0.6210360796120752,
+      "n": 105
+    },
+    "recall@8": {
+      "ci_high": 0.900611620795107,
+      "ci_low": 0.7669376693766937,
+      "clusters": 69,
+      "mean": 0.8380952380952381,
+      "n": 105
     }
   },
   "n_errors": 0,
+  "n_items": 118,
   "name": "retrieval",
   "per_item": {
-    "compare:effective_2": {
-      "cost_usd": 0.003996,
-      "latency_ms": 5311.598541971762,
-      "mrr@40": 0.16666666666666666,
-      "recall@8": 0.5
-    },
-    "compare:exclusivity": {
-      "cost_usd": 0.006973,
-      "latency_ms": 7073.017583985347,
-      "mrr@40": 1.0,
-      "recall@8": 0.625
-    },
-    "compare:governing_law_3": {
-      "cost_usd": 0.004092,
-      "latency_ms": 7877.465708006639,
-      "mrr@40": 0.5,
-      "recall@8": 0.6666666666666666
-    },
-    "compare:governing_law_all": {
-      "cost_usd": 0.006817,
-      "latency_ms": 6661.846165952738,
-      "mrr@40": 1.0,
-      "recall@8": 0.8333333333333334
-    },
-    "compare:oldest": {
-      "cost_usd": 0.006575,
-      "latency_ms": 6096.383541007526,
-      "mrr@40": 0.030303030303030304,
-      "recall@8": 0.0
-    },
-    "compare:parties_2": {
-      "cost_usd": 0.006271,
-      "latency_ms": 5225.714124972001,
-      "mrr@40": 0.2,
-      "recall@8": 0.5
-    },
-    "compare:renewal": {
-      "cost_usd": 0.007153,
-      "latency_ms": 6536.136417009402,
-      "mrr@40": 1.0,
-      "recall@8": 0.75
-    },
-    "compare:term_2": {
-      "cost_usd": 0.006384,
-      "latency_ms": 9090.70120897377,
-      "mrr@40": 0.3333333333333333,
-      "recall@8": 0.5
-    },
-    "conflict:consulting_term": {
-      "cost_usd": 0.00664,
-      "latency_ms": 6466.932917013764,
-      "mrr@40": 1.0,
-      "recall@8": 0.5
-    },
-    "conflict:consulting_term_vs_renewal": {
-      "cost_usd": 0.006737,
-      "latency_ms": 6556.656583969016,
-      "mrr@40": 0.5,
-      "recall@8": 0.5
-    },
-    "conflict:consulting_termination_notice": {
-      "cost_usd": 8.3e-05,
-      "latency_ms": 2338.530291977804,
+    "mig-fb_amd_10k-financebench_id_00563": {
       "mrr@40": 0.0,
       "recall@8": 0.0
     },
-    "conflict:endorsement_period": {
-      "cost_usd": 0.00607,
-      "latency_ms": 4853.5697080078535,
-      "mrr@40": 0.3333333333333333,
-      "recall@8": 1.0
-    },
-    "conflict_control:consulting_law": {
-      "cost_usd": 0.005209,
-      "latency_ms": 4892.656833981164,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "conflict_control:endorsement_law": {
-      "cost_usd": 0.006369,
-      "latency_ms": 5847.943625005428,
-      "mrr@40": 1.0,
-      "recall@8": 0.5
-    },
-    "cuad_cohosting:agreement_date": {
-      "cost_usd": 0.006291,
-      "latency_ms": 4339.851249998901,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_cohosting:effective_date": {
-      "cost_usd": 0.006345,
-      "latency_ms": 7353.625542018563,
-      "mrr@40": 0.09090909090909091,
+    "mig-fb_amd_10k-financebench_id_00995": {
+      "mrr@40": 0.08333333333333333,
       "recall@8": 0.0
     },
-    "cuad_cohosting:exclusivity": {
-      "cost_usd": 0.007077,
-      "latency_ms": 6939.404208038468,
+    "mig-fb_ulta_q4-financebench_id_00601": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "mig-fb_ulta_q4-financebench_id_00603": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "mig-format-amendment_date": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "mig-identifier-amendment_s2_1": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "mig-qasper_factweet-q1": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
+    },
+    "mig-qasper_factweet-q5": {},
+    "mig-qasper_hatespeech-q0": {
+      "mrr@40": 0.14285714285714285,
+      "recall@8": 1.0
+    },
+    "mig-qasper_hatespeech-q1": {},
+    "mig-qasper_hatespeech-q2": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "mig-summarize-qasper_factweet": {},
+    "pub_conditional_09fecfbfd8": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_conditional_11d309bb00": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_conditional_15cffaf0d7": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_conditional_430e194c79": {
+      "mrr@40": 0.25,
+      "recall@8": 1.0
+    },
+    "pub_conditional_6c8b35160b": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_conditional_9959afee20": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_conditional_a1e7808a44": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_conditional_a6c2be1753": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_conditional_cb7ddacf21": {
+      "mrr@40": 0.07142857142857142,
+      "recall@8": 0.0
+    },
+    "pub_multi_hop_17217d5c78": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
+    },
+    "pub_multi_hop_50f21d188d": {
+      "mrr@40": 0.043478260869565216,
+      "recall@8": 0.0
+    },
+    "pub_multi_hop_6ad7ee5d2d": {
       "mrr@40": 0.14285714285714285,
       "recall@8": 0.3333333333333333
     },
-    "cuad_cohosting:expiration_date": {
-      "cost_usd": 0.006258,
-      "latency_ms": 8476.31162503967,
-      "mrr@40": 0.25,
-      "recall@8": 1.0
-    },
-    "cuad_cohosting:governing_law": {
-      "cost_usd": 0.006371,
-      "latency_ms": 4770.897124952171,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_cohosting:no_most_favored_nation": {
-      "cost_usd": 0.006417,
-      "latency_ms": 10886.187291005626
-    },
-    "cuad_cohosting:no_source_code_escrow": {
-      "cost_usd": 0.00648,
-      "latency_ms": 4696.348124998622
-    },
-    "cuad_cohosting:non-compete": {
-      "cost_usd": 0.007415,
-      "latency_ms": 8659.728042024653,
-      "mrr@40": 0.5,
-      "recall@8": 1.0
-    },
-    "cuad_cohosting:parties": {
-      "cost_usd": 0.006493,
-      "latency_ms": 4502.819084038492,
-      "mrr@40": 0.14285714285714285,
-      "recall@8": 1.0
-    },
-    "cuad_consulting:agreement_date": {
-      "cost_usd": 0.00614,
-      "latency_ms": 4914.9058340117335,
-      "mrr@40": 0.16666666666666666,
-      "recall@8": 1.0
-    },
-    "cuad_consulting:effective_date": {
-      "cost_usd": 0.00636,
-      "latency_ms": 5296.226249949541,
+    "pub_multi_hop_70b5c16a8c": {
       "mrr@40": 0.3333333333333333,
-      "recall@8": 1.0
-    },
-    "cuad_consulting:expiration_date": {
-      "cost_usd": 0.006382,
-      "latency_ms": 5828.256000007968,
-      "mrr@40": 0.16666666666666666,
-      "recall@8": 1.0
-    },
-    "cuad_consulting:governing_law": {
-      "cost_usd": 0.006371,
-      "latency_ms": 4737.898291961756,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_consulting:no_most_favored_nation": {
-      "cost_usd": 0.006251,
-      "latency_ms": 5008.179375028703
-    },
-    "cuad_consulting:no_source_code_escrow": {
-      "cost_usd": 0.006158,
-      "latency_ms": 4920.831083029043
-    },
-    "cuad_consulting:parties": {
-      "cost_usd": 0.00661,
-      "latency_ms": 6124.990957963746,
-      "mrr@40": 0.2,
-      "recall@8": 1.0
-    },
-    "cuad_consulting:renewal_term": {
-      "cost_usd": 0.006552,
-      "latency_ms": 5673.808875028044,
-      "mrr@40": 0.125,
-      "recall@8": 1.0
-    },
-    "cuad_consulting:termination_for_convenience": {
-      "cost_usd": 0.006814,
-      "latency_ms": 5353.302375006024,
-      "mrr@40": 0.25,
-      "recall@8": 1.0
-    },
-    "cuad_distributor:agreement_date": {
-      "cost_usd": 0.005649,
-      "latency_ms": 7427.208292006981,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_distributor:effective_date": {
-      "cost_usd": 0.004089,
-      "latency_ms": 4764.008458994795,
-      "mrr@40": 0.0,
-      "recall@8": 0.0
-    },
-    "cuad_distributor:expiration_date": {
-      "cost_usd": 0.005908,
-      "latency_ms": 5122.768000001088,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_distributor:governing_law": {
-      "cost_usd": 0.003693,
-      "latency_ms": 7699.34062496759,
-      "mrr@40": 0.5,
-      "recall@8": 1.0
-    },
-    "cuad_distributor:no_liquidated_damages": {
-      "cost_usd": 0.004293,
-      "latency_ms": 6504.614249977749
-    },
-    "cuad_distributor:no_source_code_escrow": {
-      "cost_usd": 0.003645,
-      "latency_ms": 8269.004874979146
-    },
-    "cuad_distributor:notice_period_to_terminate_renewal": {
-      "cost_usd": 0.005212,
-      "latency_ms": 4824.4025420281105,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_distributor:parties": {
-      "cost_usd": 0.003182,
-      "latency_ms": 4338.124667003285,
-      "mrr@40": 0.07692307692307693,
-      "recall@8": 0.0
-    },
-    "cuad_distributor:renewal_term": {
-      "cost_usd": 0.004259,
-      "latency_ms": 6780.38412501337,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_endorsement:agreement_date": {
-      "cost_usd": 0.006144,
-      "latency_ms": 4033.8525000261143,
-      "mrr@40": 0.1,
-      "recall@8": 0.0
-    },
-    "cuad_endorsement:anti-assignment": {
-      "cost_usd": 0.006525,
-      "latency_ms": 7470.476541959215,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_endorsement:effective_date": {
-      "cost_usd": 0.006282,
-      "latency_ms": 5366.243208001833,
-      "mrr@40": 0.16666666666666666,
-      "recall@8": 1.0
-    },
-    "cuad_endorsement:exclusivity": {
-      "cost_usd": 0.006789,
-      "latency_ms": 7909.404375008307,
-      "mrr@40": 0.5,
-      "recall@8": 1.0
-    },
-    "cuad_endorsement:expiration_date": {
-      "cost_usd": 0.00653,
-      "latency_ms": 4782.783292001113,
-      "mrr@40": 0.125,
-      "recall@8": 1.0
-    },
-    "cuad_endorsement:governing_law": {
-      "cost_usd": 0.006113,
-      "latency_ms": 4845.335584017448,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_endorsement:no_liquidated_damages": {
-      "cost_usd": 0.006002,
-      "latency_ms": 4701.812667015474
-    },
-    "cuad_endorsement:no_source_code_escrow": {
-      "cost_usd": 0.006037,
-      "latency_ms": 4763.0814160220325
-    },
-    "cuad_endorsement:parties": {
-      "cost_usd": 0.006216,
-      "latency_ms": 4658.46700000111,
-      "mrr@40": 0.2,
-      "recall@8": 1.0
-    },
-    "cuad_franchise:agreement_date": {
-      "cost_usd": 0.006105,
-      "latency_ms": 4510.552874999121,
-      "mrr@40": 0.3333333333333333,
-      "recall@8": 1.0
-    },
-    "cuad_franchise:anti-assignment": {
-      "cost_usd": 0.006371,
-      "latency_ms": 4876.481292012613,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_franchise:effective_date": {
-      "cost_usd": 0.006555,
-      "latency_ms": 5451.54595799977,
-      "mrr@40": 0.1111111111111111,
-      "recall@8": 0.0
-    },
-    "cuad_franchise:exclusivity": {
-      "cost_usd": 0.00674,
-      "latency_ms": 5816.565249988344,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_franchise:expiration_date": {
-      "cost_usd": 0.00664,
-      "latency_ms": 4316.5692500188015,
-      "mrr@40": 0.5,
-      "recall@8": 1.0
-    },
-    "cuad_franchise:governing_law": {
-      "cost_usd": 0.006579,
-      "latency_ms": 5452.557916985825,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_franchise:no_most_favored_nation": {
-      "cost_usd": 0.006431,
-      "latency_ms": 4847.68108301796
-    },
-    "cuad_franchise:no_source_code_escrow": {
-      "cost_usd": 0.006353,
-      "latency_ms": 5367.597749980632
-    },
-    "cuad_franchise:parties": {
-      "cost_usd": 0.006587,
-      "latency_ms": 5224.537500005681,
-      "mrr@40": 0.16666666666666666,
       "recall@8": 0.3333333333333333
     },
-    "cuad_license:agreement_date": {
-      "cost_usd": 0.006145,
-      "latency_ms": 5037.483666965272,
-      "mrr@40": 0.5,
-      "recall@8": 1.0
+    "pub_multi_hop_d508f95538": {
+      "mrr@40": 1.0,
+      "recall@8": 0.5
     },
-    "cuad_license:effective_date": {
-      "cost_usd": 0.006507,
-      "latency_ms": 5472.001540998463,
-      "mrr@40": 0.1111111111111111,
-      "recall@8": 0.0
-    },
-    "cuad_license:expiration_date": {
-      "cost_usd": 0.006686,
-      "latency_ms": 5082.5662079732865,
-      "mrr@40": 0.5,
-      "recall@8": 1.0
-    },
-    "cuad_license:governing_law": {
-      "cost_usd": 0.005877,
-      "latency_ms": 4145.364750002045,
+    "pub_multi_span_267f540bab": {
       "mrr@40": 1.0,
       "recall@8": 1.0
     },
-    "cuad_license:no_most_favored_nation": {
-      "cost_usd": 0.006428,
-      "latency_ms": 4186.7624160368
-    },
-    "cuad_license:no_source_code_escrow": {
-      "cost_usd": 0.006416,
-      "latency_ms": 4010.6923750136048
-    },
-    "cuad_license:notice_period_to_terminate_renewal": {
-      "cost_usd": 0.006152,
-      "latency_ms": 5552.179124963004,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "cuad_license:parties": {
-      "cost_usd": 0.006402,
-      "latency_ms": 5303.578291961458,
+    "pub_multi_span_35293edf6b": {
       "mrr@40": 0.2,
-      "recall@8": 0.6666666666666666
-    },
-    "cuad_license:renewal_term": {
-      "cost_usd": 0.007015,
-      "latency_ms": 5773.683209030423,
-      "mrr@40": 1.0,
       "recall@8": 1.0
     },
-    "fb_3m_10q:financebench_id_00807": {
-      "cost_usd": 0.007749,
-      "latency_ms": 9305.552041972987,
-      "mrr@40": 0.0,
-      "recall@8": 0.0
+    "pub_multi_span_56d1a931be": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
     },
-    "fb_3m_10q:financebench_id_00941": {
-      "cost_usd": 0.006938,
-      "latency_ms": 5950.158041960094,
+    "pub_multi_span_8e8b319c37": {
+      "mrr@40": 0.25,
+      "recall@8": 1.0
+    },
+    "pub_multi_span_9748844d4e": {
       "mrr@40": 0.3333333333333333,
       "recall@8": 1.0
     },
-    "fb_3m_10q:financebench_id_01858": {
-      "cost_usd": 0.007002,
-      "latency_ms": 5281.872791994829,
+    "pub_multi_span_9d7cee8f65": {
+      "mrr@40": 0.07142857142857142,
+      "recall@8": 0.0
+    },
+    "pub_multi_span_c08dce639e": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_multi_span_d466b3b7bd": {
       "mrr@40": 0.5,
       "recall@8": 1.0
     },
-    "fb_amd_10k:financebench_id_00222": {
-      "cost_usd": 0.004746,
-      "latency_ms": 7171.83870903682,
+    "pub_multi_span_f4b3919c48": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_numeric_calc_063672cf46": {
       "mrr@40": 0.0,
       "recall@8": 0.0
     },
-    "fb_amd_10k:financebench_id_00563": {
-      "cost_usd": 0.005548,
-      "latency_ms": 5838.304458011407,
-      "mrr@40": 0.125,
-      "recall@8": 1.0
+    "pub_numeric_calc_5ceb5e8bcb": {
+      "mrr@40": 0.14285714285714285,
+      "recall@8": 0.5
     },
-    "fb_amd_10k:financebench_id_00757": {
-      "cost_usd": 0.005145,
-      "latency_ms": 7853.096332983114,
-      "mrr@40": 0.3333333333333333,
-      "recall@8": 1.0
-    },
-    "fb_amd_10k:financebench_id_00917": {
-      "cost_usd": 0.005318,
-      "latency_ms": 9255.448999989312,
-      "mrr@40": 0.0,
+    "pub_numeric_calc_6d07d5cd41": {
+      "mrr@40": 0.058823529411764705,
       "recall@8": 0.0
     },
-    "fb_amd_10k:financebench_id_00995": {
-      "cost_usd": 0.007159,
-      "latency_ms": 7482.246249972377,
+    "pub_numeric_calc_8e035f67db": {
+      "mrr@40": 0.2,
+      "recall@8": 0.5
+    },
+    "pub_numeric_calc_90081dbb35": {
+      "mrr@40": 0.25,
+      "recall@8": 1.0
+    },
+    "pub_numeric_calc_a61cb4246b": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "pub_single_span_04e4b9e254": {
+      "mrr@40": 0.25,
+      "recall@8": 1.0
+    },
+    "pub_single_span_268e17e2cf": {
       "mrr@40": 0.5,
       "recall@8": 1.0
     },
-    "fb_amd_10k:financebench_id_01198": {
-      "cost_usd": 0.005597,
-      "latency_ms": 8032.446791999973,
+    "pub_single_span_2849bbdd55": {
       "mrr@40": 1.0,
       "recall@8": 1.0
     },
-    "fb_amd_10k:financebench_id_01279": {
-      "cost_usd": 0.006063,
-      "latency_ms": 6655.592959024943,
-      "mrr@40": 0.0,
-      "recall@8": 0.0
-    },
-    "fb_ulta_q4:financebench_id_00601": {
-      "cost_usd": 0.003126,
-      "latency_ms": 7658.70112500852,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "fb_ulta_q4:financebench_id_00603": {
-      "cost_usd": 0.003171,
-      "latency_ms": 4751.125083013903,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "fb_ulta_q4:financebench_id_00605": {
-      "cost_usd": 0.003563,
-      "latency_ms": 5258.354249992408,
-      "mrr@40": 0.5,
-      "recall@8": 1.0
-    },
-    "fb_ulta_q4:financebench_id_00606": {
-      "cost_usd": 0.004697,
-      "latency_ms": 5795.418166962918,
-      "mrr@40": 0.5,
-      "recall@8": 1.0
-    },
-    "format:amendment_date": {
-      "cost_usd": 0.001592,
-      "latency_ms": 5063.193082984071,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "format:side_letter_signatory": {
-      "cost_usd": 0.001388,
-      "latency_ms": 4760.926457995083,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "identifier:amd_item1a": {
-      "cost_usd": 0.003529,
-      "latency_ms": 4909.476875036489,
-      "mrr@40": 0.0,
-      "recall@8": 0.0
-    },
-    "identifier:amd_item7_page": {
-      "cost_usd": 0.003247,
-      "latency_ms": 5547.687083017081,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "identifier:amendment_s2_1": {
-      "cost_usd": 0.001602,
-      "latency_ms": 4197.708000021521,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "identifier:consulting_section8": {
-      "cost_usd": 0.007405,
-      "latency_ms": 7084.1331670526415,
-      "mrr@40": 0.07692307692307693,
-      "recall@8": 0.0
-    },
-    "identifier:policy_s3_2": {
-      "cost_usd": 0.001442,
-      "latency_ms": 3299.0845830063336,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "identifier:side_letter_p1": {
-      "cost_usd": 0.001426,
-      "latency_ms": 4527.988290996291,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "injection:per_diem": {
-      "cost_usd": 0.001414,
-      "latency_ms": 4216.834124992602,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "meta:contracts": {
-      "cost_usd": 9.9e-05,
-      "latency_ms": 3702.1390419686213
-    },
-    "meta:doc_count": {
-      "cost_usd": 9.7e-05,
-      "latency_ms": 2746.9639999908395
-    },
-    "multiturn:cuad_cohosting": {
-      "cost_usd": 0.006833333333333334,
-      "latency_ms": 5632.48483336065,
-      "mrr@40": 0.7037037037037037,
-      "recall@8": 0.6666666666666666
-    },
-    "multiturn:cuad_consulting": {
-      "cost_usd": 0.006771666666666666,
-      "latency_ms": 5694.600333032819,
-      "mrr@40": 0.7222222222222222,
-      "recall@8": 1.0
-    },
-    "multiturn:cuad_distributor": {
-      "cost_usd": 0.0037113333333333334,
-      "latency_ms": 4567.742000353367,
-      "mrr@40": 0.43703703703703706,
-      "recall@8": 0.6666666666666666
-    },
-    "multiturn:cuad_endorsement": {
-      "cost_usd": 0.006360666666666666,
-      "latency_ms": 5623.732319664366,
-      "mrr@40": 0.2916666666666667,
-      "recall@8": 1.0
-    },
-    "multiturn:cuad_franchise": {
-      "cost_usd": 0.006599999999999999,
-      "latency_ms": 5004.007777994654,
-      "mrr@40": 0.20634920634920637,
-      "recall@8": 1.0
-    },
-    "multiturn:cuad_license": {
-      "cost_usd": 0.006962,
-      "latency_ms": 5215.961486004137,
-      "mrr@40": 0.44761904761904764,
-      "recall@8": 0.8888888888888888
-    },
-    "qasper_factweet:q1": {
-      "cost_usd": 0.005936,
-      "latency_ms": 5764.2678749980405,
-      "mrr@40": 1.0,
-      "recall@8": 1.0
-    },
-    "qasper_factweet:q2": {
-      "cost_usd": 0.006691,
-      "latency_ms": 8122.173375042621,
+    "pub_single_span_3104ff3be0": {
       "mrr@40": 0.16666666666666666,
       "recall@8": 1.0
     },
-    "qasper_factweet:q3": {
-      "cost_usd": 0.006331,
-      "latency_ms": 6104.804750008043,
+    "pub_single_span_43602eeed0": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
+    },
+    "pub_single_span_471760d0ab": {
       "mrr@40": 0.25,
-      "recall@8": 0.5
+      "recall@8": 1.0
     },
-    "qasper_factweet:q4": {
-      "cost_usd": 0.007475,
-      "latency_ms": 6569.451041985303,
+    "pub_single_span_47dfabb5b3": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
+    },
+    "pub_single_span_51c2f6b846": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
+    },
+    "pub_single_span_5f62f5f8fb": {
       "mrr@40": 0.3333333333333333,
       "recall@8": 1.0
     },
-    "qasper_factweet:q5": {
-      "cost_usd": 0.005508,
-      "latency_ms": 6107.432957971469
-    },
-    "qasper_factweet:q6": {
-      "cost_usd": 0.0071,
-      "latency_ms": 7516.7453329777345,
-      "mrr@40": 0.14285714285714285,
+    "pub_single_span_69ae1d1f8d": {
+      "mrr@40": 0.25,
       "recall@8": 1.0
     },
-    "qasper_hatespeech:q0": {
-      "cost_usd": 0.004862,
-      "latency_ms": 6218.7802090193145,
-      "mrr@40": 0.125,
-      "recall@8": 1.0
-    },
-    "qasper_hatespeech:q1": {
-      "cost_usd": 0.005113,
-      "latency_ms": 5402.4178750114515
-    },
-    "qasper_hatespeech:q2": {
-      "cost_usd": 0.005961,
-      "latency_ms": 5454.429917037487,
-      "mrr@40": 0.0,
+    "pub_single_span_70366fc9be": {
+      "mrr@40": 0.05555555555555555,
       "recall@8": 0.0
     },
-    "qasper_hatespeech:q3": {
-      "cost_usd": 0.006145,
-      "latency_ms": 6010.348042007536,
-      "mrr@40": 0.0,
-      "recall@8": 0.0
-    },
-    "qasper_hatespeech:q4": {
-      "cost_usd": 0.006462,
-      "latency_ms": 6998.178415989969,
-      "mrr@40": 0.3333333333333333,
+    "pub_single_span_8d89b68cc7": {
+      "mrr@40": 1.0,
       "recall@8": 1.0
     },
-    "qasper_hatespeech:q5": {
-      "cost_usd": 0.005553,
-      "latency_ms": 5679.293917026371,
+    "pub_single_span_a1add6deb7": {
       "mrr@40": 0.06666666666666667,
       "recall@8": 0.0
     },
-    "qasper_kurdish:q0": {
-      "cost_usd": 0.00484,
-      "latency_ms": 6698.0712080257945,
-      "mrr@40": 0.16666666666666666,
+    "pub_single_span_b57a7a94d9": {
+      "mrr@40": 1.0,
       "recall@8": 1.0
     },
-    "qasper_kurdish:q1": {
-      "cost_usd": 0.004635,
-      "latency_ms": 6871.678165975027,
+    "pub_single_span_c0f1a22438": {
       "mrr@40": 0.5,
       "recall@8": 1.0
     },
-    "qasper_kurdish:q2": {
-      "cost_usd": 0.004407,
-      "latency_ms": 5880.100084003061,
+    "pub_single_span_e16bd25931": {
       "mrr@40": 1.0,
       "recall@8": 1.0
     },
-    "qasper_kurdish:q3": {
-      "cost_usd": 0.004462,
-      "latency_ms": 5185.2629580534995
-    },
-    "qasper_kurdish:q4": {
-      "cost_usd": 0.00406,
-      "latency_ms": 5146.37291705003,
+    "pub_single_span_e70f8b1941": {
       "mrr@40": 1.0,
       "recall@8": 1.0
     },
-    "qasper_kurdish:q5": {
-      "cost_usd": 0.004731,
-      "latency_ms": 6964.6994160139,
+    "s21-agg-01": {
+      "mrr@40": 0.25,
+      "recall@8": 0.5
+    },
+    "s21-agg-06": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-agg-08": {
+      "mrr@40": 1.0,
+      "recall@8": 0.6666666666666666
+    },
+    "s21-cmp-01": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-cmp-02": {
+      "mrr@40": 1.0,
+      "recall@8": 0.6666666666666666
+    },
+    "s21-cmp-10": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-cmp-15": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-con-01": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-con-02": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
+    },
+    "s21-con-03": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-con-10": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-con-11": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-con-12": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-con-13": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-con-14": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-con-15": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-fal-09": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-fal-11": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-fal-12": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-fal-13": {
+      "mrr@40": 0.125,
+      "recall@8": 1.0
+    },
+    "s21-inj-01": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
+    },
+    "s21-inj-02": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-inj-03": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-inj-10": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
+    },
+    "s21-inj-11": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-inj-12": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-inj-16": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-inj-17": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-inj-18": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-mul-03": {
+      "mrr@40": 0.5,
+      "recall@8": 1.0
+    },
+    "s21-mul-04": {
+      "mrr@40": 0.25,
+      "recall@8": 1.0
+    },
+    "s21-mul-06": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "s21-una-01": {},
+    "s21-una-02": {},
+    "s21-una-03": {},
+    "s21-una-09": {},
+    "s21-una-10": {},
+    "s21-una-11": {},
+    "s21-una-12": {},
+    "s21-una-17": {},
+    "s21-una-20": {},
+    "s21-una-21": {},
+    "s21-ver-01": {
+      "mrr@40": 0.25,
+      "recall@8": 1.0
+    },
+    "s21-ver-02": {
+      "mrr@40": 0.07692307692307693,
+      "recall@8": 0.0
+    },
+    "s21-ver-03": {
+      "mrr@40": 0.2,
+      "recall@8": 1.0
+    },
+    "s21-ver-07": {
+      "mrr@40": 0.3333333333333333,
+      "recall@8": 1.0
+    },
+    "s21-ver-08": {
+      "mrr@40": 0.0625,
+      "recall@8": 0.0
+    },
+    "s21-ver-09": {
+      "mrr@40": 0.2,
+      "recall@8": 1.0
+    },
+    "s21-ver-10": {
+      "mrr@40": 0.2,
+      "recall@8": 1.0
+    },
+    "s21-ver-11": {
+      "mrr@40": 0.25,
+      "recall@8": 1.0
+    },
+    "s21-ver-12": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "tbl_table_lookup_2c59d692e7": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "tbl_table_lookup_39ac44bf5f": {
+      "mrr@40": 0.14285714285714285,
+      "recall@8": 1.0
+    },
+    "tbl_table_lookup_41341064e3": {
+      "mrr@40": 0.0,
+      "recall@8": 0.0
+    },
+    "tbl_table_lookup_43de2bbe1f": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
+    },
+    "tbl_table_lookup_4a6f209dae": {
       "mrr@40": 0.16666666666666666,
       "recall@8": 1.0
     },
-    "summarize:cuad_consulting": {
-      "cost_usd": 0.008825,
-      "latency_ms": 10732.896833971608
+    "tbl_table_lookup_7d09be66cb": {
+      "mrr@40": 0.2,
+      "recall@8": 1.0
     },
-    "summarize:cuad_endorsement": {
-      "cost_usd": 0.008727,
-      "latency_ms": 10582.73141697282
+    "tbl_table_lookup_8f93590366": {
+      "mrr@40": 0.05555555555555555,
+      "recall@8": 0.0
     },
-    "summarize:cuad_franchise": {
-      "cost_usd": 0.00846,
-      "latency_ms": 8230.03445903305
+    "tbl_table_lookup_a664573410": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
     },
-    "summarize:fb_ulta_q4": {
-      "cost_usd": 0.006716,
-      "latency_ms": 6929.355749976821
-    },
-    "summarize:qasper_factweet": {
-      "cost_usd": 0.007466,
-      "latency_ms": 8458.220999978948
+    "tbl_table_lookup_fe53586268": {
+      "mrr@40": 1.0,
+      "recall@8": 1.0
     }
   },
-  "run_id": "01a1d43d-2bfe-7691-a250-7e3cd71c1d8f",
-  "split": "all",
+  "per_stratum": {
+    "aggregation": {
+      "metrics": {
+        "mrr@40": 0.75,
+        "recall@8": 0.7222222222222222
+      },
+      "n": 3,
+      "note": "diagnostic"
+    },
+    "compare_docs": {
+      "metrics": {
+        "mrr@40": 1.0,
+        "recall@8": 0.9166666666666666
+      },
+      "n": 4,
+      "note": "diagnostic"
+    },
+    "conditional": {
+      "metrics": {
+        "mrr@40": 0.8134920634920635,
+        "recall@8": 0.8888888888888888
+      },
+      "n": 9,
+      "note": "diagnostic"
+    },
+    "conflict": {
+      "metrics": {
+        "mrr@40": 0.9444444444444444,
+        "recall@8": 1.0
+      },
+      "n": 9,
+      "note": "diagnostic"
+    },
+    "false_premise": {
+      "metrics": {
+        "mrr@40": 0.78125,
+        "recall@8": 1.0
+      },
+      "n": 4,
+      "note": "diagnostic"
+    },
+    "injection": {
+      "metrics": {
+        "mrr@40": 0.8888888888888888,
+        "recall@8": 1.0
+      },
+      "n": 9,
+      "note": "diagnostic"
+    },
+    "multi_hop": {
+      "metrics": {
+        "mrr@40": 0.40393374741200827,
+        "recall@8": 0.4333333333333333
+      },
+      "n": 5,
+      "note": "diagnostic"
+    },
+    "multi_span": {
+      "metrics": {
+        "mrr@40": 0.4938095238095238,
+        "recall@8": 0.8
+      },
+      "n": 11,
+      "note": "diagnostic"
+    },
+    "multi_turn": {
+      "metrics": {
+        "mrr@40": 0.5833333333333334,
+        "recall@8": 1.0
+      },
+      "n": 3,
+      "note": "diagnostic"
+    },
+    "numeric_calc": {
+      "metrics": {
+        "mrr@40": 0.2752801120448179,
+        "recall@8": 0.5
+      },
+      "n": 6,
+      "note": "diagnostic"
+    },
+    "single_span": {
+      "metrics": {
+        "mrr@40": 0.5876121463077986,
+        "recall@8": 0.9130434782608695
+      },
+      "n": 23,
+      "note": "diagnostic"
+    },
+    "table_lookup": {
+      "metrics": {
+        "mrr@40": 0.5059163059163059,
+        "recall@8": 0.7272727272727273
+      },
+      "n": 11,
+      "note": "diagnostic"
+    },
+    "unanswerable": {
+      "metrics": {},
+      "n": 12,
+      "note": "diagnostic"
+    },
+    "versioned": {
+      "metrics": {
+        "mrr@40": 0.28586182336182336,
+        "recall@8": 0.7777777777777778
+      },
+      "n": 9,
+      "note": "diagnostic"
+    }
+  },
+  "run_id": "01a1def5-cc9c-7367-bc65-4a90cf952045",
+  "spent_usd": null,
+  "split": "train",
   "suite": "retrieval"
 }
