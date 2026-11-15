@@ -405,7 +405,7 @@
                 }
               ]
             },
-            "description": "Page size and glyph boxes from `layouts/{version_id}.json.gz` (design \u00a76.4)."
+            "description": "Page size and glyph boxes from `layouts/{version_id}.json.gz`."
           },
           "response": []
         },
@@ -496,7 +496,7 @@
                 }
               ]
             },
-            "description": "Your sessions, most recently updated first, cursor-paginated."
+            "description": "Your sessions, newest first, cursor-paginated."
           },
           "response": []
         },
@@ -505,6 +505,11 @@
           "request": {
             "method": "POST",
             "header": [
+              {
+                "key": "idempotency-key",
+                "value": "",
+                "disabled": true
+              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -521,7 +526,7 @@
                 "sessions"
               ]
             },
-            "description": "Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404.",
+            "description": "Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404. A retry\nwith the same `Idempotency-Key` returns the same session.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"document_ids\": [\n    \"00000000-0000-0000-0000-000000000000\"\n  ],\n  \"title\": \"string\"\n}",
@@ -630,7 +635,7 @@
                 }
               ]
             },
-            "description": "Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202\nwhile running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion\nbefore the response and returns 200 with the assistant message; it keeps running and persists even if the\nclient disconnects. With `Accept: text/event-stream` the turn streams events instead (S18.01): the\nstatus codes above are decided before the stream starts and the stream itself answers 200.",
+            "description": "Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202\nwhile running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion\nbefore the response and returns 200 with the assistant message; it keeps running and persists even if the\nclient disconnects. With `Accept: text/event-stream` the turn streams events instead: the\nstatus codes above are decided before the stream starts and the stream itself answers 200.",
             "body": {
               "mode": "raw",
               "raw": "{\n  \"client_message_id\": \"c-0001\",\n  \"content\": \"What is the notice period?\",\n  \"mode\": \"auto\"\n}",
@@ -821,6 +826,105 @@
               ]
             },
             "description": "Turns, outcomes, coverage, latency and TTFT percentiles, cost, tokens and answer feedback."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Session",
+      "item": [
+        {
+          "name": "Check the current credentials (GET /v1/session)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "session"
+              ]
+            },
+            "description": "204 when the cookie or Bearer key is valid, 401 otherwise. No side effects."
+          },
+          "response": []
+        },
+        {
+          "name": "Log in with an API key (POST /v1/session)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/v1/session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "session"
+              ]
+            },
+            "description": "Sets `vault_session` (httpOnly, SameSite=Strict; `Secure` unless the host is localhost).",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"api_key\": \"string\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Log out (DELETE /v1/session)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/session",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "session"
+              ]
+            },
+            "description": "Clears the session cookie. Cookie-authenticated calls need `x-requested-with: vault-ui`."
+          },
+          "response": []
+        },
+        {
+          "name": "Sign in as the local user (local runs only) (POST /v1/session/local)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/session/local",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "session",
+                "local"
+              ]
+            },
+            "description": "For a laptop run: when `LOCAL_AUTOLOGIN` is on, the environment is not `prod` and the request host is localhost, signs in as one fixed local user (created on first use; its key is never shown). 404 everywhere else, so a deployed instance still needs a real API key."
           },
           "response": []
         }

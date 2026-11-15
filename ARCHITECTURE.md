@@ -614,7 +614,7 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 | Retrieval | Identifier misses: `tsv_ids`. Split answers: neighbour expansion. Reranker down: fusion order with `degraded=no_rerank`. |
 | Grounding | Insufficient evidence: abstain. Partial: a code-written not-found segment (a compare side with no evidence). Conflict: both sides shown. Unresolved citation: dropped and counted. Injection: data-only blocks and no tools. |
 | Chat runtime | Concurrent turn: 409. Budget or deadline: partial or abstain with a reason. Disconnect: the turn continues and persists. Scope too large for whole-document mode: RAG. |
-| Platform | Redis down: uploads 503 and the limiter fails open. Postgres down: 503. No connection is held across a stream. Cost spike: daily quota. |
+| Platform | Redis down: uploads are still accepted (the job stays `dispatched` and the sweeper enqueues it once the broker answers; a stalled broker costs at most a 10 s socket timeout), and the limiter fails open. Postgres down: 503. No connection is held across a stream. Cost spike: daily quota. |
 
 **Limits and gaps.**
 - **Test gold is an unaudited draft**, and only the disputed dev items were reviewed. `table_lookup` gold is model-drafted, and the `formatting` stratum has 0 of 5 items.

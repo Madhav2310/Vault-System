@@ -38,6 +38,10 @@ BEAT: dict[str, tuple[str, float]] = {
 }
 
 VISIBILITY_TIMEOUT_S = 3600  # > longest stage time
+# Without a socket timeout a publish to a Redis that accepts but never answers blocks its thread forever
+# (measured: still blocked after 60 s; with these, OperationalError after 10 s). Consumers are unaffected:
+# kombu's BRPOP waits 1 s per poll, well under the 10 s timeout.
+BROKER_SOCKET = {"socket_timeout": 10, "socket_connect_timeout": 5}
 
 
 def make_celery() -> Celery:
@@ -59,8 +63,10 @@ def make_celery() -> Celery:
         task_acks_late=True,
         task_reject_on_worker_lost=True,
         worker_prefetch_multiplier=1,
-        broker_transport_options={"visibility_timeout": VISIBILITY_TIMEOUT_S},
+        broker_transport_options={"visibility_timeout": VISIBILITY_TIMEOUT_S, **BROKER_SOCKET},
         result_backend_transport_options={"visibility_timeout": VISIBILITY_TIMEOUT_S},
+        redis_socket_timeout=BROKER_SOCKET["socket_timeout"],
+        redis_socket_connect_timeout=BROKER_SOCKET["socket_connect_timeout"],
         task_queues=[Queue(q) for q in QUEUES],
         task_default_queue="maintenance",
         task_routes={name: {"queue": q} for name, q in ROUTES.items()},

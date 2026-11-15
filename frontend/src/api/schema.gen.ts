@@ -73,14 +73,14 @@ export interface paths {
         };
         /**
          * List chat sessions
-         * @description Your sessions, most recently updated first, cursor-paginated.
+         * @description Your sessions, newest first, cursor-paginated.
          */
         get: operations["list_sessions_v1_chat_sessions_get"];
         put?: never;
         /**
          * Create a chat session
          * @description Create a session. `document_ids` omitted/empty = all documents; foreign or deleted ids -> 404. A retry
-         *     with the same `Idempotency-Key` returns the same session (design §14).
+         *     with the same `Idempotency-Key` returns the same session.
          */
         post: operations["create_session_v1_chat_sessions_post"];
         delete?: never;
@@ -127,7 +127,7 @@ export interface paths {
          * @description Start a turn. Retries of one `client_message_id` return the same message/run (200 when finished, 202
          *     while running). Another live turn in the session -> 409 `turn_in_progress`. A new turn runs to completion
          *     before the response and returns 200 with the assistant message; it keeps running and persists even if the
-         *     client disconnects. With `Accept: text/event-stream` the turn streams events instead (S18.01): the
+         *     client disconnects. With `Accept: text/event-stream` the turn streams events instead: the
          *     status codes above are decided before the stream starts and the stream itself answers 200.
          */
         post: operations["post_message_v1_chat_sessions__session_id__messages_post"];
@@ -435,7 +435,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Sign in as the local demo user (local runs only)
+         * Sign in as the local user (local runs only)
          * @description For a laptop run: when `LOCAL_AUTOLOGIN` is on, the environment is not `prod` and the request host is localhost, signs in as one fixed local user (created on first use; its key is never shown). 404 everywhere else, so a deployed instance still needs a real API key.
          */
         post: operations["login_local_session"];
@@ -474,7 +474,7 @@ export interface paths {
         };
         /**
          * Page layout for highlighting
-         * @description Page size and glyph boxes from `layouts/{version_id}.json.gz` (design §6.4).
+         * @description Page size and glyph boxes from `layouts/{version_id}.json.gz`.
          */
         get: operations["page_layout_v1_versions__version_id__pages__page__layout_get"];
         put?: never;
@@ -1013,7 +1013,7 @@ export interface components {
         PageLayoutOut: {
             /**
              * Glyphs
-             * @description Glyph boxes in page coordinates (design §6.4)
+             * @description Glyph boxes in page coordinates
              */
             glyphs: unknown[];
             /** Height */

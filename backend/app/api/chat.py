@@ -125,7 +125,7 @@ async def create_session(
 @router.get(
     "/sessions",
     summary="List chat sessions",
-    description="Your sessions, most recently updated first, cursor-paginated.",
+    description="Your sessions, newest first, cursor-paginated.",
     response_model=SessionList,
 )
 async def list_sessions(

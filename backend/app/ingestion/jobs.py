@@ -16,6 +16,10 @@ from dataclasses import dataclass
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.logging import get_logger
+
+_log = get_logger("vault.ingestion.jobs")
+
 LEASE_S = 300
 HEARTBEAT_S = 60
 DISPATCH_GRACE_S = 300
@@ -47,7 +51,11 @@ class ClaimedJob:
 async def dispatch(
     session: AsyncSession, job_id: uuid.UUID, enqueue: Enqueue, grace_s: int = DISPATCH_GRACE_S
 ) -> bool:
-    """CAS-dispatch one job; True if this caller won and enqueued. Commits its own short transaction."""
+    """CAS-dispatch one job; True if this caller won and enqueued. Commits its own short transaction.
+
+    The CAS commits before the enqueue, so a broker that is down or stalls past its socket timeout leaves
+    the job `dispatched`: the failure is logged, False is returned, and the sweeper re-dispatches after
+    the grace period (the caller's request never fails for it)."""
     row = (
         await session.execute(
             text(
@@ -64,7 +72,11 @@ async def dispatch(
     await session.commit()
     if row is None:
         return False
-    await enqueue(row.current_stage, job_id)
+    try:
+        await enqueue(row.current_stage, job_id)
+    except Exception as e:  # any broker failure: the sweeper recovers the job
+        _log.warning("enqueue_failed", job_id=str(job_id), error_type=type(e).__name__)
+        return False
     return True
 
 
