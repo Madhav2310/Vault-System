@@ -46,7 +46,7 @@ function Stat({ label, value, note, id, tone }: { label: string; value: string; 
     <div className={`stat${tone ? ` stat-${tone}` : ""}`} data-testid={id}>
       <dt>{label}</dt>
       <dd>{value}</dd>
-      {note && <p className="stat-note">{note}</p>}
+      {note && <dd className="stat-note">{note}</dd>}
     </div>
   );
 }
@@ -286,10 +286,9 @@ export function MetricsPage({ onUnauthenticated }: { onUnauthenticated: () => vo
       <Section id="m-chat" title="Chat" intro="How fast and how costly your answers are, and what became of each question." error={chat.error}>
         {!c ? (
           loading
-        ) : c.turns === 0 ? (
-          <p className="hint">No answers in this range yet. Ask a question in Chat and the figures appear here.</p>
         ) : (
           <>
+            {c.turns === 0 && <p className="hint">No answers in this range yet. Ask a question in Chat and the figures appear here.</p>}
             <dl className="stats">
               <Stat label="Answers" value={fmtNum(c.turns)} id="stat-turns" note="Questions answered in this range" />
               <Stat
