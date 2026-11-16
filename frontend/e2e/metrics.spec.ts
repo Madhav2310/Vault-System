@@ -43,14 +43,17 @@ test("metrics page shows document, processing and chat figures", async ({ page }
 
   await expect(page.getByTestId("stat-documents")).toContainText("3");
   await expect(page.getByTestId("metrics-m-docs")).toContainText("210");
-  await expect(page.getByTestId("metrics-m-docs")).toContainText("38.2 s / 71.0 s");
+  await expect(page.getByTestId("stat-ready")).toContainText("38.2 s");
+  await expect(page.getByTestId("stat-ready")).toContainText("71.0 s");
   await expect(page.getByTestId("metrics-m-docs")).toContainText("94%");
   await expect(page.getByTestId("stat-jobs")).toContainText("3");
-  await expect(page.getByTestId("metrics-m-processing")).toContainText("Corrupt");
-  await expect(page.getByTestId("stat-latency")).toContainText("2.1 s / 5.4 s");
-  await expect(page.getByTestId("stat-ttft")).toContainText("600 ms / 1.5 s");
+  await expect(page.getByTestId("metrics-m-processing")).toContainText("1 corrupt");
+  await expect(page.getByTestId("stat-latency")).toContainText("2.1 s");
+  await expect(page.getByTestId("stat-latency")).toContainText("5.4 s");
+  await expect(page.getByTestId("stat-ttft")).toContainText("600 ms");
+  await expect(page.getByTestId("stat-ttft")).toContainText("1.5 s");
   await expect(page.getByTestId("stat-cost")).toContainText("$0.12");
-  await expect(page.getByTestId("stat-feedback")).toContainText("7 / 2");
+  await expect(page.getByTestId("stat-feedback")).toContainText("7 helpful · 2 not");
   await expect(page.getByTestId("stat-quota")).toContainText("$1.25 of $5.00 used");
 
   await page.getByLabel("Time range").selectOption("7d");

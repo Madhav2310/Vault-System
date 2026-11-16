@@ -45,3 +45,13 @@ export function words(key: string): string {
   const s = key.replace(/[_-]+/g, " ").trim();
   return s ? s[0]!.toUpperCase() + s.slice(1) : key;
 }
+
+/** `n` as a share of `total`, e.g. "91%". */
+export function share(n: number, total: number): string {
+  return total > 0 ? `${Math.round((n / total) * 100)}%` : DASH;
+}
+
+/** "1 answer", "3 answers". */
+export function plural(n: number, noun: string): string {
+  return `${n.toLocaleString("en-US")} ${noun}${n === 1 ? "" : "s"}`;
+}

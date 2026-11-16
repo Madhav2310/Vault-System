@@ -57,3 +57,122 @@
   color: var(--muted);
   font-size: 13px;
 }
+
+/* plain-language layer: intros, notes under numbers, bars, the allowance meter */
+.section-intro {
+  margin: var(--s1) 0 0;
+  color: var(--muted);
+  max-width: 62ch;
+}
+.stat-note {
+  margin: var(--s1) 0 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--muted);
+}
+.stat-ok dd {
+  color: var(--ok);
+}
+.stat-warn {
+  border-color: var(--red-ink);
+}
+.stat-warn dd {
+  color: var(--red-ink);
+}
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s2);
+  margin: var(--s3) 0;
+}
+.chip-caption {
+  font: 500 11px/20px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.bars {
+  margin: var(--s4) 0;
+  min-width: min(100%, 340px);
+  flex: 1 1 340px;
+}
+.bars figcaption {
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: var(--s2);
+}
+.bars ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--s3);
+}
+.bars li {
+  display: grid;
+  grid-template-columns: minmax(130px, 220px) 1fr;
+  grid-template-areas: "label text" "track track";
+  gap: var(--s1) var(--s3);
+  align-items: baseline;
+}
+.bar-label {
+  grid-area: label;
+  font-size: 14px;
+  color: var(--body);
+}
+.bar-text {
+  grid-area: text;
+  text-align: right;
+  font: 500 14px var(--font-mono);
+  color: var(--ink);
+}
+.bar-sub {
+  font-weight: 400;
+  color: var(--muted);
+}
+.bar-track,
+.meter-track {
+  grid-area: track;
+  display: block;
+  height: 8px;
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.bar-fill {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+.bars-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s5);
+}
+.meter {
+  margin: var(--s4) 0;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  padding: var(--s3);
+}
+.meter-head {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  margin-bottom: var(--s2);
+}
+.meter-fill {
+  height: 100%;
+  background: var(--ok);
+}
+.meter-warn {
+  background: var(--red-ink);
+}
+.meter .hint {
+  margin: var(--s2) 0 0;
+}
+.bar-sub {
+  white-space: nowrap;
+}

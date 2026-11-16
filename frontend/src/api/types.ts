@@ -207,9 +207,11 @@ export interface DocumentsMetrics {
   documents: number;
   by_status: Record<string, number>;
   by_mime: Record<string, number>;
+  brief_cost_usd?: { total?: number | null; per_document_p50?: number | null };
   needs_ocr: number;
   pages: number;
-  chunks: { total?: number } | null;
+  /** The API sends a plain count; an object form is tolerated. */
+  chunks: number | { total?: number } | null;
   storage_bytes: number;
   time_to_ready_seconds: Percentiles;
   enriched: number;
@@ -238,6 +240,7 @@ export interface ChatMetrics {
   latency_ms: Percentiles;
   ttft_ms: Percentiles;
   cost_per_turn_usd: Percentiles;
+  node_latency_ms?: Record<string, Percentiles>;
   degraded: Record<string, number>;
   feedback: { up: number; down: number; by_reason: Record<string, number> };
   llm: { calls: number; total_cost_usd: number | null; cache_hit_ratio: number | null };
