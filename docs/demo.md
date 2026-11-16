@@ -22,7 +22,7 @@ The recorded demo follows one document through the web UI at `http://localhost:8
 | 6 | Ask something the document does not contain, such as the consultant's home address. | "When the document does not contain the answer, Vault says so and offers a next step. It does not guess." |
 | 7 | Click "Why this answer?" on an earlier answer. | "The explanation is built from reason codes and templates, never by asking the model to explain itself." |
 | 8 | Open Metrics in the top bar. Point at time per step, the outcomes chart and the daily allowance. | "Library, processing and chat figures, each with a plain-language note: how long an answer takes, where that time goes, what each question ended in, and how much of today's allowance is used." |
-| 9 | Open `docs/evaluation.md` at the results table, then the README feature table. | "Quality is measured on a golden set, and every number names the command that regenerates it. The README maps each requirement in the case study to where it lives and whether it is built." |
+| 9 | Open `docs/evaluation.md` at the results table, then the README's quality table. | "Quality is measured on a golden set, and every number names the command that regenerates it. The README has the numbers and the limits." |
 
 Opening the chat's "Chatting with" bar and ticking a second document shows how a chat is widened to several documents. Answers across several documents are weaker than answers inside one (see Limits in the README), so check any cross-document answer before you record it.
 

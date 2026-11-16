@@ -10,7 +10,6 @@ README = (ROOT / "README.md").read_text()
 HEADINGS = [
     "What it is",
     "Quickstart",
-    "The assignment, feature by feature",
     "API quick tour",
     "How it works",
     "Quality, scale and cost at a glance",
@@ -19,7 +18,6 @@ HEADINGS = [
     "Repo map",
     "Documentation",
 ]
-STATUSES = ("Built", "Not built", "Not used", "Script built")
 COMMAND_SPAN = re.compile(r"`(make|cd|python3?|scripts/|uv)\b[^`]*`")
 # commands a bash block may use that are not make targets or repo scripts
 ALLOWED = {
@@ -59,23 +57,6 @@ def test_screenshots_are_embedded_and_exist() -> None:
     assert len(images) >= 4
     for image in images:
         assert (ROOT / image).is_file(), image
-
-
-def test_every_feature_has_a_status_and_a_place() -> None:
-    rows = [
-        [c.strip() for c in line.strip().strip("|").split("|")]
-        for line in _section("The assignment, feature by feature").splitlines()
-        if line.startswith("|") and not re.fullmatch(r"\|[-| :]+\|", line.strip())
-    ]
-    rows = [r for r in rows if r[0] not in {"Requirement", "Feature", "Deliverable"}]
-    assert len(rows) >= 40
-    bad = [r[0] for r in rows if not r[1].startswith(STATUSES)]
-    assert not bad, f"rows without a recognised status: {bad}"
-    unplaced = [r[0] for r in rows if not r[1].startswith("Not built") and "`" not in r[2]]
-    assert not unplaced, f"built rows that point nowhere: {unplaced}"
-    spec_items = ("Intelligent upload handler", "Ask a question", "Document statistics API", "Streaming chat")
-    for spec_item in spec_items:
-        assert any(r[0].startswith(spec_item) for r in rows), spec_item
 
 
 def test_quality_numbers_have_commands() -> None:
