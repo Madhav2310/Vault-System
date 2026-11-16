@@ -181,16 +181,12 @@ Engineering gain with gold and judges fixed: +11.0 points on train (13 items net
 
 Live and evaluation commands always run on samples with a spend cap, never on the full dataset by default.
 
-## Limits
+## A few limitations
 
-- Scanned PDFs end as `needs_ocr` (OCR is not built), and PDFs over 600 pages are unsupported.
-- Chat is strongest inside one document. With several in scope, the query analyzer narrows by title alone, so a name that matches two titles can send a question to the wrong document. A summary across documents can leave one out, because retrieval keeps only the top 8 passages.
-- Small talk and questions about the conversation are not handled. A greeting gets the "not found in your documents" card, and "what did I ask first?" returns an error message. Memory is the most recent turns only, with no running summary.
-- Form-style PDFs, such as a lab report or a statement, are split into many small fragments. A short bold line is read as a heading, and text under a heading with nothing after it is not stored as evidence, so a form's header fields or a signature block cannot be cited.
-- Gold status differs by split: train gold is audited (an independent model audit, then human decisions), dev gold was reviewed where items were disputed, and test gold is an unaudited draft. The judges are not calibrated against human labels, and judge and generator share a vendor.
-- No concurrency or throughput claim exists beyond single-document measurements, because no load test has been run.
-- Observability with Grafana is off by default (`make up-full`).
-- The full list is in `ARCHITECTURE.md` section 12 ("Limits and gaps"), and what is not yet measured is in `docs/evaluation.md` section 6.
+- Vault works best with text-based documents. Scanned PDFs are flagged for OCR, which isn't supported yet. PDFs over 600 pages aren't accepted.
+- Chat works best with a clearly selected document. Multi-document chat is supported, but questions spanning several documents can still miss relevant details.
+- Long-term conversation memory isn't implemented yet. Extraction can also be less reliable with heavily formatted PDFs, such as forms and statements.
+- Evaluation is still a work in progress. The test set hasn't been audited, judges haven't been calibrated against human reviews, and load testing is pending. Grafana is optional (`make up-full`).
 
 ## Repo map
 
@@ -215,6 +211,5 @@ Live and evaluation commands always run on samples with a spend cap, never on th
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System design: components, data model, pipelines, models, explainability, decisions and limits |
 | [`docs/evaluation.md`](docs/evaluation.md) | How quality is measured, current numbers, decisions from measurements, the runbook |
 | [`docs/operations.md`](docs/operations.md) | Dev environment, fresh-clone check, scale and cost, observability |
-| [`docs/demo.md`](docs/demo.md) | The recorded walkthrough on one document, the questions that work, and the scripted demos: what to click and say |
 | [`docs/voice.md`](docs/voice.md) | How Vault talks |
 | [`CLAUDE.md`](CLAUDE.md) | Rules and conventions for contributors and coding agents |

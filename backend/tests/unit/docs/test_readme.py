@@ -14,7 +14,7 @@ HEADINGS = [
     "How it works",
     "Quality, scale and cost at a glance",
     "Testing",
-    "Limits",
+    "A few limitations",
     "Repo map",
     "Documentation",
 ]

@@ -161,4 +161,4 @@ A deployment sketch for roughly 1,000 daily users and 100 concurrent turns. It i
 
 ## 7. Demo script
 
-The demo script, with what to click and say at each step, is [`demo.md`](demo.md). `make demo-record` records the scripted walk-through as video against the running stack (`frontend/e2e/demo.spec.ts`). `scripts/demo.sh` performs the same story with curl and prints the spend; `scripts/demo_core.sh` is a shorter smoke version.
+`make demo-record` records the scripted walk-through as video against the running stack (`frontend/e2e/demo.spec.ts`). `scripts/demo.sh` performs the same story with curl and prints the spend; `scripts/demo_core.sh` is a shorter smoke version.
