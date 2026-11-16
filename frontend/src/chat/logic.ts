@@ -403,3 +403,42 @@ export function formatCopy(m: Msg): string {
     });
   return `${body}\n\nSources\n${lines.join("\n")}`;
 }
+
+/** A document a chat can use: its text is indexed (`ready`) or fully briefed (`enriched`). */
+export interface ScopeDoc {
+  id: string;
+  title: string;
+  status: string;
+  category?: string | null;
+  created_at?: string | null;
+}
+
+export const isChattable = (d: Pick<ScopeDoc, "status">): boolean => d.status === "ready" || d.status === "enriched";
+
+/** The document uploaded last that a chat can already use. Ties and missing times fall back to list order
+ *  (the API lists newest first). */
+export function latestDoc<T extends ScopeDoc>(docs: readonly T[]): T | undefined {
+  let best: T | undefined;
+  for (const d of docs) {
+    if (!isChattable(d)) continue;
+    if (!best || (d.created_at ?? "") > (best.created_at ?? "")) best = d;
+  }
+  return best;
+}
+
+/** What a new chat searches by default: just the latest document, or everything when none is usable yet. */
+export function defaultScope(docs: readonly ScopeDoc[]): string[] {
+  const d = latestDoc(docs);
+  return d ? [d.id] : [];
+}
+
+/** Every document a chat can use. */
+export function allScope(docs: readonly ScopeDoc[]): string[] {
+  return docs.filter(isChattable).map((d) => d.id);
+}
+
+/** Tick or untick one document. The last ticked document cannot be unticked: a chat always has a scope. */
+export function toggleDoc(scope: readonly string[], id: string, on: boolean): string[] {
+  if (on) return scope.includes(id) ? [...scope] : [...scope, id];
+  return scope.length <= 1 ? [...scope] : scope.filter((x) => x !== id);
+}

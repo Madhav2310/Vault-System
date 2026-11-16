@@ -6,7 +6,10 @@ import { hrefFor, linkClick, navigate } from "../document/nav";
 import { SourceViewer } from "../source";
 import { friendlyError } from "../source/types";
 import { chatApi } from "./api";
+import { ScopeChips, ScopePicker } from "./ScopePicker";
 import {
+  allScope,
+  defaultScope,
   describeFailure,
   dropLastTurn,
   fromHistory,
@@ -40,7 +43,7 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [docs, setDocs] = useState<DocumentListItem[]>([]);
-  const [scope, setScope] = useState<string[]>(docParam ? [docParam] : []); // empty = all documents
+  const [scope, setScope] = useState<string[]>(docParam ? [docParam] : []); // a new chat starts on the latest document
   const [messages, setMessages] = useState<Msg[]>([]);
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
@@ -84,6 +87,18 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
       .catch(unauth)
       .finally(() => setDocsLoaded(true));
   }, [refreshSessions, unauth]);
+
+  // A new chat starts on the document uploaded last (or on everything after "Wrong document?").
+  const defaulted = useRef(false);
+  useEffect(() => {
+    if (sessionId) {
+      defaulted.current = false;
+      return;
+    }
+    if (!docsLoaded || docParam || defaulted.current) return;
+    defaulted.current = true;
+    setScope(pickScope ? allScope(docs) : defaultScope(docs));
+  }, [sessionId, docsLoaded, docs, docParam, pickScope]);
 
   // Restore history when the URL points at a session we did not just create.
   useEffect(() => {
@@ -279,15 +294,6 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
   }, [q, docParam, sessionId, ask]);
 
   const scopeCount = (sessionId ? activeScope : scope.length ? scope : null)?.length ?? null;
-  const titleOf = (id: string) => docs.find((d) => d.id === id)?.title ?? "a document";
-  const scopeText = !sessionId
-    ? scope.length
-      ? `Scoped to ${scope.length} document${scope.length === 1 ? "" : "s"}`
-      : "Searching all documents"
-    : activeScope?.length
-      ? `Scoped to ${activeScope.map(titleOf).join(", ")}`
-      : "Searching all documents";
-
   return (
     <div className="chat-layout">
       <nav className="chat-sessions" aria-label="Chats">
@@ -312,36 +318,15 @@ export function ChatPage({ route, onUnauthenticated }: Props) {
 
       <section className="chat-main" aria-label="Conversation">
         <h1>Chat</h1>
-        {!sessionId && (
-          <details className="scope" data-testid="scope-picker" open={pickScope || undefined}>
-            <summary>{scopeText}</summary>
-            <fieldset>
-              <legend className="sr-only">Documents to search</legend>
-              <label className="check">
-                <input type="radio" name="scope" checked={scope.length === 0} onChange={() => setScope([])} />
-                All documents
-              </label>
-              <label className="check">
-                <input type="radio" name="scope" checked={scope.length > 0} onChange={() => docs[0] && setScope([docs[0].id])} />
-                Selected documents
-              </label>
-              {scope.length > 0 &&
-                docs.map((d) => (
-                  <label className="check check-doc" key={d.id}>
-                    <input
-                      type="checkbox"
-                      checked={scope.includes(d.id)}
-                      onChange={(e) =>
-                        setScope((s) => (e.target.checked ? [...s, d.id] : s.filter((x) => x !== d.id)))
-                      }
-                    />
-                    {d.title}
-                  </label>
-                ))}
-            </fieldset>
-          </details>
+        {!sessionId && <ScopePicker docs={docs} scope={scope} onChange={setScope} open={pickScope} />}
+        {sessionId && (
+          <p className="scope-line" data-testid="scope-line">
+            <span className="scope-label">Chatting with</span>
+            <span className="scope-pills">
+              <ScopeChips scope={activeScope ?? []} docs={docs} />
+            </span>
+          </p>
         )}
-        {sessionId && <p className="hint">{scopeText}</p>}
         {loadError && (
           <p className="notice notice-error" role="alert">
             {loadError}

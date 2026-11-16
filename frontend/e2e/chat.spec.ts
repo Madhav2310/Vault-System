@@ -651,3 +651,60 @@ test("phone: an answer with a conflict fits the width", async ({ page }) => {
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
   await axeClean(page, "phone conflict");
 });
+
+const doc = (id: string, title: string, status: string, created_at: string) => ({
+  id, title, status, category: "contract", tags: [], summary_snippet: null, created_at, version: {},
+});
+
+async function mockLibrary(page: Page, sessions: Record<string, unknown>[]) {
+  await mock(page);
+  await page.route("**/v1/documents?**", (r) =>
+    r.fulfill(
+      json({
+        items: [
+          doc("d-new", "Consulting agreement", "ready", "2026-11-16T12:00:00Z"),
+          doc("d-busy", "Scan still processing", "processing", "2026-11-16T12:30:00Z"),
+          doc("d-old", "Lease", "enriched", "2026-11-15T09:00:00Z"),
+        ],
+        next_cursor: null,
+      }),
+    ),
+  );
+  await page.route("**/v1/chat/sessions", (r) => {
+    if (r.request().method() !== "POST") return r.fulfill(json({ items: [session], next_cursor: null }));
+    sessions.push(r.request().postDataJSON() as Record<string, unknown>);
+    return r.fulfill(json(session, 201));
+  });
+}
+
+test("a new chat starts on the document uploaded last; the checklist adds another", async ({ page }) => {
+  const sessions: Record<string, unknown>[] = [];
+  await mockLibrary(page, sessions);
+  await page.goto("/app/chat");
+  const pills = page.getByTestId("scope-pills");
+  await expect(pills).toHaveText("Consulting agreement"); // not the one still processing, not the older one
+  await page.getByTestId("scope-picker").locator("summary").click();
+  await expect(page.getByRole("checkbox", { name: /Scan still processing/ })).toBeDisabled();
+  await expect(page.getByText("Latest", { exact: true })).toBeVisible();
+  await page.getByRole("checkbox", { name: /Lease/ }).check();
+  await expect(pills).toHaveText("All documents");
+  await page.getByRole("button", { name: "Latest only" }).click();
+  await expect(pills).toHaveText("Consulting agreement");
+  await page.getByRole("checkbox", { name: /Lease/ }).check();
+  await page.getByLabel("Your question").fill("Who are the parties?");
+  await page.getByRole("button", { name: "Ask" }).click();
+  await expect.poll(() => sessions.length).toBe(1);
+  expect(sessions[0]!["document_ids"]).toEqual(["d-new", "d-old"]);
+});
+
+test("the only ticked document cannot be unticked, and a default chat is scoped to it", async ({ page }) => {
+  const sessions: Record<string, unknown>[] = [];
+  await mockLibrary(page, sessions);
+  await page.goto("/app/chat");
+  await page.getByTestId("scope-picker").locator("summary").click();
+  await expect(page.getByRole("checkbox", { name: /Consulting agreement/ })).toBeDisabled();
+  await page.getByLabel("Your question").fill("Who are the parties?");
+  await page.getByRole("button", { name: "Ask" }).click();
+  await expect.poll(() => sessions.length).toBe(1);
+  expect(sessions[0]!["document_ids"]).toEqual(["d-new"]);
+});

@@ -10,6 +10,10 @@ import {
   lastUser,
   markStopped,
   suggestionsFor,
+  defaultScope,
+  latestDoc,
+  allScope,
+  toggleDoc,
   userMsg,
   fromHistory,
   numberEvidence,
@@ -278,5 +282,30 @@ describe("interaction logic", () => {
     expect(suggestionsFor(docs, [])).toEqual(['What is "Lease" about?', 'What is "Memo" about?', "What are the key dates and deadlines across my documents?"]);
     expect(suggestionsFor(docs, ["3"])).toEqual(['What is "NDA" about?', 'What are the key dates and deadlines in "NDA"?']);
     expect(suggestionsFor([], [])).toEqual(["What are the key dates and deadlines across my documents?"]);
+  });
+});
+
+describe("default chat scope", () => {
+  const d = (id: string, status: string, created_at: string | null) => ({ id, title: id, status, created_at });
+  it("defaults to the latest document that is ready, ignoring ones still processing", () => {
+    const docs = [d("new", "processing", "2026-11-16T12:00:00Z"), d("mid", "enriched", "2026-11-16T10:00:00Z"), d("old", "ready", "2026-11-15T10:00:00Z")];
+    expect(defaultScope(docs)).toEqual(["mid"]);
+    expect(latestDoc(docs)?.id).toBe("mid");
+  });
+  it("falls back to all documents when none is usable yet", () => {
+    expect(defaultScope([d("a", "processing", null)])).toEqual([]);
+    expect(defaultScope([])).toEqual([]);
+  });
+  it("uses list order when times are missing", () => {
+    expect(defaultScope([d("first", "ready", null), d("second", "ready", null)])).toEqual(["first"]);
+  });
+  it("lists every usable document for Select all", () => {
+    expect(allScope([d("a", "ready", null), d("b", "failed", null), d("c", "enriched", null)])).toEqual(["a", "c"]);
+  });
+  it("adds and removes documents but never empties the scope", () => {
+    expect(toggleDoc(["a"], "b", true)).toEqual(["a", "b"]);
+    expect(toggleDoc(["a", "b"], "a", false)).toEqual(["b"]);
+    expect(toggleDoc(["b"], "b", false)).toEqual(["b"]);
+    expect(toggleDoc(["a"], "a", true)).toEqual(["a"]);
   });
 });
