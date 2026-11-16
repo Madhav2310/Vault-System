@@ -97,7 +97,7 @@ def test_role_frontmatter(tmp_path: pathlib.Path) -> None:
         write_prompt(d, "analyze_query@1.md", **{**GOOD, "role": bad})
         with pytest.raises(PromptRegistryError, match="role must be one of"):
             PromptRegistry.load(d)
-    d = tmp_path / "old"  # the previous `model:` key is no longer accepted in place of `role`
+    d = tmp_path / "model_key"  # a `model:` key does not stand in for `role`
     d.mkdir()
     write_prompt(d, "analyze_query@1.md", **{**{k: v for k, v in GOOD.items() if k != "role"}, "model": "x"})
     with pytest.raises(PromptRegistryError, match=r"missing front-matter fields \['role'\]"):

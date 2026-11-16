@@ -98,7 +98,6 @@ class TurnState:
     chunks: list[Any] = field(default_factory=list)
     evidence: Any = None
     generation: GenerateResult | None = None
-    verdicts: dict[str, Any] = field(default_factory=dict)
     persisted: Any = None  # PersistedTurn, set by the persist node
     reasons: list[str] = field(default_factory=list)
     degraded: list[str] = field(default_factory=list)

@@ -1,9 +1,10 @@
 """Turn orchestrator: the explicit graph in `app.chat.graph` over the nodes in `app.chat.nodes`.
 
-load_context -> route_question -> analyze (embeds the question meanwhile) -> retrieve -> generate -> verify ->
-persist. The routers below, not the nodes, pick the next node. No DB connection is held across
-an LLM call or a retrieval call: each phase opens its own short session. Whatever happens, the run is finished
-and the session lease released in one `persist_turn` transaction (a failed node becomes an `error` response,
+load_context -> route_question -> analyze (embeds the question meanwhile) -> (meta | plan_context ->
+retrieve or compare_retrieve -> generate -> verify) -> persist; abstain nodes go straight to persist.
+The routers below, not the nodes, pick the next node. No DB connection is held across an LLM call or a
+retrieval call: each phase opens its own short session. Whatever happens, the run is finished and the
+session lease released in one `persist_turn` transaction (a failed node becomes an `error` response,
 never a stuck run: the graph jumps to `persist`).
 
 `plan_context` picks RAG or the full-context route; the run records `mode=full_context` only when

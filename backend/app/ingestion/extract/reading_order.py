@@ -1,12 +1,12 @@
-"""Reading-order safety (research 05 §3.2; failure modes F2 to F4).
+"""Reading-order safety.
 
 Content-stream order (`use_text_flow=True`) is the default and is right for most pages. Three repairs:
 1. **Gutter split**: a line whose words have a horizontal gap wider than `GAP_EM` font sizes is split, so two
    columns drawn in step cannot fuse into one line.
 2. **Column repair**: if the line starts form 2 or 3 well-separated x-clusters (1-D k-means,
-   silhouette-chosen; never a fixed mid-split, F3) *and* the sequence keeps jumping between them, lines
+   silhouette-chosen; never a fixed mid-split) *and* the sequence keeps jumping between them, lines
    are re-ordered by column within horizontal bands separated by full-width lines (titles, captions).
-3. **Footnotes**: small-font lines in the bottom 20% of the page become separate `footnote` lines (F4).
+3. **Footnotes**: small-font lines in the bottom 20% of the page become separate `footnote` lines.
 """
 
 import itertools
@@ -186,7 +186,7 @@ def order_page(lines: Sequence[Line], page_width: float, page_height: float) -> 
         n_cols = len({lab for lab in labels if lab >= 0})
         in_cols = sum(1 for lab in labels if lab >= 0)
         # Interleaved columns jump on most lines; figure text or a side note jumps a few times only, and
-        # "repairing" those would splice them into body paragraphs (seen on QASPER 1910.03814 p.2).
+        # "repairing" those would splice them into body paragraphs.
         if _jumps(labels) > max(n_cols, JUMP_SHARE * in_cols):
             flags.append("reading_order_suspect")
             body = repair_columns(body, labels)

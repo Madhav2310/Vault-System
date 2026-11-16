@@ -8,7 +8,7 @@
 5. retry with jitter, honoring retry-after (retryable errors only); the slot is given back during the backoff
 6. one `llm_calls` row per attempt (own short DB session)
 7. stop_reason checks, then schema validation
-8. after retries on a retryable error: one attempt on the role's fallback (`DEGRADED_MODEL_FALLBACK`)
+8. `call` only: after retries on a retryable error, one fallback-role attempt (`DEGRADED_MODEL_FALLBACK`)
 
 An attempt holds its slot from the provider call until the response, or until the stream's last event,
 failure, close or cancellation. An attempt that ends with no usage from the provider after it may have started

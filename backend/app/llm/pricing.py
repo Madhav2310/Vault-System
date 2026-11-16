@@ -1,12 +1,9 @@
 """Per-model prices (USD per million tokens) and the cost formula.
 
-Sources: the providers' published list prices for input/output and Sonnet/Opus cache reads. Cache writes are
-1.25x input (5-minute TTL; claude-api skill, prompt-caching "Economics"). Haiku 5.5's cache-read rate and its
->100K-prompt tier ($0.50 / $2.50) come from the claude-api skill model notes; the tier's cache rates are not
-published there, so cache tokens keep the base rate. OpenAI GPT-6 prices: the published price list
-(cache reads from the pricing page; 30-minute cache writes 1.25x input; above 272K prompt tokens 2x input and
-cache, 1.5x output).
-text-embedding-3-small is OpenAI's list price [C].
+Prices are the providers' published list prices (OpenAI: checked 2026-11-13). Cache writes are 1.25x input
+(5-minute TTL for Claude, 30-minute for OpenAI). Haiku 5.5 has a >100K-prompt tier ($0.50 / $2.50) whose cache
+rates are unpublished, so cache tokens keep the base rate. Above 272K prompt tokens an OpenAI request costs 2x
+input and cache, 1.5x output.
 Every entry can be overridden by `Settings.llm_prices` without a code change.
 """
 
@@ -41,7 +38,7 @@ class Price:
 
 
 _WRITE_5M = Decimal("1.25")
-_WRITE_30M = Decimal("1.25")  # OpenAI GPT-5.6+ 30-minute cache write (12 h would be 2.5x)
+_WRITE_30M = Decimal("1.25")  # OpenAI 30-minute cache write (12 h would be 2.5x)
 _OA_LONG = 272_000  # OpenAI: above this prompt size the whole request costs 2x input/cached, 1.5x output
 
 

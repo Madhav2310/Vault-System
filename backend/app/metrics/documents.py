@@ -1,5 +1,5 @@
 # ruff: noqa: S608  (SQL is built only from constant fragments; every value is a bound parameter)
-"""Document statistics (design 12). Each document is represented by its latest version (highest
+"""Document statistics. Each document is represented by its latest version (highest
 `version_no`); soft-deleted documents are excluded."""
 
 import uuid

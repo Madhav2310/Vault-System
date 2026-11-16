@@ -1,5 +1,5 @@
 """The `analyze_query` output schema validates for every golden question (FakeProvider replay).
-The live half of AC1 is `tests/live/test_analyze_live.py`."""
+The live check is `tests/live/test_analyze_live.py`."""
 
 import pathlib
 import uuid

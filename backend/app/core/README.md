@@ -1,6 +1,6 @@
 # app.core
 
-Cross-cutting infrastructure with no domain logic.
+Cross-cutting infrastructure. `auth`, `quota` and `ratelimit` depend on the API layer (`app.api.deps`, `app.api.errors`).
 
 - `settings.py`: typed configuration; every value is listed in `.env.example`; keys only come from `.env`
 - `auth.py`: API-key authentication (only the SHA-256 of a key is stored)

@@ -1,4 +1,4 @@
-"""Document endpoints. Upload: §6.1."""
+"""Document endpoints: upload, versions, list, brief and summaries."""
 
 import asyncio
 import base64
@@ -113,7 +113,7 @@ async def upload_document(
             # have removed it between our write and the commit. `put_file` is a no-op when the file is intact.
             await store_blob(store, f.path, f.sha256)
     if status == 202 and body.get("job_id"):
-        # After commit (§6.1 step 7). CAS-guarded, so an idempotent replay cannot enqueue twice; if this
+        # After commit. CAS-guarded, so an idempotent replay cannot enqueue twice; if this
         # enqueue is lost, the sweeper re-dispatches after the grace period.
         await dispatch(db, uuid.UUID(body["job_id"]), enqueue)
     return canonical_response(status, body)

@@ -1,5 +1,6 @@
 """Turn orchestrator end to end over the real database: analyze -> retrieve -> generate -> persist, with the
-fake provider and a mocked reranker. POST /messages runs the turn and returns the stored assistant message."""
+fake provider and retrieval@2 (fusion order, no reranker).
+POST /messages runs the turn and returns the stored assistant message."""
 
 import json
 import uuid
@@ -137,7 +138,7 @@ async def test_cited_answer_end_to_end(
         assert lease is None  # released
     # a retried client_message_id returns the stored answer and does not run again
     r2 = await _post(api, o, sid, q, "m1")
-    assert r2.status_code == 200 and r2.json()["deduplicated"] and len(prov.requests) == 3
+    assert r2.status_code == 200 and r2.json()["deduplicated"] is True and len(prov.requests) == 3
 
 
 async def test_no_documents_abstains_without_model_call(
@@ -160,7 +161,6 @@ async def test_no_documents_abstains_without_model_call(
 async def test_model_failure_becomes_error_response(
     sm: async_sessionmaker[AsyncSession], ledger_owners: Callable[[], Any], api: httpx.AsyncClient
 ) -> None:
-
     o = await ledger_owners()
     await _seed_chunk(sm, o.id, "Doc")
     gw, _ = fake_gateway([_analysis("terminate notice"), EMBED_SLOT, refusal()], ledger=DbLedgerWriter(sm))

@@ -1,7 +1,7 @@
-"""Rule-based sentence segmenter (design 6.5, chunker@1).
+"""Rule-based sentence segmenter.
 
 Returns half-open (start, end) offsets into the unmodified input, so citation handles can slice
-`original_text` exactly (research 05 s3.4). A blank line always ends a sentence; a single newline
+`original_text` exactly. A blank line always ends a sentence; a single newline
 (a PDF line wrap) does not by itself. Table text: every non-empty line is one sentence.
 """
 
@@ -30,11 +30,11 @@ _STARTERS = _words(
     "Moreover Finally See Neither Either No Except Unless Prior"
 )
 
-# Typographic quotes by code point (keeps the source ASCII).
 # Full-width and non-Latin sentence terminators end a sentence without needing a following space or capital.
 _UNICODE_TERM = "".join(chr(c) for c in (0x3002, 0xFF01, 0xFF1F, 0x0964, 0x061F, 0x06D4))
 _TERM = re.compile("[.!?" + chr(0x2026) + _UNICODE_TERM + "]+")
 _WORD_WINDOW = 48  # how far back to look for the word before a period (and the longest clause label)
+# Typographic quotes by code point (keeps the source ASCII).
 _CLOSERS = frozenset("\"')]}*") | {chr(c) for c in (0x201D, 0x2019, 0xBB)}
 _OPENERS = frozenset("\"'([{") | {chr(c) for c in (0x201C, 0x2018, 0xAB)}
 _ENUM = re.compile(r"\((?:[a-z]|[ivx]{1,4}|\d{1,2})\)")
@@ -71,8 +71,8 @@ def _is_break(text: str, start: int, m: re.Match[str], after_ws: int, content: i
     run = m.group()
     if run != ".":
         return True  # "?", "!", ellipsis
-    # Only a bounded window is inspected: copying `text[start:m.start()]` for every period made long runs
-    # of "Dr." / "No." quadratic (a 224 KB paragraph took over a minute).
+    # Only a bounded window is inspected: copying `text[start:m.start()]` for every period would make
+    # long runs of "Dr." / "No." quadratic.
     if m.start() - start <= _WORD_WINDOW and _LABEL.fullmatch(text[start : m.start()].strip()):
         return False
     prior = text[max(start, m.start() - _WORD_WINDOW) : m.start()].strip()

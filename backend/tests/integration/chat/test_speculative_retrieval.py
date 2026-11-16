@@ -125,7 +125,6 @@ async def test_hit_is_same_as_sequential_and_faster(
     assert step["speculative"] == "hit" and step["embed_reused"] is True
     assert on_c == off_c and on_c  # same candidates, scores and selection as the sequential run
     assert len(prov.requests) == 3 and len(prov.embed_calls) == 1  # analyze + generate + support; one embed
-    print(f"\nspeculative retrieval: sequential {off_s:.2f}s, speculative {on_s:.2f}s")
     assert off_s - on_s > RETRIEVE_S * 0.6, (off_s, on_s)  # the retrieval time is hidden by the analysis
 
 
@@ -142,15 +141,6 @@ async def test_miss_discards_and_costs_one_embedding(
     assert len(prov.embed_calls) == 2  # the raw question (discarded) and the standalone query
     assert len(prov.requests) == 3  # no chat call was added by the speculation
     assert not leftovers()
-
-
-async def ttft(sm: async_sessionmaker[AsyncSession], owner: uuid.UUID) -> int:
-    async with sm() as s:
-        rows = await s.execute(
-            text("SELECT ttft_ms FROM rag_runs WHERE owner_id = :o ORDER BY created_at DESC LIMIT 1"),
-            {"o": owner},
-        )
-        return int(rows.scalar_one())
 
 
 async def test_cancel_all_stops_leftover_tasks() -> None:

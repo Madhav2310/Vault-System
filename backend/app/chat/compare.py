@@ -3,8 +3,9 @@ code-checked "not found" sentence.
 
 With `intent=compare` and a scope of 2-5 documents the turn retrieves **per document** (each document keeps
 its own top `max(3, 8 // n)` passages, so one document cannot crowd the others out) and generates with
-`answer_compare@3`. More than 5 documents answers as plain question answering (`COMPARE_TOO_MANY`). A document
-with no evidence is listed in the prompt's coverage tag and, when the model does not name it, code appends a
+the `answer_compare` prompt. More than 5 documents answers as plain question answering
+(`COMPARE_TOO_MANY`). A document with no evidence is listed in the prompt's coverage tag and,
+when the model does not name it, code appends a
 "nothing relevant was found" segment that names it (`COMPARE_SIDE_MISSING`). Plain code throughout: the
 model never decides which documents are compared.
 """
@@ -26,7 +27,7 @@ from app.retrieval.scope import Scope
 
 COMPARE_TOO_MANY = "COMPARE_TOO_MANY"
 COMPARE_SIDE_MISSING = "COMPARE_SIDE_MISSING"
-COMPARE_PROMPT: tuple[str, int] = ("answer_compare", 3)  # @1 with a neutral document name
+COMPARE_PROMPT: tuple[str, int] = ("answer_compare", 3)
 MIN_DOCS = 2
 MAX_DOCS = 5
 TARGET_PASSAGES = 8

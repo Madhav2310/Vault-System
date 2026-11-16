@@ -29,7 +29,7 @@ async def test_natural_question_matches(sm: SM, make_owner: Callable[[], Any]) -
     hits = await _search(sm, o.id, "What is the governing law of this agreement?")
     assert (
         hits and hits[0].chunk_id == gov
-    )  # AND semantics matched nothing ("law" + "what" + ... in one chunk)
+    )  # OR semantics: a natural-language question finds the chunk that shares its content lexemes
 
 
 async def test_stopwords_only_empty(sm: SM, make_owner: Callable[[], Any]) -> None:

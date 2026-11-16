@@ -82,7 +82,7 @@ async def run_view(db: AsyncSession, owner_id: uuid.UUID, run_id: uuid.UUID) -> 
         message = await history.get_message(db, owner_id, run["assistant_message_id"])
         if message is not None and message["response_type"] == "answer":
             unsupported = sum(1 for s in message["segments"] if s["support"] != "cited")
-    full_context = run["mode"] == "full_context" and "FULL_CONTEXT_UNAVAILABLE" not in run["reason_codes"]
+    full_context = run["mode"] == "full_context"
     docs, tokens = (0, 0)
     if full_context:
         row = (

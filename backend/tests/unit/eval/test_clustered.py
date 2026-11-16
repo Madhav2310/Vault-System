@@ -6,8 +6,6 @@ import pytest
 from eval.paired import compare
 from eval.report import Sidecar, SidecarItem, clopper_pearson_upper, cluster_ci, design_effect, mde
 
-import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
-
 
 def test_cluster_ci() -> None:
     # 10 documents x 5 items; items within a document are identical -> strong correlation

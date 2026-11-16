@@ -1,4 +1,4 @@
-"""Query embedding with a Redis cache and lexical fallback (design 7.3, 7.4).
+"""Query embedding with a Redis cache and lexical fallback.
 
 The cache key is sha256(model + normalized query); the vector is cached for 7 days. The embedding call goes
 through the gateway. If it fails, the result carries no vector and `degraded="lexical_only"` so the caller
@@ -24,7 +24,7 @@ from app.llm.gateway import LlmGateway
 
 DEGRADED_LEXICAL_ONLY = "lexical_only"
 CACHE_TTL_SECONDS = 7 * 24 * 3600
-DEFAULT_KEY_PREFIX = "qembed:v2:"  # v2: keys carry the owner
+DEFAULT_KEY_PREFIX = "qembed:v2:"  # keys carry the owner id
 CACHE_REDIS_TIMEOUT_S = 0.25  # a stalled Redis costs each cache command this, not redis-py's 5 s default
 
 _log = logging.getLogger(__name__)

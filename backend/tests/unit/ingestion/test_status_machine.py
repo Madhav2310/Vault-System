@@ -1,4 +1,4 @@
-"""The status table, written out independently here as an edge list."""
+"""Only the documented document-status transitions are legal."""
 
 import random
 
@@ -6,7 +6,7 @@ import pytest
 
 from app.ingestion import status as vs
 
-SPEC_EDGES = {
+EXPECTED_EDGES = {
     ("uploaded", "processing"),
     ("processing", "ready"),
     ("processing", "needs_ocr"),
@@ -24,7 +24,7 @@ REQUESTS = ["processing", "ready", "needs_ocr", "unsupported", "failed", "enrich
 
 def test_only_legal_transitions() -> None:
     table_edges = {(a, b) for a, bs in vs.TRANSITIONS.items() for b in bs}
-    assert table_edges == SPEC_EDGES
+    assert table_edges == EXPECTED_EDGES
     rng = random.Random(20261113)
     for _ in range(2000):  # random walks of stage outcomes from a fresh upload
         current, path = "uploaded", ["uploaded"]
@@ -33,9 +33,9 @@ def test_only_legal_transitions() -> None:
             try:
                 vs.check_transition(current, to)
             except vs.IllegalTransitionError:
-                assert (current, to) not in SPEC_EDGES
+                assert (current, to) not in EXPECTED_EDGES
                 continue
-            assert (current, to) in SPEC_EDGES, path
+            assert (current, to) in EXPECTED_EDGES, path
             current = to
             path.append(to)
         if current in ("needs_ocr", "unsupported", "superseded"):

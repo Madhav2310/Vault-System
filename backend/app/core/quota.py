@@ -31,8 +31,7 @@ from app.core.settings import get_settings
 from app.explain.templates import QUOTA_REACHED
 
 KEY_PREFIX = "vault:quota:inflight"
-# Held per turn in flight. The most expensive turn of the 252 final evaluation turns cost $0.027
-# (eval/baselines/final); the mean is $0.007.
+# Held per turn in flight; several times the observed per-turn cost (see docs/evaluation.md).
 TURN_RESERVE_USD = Decimal("0.05")
 RESERVATION_TTL_S = 180  # longer than the longest route deadline (60 s)
 

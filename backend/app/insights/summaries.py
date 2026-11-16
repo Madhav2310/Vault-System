@@ -61,17 +61,13 @@ OVERVIEW_QUERY = "overview"
 LEASE_S = 900  # a `running` or `pending` row older than this is presumed abandoned and may be claimed again
 
 # reason codes stored with the summary
-SUMMARY_EVIDENCE_SUBSET = (
-    "SUMMARY_EVIDENCE_SUBSET"  # a large document: only part of it was shown to the model
-)
-SUMMARY_RETRIEVAL_DEGRADED = (
-    "SUMMARY_RETRIEVAL_DEGRADED"  # retrieval failed; evidence is spread over the document
-)
+# a large document: only part of it was shown to the model
+SUMMARY_EVIDENCE_SUBSET = "SUMMARY_EVIDENCE_SUBSET"
+# retrieval failed; evidence is spread over the document
+SUMMARY_RETRIEVAL_DEGRADED = "SUMMARY_RETRIEVAL_DEGRADED"
 SUMMARY_TRIMMED = "SUMMARY_TRIMMED"  # trailing segments dropped to meet the word limit
 SUMMARY_OVER_LENGTH = "SUMMARY_OVER_LENGTH"  # the first segment alone exceeds the word limit
 SUMMARY_NO_EVIDENCE = "SUMMARY_NO_EVIDENCE"  # the model abstained: nothing relevant in the evidence
-SUMMARY_GENERATION_INVALID = "SUMMARY_GENERATION_INVALID"
-CITATION_UNRESOLVED = "CITATION_UNRESOLVED"
 
 _log = get_logger("vault.insights.summary")
 _TAGS = re.compile(r"</?\s*(focus|request|evidence)\s*>", re.IGNORECASE)

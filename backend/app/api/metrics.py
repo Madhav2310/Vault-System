@@ -1,4 +1,4 @@
-"""Metrics endpoints (design 12). Owner-scoped; `?scope=global` is admin only."""
+"""Metrics endpoints. Owner-scoped; `?scope=global` is admin only."""
 
 import uuid
 from typing import Annotated, Any, Literal

@@ -33,7 +33,7 @@ def test_window_contains_best_sentence() -> None:
     assert "thirty days written notice" in w and len(w.split()) <= 180
 
 
-def test_firstp_fallback() -> None:
+def test_no_query_match_falls_back_to_the_first_words() -> None:
     text, spans = _chunk([FILLER] * 40)
     w = focus_window(text, spans, "zebra quantum", 180, max_chars=10_000)
     assert w == " ".join(text.split()[:180])

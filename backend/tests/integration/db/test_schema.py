@@ -1,4 +1,4 @@
-"""Schema checks against the migrated `vault_test` DB. Expected lists are hard-coded here."""
+"""Schema checks against the migrated test database. Expected lists are hard-coded here."""
 
 import re
 
@@ -9,7 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine
 
 from app.db.models import Base
 
-DESIGN_TABLES = {
+EXPECTED_TABLES = {
     "users", "idempotency_keys", "blobs", "documents", "document_versions", "pages", "processing_jobs",
     "job_events", "chunks", "llm_cache", "document_insights", "chat_sessions", "chat_messages", "rag_runs",
     "run_versions", "run_steps", "retrieval_candidates", "answer_segments", "segment_evidence", "llm_calls",
@@ -17,7 +17,7 @@ DESIGN_TABLES = {
 }  # fmt: skip
 
 # (table, columns) for each uniqueness the schema promises (primary keys that serve as one are included).
-DESIGN_UNIQUES = [
+EXPECTED_UNIQUES = [
     ("users", ("email",)),
     ("idempotency_keys", ("owner_id", "key")),
     ("document_versions", ("document_id", "version_no")),
@@ -48,7 +48,7 @@ async def test_all_tables_exist(engine: AsyncEngine) -> None:
         "WHERE n.nspname = 'public' AND c.relkind IN ('r','p') AND NOT c.relispartition",
     )
     tables = {r[0] for r in rows} - {"alembic_version"}
-    assert tables == DESIGN_TABLES
+    assert tables == EXPECTED_TABLES
 
 
 async def test_chunks_partition_count(engine: AsyncEngine) -> None:
@@ -72,7 +72,7 @@ async def test_embedding_halfvec(engine: AsyncEngine) -> None:
 
 
 @pytest.mark.parametrize(
-    ("table", "columns"), DESIGN_UNIQUES, ids=lambda v: v if isinstance(v, str) else None
+    ("table", "columns"), EXPECTED_UNIQUES, ids=lambda v: v if isinstance(v, str) else None
 )
 async def test_unique_constraints(engine: AsyncEngine, table: str, columns: tuple[str, ...]) -> None:
     rows = await _scalar_rows(

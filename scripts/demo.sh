@@ -138,7 +138,7 @@ step "source guide for each document (cited brief: type, summary, facts, suggest
 for d in $DIDS; do
   curl -fsS "${AUTH[@]}" "$API/v1/documents/$d/brief" | jq '{status, document_type, category, tags,
     summary: ((.summary // "") | .[0:220]), facts: (.facts | length),
-    verified_facts: ([.facts[] | select(.verified)] | length), suggested_questions}'
+    verified_facts: ([.facts[] | select(.status == "verified")] | length), suggested_questions}'
 done
 
 step "ask a lookup question (streamed over SSE)"

@@ -1,6 +1,6 @@
 """Typed configuration. Every configurable value lives here and is listed in `.env.example`.
 
-Later slices add their fields here; `tests/unit/core/test_settings.py` keeps `.env.example` in sync.
+`tests/unit/core/test_settings.py` keeps `.env.example` in sync.
 """
 
 from functools import lru_cache
@@ -70,10 +70,12 @@ class Settings(BaseSettings):
     llm_retry_after_max_s: float = 60.0  # a longer retry-after is not slept in process: the call raises
     # Model calls in flight per process and lane (app/llm/concurrency.py). Interactive: a turn overlaps at
     # most two calls, so 32 serves 16+ turns at once per API process before anything queues. Background:
-    # twice the largest per-task fan-out (EMBED_CONCURRENCY 4, BRIEF_CONCURRENCY 3).
+    # twice the largest per-task fan-out (embed_concurrency, brief_concurrency).
     llm_concurrency_interactive: int = 32
     llm_concurrency_background: int = 8
-    llm_queue_max_wait_s: float = 120.0  # = LLM_TIMEOUT_S: longer means every slot is stuck; then capacity
+    llm_queue_max_wait_s: float = (
+        120.0  # equal to LLM_TIMEOUT_S: a wait this long means every slot is stuck (then the capacity error)
+    )
     llm_queue_deadline_margin_s: float = 1.0  # a waiter with a deadline gives up this long before it
     # Per-model price overrides, USD per MTok, merged over app/llm/pricing.py defaults. JSON, e.g.
     # {"gpt-6.1-terra": {"input": 1, "output": 5, "cache_read": 0.05, "cache_write": 1.25}}
@@ -101,7 +103,7 @@ class Settings(BaseSettings):
     brief_enabled: bool = True  # False skips the brief stage (eval uploads: no spend); version stays `ready`
     brief_max_usd: float = 0.05  # per document; reaching it stops further map calls (BRIEF_PARTIAL_BUDGET)
 
-    # --- retrieval config file under backend/config, e.g. retrieval@2 ---
+    # --- retrieval config: backend/config/<name>.yaml ---
     retrieval_config: str = "retrieval@5"
 
     # --- whole-document answering, on request only: the token cap of the scope ---

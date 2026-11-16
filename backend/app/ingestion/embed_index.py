@@ -2,8 +2,8 @@
 
 Embed: chunks of the version without an embedding are filled from this owner's already-embedded chunks
 with the same `content_hash` and model (re-uploaded versions share most chunks); the rest are embedded in
-batches of at most 128 through the gateway (lane `background`, ledger rows carry `job_id`). Every batch is
-persisted as soon as it returns, so a retry after a provider failure never pays for finished batches again.
+batches of at most the gateway batch limit (lane `background`, ledger rows carry `job_id`). Every batch
+is persisted as soon as it returns, so a retry after a provider failure never pays for finished batches again.
 
 Index: identifier tokens fill `tsv_ids`; the version becomes `ready`,
 `documents.current_version_id` moves to it, and the previously current version is marked
@@ -56,9 +56,8 @@ class EmbedStage:
         gateway, settings = ctx.services["gateway"], ctx.services["settings"]
         job = ctx.job
         if await document_deleted(ctx):
-            return (
-                StageResult()
-            )  # no paid calls for a document deleted meanwhile; the commit fence aborts the job
+            # no paid calls for a document deleted meanwhile; the commit fence aborts the job
+            return StageResult()
         model: str = settings.embedding_model
         async with ctx.sm() as s:
             todo = (
@@ -138,7 +137,7 @@ class EmbedStage:
                 for b in batches:
                     tg.create_task(embed_batch(b))
         except ExceptionGroup as eg:
-            raise eg.exceptions[0] from None  # same mapped StageError as the sequential version
+            raise eg.exceptions[0] from None  # surface the first failure's mapped StageError
         calls = len(batches)
         detail = {"chunks": total, "embedded": len(pending), "reused": reused, "calls": calls, "model": model}
         return StageResult(detail=detail)

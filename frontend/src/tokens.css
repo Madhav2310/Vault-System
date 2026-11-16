@@ -1,11 +1,10 @@
-/* Design tokens. Palette and type mirror the Lucin landing page (paper/ink/red, Plex + Space Grotesk, hairline borders, 2px radii). */
+/* Design tokens. Palette and type: paper, ink and red, Plex + Space Grotesk, hairline borders, 2px radii. */
 :root {
   --paper: #fafaf8;
   --surface: #ffffff;
   --ink: #141414;
   --body: #3d4147;
   --muted: #54585d;
-  --muted2: #8a8e94; /* decoration only: below AA on paper, never body text */
   --line: #d7d9dc;
   --red: #d6321f;
   --red-ink: #b02a1a; /* red as text on paper: AA */
@@ -33,7 +32,6 @@
     --ink: #fafaf8;
     --body: #cfd2d6;
     --muted: #a6aab0;
-    --muted2: #6f7378;
     --line: #34373b;
     --red: #e5503e;
     --red-ink: #ff7766;
@@ -49,7 +47,6 @@
   --ink: #fafaf8;
   --body: #cfd2d6;
   --muted: #a6aab0;
-  --muted2: #6f7378;
   --line: #34373b;
   --red: #e5503e;
   --red-ink: #ff7766;

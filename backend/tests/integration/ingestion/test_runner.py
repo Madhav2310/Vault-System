@@ -1,6 +1,5 @@
 """Stage runner: commit, idempotent re-run, retries, permanent errors, dead state."""
 
-import datetime as dt
 import uuid
 
 from sqlalchemy import text
@@ -119,7 +118,6 @@ async def test_retryable_backoff(sm, make_owner, enqueued) -> None:  # type: ign
         == "retry"
     )
     assert (await job_row(sm, ref.job_id))["error_code"] == "internal"
-    _ = dt
 
 
 async def test_permanent_error_terminal(sm, make_owner, enqueued) -> None:  # type: ignore[no-untyped-def]

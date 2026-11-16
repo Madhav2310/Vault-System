@@ -3,7 +3,7 @@
 - `chat_sessions`: the list is keyset-paginated on (created_at, id) newest first; the old (owner_id,
   updated_at) index matched no query, so every page sorted all of the owner's sessions.
 - `chat_messages`: the windowed metrics filter on (owner_id, created_at).
-- `llm_calls`: the brief and contextualize stages sum what earlier deliveries of a job spent (job_id).
+- `llm_calls`: the brief stage sums what earlier deliveries of a job spent (job_id).
 
 Revision ID: 0005
 Revises: 0004

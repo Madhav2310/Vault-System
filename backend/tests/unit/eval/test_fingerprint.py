@@ -12,10 +12,10 @@ from eval.report import Sidecar, SidecarItem
 from eval.run import Harness, run_suite
 from eval.schema import AnswerSegment, EvalContext, GoldItem, ItemOutput
 
-import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
 from tests.support.evalkit import ScriptedPipeline, chunk
 
 IDS = ["a1", "a2", "a3", "a4"]
+# synthetic versions, deliberately not the shipped ones
 ANSWER = {
     "prompts": ["answer_rag@7", "analyze_query@2"],
     "models": {"fast": "m1"},

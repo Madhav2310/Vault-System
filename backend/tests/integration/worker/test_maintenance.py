@@ -1,3 +1,5 @@
+"""Maintenance tasks purge expired idempotency keys and old job events."""
+
 import uuid
 
 from sqlalchemy import text
@@ -29,7 +31,6 @@ async def test_idempotency_purge(sm, make_owner) -> None:  # type: ignore[no-unt
             .all()
         )
     assert left == ["edge", "new"] and deleted >= 1
-    assert uuid.UUID(str(o.id))
 
 
 async def test_job_events_purge(sm, make_owner) -> None:  # type: ignore[no-untyped-def]

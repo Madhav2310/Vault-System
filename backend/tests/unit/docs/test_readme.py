@@ -22,7 +22,25 @@ HEADINGS = [
 STATUSES = ("Built", "Not built", "Not used", "Script built")
 COMMAND_SPAN = re.compile(r"`(make|cd|python3?|scripts/|uv)\b[^`]*`")
 # commands a bash block may use that are not make targets or repo scripts
-ALLOWED = {"open", "curl", "jq", "docker", "export", "cd", "cp", "echo", "uv", "python3", "python", "python3.12", "source", "pip", "alembic", "uvicorn", "celery"}
+ALLOWED = {
+    "open",
+    "curl",
+    "jq",
+    "docker",
+    "export",
+    "cd",
+    "cp",
+    "echo",
+    "uv",
+    "python3",
+    "python",
+    "python3.12",
+    "source",
+    "pip",
+    "alembic",
+    "uvicorn",
+    "celery",
+}
 
 
 def _section(name: str) -> str:

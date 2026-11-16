@@ -388,8 +388,6 @@ async def test_support_details_and_metadata_inputs() -> None:
 
 
 def test_claim_judge_prompt_states_number_list_and_alias_rules() -> None:
-    from app.llm.prompts import default_registry
-
     body = default_registry().get("eval_judge_claims", 5).body
     for rule in ("same amount after unit scale", "lists several values", "accepted_variants"):
         assert rule in body

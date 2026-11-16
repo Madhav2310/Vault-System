@@ -1,29 +1,19 @@
-"""Reciprocal rank fusion of the vector and lexical lists (design 7.3).
+"""Reciprocal rank fusion of the vector and lexical lists.
 
 `score = sum over lists of weight / (RRF_K + rank)`, rank 1-based within each list; a lexical hit with
 `id_match` carries weight 2 (exact identifier boost). Ties break by vector rank (the vector list is ordered by
 distance), then chunk ordinal (when the caller supplies it), then chunk id, so the order is deterministic.
 
 Fusion works over a small `Ranked` record so it does not depend on the hit types of the vector and lexical
-search modules: adapt a hit list with `ranked(hits)`. Pure code: no I/O, no model, no document text.
+search modules. Pure code: no I/O, no model, no document text.
 """
 
 import uuid
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
-from typing import Protocol
 
 RRF_K = 60
 ID_MATCH_WEIGHT = 2.0
-
-
-class HitLike(Protocol):
-    @property
-    def chunk_id(self) -> uuid.UUID: ...
-    @property
-    def version_id(self) -> uuid.UUID: ...
-    @property
-    def score(self) -> float: ...
 
 
 @dataclass(frozen=True)
@@ -34,11 +24,6 @@ class Ranked:
     version_id: uuid.UUID
     score: float
     id_match: bool = False
-
-
-def ranked(hits: Iterable[HitLike]) -> list[Ranked]:
-    """Adapt vector or lexical hits; `id_match` is taken from the hit when it has one."""
-    return [Ranked(h.chunk_id, h.version_id, h.score, bool(getattr(h, "id_match", False))) for h in hits]
 
 
 @dataclass(frozen=True)

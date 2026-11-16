@@ -1,4 +1,4 @@
-"""`analyze_query` node (design 8.3, 19): one `fast` strict-schema call, validated and narrowed in code.
+"""`analyze_query` node: one `fast` strict-schema call, validated and narrowed in code.
 
 The model sees the question, a trimmed history, session memory and document *titles* (as short refs, never
 ids or text). It returns a typed decision; this module applies it: unknown or foreign refs are dropped (the

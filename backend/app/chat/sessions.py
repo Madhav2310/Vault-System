@@ -171,7 +171,7 @@ async def list_sessions(
     return page, nxt
 
 
-# --- turn ownership (§8.7) ----------------------------------------------------------------------------------
+# --- turn ownership ----------------------------------------------------------------------------------------
 _CLAIM = text(
     "UPDATE chat_sessions SET active_run_id = :run, "
     "run_lease_expires_at = now() + make_interval(secs => :lease) "
@@ -231,7 +231,7 @@ async def release_turn(
     return ok
 
 
-# --- message dedupe (§14) -----------------------------------------------------------------------------------
+# --- message dedupe ----------------------------------------------------------------------------------------
 @dataclass(frozen=True)
 class TurnState:
     """Outcome of posting a message. `created` is False for a retried client_message_id."""

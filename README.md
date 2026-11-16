@@ -239,7 +239,7 @@ Method, baselines and the full tables are in `docs/evaluation.md`.
 | Faithfulness, train / dev | 0.853 / 0.888 | 0.899 / 0.906 | `make eval-answers SPLIT=dev MAX_USD=3` |
 | Citation integrity (no invented citation reaches the user) | 1.00 | 1.00 | `make eval-gate-t0` |
 | Brief cost per document, mean of 3 samples | | $0.0143 | `cd backend && uv run python -c "import json;d=json.load(open('../eval/baselines/brief_samples.json'));print(sum(float(v['cost_usd']) for v in d.values())/len(d))"` |
-| Corpus documents reaching ready | | 19 of 19 in 36 s | `make c1-check` |
+| Corpus documents reaching ready | | 19 of 19 in 36 s | `make test-corpus` |
 
 Engineering gain with gold and judges fixed: +11.0 points on train (13 items net) and +10.2 on dev (6 items net), from `python -m eval.paired BASELINE.json FINAL.json --metric answer_pass --ledger` (`docs/evaluation.md` section 1.3). Against the targets fixed before measuring (answer pass 0.80, faithfulness 0.90, citation chunk precision 0.85), the test run meets faithfulness and misses answer pass (0.761) and chunk precision (0.658). Scale: search is exact and scoped to the owner's hash partition, ingestion is bound by CPU-bound extraction and grows by adding `worker-ingest` processes, and no load test has been run (`docs/operations.md`).
 
@@ -251,7 +251,7 @@ Engineering gain with gold and judges fixed: +11.0 points on train (13 items net
 | Reviewer path from a fresh clone (add `--stack` for the stack and smoke) | `scripts/fresh_clone_check.sh` |
 | Unit, integration, end to end (needs `make up`) | `make test` |
 | Integration only (Postgres and Redis only) | `make up-test` then `make test-integration` |
-| Corpus ingestion | `make c1-check` |
+| Corpus ingestion | `make test-corpus` |
 | UI end to end with a fake model | `make ui-e2e` |
 | Live provider smoke (spends a few cents) | `make smoke-providers` |
 

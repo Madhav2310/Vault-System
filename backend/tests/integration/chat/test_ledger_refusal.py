@@ -1,4 +1,4 @@
-"""A refused turn keeps its usage and call id, so run totals equal the ledger sum [A]."""
+"""A refused turn keeps its usage and call id, so run totals equal the ledger sum."""
 
 from collections.abc import Callable
 from typing import Any

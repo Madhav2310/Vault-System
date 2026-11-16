@@ -27,7 +27,7 @@ from app.main import create_app
 from app.storage.local import LocalObjectStore
 
 BACKEND = pathlib.Path(__file__).resolve().parents[2]
-# One test database per checkout (F-014): parallel worktrees share the compose Postgres, and a shared name let
+# One test database per checkout: parallel worktrees share the compose Postgres, and a shared name let
 # one run drop the database under another. Override with VAULT_TEST_DB.
 TEST_DB = (
     os.environ.get("VAULT_TEST_DB") or "vault_test_" + hashlib.sha1(str(BACKEND).encode()).hexdigest()[:8]
@@ -60,7 +60,7 @@ async def _recreate(admin_url: str) -> None:
 @pytest.fixture(autouse=True)
 def _scripted_turns_use_fusion_order(monkeypatch: pytest.MonkeyPatch) -> None:
     """Scripted fake providers list every LLM call of a turn in order. The default retrieval config reranks
-    with one extra LLM call, so these tests of turn mechanics run on `retrieval@2` (fusion order);
+    with one extra LLM call, so these turn tests run on `retrieval@2` (fusion order, no reranker);
     `chat/test_default_retrieval_turn.py` covers the default with a scripted rerank step."""
     from app.core.settings import get_settings
 

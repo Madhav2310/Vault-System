@@ -1,9 +1,5 @@
 /** Public API types. `schema.gen.ts` is generated (`make ui-types`); hand-written shapes live here. */
-import type { components } from "./schema.gen";
-
-export type Schemas = components["schemas"];
-
-/** application/problem+json (design §12). */
+/** application/problem+json (RFC 9457 problem details). */
 export interface ErrorResponse {
   type: string;
   title: string;

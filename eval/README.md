@@ -22,7 +22,7 @@ compare).
 **Contamination** (`contamination.py`): no default prompt or judge may share a word 5-gram or a proper name with any
 gold item, in any split (`python -m eval.contamination`; in CI through `backend/tests/unit/eval/test_contamination.py`).
 
-`labels/` holds the human labels used to calibrate judges.
+`labels/` holds 200 human-labeled pairs; calibration of the current judge versions against them has not been run (docs/evaluation.md, runbook step 7).
 
 **Build** (`build/`): `fetch_sources.sh` downloads the third-party sources; `sample_public.py` samples strata 1-6
 from them; `build_docs.py` writes the document map; `audit.py`, `apply_audit.py` run the gold audit;

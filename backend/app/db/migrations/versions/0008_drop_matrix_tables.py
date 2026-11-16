@@ -1,7 +1,7 @@
 """Drop the comparison-matrix tables and `rag_runs.matrix_cell_id`.
 
 The matrix feature was never built: no code reads or writes `matrices`, `matrix_columns` or `matrix_cells`,
-and `rag_runs.matrix_cell_id` (no foreign key) is NULL on every row. The upgrade refuses to run if any of
+and `rag_runs.matrix_cell_id` has no foreign key. The upgrade refuses to run if any of
 them holds data, so nothing is ever dropped silently. The downgrade recreates them as 0001 defined them.
 
 Revision ID: 0008

@@ -18,7 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, create_model
 from app.chat.nodes_common import defuse
 
 MAX_ENUM_HANDLES = 1000
-HEADER_SEP = " · "  # middle dot, as in the design's header format
+HEADER_SEP = " · "  # U+00B7 middle dot
 
 Mode = Literal["rag", "full_context"]
 
@@ -131,5 +131,5 @@ def answer_schema(evidence: EvidenceSet | None, mode: Mode = "rag") -> type[Base
 def cache_mode_for(mode: Mode) -> Literal["implicit", "explicit"] | None:
     """OpenAI prompt-cache mode per answer mode. RAG evidence differs on every request,
     so caching it only adds the 1.25x write charge: `explicit` with no breakpoint disables it. FULL_CONTEXT
-    keeps the default until the document-block breakpoint syntax is verified."""
+    keeps the default."""
     return "explicit" if mode == "rag" else None

@@ -14,6 +14,7 @@ from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
+from app.llm.gateway import DbLedgerWriter
 from app.retrieval.config import get_config
 from app.retrieval.query_embed import QueryEmbedder
 from app.retrieval.retrieve import Retriever
@@ -35,9 +36,7 @@ async def _world(sm: SM, make_owner: Callable[[], Any], tmp_path: pathlib.Path) 
     return o, doc, f
 
 
-async def _run_twice(tmp_path: pathlib.Path, sm: SM, make_owner: Callable[[], Any]) -> None:
-    from app.llm.gateway import DbLedgerWriter
-
+async def _run_twice(tmp_path: pathlib.Path, sm: SM, make_owner: Callable[[], Any]) -> tuple[Any, Any, Any]:
     o, doc, _f = await _world(sm, make_owner, tmp_path)
     gw, _p, _l, _s = make_gateway(tmp_path, ledger=DbLedgerWriter(sm))
     pipe = make_pipeline(

@@ -28,35 +28,6 @@
   color: var(--ink);
   overflow-wrap: anywhere;
 }
-.counts-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s5);
-  align-items: flex-start;
-}
-.counts {
-  border-collapse: collapse;
-  font-size: 14px;
-  margin: var(--s3) 0;
-  min-width: 220px;
-}
-.counts caption {
-  text-align: left;
-  font-weight: 500;
-  color: var(--ink);
-  padding-bottom: var(--s1);
-}
-.counts th,
-.counts td {
-  text-align: left;
-  padding: var(--s1) var(--s3) var(--s1) 0;
-  border-bottom: 1px solid var(--line);
-  font-weight: 400;
-}
-.counts thead th {
-  color: var(--muted);
-  font-size: 13px;
-}
 
 /* plain-language layer: intros, notes under numbers, bars, the allowance meter */
 .section-intro {

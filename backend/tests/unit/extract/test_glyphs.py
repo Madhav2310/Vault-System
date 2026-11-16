@@ -53,7 +53,7 @@ def test_ligature_expansion() -> None:
 @needs_sources
 def test_no_word_merging() -> None:
     # The phrase sits on PDF page 3 (0-based index 2) of QASPER 1910.03814.
-    # Failure F1 merged it to "atherreal-timetweetsfrom".
+    # Words must not merge: "gather real-time tweets from" stays intact.
     page = PdfExtractor(page_numbers=[3]).extract(str(QASPER)).pages[0]
     assert "gather real-time tweets from" in re.sub(r"\s+", " ", page.text)
 
@@ -65,9 +65,5 @@ def test_dedupe() -> None:
         deduped = len(pdf.pages[0].dedupe_chars().chars)
     page = PdfExtractor().extract(str(path)).pages[0]
     assert deduped < raw  # the fixture really has duplicates
-    mapped = [g for g in page.char_to_glyph if g != SYNTH]
-    assert len(mapped) == len(set(mapped)) or all(  # one char per glyph, except ligature expansion
-        page.text[i] == page.text[i] for i in range(len(page.text))
-    )
     words = re.findall(r"\w+", page.text)
     assert not any(re.search(r"(\w)\1\1", w) for w in words)  # no tripled letters from doubled glyphs

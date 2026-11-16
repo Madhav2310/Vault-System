@@ -1,4 +1,4 @@
-"""Message history read model (design 12): chronological messages with segments and evidence, owner-scoped."""
+"""Message history read model: chronological messages with segments and evidence, owner-scoped."""
 
 import datetime as dt
 import uuid

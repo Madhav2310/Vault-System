@@ -36,6 +36,7 @@ FactField = Literal[
 Category = Literal["contract", "financial_report", "research_paper", "policy", "correspondence", "other"]
 Tone = Literal["neutral", "formal", "adversarial", "positive", "negative", "mixed"]
 
+# Code caps are looser than the extract prompt limits; the merge prompt shares them.
 MAX_SUMMARY_CHARS = 1200
 MAX_FACTS = 40
 MAX_TAGS = 8
@@ -173,7 +174,7 @@ class Normalized:
 
 
 def normalize(out: BriefOut) -> Normalized:
-    """Cap and clean a parsed `BriefOut`. More than 40 facts keeps the first 40 (`BRIEF_FACTS_CAPPED`)."""
+    """Cap and clean a parsed `BriefOut`. Facts beyond `MAX_FACTS` are dropped (`BRIEF_FACTS_CAPPED`)."""
     reasons: list[str] = []
     raw = list(out.facts)
     if len(raw) > MAX_FACTS:
@@ -246,7 +247,7 @@ class Brief(BaseModel):
     facts: list[StoredFact]
     reasons: list[str]
     partial: bool
-    tone: StoredTone | None = None  # absent in briefs stored before brief@2
+    tone: StoredTone | None = None  # None when the brief carries no tone
 
 
 @dataclass(frozen=True)

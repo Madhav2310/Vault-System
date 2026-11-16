@@ -9,6 +9,7 @@ from pydantic import ValidationError
 from app.retrieval.config import CONFIG_DIR, get_config, load_config
 
 
+# retrieval@2 is the smallest valid file; it is used only as a template
 def _raw() -> dict:  # type: ignore[type-arg]
     return yaml.safe_load((CONFIG_DIR / "retrieval@2.yaml").read_text())
 

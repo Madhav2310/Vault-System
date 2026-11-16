@@ -17,7 +17,7 @@ UI_E2E_ENV := COMPOSE_PROJECT_NAME=vault-uitest COMPOSE_FILE=docker-compose.yml:
         ci lint fmt typecheck test test-unit test-integration test-e2e smoke-providers \
         requirements ui ui-types ui-types-check ui-check ui-e2e demo-record diagrams otel-validate \
         eval-answers eval-retrieval eval-diagnose eval-gate eval-gate-t0 eval-audit eval-audit-apply \
-        eval-labels eval-docs eval-fetch c1-check
+        eval-labels eval-docs eval-fetch test-corpus
 
 help:  ## list the targets
 	@awk 'BEGIN {FS = ":.*## "} /^##@/ {printf "\n%s\n", substr($$0, 5)} /^[a-z0-9-]+:.*## / {printf "  %-20s %s\n", $$1, $$2}' $(MAKEFILE_LIST)
@@ -60,7 +60,7 @@ test-integration:  ## integration tests (needs `make up-test`)
 	$(UV) pytest tests/integration
 test-e2e:  ## end-to-end API tests
 	$(UV) pytest tests/e2e
-smoke-providers:  ## one live model call and one live embedding call (needs OPENAI_API_KEY; under $$0.001)
+smoke-providers:  ## one live model call and one live embedding call (needs OPENAI_API_KEY; under 0.001 USD)
 	$(UV) pytest -m live tests/live -s
 
 ##@ Frontend and docs
@@ -78,8 +78,8 @@ ui-types:  ## regenerate frontend/src/api/schema.gen.ts from the OpenAPI documen
 ui-types-check:  ## fail when the committed generated types are stale
 	$(ui_dump_openapi)
 	cd frontend && npx openapi-typescript .openapi.json -o /tmp/vault-schema.gen.ts; rc=$$?; rm -f .openapi.json; [ $$rc -eq 0 ] && diff -u src/api/schema.gen.ts /tmp/vault-schema.gen.ts || { echo "ui types are stale: run make ui-types"; exit 1; }
-ui-check:  ## frontend typecheck and lint (skipped without node_modules)
-	@if [ -d frontend/node_modules ]; then cd frontend && npm run typecheck && npm run lint; else echo "frontend skipped (no frontend/node_modules)"; fi
+ui-check:  ## frontend typecheck, lint and unit tests (skipped without node_modules)
+	@if [ -d frontend/node_modules ]; then cd frontend && npm run typecheck && npm run lint && npm test; else echo "frontend skipped (no frontend/node_modules)"; fi
 ui-e2e:  ## Playwright e2e against a fake-model stack on its own ports, torn down afterwards
 	@set -euo pipefail; export $(UI_E2E_ENV); base=http://localhost:8190; \
 	trap 'docker compose --profile "*" down -v' EXIT; \
@@ -143,5 +143,5 @@ eval-docs:  ## regenerate vault_eval/documents.yaml [ARGS=--download|--check]
 	cd backend && VAULT_EVAL_SOURCES=$(or $(VAULT_EVAL_SOURCES),$(CURDIR)/eval/sources) UV_PYTHON_PREFERENCE=only-managed uv run --frozen python ../eval/build/build_docs.py $(ARGS)
 eval-fetch:  ## download the third-party sources into eval/sources/
 	eval/build/fetch_sources.sh
-c1-check:  ## every corpus document through the real ingestion stages (fake embeddings, no cost)
+test-corpus:  ## every corpus document through the real ingestion stages (fake embeddings, no cost)
 	export VAULT_CORPUS=1; $(UV) pytest tests/integration/ingestion/test_corpus_pipeline.py -s -q

@@ -1,4 +1,4 @@
-"""Support check inside the real turn graph over the database (fake provider, mocked reranker)."""
+"""Support check inside the real turn graph over the database (fake provider, fusion order, no reranker)."""
 
 import json
 import uuid

@@ -217,7 +217,7 @@ async def setup(
         abstained = msg["response_type"] in {"abstain", "clarify"}
         kw: dict[str, Any] = {
             "retrieved": [str(c) for c in cands],
-            "segments": [] if abstained and not segs else segs,
+            "segments": segs,
             "abstained": abstained,
             "latency_ms": ms,
             "ttft_ms": ttft,

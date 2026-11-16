@@ -5,7 +5,7 @@ answer step received it, and what a different evidence selection (global `top_n`
 would have kept. The failure of each failed item is attributed to one stage: gold not locatable,
 retrieval miss, evidence cut, abstention, or generation/judge (gold was in the evidence).
 
-    make eval-diagnose RUN=<run_id> [REUSE=eval/.reuse_dev.json]
+    make eval-diagnose RUN=<run_id> [DIAG_ARGS="--reuse eval/.reuse_dev.json"]
 
 It also builds one record per required gold claim of every answerable item (`--json`), with the stages
 extracted, chunked, retrieved, selected, generated and supported (each true, false or unknown, with a reason).

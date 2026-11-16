@@ -1,4 +1,5 @@
-"""Working memory window: newest whole turns within a token budget, plus session memory."""
+"""Working memory window: newest whole turns within a token budget, plus the session rolling summary and
+resolved entities (currently never written)."""
 
 import uuid
 from collections.abc import Callable, Sequence

@@ -1,4 +1,4 @@
-"""Read-only aggregates behind the `/v1/metrics/*` endpoints (design 12). Owner scope is explicit."""
+"""Read-only aggregates behind the `/v1/metrics/*` endpoints. Owner scope is explicit."""
 
 import uuid
 from typing import Any

@@ -2,17 +2,16 @@
 
 halfvec defaults to EXTERNAL and tsvector to EXTENDED, and a chunk row is far above the 2 kB toast threshold,
 so the embedding and most `tsv_en` values lived in TOAST: the exact vector scan fetched every embedding
-through the toast index (about 36,000 buffers for a 10,300-chunk owner) and the lexical leg detoasted
-`tsv_en` once per call. MAIN keeps them in the heap (about 6.9 kB at most together, under the ~8.1 kB page
-limit); the text, jsonb and `tsv_ids` columns move to TOAST instead. Unlike PLAIN, MAIN still
-moves a value out of line as a last resort, so an oversized row can never fail an insert.
+through the toast index and the lexical leg detoasted `tsv_en` once per call. MAIN keeps them in the heap
+(together under the ~8.1 kB page limit); the text, jsonb and `tsv_ids` columns move to TOAST instead. Unlike
+PLAIN, MAIN still moves a value out of line as a last resort, so an oversized row can never fail an insert.
 
 SET STORAGE only affects new tuples, so the same statement rewrites every partition: a type change with a
 USING expression (a lossless halfvec -> vector -> halfvec round trip) forces a table rewrite that re-toasts
 every value under the new storage, inside the migration transaction (VACUUM FULL cannot run in one). The
 type change resets `embedding` to its type default, so SET STORAGE must stay in the same ALTER TABLE: its
-subcommands run before the rewrite. The rewrite holds ACCESS EXCLUSIVE on `chunks` for its duration
-(seconds per ~50,000 chunks). New partitions copy the parent's storage.
+subcommands run before the rewrite. The rewrite holds ACCESS EXCLUSIVE on `chunks` for its duration.
+New partitions copy the parent's storage.
 
 Revision ID: 0006
 Revises: 0005

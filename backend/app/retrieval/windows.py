@@ -1,7 +1,7 @@
 """Query-focused rerank windows.
 
-A cross-encoder's cost grows faster than linearly with passage length, and a chunk is ~400 tokens. The rerank
-passage is the best-matching window of whole sentences (<= `max_words`), so the reranker sees the part of the
+The listwise reranker's prompt cost grows with passage length, so each rerank
+passage is the best-matching window of whole sentences (<= `max_words`). The reranker sees the part of the
 chunk that answers the question. Windows are used for reranking only; they are never evidence (invariant I1).
 """
 

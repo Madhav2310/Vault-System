@@ -1,4 +1,4 @@
-"""PDF extractor (research 05 §3): pdfplumber glyphs → lines → elements over a glyph-mapped
+"""PDF extractor: pdfplumber glyphs → lines → elements over a glyph-mapped
 character stream (invariant I1).
 
 Per page: dedupe glyphs, extract words in the text's upright frame with the sweep-chosen config, group

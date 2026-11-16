@@ -1,5 +1,5 @@
 # ruff: noqa: S608  (SQL is built only from constant fragments; every value is a bound parameter)
-"""Chat and LLM-ledger metrics (design 12) from `rag_runs`, `chat_messages` and `llm_calls`.
+"""Chat and LLM-ledger metrics from `rag_runs`, `chat_messages` and `llm_calls`.
 
 A turn is a chat run, not a replay. Outcomes and coverage come from assistant
 `chat_messages` (the run row stores neither). LLM figures cover every ledger row of the scope in the window,

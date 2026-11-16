@@ -130,9 +130,7 @@ async def test_totals_match_calls(
     sm: async_sessionmaker[AsyncSession], ledger_owners: Callable[[], Any]
 ) -> None:
     w = await _world(sm, ledger_owners)
-    pre = await add_call(
-        sm, w.owner.id, inp=7, out=3, cache=1, cost="0.001", run_id=w.run_id
-    )  # gateway-linked
+    await add_call(sm, w.owner.id, inp=7, out=3, cache=1, cost="0.001", run_id=w.run_id)  # gateway-linked
     c1 = await add_call(sm, w.owner.id, inp=100, out=20, cache=5, cost="0.0123")
     c2 = await add_call(sm, w.owner.id, inp=50, out=10, cache=0, cost="0.0050")
     async with sm() as s:
@@ -150,7 +148,7 @@ async def test_totals_match_calls(
                 {"r": w.run_id},
             )
         ).one()
-    assert pre and calls[0] == 3
+    assert calls[0] == 3
     assert (
         (
             run["llm_calls_used"],

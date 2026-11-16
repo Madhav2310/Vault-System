@@ -59,5 +59,6 @@ async def brief_questions(
     ).all()
     await db.rollback()
     per_doc = [list(r[1] or []) for r in rows if isinstance(r[1], list)]
+    # "" fillers are dropped by clean_followups
     mixed = [q for tier in itertools.zip_longest(*per_doc, fillvalue="") for q in tier]
     return clean_followups(mixed, questions)

@@ -30,7 +30,6 @@ async def _check_rejects_unknown(url: str) -> bool:
         make_url(url).set(drivername="postgresql").render_as_string(hide_password=False)
     )
     try:
-        await conn.execute("SELECT 1")
         row = await conn.fetchrow(
             "SELECT pg_get_constraintdef(oid) AS d FROM pg_constraint "
             "WHERE conname = 'ck_answer_segments_verification'"

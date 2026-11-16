@@ -1,4 +1,4 @@
-"""(offline): `eval.run --stream` reads the SSE stream, measures TTFT and reports p50/p95."""
+"""Offline: `eval.run --stream` reads the SSE stream, measures TTFT and reports p50/p95."""
 
 import json
 import uuid
@@ -9,8 +9,6 @@ from eval import run as eval_run
 from eval.report import ItemResult, RunResult
 from eval.schema import ItemOutput
 from eval.sse import read_turn_stream
-
-import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
 
 
 def _frame(event: str, **body: object) -> list[str]:

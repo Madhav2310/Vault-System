@@ -364,8 +364,6 @@ async def test_pipeline_error_is_scored_not_dropped(tmp_path: pathlib.Path) -> N
 
 
 async def test_judges_run_concurrently(tmp_path: pathlib.Path) -> None:
-    import asyncio
-
     pipe = ScriptedPipeline(outputs())
     h, fake = harness(pipe)
     live = peak = 0

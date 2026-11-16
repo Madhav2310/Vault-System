@@ -1,5 +1,6 @@
 import pathlib
 
+from app.ingestion.extract.base import ExtractedDocument
 from app.ingestion.extract.text import TextExtractor
 
 MD = """# Services Agreement
@@ -26,7 +27,7 @@ Renews yearly.
 """
 
 
-def _extract(tmp: pathlib.Path, text: str | bytes, md: bool, name: str = "doc") -> object:
+def _extract(tmp: pathlib.Path, text: str | bytes, md: bool, name: str = "doc") -> ExtractedDocument:
     p = tmp / name
     p.write_bytes(text if isinstance(text, bytes) else text.encode())
     doc = TextExtractor(markdown=md).extract(str(p))
@@ -36,7 +37,7 @@ def _extract(tmp: pathlib.Path, text: str | bytes, md: bool, name: str = "doc") 
 
 def test_markdown_sections(tmp_path: pathlib.Path) -> None:
     doc = _extract(tmp_path, MD, md=True)
-    got = [(e.kind, e.text.split("\n")[0], e.section_path) for e in doc.elements]  # type: ignore[attr-defined]
+    got = [(e.kind, e.text.split("\n")[0], e.section_path) for e in doc.elements]
     assert got == [
         ("heading", "Services Agreement", []),
         ("paragraph", "Intro paragraph that spans", ["Services Agreement"]),
@@ -49,22 +50,22 @@ def test_markdown_sections(tmp_path: pathlib.Path) -> None:
         ("heading", "Appendix", []),
         ("table", "| a | b |", ["Appendix"]),
     ]
-    assert all(e.page_index == 0 and doc.pages[0].page_no is None for e in doc.elements)  # type: ignore[attr-defined]
+    assert all(e.page_index == 0 and doc.pages[0].page_no is None for e in doc.elements)
 
 
 def test_plain_paragraphs(tmp_path: pathlib.Path) -> None:
     doc = _extract(
         tmp_path, "First para\ncontinues.\n\n\nSecond para.\n  \nThird # not a heading\n", md=False
     )
-    assert [e.text for e in doc.elements] == [  # type: ignore[attr-defined]
+    assert [e.text for e in doc.elements] == [
         "First para\ncontinues.",
         "Second para.",
         "Third # not a heading",
     ]
-    assert all(e.kind == "paragraph" and e.section_path == [] for e in doc.elements)  # type: ignore[attr-defined]
+    assert all(e.kind == "paragraph" and e.section_path == [] for e in doc.elements)
 
 
 def test_encoding_fallback(tmp_path: pathlib.Path) -> None:
     doc = _extract(tmp_path, b"caf\xe9 and \xff\xfe bytes\r\nnext line", md=False)
-    assert doc.replacement_chars == 3  # type: ignore[attr-defined]
-    assert doc.elements[0].text == "caf� and �� bytes\nnext line"  # type: ignore[attr-defined]
+    assert doc.replacement_chars == 3
+    assert doc.elements[0].text == "caf� and �� bytes\nnext line"

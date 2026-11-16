@@ -1,4 +1,4 @@
-"""Structure-aware chunker `chunker@1` (research 05 §3.4).
+"""Structure-aware chunker `chunker@1`.
 
 Units are sentences (from `split_sentences`) located in page text. Within one section group, sentences are
 packed up to ~400 tokens (hard max 800) with ~15% overlap made of whole sentences. Tables and footnotes are

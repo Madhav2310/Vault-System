@@ -2,9 +2,8 @@
 
 Spends real money (asserted: all calls together < $0.10). Run with
 `uv run pytest tests/live/insights/test_summaries_live.py -s -m live`; excluded from `make ci`. Needs the
-corpus
-sources in `eval/sources/` (a worktree falls back to the main checkout's copy) and OPENAI_API_KEY; fails, does
-not skip, when they are missing. `SUMMARY_SAMPLES_OUT=<path>` also writes the summaries as JSON.
+corpus sources in `eval/sources/` (a worktree falls back to the main checkout's copy) and OPENAI_API_KEY;
+fails, does not skip, when they are missing. `SUMMARY_SAMPLES_OUT=<path>` also writes the summaries as JSON.
 """
 
 import asyncio
@@ -130,6 +129,6 @@ async def test_length_control() -> None:
         assert words[name] <= WORD_LIMIT[str(params["length"])], name
     if out := os.environ.get("SUMMARY_SAMPLES_OUT"):
         await asyncio.to_thread(pathlib.Path(out).write_text, json.dumps(samples, indent=2))
-    assert words["short_executive"] <= 80  # AC6
-    assert words["long_plain"] >= 150  # AC6
+    assert words["short_executive"] <= 80  # the short length bound the prompt promises
+    assert words["long_plain"] >= 150  # the long length bound the prompt promises
     assert sum((r.cost_usd for r in ledger.records), Decimal(0)) < CAP

@@ -16,7 +16,8 @@ def uuid7() -> uuid.UUID:
     with _lock:
         ms = time.time_ns() // 1_000_000
         if ms > _last_ms:
-            _last_ms, _counter = ms, int.from_bytes(os.urandom(2)) & 0x7FF  # leave headroom
+            # start below 0xFFF so a burst within one ms has counter space
+            _last_ms, _counter = ms, int.from_bytes(os.urandom(2)) & 0x7FF
         else:  # same ms or clock went backwards: keep the last timestamp, bump the counter
             _counter += 1
             if _counter > 0xFFF:

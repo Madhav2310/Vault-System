@@ -94,7 +94,7 @@ async def test_pagination(
     ).json()
     assert [m["id"] for m in older["items"]] == seen[1]
     bad = await api.get(url, headers=w.owner.auth, params={"cursor": "!!"})
-    assert bad.status_code == 422 or bad.status_code == 400
+    assert bad.status_code == 422
 
 
 async def test_cross_owner_404(

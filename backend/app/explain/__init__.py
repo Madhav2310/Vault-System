@@ -1,1 +1,1 @@
-"""Run explanations (design section 10): reason-code templates and the user view of a run."""
+"""Run explanations: reason-code templates and the user view of a run."""

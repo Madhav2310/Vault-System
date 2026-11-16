@@ -1,6 +1,6 @@
 """`meta` node: run the analysis' allowlisted op and write the answer from the rows, in code.
 
-No model call and no retrieval. The session lease and DB connection are held only for the query itself.
+No model call and no retrieval. The DB connection is held only for the query.
 """
 
 from decimal import Decimal

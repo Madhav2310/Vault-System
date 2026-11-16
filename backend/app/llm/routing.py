@@ -17,7 +17,7 @@ EFFORTS: tuple[Effort, ...] = get_args(Effort)
 
 _ALL: frozenset[Effort] = frozenset(EFFORTS)
 
-# Efforts each model accepts, probed 2026-11-13 (docs/evidence/spike_openai.md): gpt-6.1-sol rejects `none`.
+# Efforts each model accepts, probed 2026-11-13: gpt-6.1-sol rejects `none`.
 # A model not listed here cannot be routed to until it is probed and added.
 EFFORT_SUPPORT: dict[str, frozenset[Effort]] = {
     "gpt-6-luna": _ALL,

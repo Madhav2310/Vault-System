@@ -1,4 +1,4 @@
-"""Version status machine. Every status write goes through `set_version_status`, which only
+"""Version status machine. Stage status transitions go through `set_version_status`, which only
 moves along a legal edge (compare-and-set on the current status)."""
 
 import uuid
@@ -19,7 +19,6 @@ TRANSITIONS: dict[str, frozenset[str]] = {
     UNSUPPORTED: frozenset(),
     SUPERSEDED: frozenset(),
 }
-TERMINAL = frozenset({READY, ENRICHED, NEEDS_OCR, UNSUPPORTED, FAILED, SUPERSEDED})
 
 
 class IllegalTransitionError(RuntimeError):

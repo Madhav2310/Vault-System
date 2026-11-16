@@ -1,7 +1,6 @@
 """Document/version/job creation with per-owner dedupe."""
 
 import asyncio
-import pathlib
 
 import httpx
 import pytest
@@ -125,4 +124,3 @@ async def test_default_title(api: httpx.AsyncClient, make_owner, sm) -> None:  #
         )
     assert titles[r1.json()["document_id"]] == "Q3 Board Report.final"
     assert titles[r2.json()["document_id"]] == "Custom title"
-    assert pathlib.PurePath("x").stem == "x"

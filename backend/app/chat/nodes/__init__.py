@@ -1,1 +1,1 @@
-"""Chat graph nodes (design 8.3)."""
+"""Chat graph nodes."""

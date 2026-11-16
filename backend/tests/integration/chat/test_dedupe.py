@@ -1,4 +1,4 @@
-"""Client_message_id dedupe."""
+"""A repeated client_message_id returns the stored turn; a different body is 422; ids are per session."""
 
 import asyncio
 import uuid
@@ -33,7 +33,7 @@ async def _counts(sm: async_sessionmaker[AsyncSession], sid: str) -> tuple[int, 
 
 
 async def _complete(sm: async_sessionmaker[AsyncSession], owner_id: uuid.UUID, sid: str, run_id: str) -> str:
-    """Stand-in for the (not yet built) pipeline's persist + release_turn."""
+    """Simulate a finished turn: write the assistant message, complete the run, release the lease."""
     aid = uuid7()
     async with sm() as s:
         await s.execute(

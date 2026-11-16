@@ -1,4 +1,4 @@
-"""History redaction for deleted documents (F-042)."""
+"""History hides the title and cited text of a deleted document but keeps the answer text."""
 
 from collections.abc import Callable
 from typing import Any

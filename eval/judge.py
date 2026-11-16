@@ -768,7 +768,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     ap.add_argument("--max-usd", type=Decimal, default=None, help="spend cap (mandatory for --calibrate)")
     ap.add_argument("--export-labels", type=int, metavar="N", help="write N (item, answer) pairs to label")
     ap.add_argument("--answers", help="JSONL of answers for --export-labels (see eval/labels/README.md)")
-    ap.add_argument("--out", default="eval/labels/labeled.yaml", help="--export-labels output file")
+    default_out = pathlib.Path(__file__).resolve().parent / "labels" / "labeled.yaml"
+    ap.add_argument("--out", default=str(default_out), help="--export-labels output file")
     ap.add_argument("--seed", type=int, default=0, help="--export-labels seed (selection and split)")
     ap.add_argument("--calibrate", metavar="LABELED_YAML", help="TPR / TNR / kappa per judge vs human labels")
     ap.add_argument("--label-split", default="test", choices=["few_shot", "dev", "test"])

@@ -61,8 +61,7 @@ from app.llm.errors import LlmError
 from app.llm.gateway import LlmGateway
 from app.retrieval.load import load_evidence_chunks
 
-# brief_extract@3 writes the stored shape of PROMPT_VERSION 2 (the insight key readers filter on), with fewer,
-# shorter facts and a shorter summary and questions.
+# The stored brief shape is PROMPT_VERSION; the extract prompt version is independent of it.
 EXTRACT_PROMPT: tuple[str, int] = ("brief_extract", 3)
 MERGE_PROMPT: tuple[str, int] = ("brief_merge", PROMPT_VERSION)
 MAX_MERGE_FACTS_PER_PART = 60
@@ -330,6 +329,7 @@ async def generate_brief(
             for _ in range(max(1, min(concurrency, len(groups)))):
                 tg.create_task(worker())
     except ExceptionGroup as eg:
+        # the first failure decides; the others are dropped
         raise eg.exceptions[0] from None
     if partial:
         reasons.append(BRIEF_PARTIAL_BUDGET)

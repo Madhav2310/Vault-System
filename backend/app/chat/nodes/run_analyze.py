@@ -4,7 +4,8 @@ The embedding is speculative: `retrieve` reuses it when the standalone query equ
 `normalize_query`, otherwise it embeds again (cached by key). An embedding failure never fails the node.
 Retrieval of the raw question runs speculatively too (`SpeculativeRetrieval`): it is kept only when the
 analysis leaves the query and the scope unchanged and the turn goes on to plain retrieval, else cancelled.
-It costs at most the one embedding (the LLM reranker config skips it: that rerank would be a paid call).
+The speculative retrieval spends only the query embedding (a model call); it is skipped when the reranker
+is an LLM.
 """
 
 import asyncio
@@ -41,7 +42,7 @@ async def analyze(state: TurnState, ctx: TurnCtx) -> TurnState:
             deps.sm, ctx.owner_id, state.scope, query, embedding=await e, run_id=ctx.run_id
         )
 
-    # tasks start in this order, so the scripted FakeProvider queue sees the analysis call first
+    # the analysis task starts first so its call is the first one the gateway sees
     a_task = asyncio.create_task(
         analyze_query(
             deps.gateway,

@@ -1,9 +1,11 @@
 """Re-judging stored answers offline with a scripted provider (no network, no dataset files)."""
 
 import json
+import pathlib
 from decimal import Decimal
 from typing import Any, cast
 
+import pytest
 from eval import rejudge as R
 from eval.judge import SpendGuard
 from eval.schema import GoldItem
@@ -93,7 +95,7 @@ async def test_rejudge_stops_at_the_cap_and_scores_nothing_partial() -> None:
     assert res["stopped"] == "budget" and res["n_judged"] == 0
 
 
-def test_run_id_and_old_metrics_loading(tmp_path: Any) -> None:
+def test_run_id_and_old_metrics_loading(tmp_path: pathlib.Path) -> None:
     p = tmp_path / "abc.answers.jsonl"
     p.write_text(json.dumps({"item_id": "a"}) + "\n")
     assert R.run_id_of(p) == "abc" and R.load_rows(p) == [{"item_id": "a"}]
@@ -104,13 +106,15 @@ def test_run_id_and_old_metrics_loading(tmp_path: Any) -> None:
     assert R.load_old_metrics(tmp_path / "missing.json") == {}
 
 
-def test_output_defaults_to_the_answers_folder(tmp_path: Any) -> None:
+def test_output_defaults_to_the_answers_folder(tmp_path: pathlib.Path) -> None:
     answers = tmp_path / "run1.answers.jsonl"
     assert R.output_path(answers, None) == tmp_path / "run1.rejudged.json"
     assert R.output_path(answers, str(tmp_path / "out")) == tmp_path / "out" / "run1.rejudged.json"
 
 
-def test_refuses_to_overwrite_an_existing_result(tmp_path: Any, capsys: Any) -> None:
+def test_refuses_to_overwrite_an_existing_result(
+    tmp_path: pathlib.Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     answers = tmp_path / "run1.answers.jsonl"
     answers.write_text("", "utf-8")
     (tmp_path / "run1.rejudged.json").write_text("{}", "utf-8")

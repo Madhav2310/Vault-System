@@ -52,7 +52,7 @@ eval = [
 ]
 
 [tool.uv]
-# Never probe Homebrew/system interpreters (a Homebrew python@3.13 probe crashed on 2026-11-12)
+# Use uv-managed interpreters only; never probe system Pythons.
 python-preference = "only-managed"
 # eval: corpus build + fixture generator; its tests run in `make test`, so sync it by default
 default-groups = ["dev", "eval"]

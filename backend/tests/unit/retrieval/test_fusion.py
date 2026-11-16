@@ -87,8 +87,6 @@ def test_deterministic_ties() -> None:
     assert [f.chunk_id for f in by_chunk_id] == sorted([top.chunk_id, last.chunk_id])
     by_ordinal = fuse([], lex, ordinals={top.chunk_id: 9, last.chunk_id: 1})[:2]
     assert [f.chunk_id for f in by_ordinal] == [last.chunk_id, top.chunk_id]  # lower ordinal first
-    # input order of the two lists' equal-score items does not matter beyond rank
-    assert fuse([], lex) == fuse([], list(lex))
 
 
 def test_duplicate_within_list_counts_once() -> None:

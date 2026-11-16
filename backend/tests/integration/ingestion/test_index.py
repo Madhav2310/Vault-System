@@ -5,7 +5,6 @@ from sqlalchemy import text
 
 from app.ingestion import embed_index
 from app.ingestion.embed_index import IndexStage
-from app.ingestion.errors import PermanentStageError, RetryableStageError
 from app.ingestion.runner import run_job
 from tests.support.embed import add_chunks
 from tests.support.jobs import make_job, version_status
@@ -143,4 +142,3 @@ async def test_staleness_hook_called(
         await s.commit()
     await _run_index(sm, store, enqueued, ref.job_id)
     assert calls == [ref.version_id]
-    _ = (PermanentStageError, RetryableStageError)

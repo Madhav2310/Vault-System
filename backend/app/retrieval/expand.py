@@ -1,4 +1,4 @@
-"""Neighbor expansion (design 7.3): handle answers split across adjacent chunks.
+"""Neighbor expansion: handle answers split across adjacent chunks.
 
 For each selected chunk, in rank order, add the adjacent chunk (ordinal +1, then -1) of the same version and
 the same section while the total token count stays within `max_evidence_tokens`. Selected chunks are never

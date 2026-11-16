@@ -43,7 +43,7 @@ Why exact search: one owner's corpus is thousands to tens of thousands of chunks
 | PDF extraction, AMD 10-K (121 pages, 420,251 characters), with the library's quadratic de-duplication | 37 s, 720 MB peak | profile `ingestion.extract.pdf` on `eval/sources/fb_pdfs/AMD_2022_10K.pdf` (not a make target) |
 | Same document with the de-duplication replaced | 11.3 s, 198 MB peak | the same profile of `eval/sources/fb_pdfs/AMD_2022_10K.pdf` |
 | Extraction seconds per page | 0.093 s/page (derived: 11.3 s / 121 pages) | arithmetic on the row above |
-| 19-document corpus to `ready` | 36 s (113 s before the extraction fix) | `make c1-check` |
+| 19-document corpus to `ready` | 36 s (113 s before the extraction fix) | `make test-corpus` |
 | Page cap | 600 pages, then `unsupported` (`too_many_pages`) | `backend/app/core/settings.py` (`MAX_PAGES`) |
 | Embed batches in flight per document | 4 (`EMBED_CONCURRENCY`); 8 batches of 0.5 s finish in 2.0 s or less against 4 s or more sequentially | `cd backend && uv run pytest tests/integration/ingestion/test_ingest_concurrency.py` |
 | Brief map calls in flight per document | 3 (`BRIEF_CONCURRENCY`) | `backend/app/core/settings.py` |
@@ -57,10 +57,10 @@ Derived estimate, extraction only: one ingest worker at 0.093 s/page needs about
 
 | Measure | Value | Source |
 |---|---|---|
-| Chunks, AMD 10-K (59 of them tables) | 494 | `make c1-check`, then `select count(*) from chunks where version_id = ...` |
-| Chunk counts across the 15-document corpus | 1 to 429 | `make c1-check` |
-| Corpus median chunks per document | TBD | `select count(*) from chunks group by version_id` after `make c1-check` |
-| Median chunk size | 356 tokens on narrative 10-K pages, 166 over the whole filing (financial notes are many short sections, and chunks never cross sections) | token counts per row of the `chunks` table after `make c1-check` |
+| Chunks, AMD 10-K (59 of them tables) | 494 | `make test-corpus`, then `select count(*) from chunks where version_id = ...` |
+| Chunk counts across the 15-document corpus | 1 to 429 | `make test-corpus` |
+| Corpus median chunks per document | TBD | `select count(*) from chunks group by version_id` after `make test-corpus` |
+| Median chunk size | 356 tokens on narrative 10-K pages, 166 over the whole filing (financial notes are many short sections, and chunks never cross sections) | token counts per row of the `chunks` table after `make test-corpus` |
 
 The two AMD figures (494 and a 429 maximum) come from different extraction versions. Re-measure before quoting either as current.
 
@@ -115,7 +115,7 @@ Regenerate the brief row: `python3 -c "import json;d=json.load(open('eval/baseli
 | Item | Per document | Per 1,000 documents | Source |
 |---|---:|---:|---|
 | Brief, 3 sample documents | $0.0143 (total $0.043026 / 3) | $14.34 | `eval/baselines/brief_samples.json` (`cost_usd` fields 0.015790, 0.024223, 0.003013), command above |
-| Embeddings (`text-embedding-3-small`) | TBD (no per-document embedding cost is recorded) | TBD | formula: chunks per document x tokens per chunk x price per token; read `llm_calls` after `make c1-check` |
+| Embeddings (`text-embedding-3-small`) | TBD (no per-document embedding cost is recorded) | TBD | formula: chunks per document x tokens per chunk x price per token; read `llm_calls` after `make test-corpus` |
 | **Total, known part only** | $0.0143 (brief only) | **at least $14.34** | arithmetic: the sum of the measured rows |
 
 Assumptions: the three sampled documents (`cuad_consulting`, `fb_ulta_q4`, `auth_travel_policy`) are representative, cost is linear in documents, and cached prompt prefixes and `llm_cache` hits are not credited, so repeated or near-duplicate documents cost less.

@@ -1,8 +1,8 @@
-"""Regression tests for C1 review findings 2, 6, 9, 11, 12 and 16 (upload and pipeline hardening)."""
+"""Upload and pipeline hardening: total-size cap, control characters, blob and purge races,
+fenced artifacts, parser environment."""
 
 import uuid
 
-import httpx
 from sqlalchemy import text
 
 from app.ingestion import stages
@@ -16,7 +16,7 @@ MB = 1024 * 1024
 
 
 async def test_total_size_capped_without_content_length(api, make_owner) -> None:  # type: ignore[no-untyped-def]
-    """A chunked body that streams unlimited bytes in an ignored part used to be read to the end."""
+    """A chunked body streaming unlimited bytes in an ignored part is refused at the total-size cap (413)."""
     o = await make_owner()
 
     async def body():  # type: ignore[no-untyped-def]
@@ -32,7 +32,7 @@ async def test_control_characters_in_filename_and_title(api, make_owner, sm) -> 
     o = await make_owner()
     body, h = multipart({"title": "Q3\x00 report\x07"}, ("na\x00me\x1f.pdf", VALID_PDF.read_bytes()))
     r = await api.post("/v1/documents", content=body, headers={**h, **o.auth})
-    assert r.status_code == 202, r.text  # was a 500 (Postgres rejects NUL)
+    assert r.status_code == 202, r.text  # NUL bytes are stripped: Postgres rejects them in text columns
     async with sm() as s:
         title, fn = (
             await s.execute(
@@ -147,6 +147,3 @@ def test_parser_subprocess_gets_no_secrets() -> None:
         stages._PARSER_ENV_KEYS
     )
     assert "PATH" in stages._PARSER_ENV_KEYS
-
-
-_ = httpx

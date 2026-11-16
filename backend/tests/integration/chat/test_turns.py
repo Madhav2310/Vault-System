@@ -1,5 +1,4 @@
-"""Turn ownership (CAS with lease). AC4 (no connection held during the generate node) is not testable
-yet: there is no generate node until S3.1x."""
+"""Turn ownership: claim, fence, extend and release of the session lease (compare-and-set)."""
 
 import asyncio
 import uuid

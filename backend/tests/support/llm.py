@@ -1,5 +1,6 @@
 """Test helpers: a gateway over FakeProvider with a small prompt registry. No network."""
 
+import asyncio
 import pathlib
 import time
 from dataclasses import dataclass, field
@@ -52,14 +53,12 @@ def make_registry(d: pathlib.Path) -> PromptRegistry:
 
 @dataclass
 class SleepRecorder:
-    """Records requested delays and really sleeps (so wall-clock assertions hold)."""
+    """Records requested delays; sleeps for real only when `real=True`."""
 
     delays: list[float] = field(default_factory=list)
     real: bool = False
 
     async def __call__(self, s: float) -> None:
-        import asyncio
-
         self.delays.append(s)
         if self.real:
             await asyncio.sleep(s)

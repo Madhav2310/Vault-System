@@ -37,9 +37,9 @@ BEAT: dict[str, tuple[str, float]] = {
     "reap-chat-runs": ("vault.maintenance.reap_chat_runs", 60.0),
 }
 
-VISIBILITY_TIMEOUT_S = 3600  # > longest stage time
-# Without a socket timeout a publish to a Redis that accepts but never answers blocks its thread forever
-# (measured: still blocked after 60 s; with these, OperationalError after 10 s). Consumers are unaffected:
+VISIBILITY_TIMEOUT_S = 3600  # seconds; longer than the longest stage
+# Without a socket timeout a publish to a Redis that accepts but never answers blocks its thread forever;
+# with these, it raises OperationalError after 10 s. Consumers are unaffected:
 # kombu's BRPOP waits 1 s per poll, well under the 10 s timeout.
 BROKER_SOCKET = {"socket_timeout": 10, "socket_connect_timeout": 5}
 

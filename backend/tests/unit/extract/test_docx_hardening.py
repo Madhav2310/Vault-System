@@ -1,4 +1,4 @@
-"""Regression tests for review finding 4: text inside tracked changes and content controls was dropped."""
+"""Text inside tracked changes and content controls is extracted."""
 
 import io
 import pathlib

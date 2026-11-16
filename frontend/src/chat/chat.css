@@ -410,18 +410,6 @@
   color: var(--paper);
   border-color: var(--ink);
 }
-.feedback-reason {
-  display: flex;
-  gap: var(--s2);
-  align-items: center;
-}
-.feedback-reason select {
-  font: inherit;
-  color: var(--ink);
-  background: var(--surface);
-  border: 1px solid var(--line);
-  padding: 3px var(--s2);
-}
 .feedback .notice {
   margin: 0;
 }

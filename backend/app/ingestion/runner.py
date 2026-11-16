@@ -258,9 +258,8 @@ async def _commit(
         if not await _fence(s, job, worker):
             await s.rollback()
             return "lost_lease"
-        if await _document_deleted(
-            s, job.version_id, job.owner_id
-        ):  # DELETE arrived mid-stage: write nothing (§6.7)
+        # document deleted mid-stage: write nothing
+        if await _document_deleted(s, job.version_id, job.owner_id):
             await s.execute(
                 text(
                     "UPDATE processing_jobs SET status = 'dead', lease_owner = NULL, "

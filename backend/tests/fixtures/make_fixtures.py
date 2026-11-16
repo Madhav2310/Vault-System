@@ -4,7 +4,7 @@ Writes two sets:
 
 * ``files/``    upload-safety fixtures (failure paths): spoofed type, oversize,
   encrypted PDF, corrupt PDF, zip-bomb DOCX, empty-text PDF, prompt-injection PDF.
-* ``geometry/`` the geometry fixture zoo (research 05 §4): one PDF per failure mode plus an
+* ``geometry/`` the geometry fixture zoo: one PDF per extraction failure mode plus an
   expected-highlight snapshot (``<case>.json``).
 
 PDFs are written by a minimal hand-rolled writer (uncompressed streams, no timestamps, fixed /ID),

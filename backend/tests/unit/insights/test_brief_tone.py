@@ -1,4 +1,4 @@
-"""Brief tone (brief@2): schema, normalization, code-side resolution and verification, prompt pins."""
+"""Brief tone: schema, normalization, code-side resolution and verification, prompt pins."""
 
 import uuid
 

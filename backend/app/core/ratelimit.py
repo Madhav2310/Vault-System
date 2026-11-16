@@ -129,7 +129,7 @@ async def get_ratelimit_redis() -> aioredis.Redis:
 def _headers(d: Decision) -> list[tuple[bytes, bytes]]:
     pairs = {"limit": d.limit, "remaining": d.remaining, "reset": d.reset_s}
     out = []
-    for name, v in pairs.items():  # X-RateLimit-* (the plan) and RateLimit-*
+    for name, v in pairs.items():  # X-RateLimit-* and the IETF RateLimit-*
         out.append((f"x-ratelimit-{name}".encode(), str(v).encode()))
         out.append((f"ratelimit-{name}".encode(), str(v).encode()))
     return out

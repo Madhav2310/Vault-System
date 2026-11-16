@@ -1,6 +1,6 @@
-"""Answer_segments.verification / verification_reason: the per-segment support check.
+"""Add verification columns to answer_segments: the per-segment support check.
 
-`verification` is NULL when no check ran (older rows, turns without cited segments), otherwise one of
+`verification` is NULL when no check ran (turns without cited segments), otherwise one of
 supported | partial | unsupported | unchecked. `verification_reason` is a short note (≤120 chars).
 
 Revision ID: 0004

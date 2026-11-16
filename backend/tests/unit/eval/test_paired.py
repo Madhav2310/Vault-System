@@ -4,8 +4,6 @@ import pytest
 from eval.paired import bootstrap_ci, compare, ledger, mcnemar_exact, render_ledger, verdict
 from eval.report import Sidecar, SidecarItem
 
-import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
-
 
 def _run(name: str, vals: dict[str, float], hits: dict[str, list[bool]] | None = None) -> Sidecar:
     items = [

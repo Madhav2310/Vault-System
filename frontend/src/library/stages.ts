@@ -83,7 +83,7 @@ const REASONS: Record<string, string> = {
   corrupt: "This file appears to be damaged and could not be opened.",
 };
 
-/** The failure reason in words; unknown codes get a generic sentence that still names the code. */
+/** The failure reason in words; unknown codes get a generic sentence. */
 export function reasonInWords(status: VersionStatus, code: string | null): string {
   if (code && REASONS[code]) return REASONS[code];
   if (status === "needs_ocr") return REASONS["needs_ocr"]!;

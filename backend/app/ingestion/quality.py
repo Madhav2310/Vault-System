@@ -1,8 +1,9 @@
 """Page quality and flags.
 
 Per PDF page: `text_chars` (non-whitespace), `quality_score` in [0, 1], and flags: the extractor's repairs and
-signals (`multi_column`, `reading_order_repaired`, `footnotes_separated`, `has_tables`, `gutter_split`) plus
-`needs_ocr` (< 50 text chars) and `garbled` (replacement or `(cid:n)` glyphs > 5% of the text). The version
+signals (`multi_column`, `reading_order_repaired`, `footnotes_separated`, `has_tables`, `gutter_split`,
+`reading_order_suspect`, `running_lines_removed`) plus `needs_ocr` (< 50 text chars) and `garbled`
+(replacement or `(cid:n)` glyphs > 5% of the text). The version
 becomes `needs_ocr` when at least 80% of its pages need OCR.
 """
 

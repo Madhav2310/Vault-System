@@ -3,8 +3,9 @@
 Runs after `analyze`. RAG leaves the state untouched (the graph goes on to `retrieve`). Full context loads
 every chunk of the scoped versions in order into `state.chunks`, records each as a selected candidate (vector
 and lexical fields null), and sets `state.mode = "full_context"`. If the assembled prompt would exceed
-`full_context_max_tokens` + 4,000 tokens, it falls back to RAG (reason `FULL_CONTEXT_TOO_LARGE` when full
-context was requested). Counting tokens is CPU work and runs in a worker thread.
+`full_context_max_tokens` + `PROMPT_MARGIN_TOKENS`, it falls back to RAG (reason
+`FULL_CONTEXT_TOO_LARGE` when full context was requested). Counting tokens is CPU work and
+runs in a worker thread.
 """
 
 import asyncio

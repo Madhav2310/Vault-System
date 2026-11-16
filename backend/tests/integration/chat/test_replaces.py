@@ -1,4 +1,4 @@
-"""F-chat-regenerate-history: a turn that `replaces` an earlier one hides it from history once done."""
+"""A turn that `replaces` an earlier one hides it from history once done."""
 
 import uuid
 from collections.abc import Callable

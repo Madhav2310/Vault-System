@@ -34,7 +34,7 @@ class OpenAIEmbeddingProvider:
 
     @property
     def client(self) -> openai.AsyncOpenAI:
-        if self._client is None:  # lazy, like the Anthropic provider
+        if self._client is None:  # lazy: a missing key must not break app start
             self._client = openai.AsyncOpenAI(api_key=self._api_key, max_retries=0, timeout=self._timeout_s)
         return self._client
 

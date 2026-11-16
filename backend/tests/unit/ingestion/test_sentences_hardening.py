@@ -1,5 +1,5 @@
 # ruff: noqa: RUF001
-"""Regression tests for review findings 3 (quadratic splitter) and 7 (CJK text)."""
+"""The splitter is linear on abbreviation runs and splits CJK terminators."""
 
 import time
 
@@ -7,8 +7,7 @@ from app.ingestion.sentences import split_sentences
 
 
 def test_abbreviation_runs_are_linear() -> None:
-    # "Dr." / "Mr." never end a sentence, so `start` never advances: this was O(n^2)
-    # (224 KB took over a minute)
+    # "Dr." and "Mr." never end a sentence, so one sentence spans the whole text; splitting must stay linear.
     text = "Dr. Smith saw Mr. Jones and " * 8000  # ~224 KB
     t0 = time.perf_counter()
     spans = split_sentences(text)
@@ -23,7 +22,7 @@ def test_cjk_terminators_split_without_spaces() -> None:
     assert "".join(text[a:b] for a, b in spans) == text  # a partition: nothing lost
 
 
-def test_latin_text_behaviour_unchanged() -> None:
+def test_latin_abbreviations_and_clause_numbers() -> None:
     text = "Section 4.2(b) applies. The Supplier shall deliver the Goods. See No. 12 for details."
     assert [text[a:b] for a, b in split_sentences(text)] == [
         "Section 4.2(b) applies.",

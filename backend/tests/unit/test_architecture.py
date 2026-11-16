@@ -88,6 +88,7 @@ def test_no_hardcoded_model_ids() -> None:
         if rel in MODEL_ID_ALLOWED:
             continue
         tree = ast.parse(path.read_text(encoding="utf-8"))
+        # bare string statements (docstrings) are exempt
         docstrings = {id(n.value) for n in ast.walk(tree) if isinstance(n, ast.Expr)}
         for node in ast.walk(tree):
             if id(node) in docstrings:

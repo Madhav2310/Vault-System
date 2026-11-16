@@ -546,7 +546,7 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 | Measure | Value | Source |
 |---|---|---|
 | PDF extraction, AMD 10-K (121 pages) | 11.3 s, 198 MB peak (0.093 s/page) | `docs/operations.md` section 2.1 |
-| 19-document corpus to `ready` | 36 s | `make c1-check` |
+| 19-document corpus to `ready` | 36 s | `make test-corpus` |
 | Stage time, 45 real documents (p50 / p95) | brief 16.7 / 52 s (80% of stage time, after the document is already searchable), embed 1.7 / 5.4 s, extract 0.7 / 13.8 s | `docs/operations.md` section 2.1 |
 | Exact top-40 vector query, 21k-chunk owner | 8.9 ms, pruned to 1 of 32 partitions | `docs/operations.md` section 2.3 |
 | Brief cost per 1,000 documents | $14.34 (mean of 3 samples) | `docs/operations.md` section 4 |
@@ -682,7 +682,7 @@ scripts/                   quickstart, demo, turn-diagram generator, Postman exp
 | Lint, types, unit and frontend checks (no Docker) | `make ci` |
 | Full test suite (needs `make up`) | `make test`, or `make test-integration` with `make up-test` |
 | UI end to end with the fake model | `make ui-e2e` |
-| Corpus ingestion check | `make c1-check` |
+| Corpus ingestion check | `make test-corpus` |
 | Retrieval evaluation ($0 to cents) | `make eval-retrieval` (`RETR_CONFIG=...`, `SPLIT=...`) |
 | Answer evaluation (capped) | `make eval-answers SPLIT=dev MAX_USD=1` |
 | Gates | `make eval-gate-t0`, `make eval-gate BASE=... CAND=...` |
@@ -697,7 +697,7 @@ scripts/                   quickstart, demo, turn-diagram generator, Postman exp
 | A prompt file | Section 7.2; `backend/app/llm/prompts.py`. A change is a new version (`<id>@<n+1>.md`), selected in code or by a switch. | `make eval-gate` (`docs/evaluation.md` section 1.4) |
 | Model routing or a role | Section 7.1; `backend/app/llm/routing.py` (effort support per model) | `cd backend && uv run pytest tests/unit/llm` |
 | Retrieval config, fusion, scope | Section 5; `backend/config/*.yaml`; `backend/app/retrieval/` | `make eval-retrieval RETR_CONFIG=...`, then `python -m eval.paired` |
-| Extraction, chunking, sentences | Section 4, especially invariant I1; `backend/app/ingestion/extract/`, `chunk*.py` | `make c1-check`; a chunker change needs a re-ingest |
+| Extraction, chunking, sentences | Section 4, especially invariant I1; `backend/app/ingestion/extract/`, `chunk*.py` | `make test-corpus`; a chunker change needs a re-ingest |
 | The turn graph (a node or an edge) | Section 6; `backend/app/chat/graph.py`, `turn.py`, `nodes/` | `make diagrams`; `backend/tests/unit/docs/test_diagrams.py` fails on a stale diagram |
 | Citations, evidence handles, the ledger | Sections 1 and 8; `backend/app/chat/evidence.py`, `citations.py`, `ledger.py` | `make eval-gate-t0` (citation integrity must stay 1.0) |
 | A reason code or a user-facing message | Section 8; `backend/app/explain/templates.py`; `docs/voice.md` | `backend/tests/unit/explain/` |

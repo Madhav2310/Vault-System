@@ -1,6 +1,5 @@
-"""Regression tests for the C1 review findings on the stage runner.
-
-Covers poison jobs, lease takeover and heartbeat handling."""
+"""Stage runner hardening: failed commits count as attempts, lease takeovers count, a lost lease cancels the
+stage, a failing heartbeat never masks the result."""
 
 import asyncio
 
@@ -36,7 +35,7 @@ async def test_commit_failure_is_counted_and_ends_dead(sm, make_owner, enqueued)
         outcomes.append(
             await run_job(sm, ref.job_id, "w", {"extract": BadWrite()}, enqueued, order=("extract",))
         )
-    # before the fix the job stayed `running` with attempt_count 0 forever; now it is retried and then dead
+    # a failing commit counts as an attempt: four retries, then dead
     assert outcomes == ["retry"] * 4 + ["dead"]
     row = await job_row(sm, ref.job_id)
     assert (row["status"], row["attempt_count"], row["error_code"]) == ("dead", 5, "commit_failed")
@@ -52,7 +51,7 @@ class Fine:
 
 
 async def test_lease_takeover_counts_attempts_then_dead(sm, make_owner, enqueued) -> None:  # type: ignore[no-untyped-def]
-    """A stage that keeps killing its worker (OOM) used to loop behind the sweeper forever."""
+    """A stage that keeps killing its worker (OOM) ends dead once takeovers reach max_attempts."""
     ref = await make_job(sm, (await make_owner()).id)
     for n in range(1, 5):
         async with sm() as s:

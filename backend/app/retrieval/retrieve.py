@@ -181,8 +181,9 @@ class Retriever:
         run_id: uuid.UUID | None = None,
     ) -> RetrievalResult:
         """With a sessionmaker, every DB phase uses its own short session (no connection is held across the
-        reranker call) and the vector and lexical searches run concurrently. With a bare session (legacy
-        callers) everything runs sequentially on it. `embedding` is a precomputed embedding of `query`."""
+        reranker call) and the vector and lexical searches run concurrently. With a bare session
+        (tests, scripts) everything runs sequentially on it. `embedding` is a precomputed embedding of
+        `query`."""
         cfg = self._cfg
         version_ids = [v for _, v in scope.entries]
         if not version_ids or not query.strip():

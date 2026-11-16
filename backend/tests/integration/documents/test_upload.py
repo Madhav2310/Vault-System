@@ -56,7 +56,8 @@ async def test_oversize_413_no_rows(api: httpx.AsyncClient, make_owner, sm, stor
     )
     assert r.status_code == 413 and r.json()["code"] == "file_too_large"
     assert await _count(sm, o.id) == {"documents": 0, "document_versions": 0, "processing_jobs": 0}
-    assert not any((store.root / "blobs").glob("*")) if (store.root / "blobs").exists() else True
+    blobs = store.root / "blobs"
+    assert not blobs.exists() or not any(blobs.iterdir())
     # a declared Content-Length over the cap is rejected before the body is read
     r = await api.post(
         "/v1/documents", content=b"x", headers={**STREAM_HEADERS, **o.auth, "Content-Length": str(30 * MB)}

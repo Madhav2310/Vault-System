@@ -1,4 +1,4 @@
-"""Sentence segmenter (design 6.5). Fixture cases were written before the implementation."""
+"""Sentence segmenter: accuracy on the hand-written fixture cases, and offset invariants."""
 
 from pathlib import Path
 

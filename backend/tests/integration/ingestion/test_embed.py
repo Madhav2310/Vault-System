@@ -92,7 +92,7 @@ async def test_failure_retryable(sm, make_owner, tmp_path: pathlib.Path) -> None
     await add_chunks(sm, o.id, ref, 300)
     # batch 1 succeeds, batch 2 fails through every retry and the call is never retried by the stage itself
     script: list[fake.Step] = [None, *[fake.overloaded()] * 3]  # type: ignore[list-item]
-    gw, prov = db_gateway(tmp_path, sm, script)
+    gw, _ = db_gateway(tmp_path, sm, script)
     with pytest.raises(RetryableStageError):
         await EmbedStage().run(stage_ctx(sm, job, gw))
     total, filled, _ = await _embedded(sm, ref.version_id)
@@ -101,7 +101,6 @@ async def test_failure_retryable(sm, make_owner, tmp_path: pathlib.Path) -> None
     await EmbedStage().run(stage_ctx(sm, job, gw2))
     assert [len(c[1]) for c in prov2.embed_calls] == [128, 44]
     assert (await _embedded(sm, ref.version_id))[1] == 300
-    _ = prov
 
 
 async def test_llm_calls_recorded(sm, make_owner, tmp_path: pathlib.Path) -> None:  # type: ignore[no-untyped-def]

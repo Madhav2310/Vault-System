@@ -32,10 +32,6 @@ export function fmtRatio(v: number | null | undefined): string {
   return v == null ? DASH : `${Math.round(v * 100)}%`;
 }
 
-/** `p50 / p95` pair of one percentile object. */
-export function fmtPair(p: { p50: number | null; p95: number | null } | null | undefined, f: (n: number | null) => string): string {
-  return p ? `${f(p.p50)} / ${f(p.p95)}` : DASH;
-}
 
 export function entries(o: Record<string, number> | null | undefined): [string, number][] {
   return Object.entries(o ?? {}).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));

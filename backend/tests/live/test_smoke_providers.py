@@ -43,7 +43,7 @@ def _gateway(ledger: MemoryLedger, need: tuple[str, ...]) -> LlmGateway:
 
 
 def _report(ledger: MemoryLedger) -> None:
-    for rec in ledger.records:  # token counts are the AC13 evidence; no content is printed
+    for rec in ledger.records:  # token counts show cost and caching; no content is printed
         u = rec.usage
         print(
             f"\n{rec.provider} {rec.model} attempt={rec.attempt} status={rec.status} in={u.input_tokens} "

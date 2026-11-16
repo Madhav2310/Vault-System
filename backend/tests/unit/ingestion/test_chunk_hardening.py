@@ -1,4 +1,4 @@
-"""Regression tests for review findings 5 (heading whitespace) and 7 (CJK/no-space text exceeding the max)."""
+"""Heading whitespace is normalised once; CJK text without spaces respects MAX_TOKENS."""
 
 import pathlib
 

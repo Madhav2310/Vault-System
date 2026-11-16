@@ -1,5 +1,6 @@
 """Run results and the Markdown report (`eval/reports/<run_id>.md`): header, totals, per-stratum means and a
-per-item table. Totals average each metric only over the items where it is defined (n is shown)."""
+per-item table, plus the clustered statistics (`cluster_ci`, `design_effect`, `mde`) shared with baseline,
+paired, gate and attribution. Totals average each metric only over the items where it is defined (n is shown)."""
 
 from __future__ import annotations
 
@@ -96,7 +97,7 @@ class Sidecar(BaseModel):
     split: str
     git_sha: str
     config: dict[str, Any]
-    fingerprint: dict[str, Any] | None = None  # eval.fingerprint; None in reports written before it existed
+    fingerprint: dict[str, Any] | None = None  # eval.fingerprint
     items: list[SidecarItem]
 
 
@@ -212,7 +213,7 @@ def cluster_key(item_id: str, source_doc: str | None) -> str:
 _SCOPE = {
     "retrieval": "- scope: retrieval metrics only (no judge)",
     "full": "- scope: claim, support and abstention judges plus deterministic graders; "
-    "items `draft` until audited",
+    "gold audit status per split: docs/evaluation.md",
 }
 
 

@@ -184,9 +184,7 @@ async def _run(
 async def test_analyze_and_embed_overlap(
     sm: SM, engine: AsyncEngine, ledger_owners: Callable[[], Any]
 ) -> None:
-    t0, retriever, prov, _, run_id, owner_id = await _run(
-        sm, engine, ledger_owners, analyze_s=1.0, embed_s=0.5
-    )
+    t0, retriever, prov, _, run_id, _ = await _run(sm, engine, ledger_owners, analyze_s=1.0, embed_s=0.5)
     assert retriever.started_at is not None
     assert retriever.started_at - t0 <= 1.0 + 0.2  # sequential would be 1.5 + db time
     assert len(prov.embed_calls) == 1  # the speculative embedding was reused by retrieval
@@ -213,7 +211,6 @@ async def test_analyze_and_embed_overlap(
     for key in ("embed_ms", "vector_ms", "lexical_ms", "rerank_ms", "expand_ms"):
         assert key in retrieve_decision, key
     assert retrieve_decision["embed_reused"] is True
-    _ = owner_id
 
 
 async def test_no_connection_across_llm(

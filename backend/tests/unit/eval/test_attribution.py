@@ -16,8 +16,6 @@ from eval.attribution import (
 )
 from eval.report import SidecarItem
 
-import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
-
 # One minimal failure per stage; every earlier check is explicitly clean.
 _CLEAN = {"gold_in_parsed": True, "gold_in_chunk": True, "gold_in_candidates": True, "gold_in_evidence": True}
 FIXTURE: dict[str, dict[str, Any]] = {

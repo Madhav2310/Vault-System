@@ -37,9 +37,6 @@ STALE_ANSWER = (
 REASON_TEMPLATES: dict[str, str] = {
     "NO_EVIDENCE": "Nothing in your documents matched closely enough. Try different words or name the document.",
     "SCOPE_EMPTY": "There are no ready documents in scope. Upload one, or wait for processing to finish.",
-    "FULL_CONTEXT_UNAVAILABLE": (
-        "Reading the whole document was not possible this time, so the best-matching passages were used."
-    ),
     "CLARIFY_REJECTED": "A clarifying question was not needed, so the question was answered as written.",
     "TARGET_OUT_OF_SCOPE": "A document named in the question is outside this chat's scope, so it was left out.",
     "TARGET_IGNORED": "A document named in the question could not be used, so it was left out.",

@@ -1,4 +1,4 @@
-"""Evidence ledger persistence (design 8.3, 11): one transaction per finished turn.
+"""Evidence ledger persistence: one transaction per finished turn.
 
 `persist_turn` completes the `running` rag_run that `sessions.start_turn` created and writes everything the
 turn produced (assistant message, segments, evidence, run versions, steps, candidates, llm call links), then
@@ -7,7 +7,7 @@ It is idempotent: a run that already has an assistant message returns that messa
 
 Invariants enforced here (not just tested): every cited and every candidate chunk is the owner's and belongs
 to a version in the run's scope snapshot; run totals are summed from the linked `llm_calls` rows. No document
-text is logged; `cited_text` and segment text are stored, never emitted.
+text is logged; `cited_text` and segment text are stored and streamed only through turn events.
 """
 
 import datetime as dt

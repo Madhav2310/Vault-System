@@ -28,7 +28,7 @@ async def _schema_call(gw, **kw):  # type: ignore[no-untyped-def]
     )
 
 
-# --- AC5 -------------------------------------------------------------------------------------------
+# --- schema validation ---
 
 
 async def test_schema_validation(tmp_path: pathlib.Path) -> None:
@@ -56,7 +56,7 @@ async def test_schema_validation(tmp_path: pathlib.Path) -> None:
     assert all(r.attempt == 1 for r in led.records)  # schema failures are not retried
 
 
-# --- AC6 / AC7 -------------------------------------------------------------------------------------
+# --- refusal and truncation ---
 
 
 async def test_stop_reason_refusal(tmp_path: pathlib.Path) -> None:
@@ -79,7 +79,7 @@ async def test_stop_reason_max_tokens(tmp_path: pathlib.Path) -> None:
     assert [(r.status, r.error_type) for r in led.records] == [("error", "max_tokens")]
 
 
-# --- AC11 ------------------------------------------------------------------------------------------
+# --- citations and structured output are mutually exclusive ---
 
 
 async def test_citations_and_format_mutually_exclusive(tmp_path: pathlib.Path) -> None:
@@ -148,7 +148,7 @@ async def test_citations_and_format_mutually_exclusive(tmp_path: pathlib.Path) -
     assert blocks[-1] == {"type": "text", "text": "q"}
 
 
-# --- AC12 ------------------------------------------------------------------------------------------
+# --- effort comes from prompt front matter ---
 
 
 async def test_effort_from_frontmatter(tmp_path: pathlib.Path) -> None:
@@ -173,7 +173,7 @@ async def test_effort_from_frontmatter(tmp_path: pathlib.Path) -> None:
     )
 
 
-# --- beyond the ACs: streaming, budget, embeddings -------------------------------------------------
+# --- streaming, budget, embeddings ---
 
 
 async def test_stream_yields_text_citations_final(tmp_path: pathlib.Path) -> None:

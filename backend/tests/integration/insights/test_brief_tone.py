@@ -111,7 +111,7 @@ async def test_unverified_tone_labelled_and_filtered(
 async def test_brief_without_tone_serves_null(sm, make_owner, enqueued, api: httpx.AsyncClient) -> None:  # type: ignore[no-untyped-def]
     o = await make_owner()
     seeded = await seed_ready_version(sm, o.id, [ChunkSpec(SERVICES)])
-    async with sm() as s:  # a brief stored before tone existed has no `tone` key
+    async with sm() as s:  # a stored brief without a `tone` key serves tone null
         await s.execute(
             text(
                 "INSERT INTO document_insights (id, owner_id, version_id, kind, params_hash, params, "

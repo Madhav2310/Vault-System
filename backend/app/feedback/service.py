@@ -1,6 +1,6 @@
 """Answer feedback: one rating per (answer message, segment or whole answer) per user.
 
-Storage is the existing `feedback` table (run_id, segment_id, chunk_id, kind, note): `kind` is `up`, `down` or
+Rows live in `feedback` (run_id, segment_id, chunk_id, kind, note): `kind` is `up`, `down` or
 `down:<reason>`. Its unique key includes `kind`, so a changed rating would be a second row; this module keeps
 "last write wins" by updating the user's single row for that target under an advisory lock instead.
 
@@ -16,7 +16,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.ids import uuid7
 
 UP, DOWN = "up", "down"
-REASONS = ("wrong", "unsupported", "incomplete", "other")
 
 
 class MessageNotFound(Exception):
@@ -119,7 +118,7 @@ async def record_feedback(
 async def feedback_summary(db: AsyncSession, owner_id: uuid.UUID | None, window_s: int) -> dict[str, object]:
     """`{up, down, by_reason}` over feedback created within the window; `owner_id=None` is global scope.
 
-    This is the `feedback` object `/v1/metrics/chat` adds."""
+    Returned as the `feedback` field of `/v1/metrics/chat`."""
     where = "created_at >= now() - make_interval(secs => :w)" + (" AND owner_id = :o" if owner_id else "")
     params: dict[str, object] = {"w": window_s}
     if owner_id:

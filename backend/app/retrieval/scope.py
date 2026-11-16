@@ -1,4 +1,4 @@
-"""Retrieval scope (design 7.1): the live document versions one owner's query may touch.
+"""Retrieval scope: the live document versions one owner's query may touch.
 
 The scope is computed in code from owned, non-deleted documents whose current version is ready or enriched.
 Callers may narrow it, never widen it.

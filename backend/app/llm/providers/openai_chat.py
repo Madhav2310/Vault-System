@@ -59,7 +59,7 @@ def strict_schema(schema: dict[str, Any]) -> dict[str, Any]:
 def build_params(req: ChatRequest) -> dict[str, Any]:
     """Request body for `responses.create`. Pure: unit-testable without a client."""
     if req.search_results:
-        raise errors.RequestConflictError("provider-native search results are not used with OpenAI (§8.5)")
+        raise errors.RequestConflictError("provider-native search results are not used with OpenAI")
     params: dict[str, Any] = {
         "model": req.model,
         "instructions": req.system,

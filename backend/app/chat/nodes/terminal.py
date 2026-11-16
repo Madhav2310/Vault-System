@@ -15,7 +15,7 @@ from app.chat.nodes._common import (
 
 
 async def abstain_no_documents(state: TurnState, ctx: TurnCtx) -> TurnState:
-    state.route = "meta"
+    state.route = "meta"  # recorded as meta: no retrieval or model call
     state.generation = plain("abstain", NO_DOCUMENTS_TEXT, (NO_DOCUMENTS,))
     await flush_segments(state, ctx)
     return state

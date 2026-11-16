@@ -1,5 +1,5 @@
 # ruff: noqa: S608  (SQL is built only from constant fragments; every value is a bound parameter)
-"""Ingestion-pipeline metrics (design 12) from `job_events` and `processing_jobs`.
+"""Ingestion-pipeline metrics from `job_events` and `processing_jobs`.
 
 Event facts used (see app/ingestion/runner.py): a stage success appends `status='succeeded'`; a failed
 attempt appends `status='error'` with `detail = {error_code, permanent}`. A job is finished when its final

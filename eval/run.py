@@ -4,7 +4,7 @@ PIPELINE PROTOCOL (the real RAG pipeline plugs in here; tests use a scripted toy
 
     async def pipeline(query: Query, ctx: EvalContext) -> ItemOutput
 
-`Query` (eval.schema) is the gold-free view of one question: item_id, question, stratum, scope_docs (eval
+`Query` (eval.schema) is the gold-free view of one question: item_id, question, category, scope_docs (eval
 document keys, None = whole vault), turn_index / n_turns (a multi-turn item asks its `prior_turns` first,
 then the scored question, all through the SAME `ctx.session_id`; `ctx.history` holds the earlier turns).
 `ItemOutput` (eval.schema) is what the pipeline returns: ranked chunk ids, answer segments with their

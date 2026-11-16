@@ -1,5 +1,5 @@
 # 50 sentence-segmentation cases. Each: text + expected sentence strings (exact substrings of text, in order).
-# Written from real-text patterns (contracts, 10-K filings, papers) before the implementation.
+# Patterns come from contracts, 10-K filings and papers.
 # Single "\n" inside a sentence is a PDF line wrap; a blank line always ends a sentence.
 - id: legal-01-entities
   text: "This Agreement is made as of January 1, 2021 between Acme Holdings, Inc. and Beta Services LLC. The term begins on the Effective Date."

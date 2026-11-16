@@ -61,7 +61,7 @@ async def test_mentioning(
     sm: async_sessionmaker[AsyncSession], ledger_owners: Callable[[], Any], api: httpx.AsyncClient
 ) -> None:
     o = await ledger_owners()
-    await seed_chunk(sm, o.id, "Services Agreement")  # body mentions "twelve months"
+    await seed_chunk(sm, o.id, "Services Agreement")  # the shared BODY mentions "terminate"
     await seed_chunk(sm, o.id, "Other Agreement")
     q = "Which documents mention terminate?"
     _, msg = await ask(api, sm, o, q, meta(q, op="DOCUMENTS_MENTIONING", term="terminate"))

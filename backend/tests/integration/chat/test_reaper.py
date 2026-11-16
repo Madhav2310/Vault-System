@@ -1,4 +1,4 @@
-"""Chat-run reaper (F-041)."""
+"""The reaper finishes chat runs whose lease expired, exactly once, and leaves live runs alone."""
 
 import asyncio
 from collections.abc import Callable
@@ -48,7 +48,6 @@ async def test_abandoned_finished(
     recent = await make_world(sm, await ledger_owners())
     await _expire(sm, dead, 3600)
     await _expire(sm, recent, 5)  # expired, but inside the grace period
-    # live: lease from start_turn is still in the future
 
     reaped = await asyncio.gather(reap_abandoned_runs(sm), reap_abandoned_runs(sm))
     assert sum(reaped) >= 1  # other abandoned rows in a shared test DB may add to the count
@@ -72,4 +71,3 @@ async def test_abandoned_finished(
     assert lease is None, "lease released"
     assert (await _run(sm, live))["status"] == "running"
     assert (await _run(sm, recent))["status"] == "running"
-    assert await reap_abandoned_runs(sm) >= 0

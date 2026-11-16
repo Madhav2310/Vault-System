@@ -1,1 +1,1 @@
-"""Extractors: file -> ExtractedDocument (research 05)."""
+"""Extractors: file -> ExtractedDocument."""

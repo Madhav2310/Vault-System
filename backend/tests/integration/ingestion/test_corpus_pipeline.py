@@ -1,8 +1,8 @@
-"""C1 checkpoint: the golden set's named documents (the third-party ones of `sources.yaml` and their three
+"""Corpus ingestion: the golden set's named documents (the third-party ones of `sources.yaml` and their three
 authored companions) and the failure fixtures go through upload → real extract, quality, chunk, embed
 (FakeProvider vectors: no API cost) and index stages and end in the right state.
 
-Opt-in because it parses the full 10-K/10-Q filings (~2 min): `make c1-check` (sets VAULT_CORPUS=1).
+Opt-in because it parses the full 10-K/10-Q filings (~2 min): `make test-corpus` (sets VAULT_CORPUS=1).
 """
 
 import os
@@ -34,7 +34,7 @@ DOCS = {
     for k, v in yaml.safe_load((DATASET / "documents.yaml").read_text())["documents"].items()
     if k in NAMED
 }
-pytestmark = pytest.mark.skipif(not os.environ.get("VAULT_CORPUS"), reason="opt-in: make c1-check")
+pytestmark = pytest.mark.skipif(not os.environ.get("VAULT_CORPUS"), reason="opt-in: make test-corpus")
 
 
 async def _run_all(sm, store, enqueued, gateway, job_id):  # type: ignore[no-untyped-def]
@@ -55,7 +55,7 @@ async def test_corpus_document_reaches_ready(doc_id, api, make_owner, sm, store,
         pytest.skip("eval sources not fetched (make eval-fetch)")
     o = await make_owner()
     up = await upload(api, o, path.name, path.read_bytes())
-    gw, prov = db_gateway(tmp_path, sm)
+    gw, _ = db_gateway(tmp_path, sm)
     outcomes = await _run_all(sm, store, enqueued, gw, uuid.UUID(up["job_id"]))
     assert outcomes == ["advanced"] * 5 + ["finished"], (doc_id, outcomes)
     status, err = await version_status(sm, uuid.UUID(up["version_id"]))
@@ -72,7 +72,6 @@ async def test_corpus_document_reaches_ready(doc_id, api, make_owner, sm, store,
             )
         ).one()
     assert n > 0 and missing == 0 and bad == 0
-    print(f"{doc_id}: {n} chunks, {sum(len(c[1]) for c in prov.embed_calls)} texts embedded")
 
 
 @pytest.mark.parametrize(

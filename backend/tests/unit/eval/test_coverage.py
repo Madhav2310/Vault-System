@@ -1,4 +1,4 @@
-"""Authored strata 7-14 (items and fixtures), coverage check, anti-leak, injection variants."""
+"""Authored strata (items and fixtures), coverage check, anti-leak, injection variants."""
 
 import pathlib
 from collections import Counter
@@ -155,7 +155,3 @@ def test_check_coverage() -> None:
 @pytest.mark.parametrize("a,b,n", [("a b c d", "x b c d y", 3), ("", "a", 0), ("A, b!", "a b", 2)])
 def test_longest_shared_run(a: str, b: str, n: int) -> None:
     assert longest_shared_run(a, b) == n
-
-
-# keep the pathlib import used for type clarity in helpers
-_ = pathlib

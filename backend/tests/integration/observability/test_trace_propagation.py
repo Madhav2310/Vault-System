@@ -1,3 +1,5 @@
+"""One API request and the Celery task it enqueues share a single trace."""
+
 from collections.abc import Iterator
 
 import httpx

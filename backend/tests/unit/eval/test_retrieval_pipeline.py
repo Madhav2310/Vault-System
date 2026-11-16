@@ -3,8 +3,6 @@
 import pytest
 from eval.pipeline_retrieval import Cand, rank, resolve_config
 
-import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
-
 CANDS = [
     Cand("a", rrf=0.9, rerank=0.1, vector_rank=3, lexical_rank=None, selected=False),
     Cand("b", rrf=0.8, rerank=0.9, vector_rank=1, lexical_rank=2, selected=True, result_index=1),

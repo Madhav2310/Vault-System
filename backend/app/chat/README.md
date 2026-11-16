@@ -2,13 +2,13 @@
 
 Chat turn engine. `turn.py` wires the explicit graph (`graph.py`: typed state, async nodes, routers) over `nodes/`.
 
-- `nodes/`: one module per graph node (load_context, analyze, retrieve, generate, verify, persist, terminal, ...)
+- `nodes/`: one module per graph node (load_context, analyze, retrieve, generate, verify, terminal, ...); the `persist` node lives in `turn.py` and writes through `ledger.py`
 - `routing_rules.py`, `full_context.py`, `compare.py`, `meta.py`: route decisions and special routes
 - `evidence.py`, `citations.py`, `segments_reader.py`: handles (`E3.1`), strict answer schema, code-side citation resolution
 - `support_check.py`, `conflicts.py`: support check, conflicts
 - `events.py`, `stream.py`: typed turn events and SSE framing
 - `sessions.py`, `history.py`, `memory.py`, `ledger.py`, `reaper.py`: sessions and dedupe, read model, working memory, evidence ledger persistence, run reaper
-- `harness.py`, `speculative.py`, `followups.py`, `nodes_common.py`: budget, latency-only prefetch, follow-ups, shared helpers
+- `harness.py`, `speculative.py`, `followups.py`, `nodes_common.py`: budget, latency-only prefetch, follow-ups, `defuse` helper
 
 Invariants: code, not the model, picks control flow and validates citations (unknown handle is dropped); answers are never cached;
 no DB connection is held across an LLM call or stream.

@@ -1,18 +1,17 @@
 # Retrieval configuration. The file name is the config version: changing any value means a new
 # file; results and cache keys carry the version. retrieval@5: one LLM listwise rerank call orders the
-# top 50 fused candidates and keeps 8, with collapsed dot leaders in the reranker's copy of a passage and
-# no per-document vector quota on a one-document scope.
+# top 50 fused candidates and keeps 8, with collapsed dot leaders in the reranker's copy of a passage# no per-document vector quota on a one-document scope.
 version: retrieval@5
 k_vec: 40                # exact cosine search: candidates from the vector list
 k_lex: 40                # candidates from the lexical list
-per_doc_quota: 12        # no document contributes more than this many vector candidates (cross-document queries)
-single_doc_full_k: true  # one-document scope: no per-document vector quota (the list is k_vec long)
+per_doc_quota: 12        # per-document cap on vector candidates, for any scope of 2+ documents (caps the list at 12 x n_documents)
+single_doc_full_k: true  # one-document scope: the per-document quota is not applied (the list is k_vec long)
 rrf_k: 60                # reciprocal rank fusion constant
-id_boost: 2              # weight of identifier matches (must equal fusion.ID_BOOST)
+id_boost: 2              # weight of identifier matches (must equal fusion.ID_MATCH_WEIGHT)
 rerank:
   kind: llm
   window_words: 180
-  collapse_leaders: true   # dot-leader runs in the reranker copy of a passage become one marker
+  collapse_leaders: true # dot-leader runs in the reranker copy of a passage become one marker
   candidates: 50         # fused candidates sent to the reranker
   top_n: 8               # chunks kept after reranking
 expansion:

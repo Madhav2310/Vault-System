@@ -24,7 +24,6 @@ def _items(model: type) -> dict:  # type: ignore[type-arg]
 
 
 def _chunk(
-    n: int,
     text: str,
     *,
     pages: tuple[int, int] = (4, 4),
@@ -43,7 +42,7 @@ TEXT = (
 
 
 def test_one_handle_per_sentence() -> None:
-    chunks = [_chunk(1, TEXT), _chunk(2, "One sentence only."), _chunk(3, "A. Bee is here. Cee too.")]
+    chunks = [_chunk(TEXT), _chunk("One sentence only."), _chunk("A. Bee is here. Cee too.")]
     ev = build_evidence(chunks)
     expected = [f"E{k}.{i}" for k, c in enumerate(chunks, 1) for i in range(len(c.sentences))]
     assert list(ev.handles) == expected
@@ -53,16 +52,16 @@ def test_one_handle_per_sentence() -> None:
 
 
 def test_blocks_reconstruct_text() -> None:
-    c = _chunk(1, TEXT)
+    c = _chunk(TEXT)
     ev = build_evidence([c])
     body = [ln.split(" ", 1)[1] for ln in ev.text.splitlines() if re.match(r"^E1\.\d+ ", ln)]
     assert " ".join(body) == " ".join(c.original_text.split())  # modulo inter-sentence whitespace
 
 
 def test_title_format() -> None:
-    pdf = _chunk(1, "A sentence here.", pages=(4, 5), section=("Services", "Term"))
-    one_page = _chunk(2, "Another sentence.", pages=(7, 7), section=())
-    docx = _chunk(3, "Word text here.", pages=(0, 0), section=("Heading",), title="Memo", ver=1)
+    pdf = _chunk("A sentence here.", pages=(4, 5), section=("Services", "Term"))
+    one_page = _chunk("Another sentence.", pages=(7, 7), section=())
+    docx = _chunk("Word text here.", pages=(0, 0), section=("Heading",), title="Memo", ver=1)
     ev = build_evidence([pdf, one_page, docx])
     heads = [ln for ln in ev.text.splitlines() if ln.startswith("[E")]
     assert heads == [
@@ -73,14 +72,14 @@ def test_title_format() -> None:
 
 
 def test_no_prefix_in_evidence() -> None:
-    c = _chunk(1, TEXT)
+    c = _chunk(TEXT)
     ev = build_evidence([c])
     assert "Document:" not in ev.text and "| Section:" not in ev.text and "| Page:" not in ev.text
     assert ev.text.startswith("<evidence>\n[E1]") and ev.text.endswith("</evidence>")
 
 
 def test_manifest_complete() -> None:
-    chunks = [_chunk(1, TEXT), _chunk(2, "Second chunk. With two sentences.")]
+    chunks = [_chunk(TEXT), _chunk("Second chunk. With two sentences.")]
     ev = build_evidence(chunks)
     assert set(ev.manifest) == set(ev.handles)
     for h, m in ev.manifest.items():
@@ -91,7 +90,7 @@ def test_manifest_complete() -> None:
 
 
 def test_schema_enum_vs_string() -> None:
-    ev = build_evidence([_chunk(1, TEXT)])
+    ev = build_evidence([_chunk(TEXT)])
     rag = answer_schema(ev, "rag")
     ok = {"status": "answer", "segments": [{"text": "x", "evidence": ["E1.0", "E1.2"]}]}
     assert rag.model_validate(ok).segments[0].evidence == ["E1.0", "E1.2"]  # type: ignore[attr-defined]
@@ -107,12 +106,12 @@ def test_schema_enum_vs_string() -> None:
 
 
 def test_enum_limit_fallback() -> None:
-    big = _chunk(1, " ".join(f"Sentence number {i} is here." for i in range(MAX_ENUM_HANDLES + 5)))
+    big = _chunk(" ".join(f"Sentence number {i} is here." for i in range(MAX_ENUM_HANDLES + 5)))
     ev = build_evidence([big])
     assert len(ev.handles) > MAX_ENUM_HANDLES and not ev.enum_ok
     assert _items(answer_schema(ev, "rag")) == {"type": "string"}  # never an oversized enum
     just_under = build_evidence(
-        [_chunk(1, " ".join(f"Sentence number {i} is here." for i in range(MAX_ENUM_HANDLES)))]
+        [_chunk(" ".join(f"Sentence number {i} is here." for i in range(MAX_ENUM_HANDLES)))]
     )
     assert just_under.enum_ok
     assert len(_items(answer_schema(just_under, "rag"))["enum"]) == MAX_ENUM_HANDLES

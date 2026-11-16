@@ -135,7 +135,7 @@ def test_trim_keeps_first_segment_and_renumbers() -> None:
     assert [s.ordinal for s in kept] == [0, 1]
 
 
-def test_limits_match_the_plan() -> None:
+def test_word_limits_per_length() -> None:
     assert WORD_LIMIT == {"short": 80, "medium": 200, "long": 450}
 
 

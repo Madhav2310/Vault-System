@@ -5,6 +5,7 @@ import hashlib
 import pathlib
 
 import pytest
+import yaml
 from eval.build import build_docs as B
 from eval.loader import load_dataset
 from eval.splits import SPLITS, live_items, select_split
@@ -27,8 +28,6 @@ def test_authored_files_exist_with_pinned_hash() -> None:
 
 
 def test_named_sources_map_to_their_files() -> None:
-    import yaml
-
     named = yaml.safe_load(B.NAMED_SOURCES.read_text())["documents"]
     docs = B.load_documents()
     for key, e in named.items():
@@ -39,8 +38,6 @@ def test_split_lists_match_the_splits() -> None:
     items = load_dataset().items
     docs = B.load_documents()
     want = B.build_splits(items, docs)
-    import yaml
-
     got = yaml.safe_load(B.DOCS_YAML.read_text())["splits"]
     assert got == want, "documents.yaml is stale: run make eval-docs"
     for s in SPLITS:

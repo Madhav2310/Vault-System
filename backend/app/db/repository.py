@@ -1,8 +1,9 @@
 """Repository base classes.
 
-Every query on an owned table (one with `owner_id`) goes through `OwnedRepository`, whose public methods
-all take `owner_id` explicitly and whose `_scoped()` helper always adds the owner predicate. A contract
-test (`tests/unit/db/test_repository_contract.py`) enforces this for every repository in `app/`.
+`OwnedRepository` is the base for repositories over owned tables (those with `owner_id`): its public methods
+all take `owner_id` explicitly and its `_scoped()` helper always adds the owner predicate. A contract test
+(`tests/unit/db/test_repository_contract.py`) checks every subclass. Routers and services that run SQL
+directly pass `owner_id` in each statement.
 """
 
 import uuid

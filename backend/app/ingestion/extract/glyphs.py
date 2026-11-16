@@ -3,9 +3,9 @@
 - `PageGeo` converts pdfplumber coordinates (MediaBox-relative, /Rotate applied) to boxes normalized to the
   rendered page (CropBox offset removed, rotation applied, top-left origin, [0, 1]).
 - `upright_chars` re-expresses the page's glyphs in the frame where the text is upright, so word extraction
-  reads rotated pages in natural order (F6).
+  reads rotated pages in natural order.
 - `Line` / `build_lines` turn words into reading-order lines that keep, per character, the glyph it came from.
-  Ligatures and multi-character glyphs expand with NFKC; every expanded char maps to the same glyph (F7, F8).
+  Ligatures and multi-character glyphs expand with NFKC; every expanded char maps to the same glyph.
 """
 
 import math
@@ -82,7 +82,7 @@ class PageGeo:
         return (h, w) if self.rotation in (90, 270) else (w, h)
 
     def normalize(self, plumber_box: Box) -> Box:
-        """pdfplumber box -> normalized rendered-page box (F5, F6, F12); clamped, zero-size when outside."""
+        """pdfplumber box -> normalized rendered-page box; clamped, zero-size when outside."""
         b = unrotate_box(plumber_box, self.rotation, *self.media_wh)
         dx = self.crop[0] - self.media[0]
         dy = self.media[3] - self.crop[3]  # CropBox top, measured from the MediaBox top
@@ -143,7 +143,7 @@ def _expand(word: dict[str, Any]) -> tuple[str, list[int]]:
     text: list[str] = []
     src: list[int] = []
     for ch in word["chars"]:
-        exp = unicodedata.normalize("NFKC", ch["text"])  # ligatures / multi-char glyphs (F7, F8)
+        exp = unicodedata.normalize("NFKC", ch["text"])  # ligatures / multi-char glyphs
         exp = exp.replace("\x00", "")  # Postgres text cannot hold NUL; such glyphs carry no text anyway
         text.extend(exp)
         src.extend([ch["_g"]] * len(exp))
@@ -208,7 +208,7 @@ def dedupe_chars_fast(
 
     Same selection (cluster identical glyphs by text/font/size and position within `tolerance`, keep the
     leftmost of each cluster) and the same output order (original order); the order comes from an id->index
-    map instead of `list.index`. Profiled on a 121-page 10-K: ~25 s of 37 s
+    map instead of `list.index`.
     """
     import itertools
     from operator import itemgetter

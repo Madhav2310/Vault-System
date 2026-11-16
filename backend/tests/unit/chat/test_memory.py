@@ -1,10 +1,6 @@
 """Working-memory window (pure selection; DB loader: integration/chat/test_memory_db.py)."""
 
-from app.chat.memory import Memory, Msg, group_turns, select_window
-
-
-def words(m: Msg) -> int:
-    return len(m.content.split())
+from app.chat.memory import Msg, group_turns, select_window
 
 
 def count(s: str) -> int:
@@ -34,14 +30,3 @@ def test_whole_turns() -> None:
     msgs = [Msg("assistant", "x"), *turn(0, 1), *turn(1, 1)]
     g = group_turns(msgs)
     assert [len(t) for t in g] == [1, 2, 2] and g[1][0].role == "user"
-
-
-def test_summary_included() -> None:
-    m = Memory(
-        turns=[turn(0, 1)],
-        rolling_summary="earlier we discussed X",
-        resolved_entities={"the agreement": "d1"},
-    )
-    assert m.rolling_summary == "earlier we discussed X"
-    assert m.resolved_entities == {"the agreement": "d1"}
-    assert Memory(turns=[]).rolling_summary is None and Memory(turns=[]).resolved_entities == {}

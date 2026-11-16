@@ -19,7 +19,8 @@ from app.chat.events import Done, Error, QueueSink, RunStarted, UsageOut, curren
 
 HEARTBEAT_S = 15.0
 POLL_S = 0.5
-MAX_WAIT_S = 150.0  # a retried POST that attaches to a running turn gives up after this long
+# lease (LEASE_SECONDS) plus margin: a retried POST that attaches to a running turn gives up after this
+MAX_WAIT_S = 150.0
 HEARTBEAT_FRAME = ": heartbeat\n\n"
 SSE_HEADERS = {"Cache-Control": "no-cache", "X-Accel-Buffering": "no", "Connection": "keep-alive"}
 

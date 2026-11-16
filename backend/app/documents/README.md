@@ -8,4 +8,4 @@ Document and version lifecycle outside the ingestion pipeline.
 - `service.py`: document and version creation with per-owner dedupe
 - `delete.py`: soft delete and purge
 
-Invariants: all functions take `owner_id`; uploads and purge are idempotent.
+Invariants: functions that read or write a user's data take `owner_id` (purge looks it up from the soft-deleted document); uploads and purge are idempotent.

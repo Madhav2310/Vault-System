@@ -170,7 +170,7 @@ async def test_prompt_cache_hit() -> None:
         spent += r.cost_usd
         runs.append(r)
         _show(r, f"full_context call {len(runs)}")
-        await asyncio.sleep(3)
+        await asyncio.sleep(3)  # give the provider prompt cache time to register call 1
     first, second = runs
     u1 = first.usage
     prompt_tokens = u1.input_tokens + u1.cache_read_tokens + u1.cache_write_tokens

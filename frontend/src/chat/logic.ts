@@ -404,7 +404,7 @@ export function formatCopy(m: Msg): string {
   return `${body}\n\nSources\n${lines.join("\n")}`;
 }
 
-/** A document a chat can use: its text is indexed (`ready`) or fully briefed (`enriched`). */
+/** A document as the scope picker sees it; `isChattable` says whether a chat can use it. */
 export interface ScopeDoc {
   id: string;
   title: string;

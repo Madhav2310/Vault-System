@@ -1,4 +1,4 @@
-"""Chunker@1."""
+"""Chunker: sections, size limits, overlap, tables, spans, prefixes, determinism."""
 
 import hashlib
 import itertools
@@ -12,7 +12,6 @@ from app.ingestion.chunk import CHUNKER_VERSION, MAX_TOKENS, ChunkDraft, chunk_d
 from app.ingestion.extract.base import Element, ExtractedDocument, PageText
 from app.ingestion.extract.pdf import PdfExtractor
 from app.ingestion.extract.text import TextExtractor
-from app.ingestion.sentences import split_sentences
 
 ROOT = pathlib.Path(__file__).resolve().parents[4]
 AMD = ROOT / "eval" / "sources" / "fb_pdfs" / "AMD_2022_10K.pdf"
@@ -69,7 +68,7 @@ def test_max_size(amd_chunks: list[ChunkDraft]) -> None:
 @needs_amd
 def test_median_size(amd_chunks: list[ChunkDraft]) -> None:
     # The excerpt: the business narrative and Item 1A (risk factors), pages 15-45. Over the whole filing
-    # the median is lower (~166): the financial-statement notes are many short sections kept separate (AC1).
+    # the median is lower (~166): the financial-statement notes are many short sections kept separate.
     excerpt = [c.token_count for c in amd_chunks if c.kind == "text" and 15 <= c.page_start <= 45]
     median = statistics.median(excerpt)
     assert 300 <= median <= 500, median
@@ -141,9 +140,6 @@ def test_sentence_offsets_valid(tmp_path: pathlib.Path) -> None:
                 assert prev <= s < e <= len(c.original_text)
                 assert c.original_text[prev:s].strip() == ""  # only whitespace between sentences
                 prev = e
-            kind = "table" if c.kind == "table" else "text"
-            # every sentence is also a sentence when the chunk text is segmented again (no partial sentences)
-            assert len(split_sentences(c.original_text, kind=kind)) >= 1
 
 
 def test_spans_map_back(tmp_path: pathlib.Path) -> None:

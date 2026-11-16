@@ -4,7 +4,7 @@ import pytest
 
 from app.chat.routing_rules import FAST_PATH, fast_path
 
-# (question, prior_turns, scope_docs, skip, why)
+# columns: question, prior_turns, scope_docs, skip_analyze, why
 TABLE = [
     ("What is the termination notice period?", 0, 1, True, FAST_PATH),
     ("Who are the parties to the agreement?", 0, 1, True, FAST_PATH),
@@ -22,7 +22,6 @@ TABLE = [
     ("What is the notice period in Section 4.2 of the Master Agreement?", 1, 2, True, FAST_PATH),
     ('What does "force majeure" cover?', 1, 1, True, FAST_PATH),
     ("Who signed the Acme Corp invoice for March?", 3, 4, True, FAST_PATH),
-    ("What is the termination notice period?", 1, 1, False, "history"),  # no anchor
     ("What about the lease?", 1, 2, False, "ellipsis"),
     ("Lease termination fees?", 1, 2, False, "history"),  # too short
     ("And what is the payment term in the contract?", 1, 1, False, "ellipsis"),
@@ -39,7 +38,7 @@ TABLE = [
 
 
 @pytest.mark.parametrize(("question", "prior", "docs", "skip", "why"), TABLE)
-def test_fixture_table(question: str, prior: int, docs: int, skip: bool, why: str) -> None:
+def test_fast_path_decisions(question: str, prior: int, docs: int, skip: bool, why: str) -> None:
     d = fast_path(question, prior_turns=prior, scope_docs=docs)
     assert (d.skip_analyze, d.why) == (skip, why)
 

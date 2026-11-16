@@ -1,6 +1,5 @@
-"""Every route is covered by a cross-owner test. The route list comes from the app's OpenAPI;
-a new
-route that is neither covered below nor on the justified allowlist fails `test_every_route` loudly.
+"""Every route is covered by a cross-owner test. The route list comes from the app's OpenAPI; a new route that
+is neither covered below nor on the justified allowlist fails `test_every_route` loudly.
 
 World: owner A has a ready document (blob, layout, chunk), a custom summary, a session with a finished turn
 (run, assistant message). Owner B attacks every A-owned id on every route and must see 404 (or, on list and
@@ -104,7 +103,7 @@ async def _world(
         "session_id": str(w.session_id),
         "run_id": str(w.run_id),
         "message_id": str(persisted.assistant_message_id),
-        "summary_id": r.json()["id"] if "id" in r.json() else r.json()["summary_id"],
+        "summary_id": r.json()["id"],
         "page": "1",
     }
     return World(a, b, ids)

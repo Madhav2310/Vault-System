@@ -1,11 +1,12 @@
 # Retrieval configuration. The file name is the config version: changing any value means a new
-# file; results and cache keys carry the version. retrieval@2 = fusion order, no reranker.
+# file; results and cache keys carry the version. retrieval@2 = fusion order, no reranker. Keys absent here
+# default to off.
 version: retrieval@2
 k_vec: 40                # exact cosine search: candidates from the vector list
 k_lex: 40                # candidates from the lexical list
-per_doc_quota: 12        # no document contributes more than this many vector candidates (cross-document queries)
+per_doc_quota: 12        # per-document cap on vector candidates, for any scope of 2+ documents (caps the list at 12 x n_documents)
 rrf_k: 60                # reciprocal rank fusion constant
-id_boost: 2              # weight of identifier matches (must equal fusion.ID_BOOST)
+id_boost: 2              # weight of identifier matches (must equal fusion.ID_MATCH_WEIGHT)
 rerank:
   kind: none
   window_words: 180

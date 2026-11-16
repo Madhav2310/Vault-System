@@ -129,7 +129,7 @@ Other measurements:
 | Lexical leg alone (OR query), same run setup: recall@8, mrr@40 | 0.675, 0.463 | `EVAL_RANK=lexical make eval-retrieval SPLIT=train RETR_CONFIG=retrieval@2` |
 | Fused ranking before the rerank, same run setup: recall@8, mrr@40 | 0.838, 0.623 | `EVAL_RANK=rrf make eval-retrieval SPLIT=train RETR_CONFIG=retrieval@2` |
 | Whole-document versus retrieval answers, 39 paired single-document train items: answer_pass | 0.692 (retrieval) versus 0.641 (whole document), no detectable difference; cost per turn $0.0063 versus $0.0120 | `make eval-answers SPLIT=train MAX_USD=1.5 FILTER=scope_docs=1` with `FULL_CONTEXT_AUTO=true`, at commit `1c92d64`, where that switch exists |
-| `support_check` against the faithfulness judge | agreement 0.92, kappa 0.83, n = 37, $0.14 | at commit `0c5d8d1`: `cd backend && PYTHONPATH=.. uv run python -m eval.support_calibration --n 40 --max-usd 0.5` |
+| `support_check` against the faithfulness judge | agreement 0.92, kappa 0.83, n = 37, $0.14 | measured at commit `0c5d8d1` with a script since removed; not regenerable from the current tree |
 | Citation integrity (no unresolved citation reaches the user) | 1.000 on every kept run | `make eval-gate-t0` |
 | Gold quotes locatable in the extracted PDFs (the earlier 100-quote expert set) | 100.0 percent | at commit `0c5d8d1`, after `make eval-fetch`: `make eval-extraction` |
 | Brief facts verified by code, 3 sample documents | 56 of 58 | `python3 -c "import json;d=json.load(open('eval/baselines/brief_samples.json'));f=[x for v in d.values() for x in v['facts']];print(sum(x['status']=='verified' for x in f),len(f))"` |

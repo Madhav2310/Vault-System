@@ -1,4 +1,4 @@
-"""Reading-order safety: column repair (F2, F3) and footnote separation (F4)."""
+"""Reading-order safety: column repair and footnote separation."""
 
 import pathlib
 import re
@@ -48,7 +48,7 @@ def test_single_column_untouched(tmp_path: pathlib.Path) -> None:
         page.text(ln.strip(), 72 + indent, 700 - 14 * i, 10)
     doc = PdfExtractor().extract(_pdf(tmp_path, page, "single.pdf"))
     got = [ln for ln in doc.pages[0].text.split("\n") if ln.strip()]
-    assert got == [ln.strip() for ln in lines]  # same order, nothing split or moved (F3)
+    assert got == [ln.strip() for ln in lines]  # same order, nothing split or moved
     assert not {"reading_order_repaired", "multi_column"} & set(doc.pages[0].flags)
 
 

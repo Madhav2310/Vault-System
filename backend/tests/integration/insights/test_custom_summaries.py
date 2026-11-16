@@ -159,7 +159,7 @@ async def test_validation(sm, make_owner, api, summary_queue) -> None:  # type: 
     ):
         r = await api.post(f"/v1/documents/{doc.ref.document_id}/summaries", json=body, headers=o.auth)
         assert r.status_code == 422, (body, r.status_code)
-        assert r.json()["code"] == "validation_error" or "validation" in r.text
+        assert r.json()["code"] == "validation_error"
     ok = await post(api, o, doc, length="short", focus="x" * 200)
     assert ok.status_code == 202
     assert summary_queue.ids and len(await rows(sm, doc.ref.version_id)) == 1  # only the valid one made a row
@@ -395,12 +395,11 @@ async def test_large_document_never_fails(sm, make_owner, api, summary_queue) ->
     assert seen_queries == ["obligation seven"]
     headers = tokens_in(summary_calls(prov)[0])
     assert len(headers) == 4  # 12000 / 3000 tokens
-    shown = " ".join(headers)
     assert "Section 7" in str(summary_calls(prov)[0].messages[-1]["content"]) and "Section 2 " in str(
         summary_calls(prov)[0].messages[-1]["content"]
     )
     content = (await poll(api, o, big, s1)).json()
-    assert content["status"] == "ready" and "SUMMARY_EVIDENCE_SUBSET" in content["reasons"] and shown
+    assert content["status"] == "ready" and "SUMMARY_EVIDENCE_SUBSET" in content["reasons"]
     assert "SUMMARY_RETRIEVAL_DEGRADED" not in content["reasons"]
 
     # without a focus the query is "overview"; a failing retriever still gives a summary

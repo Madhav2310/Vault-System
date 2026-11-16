@@ -7,8 +7,6 @@ import sys
 import pytest
 import yaml
 
-import tests.support.evalkit  # noqa: F401  (puts the repo root on sys.path)
-
 _ROOT = pathlib.Path(__file__).resolve().parents[4]
 sys.path.insert(0, str(_ROOT / "eval" / "build"))
 import sample_public as sp  # noqa: E402

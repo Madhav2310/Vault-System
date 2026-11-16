@@ -1,11 +1,11 @@
-"""Llm_calls gains `role` and `resolved_model`.
+"""Add `role` and `resolved_model` to llm_calls.
 
 Revision ID: 0002
 Revises: 0001
 Create Date: 2026-11-13
 
 `model` stays the requested model; `resolved_model` is what the API reports having served; `role` is the
-routing role (NULL for embeddings). Both are nullable so existing rows stay valid.
+routing role (NULL for embeddings). Both are nullable.
 """
 
 from collections.abc import Sequence

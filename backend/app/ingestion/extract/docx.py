@@ -54,7 +54,7 @@ _BLOCK_WRAPPERS = (f"{_W}sdtContent", f"{_W}ins", f"{_W}customXml", f"{_W}smartT
 def para_text(p: Any) -> str:
     """Visible text of a `w:p` element: every `w:t` in document order, wherever it sits (plain runs, tracked
     insertions `w:ins`, hyperlinks, smart tags, fields). Tracked deletions use `w:delText` and are skipped.
-    python-docx's `Paragraph.text` reads direct runs only, which dropped text inside `w:ins` and `w:sdt`."""
+    python-docx's `Paragraph.text` reads direct runs only and misses text inside `w:ins` and `w:sdt`."""
     out: list[str] = []
     for el in p.iter():
         if el.tag == _TEXT:

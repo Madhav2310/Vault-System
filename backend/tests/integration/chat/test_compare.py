@@ -1,5 +1,6 @@
 """Compare across documents over the real database: per-document retrieval, both sides cited,
-a code-checked "not found" segment and the more-than-5-documents fallback (fake provider, mocked reranker)."""
+a code-checked "not found" segment and the more-than-5-documents fallback
+(fake provider, fusion order, no reranker)."""
 
 import uuid
 from collections.abc import Callable
