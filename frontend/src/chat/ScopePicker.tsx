@@ -71,6 +71,7 @@ export function ScopePicker({ docs, scope, onChange, open }: Props) {
                     type="checkbox"
                     checked={usable && ticked(d.id)}
                     disabled={!usable || only}
+                    title={only ? "A chat needs at least one document" : undefined}
                     onChange={(e) => onChange(toggleDoc(scope.length ? scope : allScope(docs), d.id, e.target.checked))}
                   />
                   <span className="scope-title">{d.title}</span>
@@ -82,7 +83,6 @@ export function ScopePicker({ docs, scope, onChange, open }: Props) {
             );
           })}
         </ul>
-        {count <= 1 && docs.length > 1 && <p className="hint">A chat needs at least one document.</p>}
       </fieldset>
     </details>
   );
