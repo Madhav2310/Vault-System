@@ -2,7 +2,7 @@
 
 ## What it is
 
-Upload PDF, DOCX, TXT or Markdown files. Vault processes them in the background, writes a cited summary (a "source guide") of each, and lets you chat with your documents, one at a time or across all of them.
+Upload PDF, DOCX, TXT or Markdown files. Vault processes them in the background, writes a cited summary (a "source guide") of each, and lets you chat with them. A new chat starts on the document you uploaded last, and a checklist adds more documents.
 
 Every claim in an answer points to the exact sentence it came from. That sentence is copied by code from the stored text, never written by the model, and a separate check marks any segment its citation does not support.
 
@@ -10,11 +10,15 @@ Every claim in an answer points to the exact sentence it came from. That sentenc
 
 <table>
 <tr>
-<td width="50%"><img src="docs/img/ui/chat-empty.png" alt="Empty chat with suggested questions"><br><sub>Empty chat: suggested questions come from the documents.</sub></td>
-<td width="50%"><img src="docs/img/ui/chat-conflict.png" alt="Conflict callout showing two sources that disagree"><br><sub>Conflict callout: two documents disagree, both quotes are shown.</sub></td>
+<td width="50%"><img src="docs/img/ui/source-guide.png" alt="Document page with a cited summary, tone and key facts"><br><sub>Source guide: summary, tags, tone and key facts, each tied to a citation, plus a custom summary form and versions.</sub></td>
+<td width="50%"><img src="docs/img/ui/chat-empty.png" alt="New chat on the latest document with a Chatting with bar"><br><sub>New chat: it starts on the latest document, with suggested questions from it. Change opens the checklist.</sub></td>
 </tr>
 <tr>
+<td width="50%"><img src="docs/img/ui/chat-conflict.png" alt="Conflict callout showing two sources that disagree"><br><sub>Conflict callout: two documents disagree, and both quotes are shown.</sub></td>
 <td width="50%"><img src="docs/img/ui/library.png" alt="Library with processing status, category and tags"><br><sub>Library: upload, live status, category and tags, and a failed file with a next step.</sub></td>
+</tr>
+<tr>
+<td width="50%"><img src="docs/img/ui/metrics.png" alt="Metrics page: daily allowance, time per step and outcomes"><br><sub>Metrics: each figure has a plain-language note. The chat section shows the daily allowance, where an answer's time goes, and what became of each question.</sub></td>
 <td width="50%"><img src="docs/img/ui/chat-answer-mobile.png" alt="The same answer at phone width" width="260"><br><sub>The same answer at phone width.</sub></td>
 </tr>
 </table>
@@ -88,13 +92,13 @@ Source: `docs/spec/case-study.pdf`. Status is one of **built** or **not built**;
 
 | Feature | Status | Where it lives |
 |---|---|---|
-| Multi-document chat | Built | `POST /v1/chat/sessions` with `document_ids` for a chosen set, or omitted for all documents; every source is cited |
+| Multi-document chat | Built, weaker than one document | `POST /v1/chat/sessions` with `document_ids` for a chosen set, or omitted for all documents; every source is cited. Most of the evaluation asks inside one document, and scores are lower with several in scope (see Limits) |
 | Intelligent follow-up suggestions | Built | Returned with each answer and rendered as chips (`backend/app/chat/followups.py`) |
 | Summary customization (length, focus, tone) | Built | `POST /v1/documents/{id}/summaries` |
 | Automated categorization and tagging | Built | Part of the brief (`category`, `tags`) |
 | Key insight extraction | Built | Key facts in `GET /v1/documents/{id}/brief`, each cited and verified in `backend/app/insights/verify.py` |
 | Sentiment analysis | Built, per document | The brief classifies each document's tone (`positive`, `negative`, `mixed`, `adversarial`, `formal`, `neutral`) with a one-line reason and up to three cited sentences (`backend/prompts/brief_extract@3.md`); per-passage sentiment is not built |
-| Comparative analysis between documents | Built | Compare route with per-document retrieval and a conflict callout (`backend/app/chat/compare.py`, `conflicts.py`). |
+| Comparative analysis between documents | Built | Compare route with per-document retrieval and a conflict callout (`backend/app/chat/compare.py`, `conflicts.py`) |
 | Simple frontend | Built | `/app`: library, document page with source viewer, streaming chat, metrics (`frontend/`) |
 | Real-time updates | Built, over SSE | `GET /v1/versions/{id}/processing/stream` for processing, `text/event-stream` for chat; no WebSocket |
 | Smart caching | Built | Redis caches query embeddings (`backend/app/retrieval/`); chunk embeddings are cached by content hash (`backend/app/ingestion/embed_index.py`); paid ingestion outputs go through `llm_cache`. Answers are deliberately never cached |
@@ -199,13 +203,21 @@ A chat turn is an explicit graph of nodes: load context, analyze (or skip on the
 | OpenAI only, addressed by role (`fast`, `balanced`, `deep`, `flagship`) | Model names live in one routing file and settings | `backend/app/llm/routing.py` |
 | API-key auth, with a session cookie for the UI | The smallest thing that isolates users; every repository call takes an owner id and cross-user access returns 404 | `backend/app/core/auth.py` |
 | Explanations come from reason codes and templates | The model is never asked to explain itself | `backend/app/explain/` |
-| Exact vector search inside the owner's hash partition | Perfect recall and a few milliseconds at owner scale | `backend/app/retrieval/vector.py` |
+| Exact vector search inside the owner's hash partition | No approximate-index misses, and milliseconds at owner scale. It does not make retrieval as a whole complete: the right passage still has to rank high enough to be kept | `backend/app/retrieval/vector.py` |
 
 Assumptions: the reviewer runs on one machine with Docker; one owner has thousands of documents, not millions; answers are never cached. The complete design, with every decision and its evidence, is in `ARCHITECTURE.md`.
 
 ## Quality, scale and cost at a glance
 
-The shipped configuration: retrieval `retrieval@5` (an LLM listwise rerank of 50 fused candidates, top 8 kept), prompts `analyze_query@4`, `answer_rag@12`, `answer_compare@3` and the advisory `support_check@1`. Judges: `eval_judge_claims@5`, `eval_judge_support@3`, `eval_judge_abstain@1` (the frozen runs were judged with `@4`; the `@5` re-judge of dev gives the same answer pass, `docs/evaluation.md` section 2). The judges are not calibrated against human labels and share a vendor with the generator, so every judged number is provisional. Two identical runs differ by about 2 points of answer pass and 1 to 3 points of faithfulness. Method, baselines and the full tables are in `docs/evaluation.md`.
+The shipped configuration is retrieval `retrieval@5` (an LLM listwise rerank of 50 fused candidates, top 8 kept) with prompts `analyze_query@4`, `answer_rag@12`, `answer_compare@3` and the advisory `support_check@1`. The judges are `eval_judge_claims@5`, `eval_judge_support@3` and `eval_judge_abstain@1`. The frozen runs were judged with `@4`; re-judging dev with `@5` gives the same answer pass (`docs/evaluation.md` section 2).
+
+Read the numbers with three caveats:
+
+- The judges are not calibrated against human labels and share a vendor with the generator, so every judged number is provisional. Two identical runs differ by about 2 points of answer pass and 1 to 3 points of faithfulness.
+- The test gold is a draft. Its 134 items were never audited.
+- Most questions are asked inside one document: 231 of the 311 gold items are scoped to a single document and 23 to the whole library. Scores are lower when several documents are in scope. `docs/evaluation.md` section 6 has the figures and the command.
+
+Method, baselines and the full tables are in `docs/evaluation.md`.
 
 **Sealed test split.** Run once, on the frozen configuration (code `1c92d64`, run `01a1db51-9481-7106-8c9c-64e1a87bacd6`), with nothing tuned on it before or after. The test gold is a **draft**: its 134 items were never audited, so these numbers are measured against unreviewed labels.
 
@@ -226,7 +238,7 @@ The shipped configuration: retrieval `retrieval@5` (an LLM listwise rerank of 50
 | Locked benchmark: answer pass, train, original pre-audit gold, 123 items | 0.699 (86) | 0.772 (95) | `cd backend && PYTHONPATH=.. uv run python -m eval.rejudge --answers ANSWERS --max-usd 1` on a checkout of the pre-audit gold (`docs/evaluation.md` section 2) |
 | Faithfulness, train / dev | 0.853 / 0.888 | 0.899 / 0.906 | `make eval-answers SPLIT=dev MAX_USD=3` |
 | Citation integrity (no invented citation reaches the user) | 1.00 | 1.00 | `make eval-gate-t0` |
-| Brief cost per document, mean of 3 samples | | $0.0143 | `python3 -c "import json;d=json.load(open('eval/baselines/brief_samples.json'));print(sum(float(v['cost_usd']) for v in d.values())/len(d))"` |
+| Brief cost per document, mean of 3 samples | | $0.0143 | `cd backend && uv run python -c "import json;d=json.load(open('../eval/baselines/brief_samples.json'));print(sum(float(v['cost_usd']) for v in d.values())/len(d))"` |
 | Corpus documents reaching ready | | 19 of 19 in 36 s | `make c1-check` |
 
 Engineering gain with gold and judges fixed: +11.0 points on train (13 items net) and +10.2 on dev (6 items net), from `python -m eval.paired BASELINE.json FINAL.json --metric answer_pass --ledger` (`docs/evaluation.md` section 1.3). Against the targets fixed before measuring (answer pass 0.80, faithfulness 0.90, citation chunk precision 0.85), the test run meets faithfulness and misses answer pass (0.761) and chunk precision (0.658). Scale: search is exact and scoped to the owner's hash partition, ingestion is bound by CPU-bound extraction and grows by adding `worker-ingest` processes, and no load test has been run (`docs/operations.md`).
@@ -248,8 +260,11 @@ Live and evaluation commands always run on samples with a spend cap, never on th
 ## Limits
 
 - Scanned PDFs end as `needs_ocr` (OCR is not built), and PDFs over 600 pages are unsupported.
+- Chat is strongest inside one document. With several in scope, the query analyzer narrows by title alone, so a name that matches two titles can send a question to the wrong document. A summary across documents can leave one out, because retrieval keeps only the top 8 passages.
+- Small talk and questions about the conversation are not handled. A greeting gets the "not found in your documents" card, and "what did I ask first?" returns an error message. Memory is the most recent turns only, with no running summary.
+- Form-style PDFs, such as a lab report or a statement, are split into many small fragments. A short bold line is read as a heading, and text under a heading with nothing after it is not stored as evidence, so a form's header fields or a signature block cannot be cited.
 - Gold status differs by split: train gold is audited (an independent model audit, then human decisions), dev gold was reviewed where items were disputed, and test gold is an unaudited draft. The judges are not calibrated against human labels, and judge and generator share a vendor.
-- No concurrency or throughput claim exists beyond single-document measurements; no load test has been run.
+- No concurrency or throughput claim exists beyond single-document measurements, because no load test has been run.
 - Observability with Grafana is off by default (`make up-full`).
 - The full list is in `ARCHITECTURE.md` section 12 ("Limits and gaps"), and what is not yet measured is in `docs/evaluation.md` section 6.
 
@@ -276,6 +291,6 @@ Live and evaluation commands always run on samples with a spend cap, never on th
 | [`ARCHITECTURE.md`](ARCHITECTURE.md) | System design: components, data model, pipelines, models, explainability, decisions and limits |
 | [`docs/evaluation.md`](docs/evaluation.md) | How quality is measured, current numbers, decisions from measurements, the runbook |
 | [`docs/operations.md`](docs/operations.md) | Dev environment, fresh-clone check, scale and cost, observability |
-| [`docs/demo.md`](docs/demo.md) | The 3 to 4 minute demo script: what to click and say |
+| [`docs/demo.md`](docs/demo.md) | The recorded walkthrough on one document, the questions that work, and the scripted demos: what to click and say |
 | [`docs/voice.md`](docs/voice.md) | How Vault talks |
 | [`CLAUDE.md`](CLAUDE.md) | Rules and conventions for contributors and coding agents |

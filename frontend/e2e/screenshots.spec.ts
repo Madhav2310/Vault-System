@@ -2,7 +2,7 @@ import { test, type Page } from "@playwright/test";
 
 // Visual QA capture. Mocked API, no stack: `SHOTS=1 UI_BASE_URL=http://localhost:5199 npx playwright test e2e/screenshots.spec.ts`
 // (vite dev server on 5199). Skipped in `make ui-e2e`. Writes PNGs to e2e/screenshots/<scheme>-<size>/ (ignored by git);
-// the README images in docs/img/ui/ are copies of 1440-light 01, 02, 04, 08 and 390-mobile 02.
+// the README images in docs/img/ui/ are copies of 1440-light 01, 02, 04, 08, 09, 10 and 390-mobile 02.
 test.skip(!process.env["SHOTS"], "set SHOTS=1 to capture screenshots");
 
 const SESSION = "55555555-5555-4555-8555-555555555555";
@@ -126,6 +126,22 @@ for (const sz of sizes) {
       await ask(page);
       await page.getByTestId("chat-error").waitFor();
       await shot(page, "07-error");
+    });
+    test("metrics", async ({ page }) => {
+      await mock(page);
+      await page.route("**/v1/metrics/documents", (r) =>
+        r.fulfill(json({ scope: "owner", documents: 3, by_status: { enriched: 2, failed: 1 }, by_mime: { "application/pdf": 3 }, needs_ocr: 0, pages: 41, chunks: 210, storage_bytes: 1544021, time_to_ready_seconds: { p50: 38.2, p95: 71 }, enriched: 2, by_category: { contract: 2, memo: 1 }, brief_cost_usd: { total: 0.0286, per_document_p50: 0.0143 }, facts: { total: 46, verified_ratio: 0.978 } })),
+      );
+      await page.route("**/v1/metrics/processing**", (r) =>
+        r.fulfill(json({ scope: "owner", window: "24h", throughput: { jobs_completed: 3, stage_runs: 18, jobs_per_hour: 0.125 }, stage_duration_ms: { extract: { count: 3, p50: 840, p95: 1900 }, quality: { count: 3, p50: 15, p95: 78 }, chunk: { count: 3, p50: 16, p95: 78 }, embed: { count: 3, p50: 1083, p95: 1599 }, index: { count: 3, p50: 4, p95: 4 }, brief: { count: 3, p50: 13652, p95: 14450 } }, failures_by_error_code: {}, retries: 0, redispatch_candidates: 0, oldest_pending_age_seconds: null })),
+      );
+      await page.route("**/v1/metrics/chat**", (r) =>
+        r.fulfill(json({ scope: "owner", window: "24h", quota: { limit_usd: 1, spent_today_usd: 0.25 }, turns: 34, outcomes: { answer: 31, abstain: 3 }, coverage: { none: 34 }, latency_ms: { p50: 9100, p95: 14200 }, ttft_ms: { p50: 6100, p95: 8200 }, cost_per_turn_usd: { p50: 0.0065, p95: 0.0099 }, node_latency_ms: { analyze: { p50: 2080, p95: 3134 }, retrieve: { p50: 1996, p95: 4745 }, generate: { p50: 3208, p95: 6775 }, verify: { p50: 1864, p95: 3534 } }, degraded: {}, feedback: { up: 7, down: 2, by_reason: { wrong: 1, incomplete: 1 } }, llm: { calls: 170, total_cost_usd: 0.2506, cache_hit_ratio: 0.23, tokens: [], cost_by_purpose: {} } })),
+      );
+      await page.goto("/app/metrics");
+      await page.getByTestId("stat-turns").waitFor();
+      await settle(page);
+      await page.getByTestId("metrics-m-chat").screenshot({ path: `e2e/screenshots/${sz.name}/10-metrics.png` });
     });
     test("library and document", async ({ page }) => {
       await mock(page);

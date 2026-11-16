@@ -1,6 +1,6 @@
 # Operations
 
-Running Vault on a laptop, what it costs, how it behaves under load and retries, how it scales to thousands of documents, what it emits for observability, and a script for demonstrating it.
+Running Vault on a laptop, what it costs, how it is built to behave under load and retries, how it scales to thousands of documents, what it emits for observability, and a script for demonstrating it.
 
 Contents: [1. Dev environment](#1-dev-environment) · [2. Scale: measured and derived](#2-scale-measured-and-derived) · [3. Queueing, load and idempotency](#3-queueing-load-and-idempotency) · [4. Cost](#4-cost) · [5. Growing beyond one machine](#5-growing-beyond-one-machine) · [6. Observability](#6-observability) · [7. Demo script](#7-demo-script)
 
@@ -17,7 +17,7 @@ Docker runs a Linux VM that keeps its memory. Keep it small, and off when nothin
 | Work | Command | Containers |
 |---|---|---|
 | Lint, types, unit tests, frontend checks | `make ci` | none |
-| Integration tests | `make up-test`, then `make test` | postgres, redis (about 1.3 GB) |
+| Integration tests | `make up-test`, then `make test-integration` | postgres, redis (about 1.3 GB) |
 | Running the app, the demo, evaluations | `make up` | plus api, workers, beat (about 4.4 GB limit) |
 | Observability (Grafana, Tempo) | `make up-full` | plus otel-lgtm (1 GB), heavy |
 | Stop everything | `make down` | |
@@ -102,7 +102,7 @@ Idempotency, in short: every boundary tolerates a second delivery. Uploads dedup
 
 Failure handling: Redis down means uploads are still accepted and their jobs are enqueued by the sweeper once the broker answers (a stalled broker costs at most a 10 s socket timeout), and the limiter fails open; Postgres down means 503; a failed rerank call means fusion order with `degraded=no_rerank`; embeddings down means ingestion retries and queries go lexical-only; a turn that dies is finished as `failed` by the reaper.
 
-**How this handles thousands of documents.** Search is exact and scoped to the owner's hash partition, which gives perfect recall; its cost grows linearly with the chunks in scope; at about 10,000 chunks the vector leg takes about 9 ms and the lexical leg about 15 ms median and 190 ms p95 (section 2.3). Ingestion is bound by CPU-heavy extraction, so it scales by adding `worker-ingest` processes; `worker-ai` is I/O-bound and scales with provider rate limits. A document is searchable once `index` commits, before its brief, so a large batch of uploads becomes usable progressively. There is no per-owner cap on concurrently processing versions, so one very large upload can delay others.
+**How this handles thousands of documents.** Search is exact and scoped to the owner's hash partition, so no recall is lost to an approximate index (end-to-end recall is still bounded by the candidate caps); its cost grows linearly with the chunks in scope; at about 10,000 chunks the vector leg takes about 9 ms and the lexical leg about 15 ms median and 190 ms p95 (section 2.3). Ingestion is bound by CPU-heavy extraction, so it scales by adding `worker-ingest` processes; `worker-ai` is I/O-bound and scales with provider rate limits. A document is searchable once `index` commits, before its brief, so a large batch of uploads becomes usable progressively. There is no per-owner cap on concurrently processing versions, so one very large upload can delay others.
 
 ---
 

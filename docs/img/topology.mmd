@@ -8,7 +8,7 @@ flowchart LR
         beat["beat<br/>sweeper, reaper, purges"]
         pg[("postgres 16 + pgvector 0.8<br/>system of record:<br/>metadata, halfvec, tsvector,<br/>jobs, ledger")]
         redis[("redis<br/>broker, rate-limit buckets,<br/>caches (rebuildable)")]
-        blobs[("object store (blobs volume)<br/>blobs by sha256,<br/>layouts, extracted artifacts")]
+        blobs[("object store (blobs volume)<br/>blobs by sha256,<br/>extracted artifacts")]
     end
     subgraph optional["optional compose profiles"]
         obs["otel-lgtm<br/>collector, Prometheus, Tempo,<br/>Loki, Grafana; profile obs"]

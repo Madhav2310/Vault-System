@@ -9,9 +9,23 @@ How Vault is built, why each part exists, which models do what, and how any answ
 - **Looking for numbers?** Quality and its measurement are in `docs/evaluation.md`; speed, scale, cost and operations are in `docs/operations.md`. This file links to them rather than repeating them.
 - **About to change something?** The table at the end of [section 13](#13-repo-map-how-to-run-it-and-where-to-look-when-changing-things), "If you change X, read Y", names the code, the tests and the sections to read first.
 
+## Overview
+
+Vault stores uploaded PDF, DOCX, TXT and Markdown files and answers questions about them, with each cited claim tied to a stored sentence.
+
+**Components.** `api` (FastAPI: REST, SSE, auth and the chat turn graph), `worker-ingest` (extract, quality, chunk), `worker-ai` (embed, index, brief, summaries), `beat` (sweeper and reaper), PostgreSQL 16 with pgvector (the system of record), Redis (broker and rebuildable state), a local blob store, and OpenAI models addressed by role. A React UI is served at `/app`.
+
+**Upload.** The API checks the file type by magic bytes, deduplicates by `(owner, sha256)`, stores the blob, and writes document, version and job rows in one transaction. Workers run `extract, quality, chunk, embed, index, brief`. Each stage is idempotent and commits under a leased, fenced claim. The version is searchable after `index`, and `brief` adds the summary later.
+
+**Chat turn.** The API claims the session's turn lease, loads the scope and recent turns, optionally runs one analysis call (intent, standalone query, optional document narrowing), retrieves (exact vector and lexical search, fused, reranked by one LLM call, top 8 plus neighbours), generates segments that cite evidence handles, resolves the handles to stored sentences in code, runs an advisory support check, and writes the whole turn to the ledger in one transaction.
+
+**Quality and limits.** On the sealed test split, answer_pass is 0.761 against a target of 0.80 and faithfulness is 0.957. Most gold items are asked against one pre-scoped document, so multi-document behaviour is weakly measured ([section 12](#12-decisions-trade-offs-and-limits)).
+
+**Read next.** Section 6 (the turn graph), section 8 (why an answer can be checked) and section 12 (limits). Numbers are in `docs/evaluation.md` and `docs/operations.md`.
+
 ## TL;DR
 
-1. Vault lets a user upload PDF, DOCX, TXT and Markdown files and chat with them. Every claim in an answer points to the exact stored sentence it came from.
+1. Vault lets a user upload PDF, DOCX, TXT and Markdown files and chat with them. Each cited claim in an answer points to the exact stored sentence it came from, and a segment without a valid citation is shown as uncited.
 2. Citations are **application-managed**. Each evidence sentence gets a handle (`E3.1`), the model returns handles in a strict JSON schema, and code copies `cited_text` from the stored sentence. The model never writes a quote.
 3. Orchestration is code. A typed turn graph (`backend/app/chat/turn.py`) picks every edge. The model only returns typed decisions (an intent, handles, verdicts) that code validates and applies.
 4. One FastAPI API process, Celery workers on three queues (`ingest`, `ai`, `maintenance`), and PostgreSQL 16 with pgvector as the single source of truth. Redis holds rebuildable state only. Observability is an optional sidecar.
@@ -19,7 +33,7 @@ How Vault is built, why each part exists, which models do what, and how any answ
 6. Retrieval is hybrid and exact: an OR tsquery plus `text-embedding-3-small` vectors over the owner's hash partition, fused with reciprocal rank fusion (RRF). One listwise call on the `fast` model reranks the top 50 fused candidates and keeps 8 (`retrieval@5`). There is no cross-encoder and no score floor: measurements did not justify them.
 7. Models are addressed by role: `fast` = `gpt-6-luna`, `balanced` = `gpt-6.1-terra`, `deep` = `gpt-6.1-sol`, `flagship` = `gpt-6-astra`. Only `backend/app/llm/routing.py` and settings name models.
 8. Explanations come from reason codes and templates (`backend/app/explain/templates.py`), served at `GET /v1/runs/{id}`. The model is never asked to explain itself.
-9. Quality is measured on a golden set of 311 live items in 15 strata, with document-level splits, claim-level judges and clustered confidence intervals (`docs/evaluation.md`). The sealed test split, run once, scores answer_pass 0.761 with faithfulness 0.957 and citation integrity 1.00. The judged numbers are provisional: the judges are not calibrated against human labels, and the test gold is an unaudited draft.
+9. Quality is measured on a golden set of 311 live items in 14 strata with items, with document-level splits, claim-level judges and clustered confidence intervals (`docs/evaluation.md`). The sealed test split, run once, scores answer_pass 0.761 with faithfulness 0.957 and citation integrity 1.00. Of the 311 items, 231 are asked in a session scoped to the one right document and 23 against the whole library, so choosing the right document across a library is little measured. The judged numbers are provisional: the judges are not calibrated against human labels, and the test gold is an unaudited draft.
 10. Behaviour changes ship **disabled** behind switches ([section 7.3](#73-behaviour-switches)) and are enabled only when a paired evaluation on the dev split shows a gain.
 
 ## Contents
@@ -65,11 +79,11 @@ The user is a professional with a growing personal collection of contracts, repo
 
 Product principles that follow from those failures:
 
-- **Honest uncertainty.** The system abstains rather than invents, shows disagreement rather than averaging it, and reports coverage states (answered, partial, not found) instead of confidence percentages, which no calibrated model could back.
-- **Evidence is first-class.** Every answer segment links to immutable sentences of a specific document version.
+- **Honest uncertainty.** The system abstains rather than invents, shows the disagreements it detects rather than averaging them, and reports coverage states (answered, partial, not found) instead of confidence percentages, which no calibrated model could back.
+- **Evidence is first-class.** Every cited answer segment links to immutable sentences of a specific document version, and an uncited segment is labelled as such.
 - **Everything attributable.** Every model call, stage, candidate and decision is recorded with cost, latency and a reason.
 - **Measure before adding.** Retrieval and prompt changes are enabled only with a measured delta ([section 7.3](#73-behaviour-switches)).
-- **Smallest system that meets the target scale.** Built for tens of concurrent users, with a documented path to about a thousand daily users without redesign (`docs/operations.md`).
+- **Smallest system that meets the target scale.** Built for tens of concurrent users, with a sketch of the path to about a thousand daily users in `docs/operations.md`. That path is not built or load-tested.
 - **Answer format.** A lookup gets a one-line answer and its quote; an explanation is answer-first with cited points; a comparison is one short cited paragraph per dimension per document; an abstention says what was searched and suggests a rephrasing.
 
 Non-goals: team workspaces and roles, open-web search, document editing, cross-user sharing, guaranteed OCR, provider failover, a mobile app.
@@ -89,7 +103,7 @@ flowchart LR
         beat["beat<br/>sweeper, reaper, purges"]
         pg[("postgres 16 + pgvector 0.8<br/>system of record:<br/>metadata, halfvec, tsvector,<br/>jobs, ledger")]
         redis[("redis<br/>broker, rate-limit buckets,<br/>caches (rebuildable)")]
-        blobs[("object store (blobs volume)<br/>blobs by sha256,<br/>layouts, extracted artifacts")]
+        blobs[("object store (blobs volume)<br/>blobs by sha256,<br/>extracted artifacts")]
     end
     subgraph optional["optional compose profiles"]
         obs["otel-lgtm<br/>collector, Prometheus, Tempo,<br/>Loki, Grafana; profile obs"]
@@ -121,7 +135,7 @@ Legend: solid arrows are calls on the default stack. Dashed arrows are optional 
 
 ## 3. Data model
 
-The schema is in `backend/app/db/models/*.py` with four Alembic migrations in `backend/app/db/migrations/versions/`. IDs are UUIDv7, which is time-ordered and B-tree friendly (`backend/app/core/ids.py`).
+The schema is in `backend/app/db/models/*.py` with eight Alembic migrations in `backend/app/db/migrations/versions/`. IDs are UUIDv7, which is time-ordered and B-tree friendly (`backend/app/core/ids.py`).
 
 ```mermaid
 erDiagram
@@ -163,7 +177,7 @@ erDiagram
 | `rag_runs` | one per turn: route, mode, `original_query`, `standalone_query`, `analysis`, `coverage`, `conflicts`, status, `reason_codes`, `degraded`, `limits`, `config` (prompt versions, models, retrieval config), token and cost totals, `latency_ms`, `ttft_ms`, `trace_id` | The evidence ledger's root. Totals are summed from linked `llm_calls`. `replay_of_run_id` exists in the schema, but no replay endpoint exists. |
 | `run_versions` | the version snapshot a run was scoped to | The ledger refuses a cited or candidate chunk outside this snapshot (`backend/app/chat/ledger.py`). |
 | `run_steps` | per node: `seq`, status, `duration_ms`, `decision`, `reason_code`, `error_code` | The node waterfall shown in the why view. |
-| `retrieval_candidates` | per candidate: vector rank and distance, lexical rank and score, `id_match`, `rrf_score`, `rerank_score`, `selected`, `expanded_from` | Full ranking provenance, so `eval.replay` can re-rank offline for $0. |
+| `retrieval_candidates` | per candidate: vector rank and distance, lexical rank and score, `id_match`, `rrf_score`, `rerank_score`, `selected`, `expanded_from` | Full ranking provenance, so `eval/diagnose.py` (`make eval-diagnose`) can re-rank offline for $0. |
 | `answer_segments` | per segment: text, `support` (cited or none), `verification`, `verification_reason` | Unique `(run_id, ordinal)`. |
 | `segment_evidence` | `(segment_id, chunk_id, sentence_start)` PK, `sentence_end`, `cited_text` | Half-open range check `sentence_start < sentence_end`. `cited_text` is copied from storage. |
 | `llm_calls` | one row **per attempt**: purpose, lane, provider, role, requested `model`, `resolved_model`, `prompt_id`, `prompt_version`, tokens (input, output, cache read, cache write), `cost_usd`, latency, TTFT, status (`ok`, `error`, or `estimated` for an aborted attempt whose tokens and cost are the gateway's estimate), `error_type` | The cost ledger. Daily quotas sum it (`backend/app/core/quota.py`). |
@@ -206,20 +220,20 @@ flowchart TD
 | upload (`backend/app/documents/upload.py`, `sniff.py`, `service.py`) | Streams multipart to a temp file in about 64 KB pieces, computing sha256. Aborts with 413 above `MAX_UPLOAD_BYTES` (25 MB). Sniffs magic bytes and never trusts the extension. Dedupes on `(owner_id, sha256)`. Then one transaction for document, version and job, and a CAS dispatch. | Re-uploading the same bytes returns the existing version. Nothing larger than one piece is held in memory. |
 | `extract` (`backend/app/ingestion/extract/`) | PDF via pdfplumber in a subprocess with a wall-clock timeout (`PARSE_TIMEOUT_S` 120) and a memory cap (`PARSE_MEMORY_MB`, Linux only). DOCX via python-docx after a zip size and ratio check (`docx.py`: 100 MB uncompressed, ratio 100). TXT and MD via `text.py`. PDFs over `MAX_PAGES` (600) end `unsupported`. The output is persisted to the object store, so retries never re-parse. | Invariant I1: every character of the page text maps to a glyph or is a synthetic space or newline. |
 | `quality` (`quality.py`) | `pages` rows with `quality_score` and flags: text density, multi-column signal, tables, replacement characters. | Scanned pages are flagged `needs_ocr`. If most pages are flagged, the version is `needs_ocr`. OCR is not built. |
-| `chunk` (`chunk.py`, `sentences.py`, `identifiers.py`) | Structure-aware chunks, a rule-based sentence splitter, `spans` back to page character ranges, identifier tokens for `tsv_ids`, and the `structural_prefix`. Writes the per-version layout file with glyph boxes. | `original_text` is an exact slice of page text (I1). The chunker is `chunker@1`, recorded in `document_versions.chunker_version` and part of every chunk's `content_hash` and of the retrieval cache key. |
+| `chunk` (`chunk.py`, `sentences.py`, `identifiers.py`) | Structure-aware chunks, a rule-based sentence splitter, `spans` back to page character ranges, identifier tokens for `tsv_ids`, and the `structural_prefix`. | `original_text` is an exact slice of page text (I1). The chunker is `chunker@1`, recorded in `document_versions.chunker_version` and part of every chunk's `content_hash` and of the retrieval cache key. |
 | `embed` (`embed_index.py`) | `text-embedding-3-small` over `embedding_text`, with up to `EMBED_CONCURRENCY` (4) batches in flight. Cached by `content_hash` and model. | Unchanged chunks on a re-upload cost nothing. |
 | `index` (`embed_index.py`) | Writes `tsv_ids`, sets `ready`, supersedes the previous version, and marks earlier answers scoped to an older version as stale (`backend/app/insights/staleness.py`, `WHERE stale_since IS NULL`). | The version is searchable, and chat unlocks here. |
 | `brief` (`backend/app/insights/stage.py`) | `brief_extract@3` (one call if the evidence fits `BRIEF_MAX_EVIDENCE_TOKENS` = 12,000, else a map over section groups with `BRIEF_CONCURRENCY` = 3) followed by `brief_merge@2`. Capped at `BRIEF_MAX_USD` ($0.05) per document. Every fact is quote-verified in code (`backend/app/insights/verify.py`). `BRIEF_ENABLED=false` skips the stage. | A failed brief leaves the version at `ready`, so chat never waits on it. Over quota, the stage defers. |
 
-**Why pdfplumber and a glyph-mapped stream.** Highlighting the exact cited sentence needs every evidence character tied to a glyph box. pdfplumber exposes character objects with coordinates under an MIT license, while PyMuPDF is AGPL and is avoided. The extraction configuration `use_text_flow=True, x_tolerance_ratio=0.15` was chosen by a sweep: 99 of 100 expert gold quotes located versus 86 of 100 with the defaults, and two-column papers 22 of 23 versus 9 of 23 (`docs/evaluation.md` section 4). A profiling fix replaced pdfplumber's quadratic `dedupe_chars`, taking the AMD 10-K from 37 s and 720 MB to 11.3 s and 198 MB (`docs/operations.md` section 2.1).
+**Why pdfplumber and a glyph-mapped stream.** Highlighting the exact cited sentence needs every evidence character tied to a glyph box. pdfplumber exposes character objects with coordinates under an MIT license, while PyMuPDF is AGPL and is avoided. The extraction configuration `use_text_flow=True, x_tolerance_ratio=0.15` was chosen by a sweep: 99 of 100 expert gold quotes located versus 86 of 100 with the defaults, and two-column papers 22 of 23 versus 9 of 23 (`docs/evaluation.md` section 4). pdfplumber's `dedupe_chars` is quadratic, so extraction uses a linear replacement: the AMD 10-K takes 11.3 s and 198 MB, against 37 s and 720 MB with the original (`docs/operations.md` section 2.1).
 
 **The geometry chain** turns a PDF into evidence that can be highlighted. Its invariants:
 
 1. **I1, one character stream.** Page text is built only from glyph characters, plus synthetic spaces and newlines that are marked as such. Every evidence character therefore maps to a box or to a known separator, and nothing downstream rewrites the text.
 2. **Display space.** Coordinates are normalized to the rendered CropBox and `/Rotate` is mapped through, so a box lands where the page renders. Pages whose content is already counter-rotated (landscape tables) choose the extraction frame from the dominant glyph direction, then map boxes back to display space.
 3. **Reading order** is repaired by a column-jump detector (`backend/app/ingestion/extract/reading_order.py`), and table cells are built from glyph-mapped words (`pdf_tables.py`).
-4. **Offsets, not copies.** A chunk stores `original_text`, sentence offsets into it, and `spans` mapping those to page character ranges. The per-version layout file holds the glyph boxes, so the UI computes a highlight from offsets (`GET /v1/chunks/{id}`, `GET /v1/versions/{id}/pages/{n}/layout`, `frontend/src/source/highlight.ts`) and offsets cannot drift from the text.
-5. **Honest fallback.** When a highlight cannot be computed (an empty or invalid range, or no layout file) the viewer shows the plain cited text instead of guessing a box.
+4. **Offsets, not copies.** A chunk stores `original_text`, sentence offsets into it, and `spans` mapping those to page character ranges. The UI computes the highlight from those offsets in the chunk text (`GET /v1/chunks/{id}`, `frontend/src/source/highlight.ts`), so offsets cannot drift from the text. A page-layout endpoint for glyph boxes (`GET /v1/versions/{id}/pages/{n}/layout`) exists, but no pipeline stage writes the layout file and the viewer does not call it, so a highlight is drawn in the chunk text and not on the PDF page.
+5. **Honest fallback.** When a highlight cannot be computed (an empty or invalid range) the viewer shows the plain cited text instead of guessing.
 
 **Chunker** (`chunker@1`, `chunk.py`): group by section, pack to about 400 tokens (800 max) with about 15% whole-sentence overlap. Tables are standalone chunks with the header row repeated, and a table row is one sentence.
 
@@ -255,19 +269,19 @@ flowchart LR
 
 | Step | Detail (from `backend/config/retrieval@5.yaml` and module docstrings) |
 |---|---|
-| Scope (`scope.py`) | The latest `ready`/`enriched` version of each document in the session scope, owned by the caller and not deleted. The analysis may narrow it but never widen it. Every SQL statement filters `owner_id` and `version_id = ANY(...)`. |
+| Scope (`scope.py`) | The latest `ready`/`enriched` version of each document in the session scope, owned by the caller and not deleted. The analysis may narrow it but never widen it. Narrowing is a hard filter chosen from document titles alone, so a wrong narrowing removes the right document from the turn (section 12). Every SQL statement filters `owner_id` and `version_id = ANY(...)`. |
 | Vector (`vector.py`) | Exact, brute-force cosine search over one owner's chunks, `k_vec` 40. `per_doc_quota` 12 caps the hits per document in a cross-document scope; a one-document scope gets the full `k_vec` list (`single_doc_full_k`). Hash partitioning prunes the query to 1 of 32 partitions. There is no ANN index. HNSW is the escape hatch above about 100,000 chunks in one scope, designed but **not built**. |
 | Lexical (`lexical.py`) | An **OR** tsquery of the query's English lexemes, ranked by `ts_rank_cd`, `k_lex` 40, plus an identifier query on `tsv_ids` for clause numbers, IDs, amounts and dates. |
 | Fusion (`fusion.py`) | Reciprocal rank fusion, `rrf_k` 60, identifier matches weighted 2. |
 | Rerank (`rerank.py`, `listwise.py`, `windows.py`) | `kind: llm`: one `rerank_listwise@1` call on `fast` orders the top 50 fused candidates, each shown as a query-focused window of at most 180 words with dot-leader runs collapsed (`collapse_leaders`; the reranker's copy only, never evidence), and the top 8 are kept. `retrieval@2` (`kind: none`) keeps fusion order. On a reranker timeout or failure, the turn keeps fusion order and records `degraded=no_rerank`. |
 | Expansion (`expand.py`) | Adds adjacent same-section chunks within a 4,000-token evidence budget, for answers split across chunks. |
-| Speculative retrieval (`backend/app/chat/speculative.py`) | Retrieval of the raw question starts while `analyze` runs. It is reused only when the analysis leaves the query and scope unchanged, otherwise it is cancelled. This saves latency and never changes the result. |
+| Speculative retrieval (`backend/app/chat/speculative.py`) | With a reranker that is not an LLM call, retrieval of the raw question starts while `analyze` runs. It is reused only when the analysis leaves the query and scope unchanged, and is otherwise cancelled. With the shipped `retrieval@5` (LLM rerank) only the query embedding starts early (`backend/app/chat/nodes/run_analyze.py`). It saves latency and never changes the result. |
 
 **Decisions made from measurements.** The evidence for each is in `docs/evaluation.md` section 4.
 
 | Decision | Why |
 |---|---|
-| The lexical leg uses an OR query, not AND. | AND starved the lexical leg: lexical-only recall@8 rose from 0.150 to 0.633. |
+| The lexical leg uses an OR query, not AND. | AND starved the lexical leg. The OR query alone reaches recall@8 0.675 and mrr@40 0.463 (`docs/evaluation.md` section 4). |
 | **LLM listwise reranker on** (`rerank.kind: llm`, 50 candidates). | Paired against fusion order: answer_pass +8.5 points on dev and +12.7 on train, faithfulness inside the run-to-run spread, +$0.0004 per turn. With 20 candidates the dev gain was not detectable, because the gold chunks sat at fused ranks 11 to 44. |
 | **No cross-encoder.** | The rule was fixed before measuring: keep it only if it is better, or not different with MRR@40 up by 0.03, and it adds at most 400 ms at p50. A MiniLM cross-encoder showed no detectable quality difference and added 495 ms at p50. |
 | **No score floor.** | A calibrated evidence floor refused 3 of 44 answerable train items. A turn abstains without generating only when retrieval returns no chunk. |
@@ -333,22 +347,22 @@ Legend: rectangles are nodes (async functions over the typed `TurnState`), and d
 |---|---|---|
 | `load_context` | Session, scope, memory and document titles in one short DB session. An empty scope goes to `abstain_no_documents`. | none |
 | `route_question` | Fast-path rules (`backend/app/chat/routing_rules.py`): a self-contained question with no pronoun, comparison or meta cue skips the analysis call. Any doubt means analyze. | none |
-| `analyze` | `analyze_query@4` (`fast`). Returns the intent, standalone query, dimensions, an optional document narrowing, an optional `meta_op`. A `clarify` intent is answered as `qa` (`CLARIFY_REJECTED`). Code drops unknown or foreign document refs, caps free text, and on any failure falls back to the raw question (`ANALYZE_FALLBACK`). The query embedding and speculative retrieval run at the same time. | 1, or 0 on the fast path |
+| `analyze` | `analyze_query@4` (`fast`). Returns the intent, standalone query, dimensions, an optional document narrowing chosen from titles alone (a hard filter), an optional `meta_op`. A `clarify` intent is answered as `qa` (`CLARIFY_REJECTED`). Code drops unknown or foreign document refs, caps free text, and on any failure falls back to the raw question (`ANALYZE_FALLBACK`). The query embedding runs at the same time. | 1, or 0 on the fast path |
 | `plan_context` | Chooses RAG or full context (`backend/app/chat/full_context.py`). Full context loads every chunk in order if the prompt fits `FULL_CONTEXT_MAX_TOKENS` (50,000) plus 4,000. Otherwise it falls back to RAG (`FULL_CONTEXT_TOO_LARGE`). | none |
-| `retrieve` / `compare_retrieve` | Hybrid retrieval, or for a compare intent over 2 to 5 documents, per-document retrieval with `max(3, 8 // n)` passages each, so one document cannot crowd out the others (`backend/app/chat/compare.py`). | embeddings only |
+| `retrieve` / `compare_retrieve` | Hybrid retrieval, or for a compare intent over 2 to 5 documents, per-document retrieval with `max(3, 8 // n)` passages each, so one document cannot crowd out the others (`backend/app/chat/compare.py`). Other multi-document questions share one top 8. | embeddings only |
 | `generate` | Builds the evidence set with handles and calls `answer_rag@12` (or `answer_compare@3` for compare), streaming. Resolves citations in code and validates conflicts and follow-ups. | 1 |
 | `verify` | The support check (`support_check@1`, `fast`) over cited segments. It is advisory: it annotates verdicts and adds reason codes, and never removes a segment or blocks an answer. | 1 |
 | `meta` | Questions about the library ("how many documents...") answered by one allowlisted, parameterized, owner-scoped query per op (`backend/app/chat/meta.py`). The model never writes SQL and never sees rows. | none |
 | `abstain_no_documents`, `abstain_no_evidence` | Template responses (`backend/app/chat/nodes/terminal.py`). | none |
 | `persist` | One transaction: finishes the run, writes the message, segments, evidence, run versions, steps, candidates and LLM-call links, and releases the session lease. Idempotent: a run that already has an assistant message returns it. | none |
 
-**Routes and modes.** Route limits (`backend/app/chat/harness.py`, `ROUTE_LIMITS`): `qa` 4 calls / 30 s, `compare` 4 / 45 s, `summarize` 3 / 60 s, `meta` and `chitchat` 1 / 10 s. Every gateway call charges this budget. Mode is `rag` or `full_context`. Generation escalates from `balanced` to `deep` only on typed signals (`generate:compare`, `generate:conflict` in the routing table), never on the model's self-reported confidence.
+**Routes and modes.** Route limits (`backend/app/chat/harness.py`, `ROUTE_LIMITS`): `qa` 4 calls / 30 s, `compare` 4 / 45 s, `summarize` 3 / 60 s, `meta` and `chitchat` 1 / 10 s. A turn the analyzer labels `chitchat` is not short-circuited: it still retrieves and generates after its single call is spent, so it ends in the generic error text. A short greeting usually takes the fast path as a question and gets the not-found card. Every gateway call charges this budget. Mode is `rag` or `full_context`. Generation escalates from `balanced` to `deep` only on typed signals (`generate:compare`, `generate:conflict` in the routing table), never on the model's self-reported confidence.
 
 **Streaming (SSE).** `backend/app/chat/events.py` defines a pydantic union discriminated on `type`, where every event carries `run_id`: `run.started`, `status` (stages `analyzing`, `retrieving`, `writing`, `verifying`, `saving`), `segment` (text plus resolved evidence with `cited_text`, `support`), `verification`, `followups`, `done` (usage), and `error`. The schema is served at `GET /v1/chat/events/schema`. `backend/app/chat/segments_reader.py` parses the strict JSON incrementally and yields each segment as soon as its object closes, so citations are validated before they are shown. The turn runs as its own task: a client disconnect closes only the generator, and the turn still persists (`backend/app/chat/stream.py`). A reconnecting client polls `GET /v1/runs/{id}`. Without `Accept: text/event-stream`, the POST blocks and returns JSON. TTFT is recorded per run (`rag_runs.ttft_ms`).
 
 **Stale answers.** When a version reaches `ready`, `backend/app/insights/staleness.py` sets `chat_messages.stale_since` on assistant messages whose runs used an earlier version of the document (`run_versions`), in the same transaction, owner-scoped and idempotent. The UI shows the `STALE_ANSWER` line from `backend/app/explain/templates.py` with a re-ask.
 
-**Memory** (`backend/app/chat/memory.py`): the newest whole turns within a token budget, plus the session's `rolling_summary` and `resolved_entities` when present. No code writes the rolling summary yet (the `memory_compact` route has no caller), so in practice memory is the turn window. There is no cross-session memory and no semantic answer cache.
+**Memory** (`backend/app/chat/memory.py`): the newest whole turns within a token budget, plus the session's `rolling_summary` and `resolved_entities` when present. Nothing writes `rolling_summary` or `resolved_entities`, so in practice memory is the turn window (3,000 tokens). The analyzer sees only the last 4 turns, 500 characters each. There is no cross-session memory and no semantic answer cache.
 
 **Abandoned turns.** `backend/app/chat/reaper.py` (beat) finishes runs whose turn died as `failed`, through the same idempotent `persist_turn`.
 
@@ -362,7 +376,7 @@ Nodes ask for a role. Settings map roles to models (`backend/app/core/settings.p
 
 | Role | Model | Price | Default routes (`DEFAULT_ROUTES`) and effort | Why this role |
 |---|---|---|---|---|
-| `fast` | `gpt-6-luna` | 0.10 · 0.01 · 0.50 | `analyze_query` none. Follow-ups come from the answer schema at no extra call. Prompts with `role: fast`: `support_check`, `brief_merge`, `rerank_listwise`. | A tiny structured output on the critical path. Observed 1.6 to 2.3 s on a 320-token prompt. Tolerant of small errors that code checks. |
+| `fast` | `gpt-6-luna` | 0.10 · 0.01 · 0.50 | `analyze_query` none. Follow-ups come from the answer schema at no extra call. Prompts with `role: fast`: `support_check`, `brief_merge`, `rerank_listwise`. | A tiny structured output on the critical path. Median 2.1 s per analysis call in `GET /v1/metrics/chat` (`node_latency_ms`). Tolerant of small errors that code checks. |
 | `balanced` | `gpt-6.1-terra` | 1.00 · 0.05 · 5.00 | `generate` none (RAG), `generate::full_context` low, `brief_extract` low, `summary` low. | Writing quality at a fifth of `deep`'s output price. The cached document prefix reads at $0.05/MTok in full-context mode. |
 | `deep` | `gpt-6.1-sol` | 2.00 · 0.10 · 10.00 | `generate:compare` low, `generate:conflict` low, `eval_judge` low. | The hardest reasoning on a small share of turns. A judge should sit at or above the generator's tier (`eval/judge.py` `check_tiers`). |
 | `flagship` | `gpt-6-astra` | 10.00 · 1.00 · 50.00 | `eval_audit_gold@1` and the judge-calibration subset only. | Too expensive for runtime. Used where an independent, stronger read matters (the gold audit). |
@@ -380,7 +394,7 @@ Other models and services:
 
 **Call slots** (`backend/app/llm/concurrency.py`): each gateway caps the model calls (chat, streams and embeddings) in flight per lane, `interactive` (`LLM_CONCURRENCY_INTERACTIVE`, 32) and `background` (`LLM_CONCURRENCY_BACKGROUND`, 8), so ingestion and briefs never take chat's slots. There is one gateway per API process and one per Celery task, and a prefork child runs one task at a time, so the cap is per process. An attempt holds its slot until the response, or until the stream's final event, failure, close or cancellation. A retry gives the slot back during its backoff and queues again. A waiter gives up `LLM_QUEUE_DEADLINE_MARGIN_S` (1 s) before its turn deadline, or after `LLM_QUEUE_MAX_WAIT_S` (120 s) without one, with `CapacityError` (`capacity`, 503, retryable): no provider call and no ledger row. In a turn it ends the node like any model failure, with `capacity` as the step's error code. The wait is the span attribute `vault.llm.queue_wait_ms` and the histogram `vault.llm.queue_wait`; refusals count in `vault.llm.capacity_rejected`, both labelled by lane.
 
-**Aborted attempts.** An attempt that ends without provider usage after the request may have reached the provider (cancelled by a deadline or a closed stream, an unexpected error, a timeout, or a provider error after the first streamed token) is written with `status='estimated'`: the gateway's input estimate (characters / 4) plus the `cl100k_base` tokens of the text streamed so far, at list price with no cache discount, so the daily quota counts it. OpenAI's documentation does not say how an aborted stream is billed, so the estimate assumes the input and the streamed output are billed. It cannot see reasoning tokens generated before the first delta. An error status before the first token (the provider refused the request) stays at $0. All calls use the OpenAI Responses API with strict JSON schema. RAG calls use explicit prompt caching with no breakpoint, because the default implicit mode billed every prompt as a 1.25× cache write (measured with a probe: 4,513 cache-write tokens became 0).
+**Aborted attempts.** An attempt that ends without provider usage after the request may have reached the provider (cancelled by a deadline or a closed stream, an unexpected error, a timeout, or a provider error after the first streamed token) is written with `status='estimated'`: the gateway's input estimate (characters / 4) plus the `cl100k_base` tokens of the text streamed so far, at list price with no cache discount, so the daily quota counts it. OpenAI's documentation does not say how an aborted stream is billed, so the estimate assumes the input and the streamed output are billed. It cannot see reasoning tokens generated before the first delta. An error status before the first token (the provider refused the request) stays at $0. All calls use the OpenAI Responses API with strict JSON schema. RAG calls use explicit prompt caching with no breakpoint, because the default implicit mode billed every prompt as a 1.25× cache write (measured with a probe).
 
 ### 7.2 Prompts
 
@@ -416,7 +430,7 @@ Operational settings that are not behaviour experiments:
 | Setting | Default | Meaning |
 |---|---|---|
 | `CHAT_FAST_PATH` | `true` | Skip `analyze_query` for self-contained questions (a kill switch) |
-| `CHAT_SPECULATIVE_RETRIEVAL` | `true` | Retrieve the raw question while analysis runs (latency only) |
+| `CHAT_SPECULATIVE_RETRIEVAL` | `true` | Retrieve the raw question while analysis runs (latency only). It has no effect with the shipped LLM reranker, which skips it |
 | `BRIEF_ENABLED` (+ `BRIEF_MAX_USD`, `BRIEF_CONCURRENCY`, `BRIEF_MAX_EVIDENCE_TOKENS`) | `true` | The brief stage; evaluation uploads turn it off |
 | `LLM_PROVIDER` | `openai` | `fake` is a scripted model for UI tests and is refused in production |
 | `MODEL_ROUTES`, `MODEL_*`, `LLM_PRICES` | empty / role defaults | Routing and price overrides |
@@ -436,7 +450,7 @@ Operational settings that are not behaviour experiments:
 | Citation resolution | `backend/app/chat/citations.py` | Handles are looked up in the request manifest, adjacent sentences merge into a half-open range, and `cited_text` is cut from stored `original_text`. Unknown handles are dropped with `CITATION_UNRESOLVED` and counted in `vault.citations.unresolved`. A segment with no valid handle is kept as `support=none` and shown uncited. |
 | Ledger check | `backend/app/chat/ledger.py` | The transaction aborts if a cited or candidate chunk is not the owner's or is outside the run's version snapshot. |
 | Per-segment verdicts | `backend/app/chat/support_check.py` → `answer_segments.verification` | `supported` / `partial` / `unsupported` / `unchecked`. The checker sees each segment with only its own `cited_text`. Failures yield `unchecked` plus `SUPPORT_CHECK_FAILED`, and the answer is never blocked. |
-| Conflicts | `backend/app/chat/conflicts.py` → `rag_runs.conflicts` | The model flags `{topic, handles_a, handles_b}`. Code keeps a conflict only if both sides resolve and touch at least 2 distinct chunks. The UI shows `frontend/src/chat/ConflictCallout.tsx` with both quotes. |
+| Conflicts | `backend/app/chat/conflicts.py` → `rag_runs.conflicts` | The model flags `{topic, handles_a, handles_b}`. Code keeps a conflict only if both sides resolve and touch at least 2 distinct chunks. The UI shows `frontend/src/chat/ConflictCallout.tsx` with both quotes. The conflict stratum scored answer_pass 0.200 on 5 items, so detection is weak (`docs/evaluation.md`). |
 | Abstain | `backend/app/explain/templates.py` | Code-written texts (`NO_DOCUMENTS_TEXT`, `NO_EVIDENCE_TEXT`). A compare side with no evidence gets a code-appended "nothing relevant was found" sentence (`COMPARE_SIDE_MISSING`). |
 | Reason codes | `rag_runs.reason_codes`, `run_steps.reason_code` | `REASON_TEMPLATES` maps every code to a user line, and an empty template means operator-only (for example `FAST_PATH`). A unit test greps every code constant in `app/chat`, `app/retrieval` and `app/llm` and requires a template (`backend/tests/unit/explain/test_templates.py`). |
 | Degradations | `rag_runs.degraded` | `no_rerank`, `lexical_only` map to `DEGRADED_TEMPLATES`. |
@@ -455,7 +469,7 @@ This is an illustrative turn, not a recorded run. The field names and template s
 5. `verify` runs `support_check@1` on that segment and its `cited_text` only, and writes `answer_segments.verification = 'supported'`.
 6. `persist` writes `rag_runs` with `route='qa'`, `mode='rag'`, `reason_codes=['FAST_PATH']`, `config.prompts=['analyze_query@4','answer_rag@12','support_check@1']`, `config.retrieval='retrieval@5'`, plus `llm_calls_used`, `cost_usd`, `latency_ms` and `ttft_ms`.
 7. `GET /v1/runs/{id}` computes `sources` from `segment_evidence` joined to chunks, versions and documents, giving one document with `chunks_used: 1` and its pages. `_explain` renders `ANSWERED_ONE_DOC`: **"Answered from 1 passage in 'Services Agreement' v2."** If the check had returned `unsupported`, the view would add **"One sentence is not backed up by its citation, so read it with care."** (`UNSUPPORTED_ONE`). If the reranker had been configured and timed out, it would add **"Passage ranking was not available, so passages are shown in search order."**
-8. In the UI, hovering the citation shows `cited_text`. Clicking it opens the source viewer, which turns the sentence offsets, then `spans`, then the page character range, then glyph boxes from the version's layout file (`GET /v1/versions/{id}/pages/{page}/layout`) into a highlight.
+8. In the UI, hovering the citation shows `cited_text`. Clicking it opens the source viewer, which turns the sentence offsets, then `spans`, then the page character range into a highlight of that sentence in the chunk text, labelled with its page range.
 9. When version 3 of the document reaches `ready`, `stale_since` is set on this message and the UI shows **"A newer version of this document was added after this answer. Ask again to see if anything changed."**
 
 ### 8.3 Voice
@@ -490,7 +504,7 @@ The chat path has no tools and no side effects, so the worst case is a wrong ans
 
 - Magic-byte sniffing, a 25 MB streaming cap, a 600-page cap, a parser subprocess with timeout and memory cap, DOCX zip-bomb checks, content-addressed storage keys, and no public file path. Tests: `backend/tests/integration/security/test_uploads.py`.
 - The UI is served with a strict CSP (`default-src 'self'; script-src 'self'; ... object-src 'none'; frame-ancestors 'none'`), `nosniff`, `no-referrer` and `X-Frame-Options: DENY` (`backend/app/main.py`). Test: `backend/tests/integration/security/test_http_hardening.py`.
-- Settings never echo input values in validation errors (`hide_input_in_errors=True`), after a key-prefix leak was caught (`AI_USAGE.md` corrections).
+- Settings never echo input values in validation errors (`hide_input_in_errors=True`).
 - Errors use `application/problem+json` with a bounded `code` (`backend/app/api/errors.py`, `backend/app/core/error_codes.py`).
 
 ### 9.4 Idempotency (at-least-once in, effectively-once out)
@@ -514,12 +528,12 @@ The chat path has no tools and no side effects, so the worst case is a wrong ans
 
 The method, the numbers and the runbook are in `docs/evaluation.md`. This section is the summary a developer needs to understand the design.
 
-- **Golden set** (`eval/datasets/vault_eval/`): 311 live items over 186 documents in 15 strata, split by source document into train 118, dev 59 and test 134. Train gold is audited (an independent model audit, then a person's decisions), dev gold was reviewed where items were disputed, and test gold is an unaudited draft. Gold is atomic claims plus sentence-range evidence that is mapped to chunks at run time (`eval/mapping.py`), so it survives a change of chunker. Public items come from third-party expert labels (CUAD, QASPER, FinanceBench), and authored fixtures cover the strata no public set has.
+- **Golden set** (`eval/datasets/vault_eval/`): 311 live items over 186 documents in 14 strata with items, split by source document into train 118, dev 59 and test 134. Train gold is audited (an independent model audit, then a person's decisions), dev gold was reviewed where items were disputed, and test gold is an unaudited draft. Gold is atomic claims plus sentence-range evidence that is mapped to chunks at run time (`eval/mapping.py`), so it survives a change of chunker. Public items come from third-party expert labels (CUAD, QASPER, FinanceBench), and authored fixtures cover the strata no public set has.
 - **Graders and judges**: deterministic graders decide what they can (`eval/graders.py`: citation integrity and scope, gold-citation overlap, `must_not_contain`, injection, meta correctness, recall@8, MRR@40). LLM judges on `deep` handle the rest (`eval_judge_claims`, `eval_judge_support`, `eval_judge_abstain`), reference-guided and blind, with a judge tier at or above the generator tier. Judge and generator share a vendor, and the judges are not yet calibrated against human labels, so every judged number is **provisional**.
 - **Statistics**: paired bootstrap CIs, clustering by source document, and a minimum detectable effect that says when "no difference" is only low power (`eval/paired.py`, `eval/report.py`).
 - **Stage attribution** (`eval/attribution.py`) gives each failed item one earliest faulty stage. Extraction and chunking cannot be observed yet and read 0.
 - **Gates** (`eval/gate.py`): Tier 0 (`make eval-gate-t0`, $0) checks schema, citation integrity of stored runs, offline replay, the retrieval baseline and the security tests. Tier 1 (`make eval-gate BASE=... CAND=...`) is non-inferiority on answer_pass and support_rate, zero injection violations, abstention not lower, and citation integrity of 1.0, with `INCONCLUSIVE` when underpowered.
-- **Acceptance rule**: a behaviour switch is enabled only if a paired dev-split evaluation shows its primary metric improving with the CI excluding 0, or non-inferior with a better cost or latency. Tuning never uses test-split content.
+- **Acceptance rule**: a behaviour switch is enabled only if a paired dev-split evaluation shows its primary metric improving with the CI excluding 0, or non-inferior with a better cost or latency. The reranker's dev interval touched 0 and its train interval did not (`docs/evaluation.md` section 4). Tuning never uses test-split content.
 - **Contamination check** (`eval/contamination.py`, in `make ci`): no default prompt or judge may share a word 5-gram or a proper name with any gold item.
 - **Headline numbers** (provisional). Sealed test split, run once on draft gold: answer_pass 0.761, faithfulness 0.957, citation integrity 1.00, 0 injection violations, $0.007 per turn, 7.3 s mean latency. Audited train gold: answer_pass 0.873 against a baseline of 0.763; dev: 0.847 against 0.746. Of the quality targets (answer_pass 0.80, faithfulness 0.90, citation chunk precision 0.85), the test run meets faithfulness only. Commands to regenerate each number: `docs/evaluation.md` section 2.
 
@@ -538,7 +552,7 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 | Brief cost per 1,000 documents | $14.34 (mean of 3 samples) | `docs/operations.md` section 4 |
 | Documents per hour per worker, exact search at 100k chunks, per-document embedding cost | **unmeasured** | `docs/operations.md` |
 
-**How it handles thousands of documents.** Search is exact and scoped to the owner's hash partition, which means perfect recall and a few milliseconds at tens of thousands of chunks. A global approximate index would cost RAM and lose recall under owner filters. Ingestion throughput is bound by CPU-heavy extraction, so it scales by adding `worker-ingest` processes. `worker-ai` is I/O-bound and scales with provider rate limits. A document is searchable at `index`, before its brief.
+**How it handles thousands of documents.** Search is exact and scoped to the owner's hash partition, so no recall is lost to an approximate index, and a search takes a few milliseconds at tens of thousands of chunks. End-to-end recall is still bounded by the candidate caps: 40 vector hits, at most 12 per document in a scope of two or more documents, and 8 passages after the rerank. A global approximate index would cost RAM and lose recall under owner filters. Ingestion throughput is bound by CPU-heavy extraction, so it scales by adding `worker-ingest` processes. `worker-ai` is I/O-bound and scales with provider rate limits. A document is searchable at `index`, before its brief.
 
 **Queues and concurrency.**
 - Celery queues: `ingest` (`worker-ingest -c 1`), `ai` and `maintenance` (`worker-ai -c ${AI_WORKER_CONCURRENCY:-4}`), and beat as a single instance (`docker-compose.yml`, `backend/app/worker/celery_app.py`).
@@ -572,11 +586,11 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 | Application-managed citations (handles, code-copied text) | No invented quotes, provider-agnostic. The handle enum makes an unknown citation undecodable in RAG mode, and brief facts use the same schema and resolver, so highlighting works the same way for answers and briefs. | 0 invalid handles; citation_integrity 1.000 on every kept run (`docs/evaluation.md`) | Nothing short of a provider guaranteeing exact spans *and* support, which none does |
 | Orchestration is code; the model returns typed decisions (own typed turn graph, no LangChain or agent loop) | Known paths, predictable latency, unit-testable routing, a diagram generated from code, and an explanation that does not depend on the model | `backend/tests/unit/docs/test_diagrams.py` | A need for durable multi-step agents |
 | OpenAI only, addressed by role, one within-provider fallback, no cross-vendor failover | One key, a price ladder from $0.10 to $10 per million input tokens, model names in one file; a vendor switch would silently change citation behaviour | `backend/app/llm/routing.py` | A second provider key, which would allow a comparison with the dormant Anthropic adapter |
-| Exact vector search in owner hash partitions, `halfvec` | Perfect recall and a few ms at owner scale; no filtered-HNSW recall loss | 8.9 ms at 21k chunks (`docs/operations.md`) | A scope over about 100k chunks (HNSW per partition) |
+| Exact vector search in owner hash partitions, `halfvec` | Exact nearest neighbours, so no approximate-index misses, and a few ms at owner scale; the candidate caps still limit end-to-end recall | 8.9 ms at 21k chunks (`docs/operations.md`) | A scope over about 100k chunks (HNSW per partition) |
 | OR lexical query | AND starved the lexical leg | 0.150 to 0.633 lexical recall@8 (`docs/evaluation.md`) | |
-| LLM listwise reranker, no cross-encoder service | The LLM reranker moved answer_pass by +8.5 (dev) and +12.7 (train) points for $0.0004 a turn; a cross-encoder showed no detectable gain at +495 ms p50 | `docs/evaluation.md` section 4 | A paired win for another ranker on the ranking-cut strata within the latency bar |
+| LLM listwise reranker, no cross-encoder service | The LLM reranker moved answer_pass by +8.5 (dev) and +12.7 (train) points for $0.0004 a turn; a cross-encoder showed no detectable gain at +495 ms p50 | `docs/evaluation.md` section 4 and `AI_USAGE.md` section 4 | A paired win for another ranker on the ranking-cut strata within the latency bar |
 | Whole-document mode not automatic | No gain at twice the cost | `docs/evaluation.md` section 4 | A paired gain on aggregation or multi-span strata |
-| Support check advisory | Never block an answer on a checker failure | kappa 0.83 against the faithfulness judge | A repairing check that wins a paired evaluation (one was measured, had a worse faithfulness estimate and was removed) |
+| Support check advisory | Never block an answer on a checker failure | kappa 0.83 against the faithfulness judge | A repairing check that wins a paired evaluation (a repairing version lost faithfulness in a paired evaluation) |
 | Coverage states, not confidence percentages | No calibrated model exists, and a percentage misleads | | |
 | Behaviour changes ship disabled | Measure before adding | `docs/evaluation.md` section 1.5 | A paired dev-split acceptance per switch |
 | Answers are never cached | A cached answer could cite a stale or deleted version | | |
@@ -596,7 +610,7 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 | Jobs | Crash: lease expiry, then the sweeper. Lost enqueue: the sweeper. Duplicate delivery: the claim CAS. Poison document: `dead` after the maximum attempts. |
 | Providers | 429 or timeout: retry with jitter and `retry-after`, then one role fallback. Embeddings down: ingestion retries and queries go lexical-only. Refusal or `max_tokens`: a typed outcome. |
 | Retrieval | Identifier misses: `tsv_ids`. Split answers: neighbour expansion. Rerank call failed: fusion order with `degraded=no_rerank`. |
-| Grounding | Insufficient evidence: abstain. Partial: a code-written not-found segment (a compare side with no evidence). Conflict: both sides shown. Unresolved citation: dropped and counted. Injection: data-only blocks and no tools. |
+| Grounding | Insufficient evidence: abstain. Partial: a code-written not-found segment (a compare side with no evidence). Conflict: both sides shown when the model flags it and both sides resolve to stored sentences. Unresolved citation: dropped and counted. Injection: data-only blocks and no tools. |
 | Chat runtime | Concurrent turn: 409. Budget or deadline: partial or abstain with a reason. Disconnect: the turn continues and persists. Scope too large for whole-document mode: RAG. |
 | Platform | Redis down: uploads are still accepted (the job stays `dispatched` and the sweeper enqueues it once the broker answers; a stalled broker costs at most a 10 s socket timeout), and the limiter fails open. Postgres down: 503. No connection is held across a stream. Cost spike: daily quota. |
 
@@ -607,8 +621,14 @@ Measured numbers, derivations, cost and the demo script are in `docs/operations.
 - **Stage attribution cannot see extraction or chunking.**
 - **Unmeasured**: load and concurrency, documents per hour per worker, per-document embedding cost, exact search at 100k chunks, and live time to first token under the current configuration.
 - **Not built**: a comparison matrix (questions across many documents as a table), the replay API and an operator run view, a tiered LLM evidence gate, memory compaction, OCR (scanned PDFs end as `needs_ocr`), the HNSW switch, Grafana dashboards, password login, per-passage sentiment (the brief records each document's tone), and a per-owner ingestion cap. PDFs over 600 pages end as `unsupported`.
-- **Memory** is the turn window only: nothing writes the rolling summary, and there is no cross-session memory.
-- **One known flaky test**: `backend/tests/integration/observability/test_trace_propagation.py::test_api_to_celery_same_trace` times out in full-suite runs and passes alone.
+- **Document selection across a library is little measured.** 231 of the 311 gold items are asked in a session scoped to the one right document, 57 to two or more documents and 23 to the whole library, and answer pass is lower with two or more documents in scope (`docs/evaluation.md` section 6 has the figures and the command).
+- **The analyzer narrows scope from titles alone.** It sees document titles, not content, and its choice is a hard filter. A name that matches two titles can narrow a turn to the wrong document, and the answer then comes from that document or abstains.
+- **The vector leg keeps at most 12 chunks per document in any scope of two or more documents** (`per_doc_quota` in `backend/config/retrieval@5.yaml`). A passage ranked 13 to 40 inside its own document is dropped from the vector list, and the lexical leg does not always recover it.
+- **A summary or overview across several documents can omit documents.** Retrieval keeps 8 passages with no per-document coverage, and whole-document mode is used only when the client asks for it and the scope fits 50,000 tokens.
+- **A turn the analyzer labels `chitchat` ends in an error.** It still retrieves and generates, on a budget of one call that the analysis has already used. A short greeting usually takes the fast path as a question and gets the not-found card.
+- **Questions about the conversation itself have no route.** There is no intent for "what did I ask first", so the analyzer labels it chitchat. Nothing writes `rolling_summary` or `resolved_entities`, and the analyzer sees only the last 4 turns (500 characters each). There is no cross-session memory.
+- **Form-style PDFs chunk badly.** A short bold line is read as a heading, and a heading with no body text is not stored as a chunk, so that text cannot be cited. Forms with labels and values in columns, and pages with a repeated header block, split into many small fragments.
+- **No stage writes page layouts.** `GET /v1/versions/{id}/pages/{n}/layout` exists and returns 404, and the viewer highlights the cited sentence in the chunk text, not on the PDF page.
 
 ---
 

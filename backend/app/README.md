@@ -1,6 +1,6 @@
 # backend/app: package map
 
-FastAPI + Celery application. Design source of truth: `docs/design.md`.
+FastAPI + Celery application. The design is in `ARCHITECTURE.md`.
 
 | Package | Purpose |
 |---|---|
