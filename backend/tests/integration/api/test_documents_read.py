@@ -1,4 +1,4 @@
-"""Document read endpoints: list, detail, processing timeline, file, layout, chunk."""
+"""Document read endpoints: list, detail, processing timeline, file, chunk."""
 
 import datetime as dt
 import hashlib
@@ -13,7 +13,6 @@ from sqlalchemy import text
 
 from tests.support.docs import (
     clear_owner_rows,
-    put_gz_json,
     seed_chunk,
     seed_document,
     seed_pages,
@@ -148,45 +147,6 @@ async def test_file_stream(api: httpx.AsyncClient, owners, sm, store) -> None:  
     assert r.status_code == 404
 
 
-def _layout() -> dict[str, Any]:
-    return {
-        "1": {
-            "w": 612.0,
-            "h": 792.0,
-            "glyphs": [[10.0, 20.0, 15.0, 30.0], [16.0, 20.0, 21.0, 30.0]],
-            "char_to_glyph": [0, 1],
-        }
-    }
-
-
-async def test_layout(api: httpx.AsyncClient, owners, sm, store) -> None:  # type: ignore[no-untyped-def]
-    o = await owners()
-    s = await seed_document(sm, o.id)
-    await put_gz_json(store, f"layouts/{s.version_id}.json.gz", _layout())
-    r = await api.get(f"/v1/versions/{s.version_id}/pages/1/layout", headers=o.auth)
-    assert r.status_code == 200, r.text
-    assert r.json() == {
-        "version_id": str(s.version_id),
-        "page": 1,
-        "width": 612.0,
-        "height": 792.0,
-        "glyphs": [[10.0, 20.0, 15.0, 30.0], [16.0, 20.0, 21.0, 30.0]],
-    }
-
-
-async def test_layout_out_of_range(api: httpx.AsyncClient, owners, sm, store) -> None:  # type: ignore[no-untyped-def]
-    o = await owners()
-    s = await seed_document(sm, o.id)
-    await put_gz_json(store, f"layouts/{s.version_id}.json.gz", _layout())
-    for n in (2, 0, 99):
-        r = await api.get(f"/v1/versions/{s.version_id}/pages/{n}/layout", headers=o.auth)
-        assert r.status_code == 404 and r.json()["code"] == "not_found", (n, r.text)
-    # no layout file at all: 404 with a clear detail
-    s2 = await seed_document(sm, o.id)
-    r = await api.get(f"/v1/versions/{s2.version_id}/pages/1/layout", headers=o.auth)
-    assert r.status_code == 404 and "layout" in r.json()["detail"]
-
-
 async def test_chunk(api: httpx.AsyncClient, owners, sm) -> None:  # type: ignore[no-untyped-def]
     o = await owners()
     s = await seed_document(sm, o.id)
@@ -223,7 +183,6 @@ async def test_chunk_neighbours(api: httpx.AsyncClient, owners, sm) -> None:  # 
         "/v1/documents/{doc}",
         "/v1/versions/{ver}/processing",
         "/v1/versions/{ver}/file",
-        "/v1/versions/{ver}/pages/1/layout",
         "/v1/chunks/{chunk}",
         "LIST",
     ],
@@ -231,7 +190,6 @@ async def test_chunk_neighbours(api: httpx.AsyncClient, owners, sm) -> None:  # 
 async def test_cross_owner_404(api: httpx.AsyncClient, owners, sm, store, path: str) -> None:  # type: ignore[no-untyped-def]
     a, b = await owners(), await owners()
     s = await seed_document(sm, a.id, content=b"%PDF-1.7 data", store=store)
-    await put_gz_json(store, f"layouts/{s.version_id}.json.gz", _layout())
     cid = await seed_chunk(sm, a.id, s)
     if path == "LIST":
         r = await api.get("/v1/documents", headers=b.auth)

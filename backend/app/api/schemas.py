@@ -337,28 +337,6 @@ class ProcessingOut(Model):
     )
 
 
-class PageLayoutOut(Model):
-    version_id: uuid.UUID
-    page: int
-    width: float
-    height: float
-    glyphs: list[Any] = Field(description="Glyph boxes in page coordinates")
-    model_config = ConfigDict(
-        extra="allow",
-        json_schema_extra={
-            "examples": [
-                {
-                    "version_id": VERSION_ID,
-                    "page": 1,
-                    "width": 612.0,
-                    "height": 792.0,
-                    "glyphs": [[72.0, 90.5, 80.1, 101.2]],
-                }
-            ]
-        },
-    )
-
-
 class ChunkVersion(Model):
     id: uuid.UUID
     version_no: int

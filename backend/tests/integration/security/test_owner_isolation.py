@@ -1,12 +1,11 @@
 """Every route is covered by a cross-owner test. The route list comes from the app's OpenAPI; a new route that
 is neither covered below nor on the justified allowlist fails `test_every_route` loudly.
 
-World: owner A has a ready document (blob, layout, chunk), a custom summary, a session with a finished turn
+World: owner A has a ready document (blob, chunk), a custom summary, a session with a finished turn
 (run, assistant message). Owner B attacks every A-owned id on every route and must see 404 (or, on list and
 metric routes, nothing of A's). Afterwards A's data is unchanged, and A's own requests are not 404 (positive
 control, so a route that 404s for everyone cannot pass)."""
 
-import gzip
 import json
 import uuid
 from collections.abc import Callable
@@ -57,7 +56,6 @@ COVERED: dict[str, Spec] = {
     "POST /v1/documents/{document_id}/versions": Spec("404", {"files": True}, control=False),
     "GET /v1/versions/{version_id}/processing": Spec("404"),
     "GET /v1/versions/{version_id}/file": Spec("404"),
-    "GET /v1/versions/{version_id}/pages/{page}/layout": Spec("404"),
     "GET /v1/versions/{version_id}/processing/stream": Spec("404", control=False),
     "GET /v1/chunks/{chunk_id}": Spec("404"),
     "POST /v1/chat/sessions": Spec("404", {"json": {"document_ids": ["{document_id}"]}}, control=False),
@@ -91,8 +89,6 @@ async def _world(
     async with sm() as s:
         persisted = await persist_turn(s, a.id, record(w))
     doc = await seed_document(sm, a.id, title="A secret", content=VALID_PDF.read_bytes(), store=store)
-    layout = {"1": {"w": 612, "h": 792, "glyphs": []}}
-    await store.put(f"layouts/{doc.version_id}.json.gz", gzip.compress(json.dumps(layout).encode()))
     # a real custom summary for A's document (through the API, so the row is what production writes)
     r = await api.post(f"/v1/documents/{doc.document_id}/summaries", json={"length": "short"}, headers=a.auth)
     assert r.status_code in (200, 202), r.text

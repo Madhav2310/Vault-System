@@ -377,39 +377,6 @@
           "response": []
         },
         {
-          "name": "Page layout for highlighting (GET /v1/versions/{version_id}/pages/{page}/layout)",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/v1/versions/:version_id/pages/:page/layout",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "v1",
-                "versions",
-                ":version_id",
-                "pages",
-                ":page",
-                "layout"
-              ],
-              "variable": [
-                {
-                  "key": "version_id",
-                  "value": "00000000-0000-0000-0000-000000000000"
-                },
-                {
-                  "key": "page",
-                  "value": ""
-                }
-              ]
-            },
-            "description": "Page size and glyph boxes from `layouts/{version_id}.json.gz`."
-          },
-          "response": []
-        },
-        {
           "name": "Stream processing status (GET /v1/versions/{version_id}/processing/stream)",
           "request": {
             "method": "GET",
@@ -968,7 +935,7 @@
                 "readyz"
               ]
             },
-            "description": "Database, Redis, object store, reranker (optional) and provider configuration. 503 when a required check fails (the body is the same `Readiness` object).",
+            "description": "Database, Redis, object store and provider configuration. 503 when a check fails (the body is the same `Readiness` object).",
             "auth": {
               "type": "noauth"
             }

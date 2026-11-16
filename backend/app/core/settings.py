@@ -44,7 +44,6 @@ class Settings(BaseSettings):
     # --- providers (optional at boot; /readyz reports what's missing) ---
     anthropic_api_key: SecretStr | None = None
     openai_api_key: SecretStr | None = None
-    deepseek_api_key: SecretStr | None = None
 
     # `fake` = scripted UI-test model (app/llm/fake.py); refused when environment is prod
     llm_provider: Literal["openai", "fake"] = "openai"

@@ -46,7 +46,7 @@ For `services-agreement.txt`: the monthly fee is 4,500 dollars, either party may
 
 ## Known weak spots on camera
 
-- Small talk ("thanks") gets the "not found in your documents" card, and "what did I ask first?" returns an error message.
+- Small talk ("thanks") gets the "not found in your documents" card, and so does "what did I ask first?".
 - A chat over many documents, or a vague request such as "give me the gist" across several, can miss a document or decline.
 - Wording matters. "What does the non-compete prevent the consultant from doing?" is answered; "what exactly is the consultant barred from doing?" returned "not stated".
 

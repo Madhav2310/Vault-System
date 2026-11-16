@@ -33,7 +33,7 @@ export interface paths {
         };
         /**
          * Readiness
-         * @description Database, Redis, object store, reranker (optional) and provider configuration. 503 when a required check fails (the body is the same `Readiness` object).
+         * @description Database, Redis, object store and provider configuration. 503 when a check fails (the body is the same `Readiness` object).
          */
         get: operations["readyz_readyz_get"];
         put?: never;
@@ -465,26 +465,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/v1/versions/{version_id}/pages/{page}/layout": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Page layout for highlighting
-         * @description Page size and glyph boxes from `layouts/{version_id}.json.gz`.
-         */
-        get: operations["page_layout_v1_versions__version_id__pages__page__layout_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/v1/versions/{version_id}/processing": {
         parameters: {
             query?: never;
@@ -614,11 +594,6 @@ export interface components {
             duration_ms: number;
             /** Error */
             error?: string | null;
-            /**
-             * Required
-             * @default true
-             */
-            required: boolean;
             /**
              * Status
              * @enum {string}
@@ -995,27 +970,6 @@ export interface components {
         } & {
             [key: string]: unknown;
         };
-        /** PageLayoutOut */
-        PageLayoutOut: {
-            /**
-             * Glyphs
-             * @description Glyph boxes in page coordinates
-             */
-            glyphs: unknown[];
-            /** Height */
-            height: number;
-            /** Page */
-            page: number;
-            /**
-             * Version Id
-             * Format: uuid
-             */
-            version_id: string;
-            /** Width */
-            width: number;
-        } & {
-            [key: string]: unknown;
-        };
         /** Percentiles */
         Percentiles: {
             /** P50 */
@@ -1142,7 +1096,7 @@ export interface components {
              * Status
              * @enum {string}
              */
-            status: "ok" | "degraded" | "fail";
+            status: "ok" | "fail";
         };
         /** RunViewOut */
         RunViewOut: {
@@ -2892,65 +2846,6 @@ export interface operations {
                 };
             };
             /** @description Not your version, or the file is gone */
-            404: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Request validation failed */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Rate limited (see `RateLimit-*` headers) */
-            429: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorResponse"];
-                };
-            };
-        };
-    };
-    page_layout_v1_versions__version_id__pages__page__layout_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                version_id: string;
-                page: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PageLayoutOut"];
-                };
-            };
-            /** @description Missing or invalid API key */
-            401: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/problem+json": components["schemas"]["ErrorResponse"];
-                };
-            };
-            /** @description Not your version, or no layout for that page */
             404: {
                 headers: {
                     [name: string]: unknown;

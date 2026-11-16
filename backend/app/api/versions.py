@@ -1,8 +1,6 @@
-"""Version endpoints: processing timeline, original file, page layout."""
+"""Version endpoints: processing timeline and original file."""
 
 import asyncio
-import gzip
-import json
 import urllib.parse
 import uuid
 import weakref
@@ -17,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.api.deps import get_db, get_store
 from app.api.errors import DomainError
-from app.api.schemas import PageLayoutOut, ProcessingOut
+from app.api.schemas import ProcessingOut
 from app.core.auth import CurrentUser
 from app.core.error_codes import ErrorCode
 from app.core.settings import get_settings
@@ -183,44 +181,6 @@ async def get_file(
             "ETag": f'"{v["sha256"]}"',
         },
     )
-
-
-def _page_layout(raw: bytes, page: int) -> dict[str, Any] | None:
-    pages = json.loads(gzip.decompress(raw))
-    entry = pages.get(str(page))
-    return entry if isinstance(entry, dict) else None
-
-
-@router.get(
-    "/{version_id}/pages/{page}/layout",
-    summary="Page layout for highlighting",
-    response_model=PageLayoutOut,
-    responses={404: {"description": "Not your version, or no layout for that page"}},
-)
-async def page_layout(
-    version_id: uuid.UUID,
-    page: int,
-    user: CurrentUser,
-    db: Annotated[AsyncSession, Depends(get_db)],
-    store: Annotated[ObjectStore, Depends(get_store)],
-) -> dict[str, Any]:
-    """Page size and glyph boxes from `layouts/{version_id}.json.gz`."""
-    await _owned_version(db, user.id, version_id)
-    await db.rollback()
-    try:
-        raw = await store.get(f"layouts/{version_id}.json.gz")
-    except FileNotFoundError as e:
-        raise DomainError(ErrorCode.NOT_FOUND, "No layout is available for this version") from e
-    entry = await asyncio.to_thread(_page_layout, raw, page)
-    if entry is None:
-        raise DomainError(ErrorCode.NOT_FOUND, f"Page {page} has no layout")
-    return {
-        "version_id": str(version_id),
-        "page": page,
-        "width": entry["w"],
-        "height": entry["h"],
-        "glyphs": entry["glyphs"],
-    }
 
 
 # --- live processing status ----------------------------------------------------------------
