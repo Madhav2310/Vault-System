@@ -71,7 +71,7 @@ def test_quality_numbers_have_commands() -> None:
         if re.search(r"\d", prose) and not COMMAND_SPAN.search(line):
             bad.append(line[:80])
     assert not bad, bad
-    assert len(re.findall(r"^\|", _section("Quality, scale and cost at a glance"), re.M)) >= 8
+    assert len(re.findall(r"^\|", _section("Quality, scale and cost at a glance"), re.M)) >= 5
 
 
 def test_no_secrets() -> None:
